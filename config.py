@@ -92,11 +92,11 @@ repositories = (
         '--branch=develop',
         'ado/src/collecting_society.portal.creative',
     ),
-    # (
-    #     'https://github.com/C3S/collecting_society.portal.repertoire.git',
-    #     '--branch=develop',
-    #     'ado/src/collecting_society.portal.repertoire'
-    # ),
+    (
+        'https://github.com/C3S/collecting_society.portal.repertoire.git',
+        '--branch=develop',
+        'ado/src/collecting_society.portal.repertoire'
+    ),
 )
 
 configfiles = (
