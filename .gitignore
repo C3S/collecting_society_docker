@@ -62,6 +62,9 @@ ado/src
 ado/tmp
 postgresql-data
 
+# pyramid_mailer.debug
+ado/mail
+
 # Configuration files for docker container
 /*.env
 /ado/etc/trytonpassfile
