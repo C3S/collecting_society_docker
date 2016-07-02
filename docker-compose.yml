@@ -26,6 +26,7 @@ portal:
   links:
     - db
     - proxy
+    - api
   environment:
     PYRAMID_SERVICE: 'portal'
   env_file:
