@@ -1,7 +1,7 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/c3s.ado.repertoire
 
-FROM c3sado_tryton
+FROM c3sadorepertoire_tryton
 MAINTAINER Udo Spallek <udono@virtual-things.biz>
 
 WORKDIR /opt
@@ -19,12 +19,13 @@ RUN pip install  \
     deform==2.0a2  \
     nose==1.3.6  \
     pyramid==1.5.7  \
-    pyramid_beaker==0.8 \
+    pyramid_beaker==0.8  \
     pyramid-chameleon==0.3  \
     pyramid_debugtoolbar==2.3  \
-    pyramid_mailer==0.14 \
+    pyramid_mailer==0.14  \
     pyramid_oauth2_provider==0.2  \
+    python-magic==0.4.12  \
     webtest==2.0.18  \
-    waitress==0.8.9 \
-    requests==2.9.1 \
+    waitress==0.8.9  \
+    requests==2.9.1  \
     selenium==2.53.1
