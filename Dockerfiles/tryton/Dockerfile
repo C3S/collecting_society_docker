@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends  \
     ssl-cert  \
     ca-certificates  \
     libmagic1  \
+    libav-tools  \
     python
 
 RUN wget https://bootstrap.pypa.io/get-pip.py

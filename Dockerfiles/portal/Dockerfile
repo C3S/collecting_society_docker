@@ -18,6 +18,7 @@ RUN pip install  \
     cryptacular==1.4.1  \
     deform==2.0a2  \
     nose==1.3.6  \
+    pydub==0.16.4  \
     pyramid==1.5.7  \
     pyramid_beaker==0.8  \
     pyramid-chameleon==0.3  \
