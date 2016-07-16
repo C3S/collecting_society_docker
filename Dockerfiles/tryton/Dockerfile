@@ -54,7 +54,8 @@ RUN pip install  \
     pytz==2015.4  \
     relatorio==0.6.1  \
     simplejson==3.6.5  \
-    vatnumber==1.2
+    vatnumber==1.2  \
+    hurry.filesize==0.9
 
 
 RUN mkdir -p /ado
