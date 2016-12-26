@@ -35,9 +35,18 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
+    'sphinxcontrib_robotframework',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
 ]
+
+# Enable Robot Framework tests during Sphinx compilation
+sphinxcontrib_robotframework_enabled = True
+
+# Hide Robot Framework syntax from the Sphinx output by default
+# (preferred, when you use the extension for scripted screenshots)
+sphinxcontrib_robotframework_quiet = True
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -153,7 +162,7 @@ html_theme = 'alabaster'
 # html_logo = None
 
 # The name of an image file (relative to this directory) to use as a favicon of
-# the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
+# the docs. This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 #
 # html_favicon = None
