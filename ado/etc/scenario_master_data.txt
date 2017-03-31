@@ -249,6 +249,54 @@ Create transitory journal::
     ...     sequence=sequence_journal)
     >>> journal.save()
 
+Create Licenses:
+
+    >>> License = Model.get('license')
+
+    >>> license_c = License(
+    ...     code='C',
+    ...     name='Copyright - All Rights Reserved',
+    ...     freedom_rank=100)
+    >>> license_c.save()
+
+    >>> license_cc_by_nc_nd = License(
+    ...     code='CC BY-NC-DN',
+    ...     name='Creative Commons - Attribution NonCommercial NoDerivatives',
+    ...     freedom_rank=1000)
+    >>> license_cc_by_nc_nd.save()
+
+    >>> license_cc_by_nc_nd = License(
+    ...     code='CC BY-NC-SA',
+    ...     name='Creative Commons - Attribution NonCommercial ShareAlike',
+    ...     freedom_rank=1100)
+    >>> license_cc_by_nc_nd.save()
+
+    >>> license_cc_by_nc = License(
+    ...     code='CC BY-NC',
+    ...     name='Creative Commons - Attribution NonCommercial',
+    ...     freedom_rank=1200)
+    >>> license_cc_by_nc.save()
+
+    >>> license_cc_by_nd = License(
+    ...     code='CC BY-ND',
+    ...     name='Creative Commons - Attribution NoDerivatives',
+    ...     freedom_rank=1300)
+    >>> license_cc_by_nd.save()
+
+    >>> license_cc_by_sa = License(
+    ...     code='CC BY-SA',
+    ...     name='Creative Commons - Attribution ShareAlike',
+    ...     freedom_rank=1400)
+    >>> license_cc_by_sa.save()
+
+    >>> license_cc_by = License(
+    ...     code='CC BY',
+    ...     name='Creative Commons - Attribution',
+    ...     freedom_rank=1600)
+    >>> license_cc_by.save()
+
+
+
 Create employees:
 
 Create company internal users:

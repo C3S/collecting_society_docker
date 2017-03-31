@@ -143,13 +143,13 @@ use e.g::
 
     $ docker-compose run --service-ports portal ado-do deploy-portal
     $ docker-compose run --service-ports api ado-do deploy-api
-    $ docker-compose run --service-ports portal ado-do deploy-tryton c3s
+    $ docker-compose run --service-ports portal ado-do deploy-tryton
 
 
 The portal service is started with ``ado-do`` inside a portal container.
 The tryton service can be started with::
 
-    $ docker-compose run --service-ports tryton ado-do deploy-tryton c3s
+    $ docker-compose run --service-ports tryton ado-do deploy-tryton
 
 The flag ``service-ports`` runs the container and all its dependecies
 with the service's ports enabled and mapped to the host.
