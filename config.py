@@ -97,6 +97,11 @@ repositories = (
         '--branch=develop',
         'ado/src/collecting_society.portal.repertoire'
     ),
+    (
+        'https://github.com/C3S/c3sRepertoireProcessing.git',
+        '--branch=master',
+        'ado/src/c3sRepertoireProcessing'
+    ),
 )
 
 configfiles = (
@@ -111,5 +116,9 @@ configfiles = (
     (
         'api.env.example',
         'api.env'
+    ),
+    (
+        'ado/src/c3sRepertoireProcessing/config.ini.EXAMPLE',
+        'ado/src/c3sRepertoireProcessing/config.ini'
     ),
 )

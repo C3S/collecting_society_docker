@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends  \
     locales  \
     wget  \
     build-essential  \
+    cron \
     postgresql-client-9.4  \
     sqlite3  \
     ssl-cert  \
