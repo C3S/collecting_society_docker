@@ -102,6 +102,11 @@ repositories = (
         '--branch=master',
         'ado/src/c3sRepertoireProcessing'
     ),
+    (
+        'https://github.com/spotify/echoprint-codegen.git',
+        '--branch=master',
+        'ado/src/echoprint-codegen'
+    ),
 )
 
 configfiles = (

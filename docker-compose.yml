@@ -28,10 +28,22 @@ portal:
     - db
     - proxy
     - api
+    - tryton
   environment:
     PYRAMID_SERVICE: 'portal'
   env_file:
     - ./portal.env
+
+processing:
+  build: Dockerfiles/processing
+#  command: service cron start; tail -f /ado/tmp/upload/repro.log
+  command: cron && tail -f /ado/tmp/repro.log &
+  volumes:
+    - ./ado:/ado
+  links:
+    - tryton
+  env_file:
+    - ./processing.env
 
 api:
   build: Dockerfiles/portal

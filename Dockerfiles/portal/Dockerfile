@@ -37,6 +37,3 @@ RUN pip install  \
     selenium==2.53.1  \
     proteus==3.4.8  \
     click==6.7
-
-RUN service cron start
-RUN (crontab -u root -l ; echo "* * * * * cd /ado/src/c3sRepertoireProcessing; /usr/bin/python repro.py all") | crontab -u root -
