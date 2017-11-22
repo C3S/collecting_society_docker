@@ -429,6 +429,14 @@ container once and run the tests from within::
     $ docker-compose run portal bash
     $ ado-do run-tests [--path=PATH] [PARAMETER...]
 
+To allow the winpdb debugger to attach to a portal script, uncomment 
+
+    #RUN apt-get update && apt-get install -y winpdb
+
+in Dockerfiles/portal/Dockerfile and in your python file insert
+
+    import rpdb2; rpdb2.start_embedded_debugger(pwd = "yourpassword", fAllowRemote = True)
+
 Problems
 ========
 Couldn't connect to Docker daemon

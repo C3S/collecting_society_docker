@@ -24,6 +24,7 @@ portal:
     - ./ado:/ado
   ports:
     - "6543"
+    - "51000:51000"   # for winpdb debugger, also see potal dockerfile
   links:
     - db
     - proxy
