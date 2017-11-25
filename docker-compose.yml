@@ -61,6 +61,14 @@ api:
   env_file:
     - ./api.env
 
+archiving:
+  build: Dockerfiles/archiving
+  command: ado-do deploy-archiving
+  volumes:
+    - ./ado:/ado
+  links:
+    - tryton
+
 proxy:
   build: Dockerfiles/nginx
   volumes:
