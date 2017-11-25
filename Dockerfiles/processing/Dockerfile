@@ -6,7 +6,8 @@ MAINTAINER Udo Spallek <udono@virtual-things.biz>
 
 RUN apt-get install -y --no-install-recommends  \
     cron \
-    libtag1-dev
+    libtag1-dev \
+    libav-tools
 
 WORKDIR /ado
 
@@ -18,12 +19,8 @@ RUN pip install  \
     requests==2.9.1  \
     click==6.7
 
-# ffmpeg installation
-RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz
-RUN tar --wildcards --extract --file=ffmpeg-release-64bit-static.tar.xz ffmpeg-*.*.*-64bit-static/ffmpeg
-RUN mv ffmpeg-*.*.*-64bit-static/ffmpeg /usr/bin
-RUN rmdir ffmpeg-*.*.*-64bit-static
-RUN rm ffmpeg-release-64bit-static.tar.xz
+# ffmpeg symlink to avconv
+RUN ln -s /usr/bin/avconv /usr/local/bin/ffmpeg
 
 # echoprint-codegen installation --> should be done outside the container...
 #                                    for the time being, make echoprint-codegen manually!
