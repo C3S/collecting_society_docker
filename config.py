@@ -119,6 +119,10 @@ configfiles = (
         'portal.env'
     ),
     (
+        'processing.env.example',
+        'processing.env'
+    ),
+    (
         'api.env.example',
         'api.env'
     ),
