@@ -16,6 +16,8 @@ tryton:
     - "8069:8069"
   links:
     - db
+  env_file:
+    - ./tryton.env
 
 portal:
   build: Dockerfiles/portal
@@ -30,8 +32,6 @@ portal:
     - proxy
     - api
     - tryton
-  environment:
-    PYRAMID_SERVICE: 'portal'
   env_file:
     - ./portal.env
 
@@ -56,8 +56,6 @@ api:
   links:
     - db
     - proxy
-  environment:
-    PYRAMID_SERVICE: 'api'
   env_file:
     - ./api.env
 

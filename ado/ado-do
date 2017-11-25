@@ -225,9 +225,12 @@ def db_backup(context, dbname):
 @click.pass_context
 def db_demo_setup(context, dbname):
     """
-    Creates the postgres database DBNAME and sets up demo data.
+    Creates and sets up the postgres database DBNAME.
 
     The execution is skipped if the database already exists.
+
+    Executes the scenario master data to set up the database.
+    Executes the scenario demo data in development environment.
 
     During installation a flagfile is created on the host to prevent multiple
     execution from different docker containers.
@@ -255,7 +258,8 @@ def db_demo_setup(context, dbname):
             PROJECT_PATH, 'etc', 'trytond.conf'
         )
 
-        # Setup database
+        # Setup master data
+        print("\nSetup scenario master data.\n")
         subprocess.call(
             [
                 '/usr/bin/python',
@@ -265,6 +269,19 @@ def db_demo_setup(context, dbname):
                 )
             ]
         )
+
+        # Setup demo data
+        if os.environ.get('ENVIRONMENT') == 'development':
+            print('\nSetup scenario demo data.\n')
+            subprocess.call(
+                [
+                    '/usr/bin/python',
+                    '-m', 'doctest',
+                    '-v', os.path.join(
+                        PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
+                    )
+                ]
+            )
 
         os.remove(TMP_FILE)
 
