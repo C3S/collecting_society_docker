@@ -477,6 +477,13 @@ def deploy_tryton(context):
     tryton service (trytond).
     """
     context.invoke(pip_install, container='tryton')
+
+    # fix for self-signed certificates
+    if os.environ.get('ENVIRONMENT') == 'development':
+        if hasattr(ssl, '_create_unverified_context'):
+            ssl._create_default_https_context = ssl._create_unverified_context
+            print("WARNING: fix for self-signed certificates activated")
+
     service = [
         '/usr/local/bin/trytond',
         '--dev',
