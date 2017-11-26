@@ -238,15 +238,25 @@ Add band /'angstalt/ and solo artist members::
     ...
     ...     Source Text: https://www.jamendo.com/de/artist/364964/angstalt
     ...     Source Picture: http://www.angstalt.de/bilder/logo_dbz_degb.png
-    ...     Date of last access: 2015-04-09 18:00''')
+    ...     Date of last access: 2015-04-09 18:00''',
+    ...     entity_creator=web_user
+    ... )
     >>> member = angstalt.solo_artists.new(
-    ...     name='Stefan Hintz')
+    ...     name='Stefan Hintz', 
+    ...     entity_creator=web_user
+    ... )
     >>> member = angstalt.solo_artists.new(
-    ...     name='Norman Hintz')
+    ...     name='Norman Hintz', 
+    ...     entity_creator=web_user
+    ... )
     >>> member = angstalt.solo_artists.new(
-    ...     name='m.')
+    ...     name='m.', 
+    ...     entity_creator=web_user
+    ... )
     >>> member = angstalt.solo_artists.new(
-    ...     name='Tobias "Rettich" Rettstadt')
+    ...     name='Tobias "Rettich" Rettstadt', 
+    ...     entity_creator=web_user
+    ... )
     >>> angstalt.save()
 
 Add a band logo::
@@ -562,7 +572,8 @@ Add a new release::
 
     >>> Release = Model.get('release')
     >>> release = Release(
-    ...     title='Release'
+    ...     title='Release',
+    ...     entity_creator=web_user
     ... )
     >>> release.save()
 
@@ -573,7 +584,9 @@ Add a new creation::
     >>> artist, = Artist.find([('name', '=', 'm.')])
     >>> Creation = Model.get('creation')
     >>> creation = Creation(
-    ...     artist=artist
+    ...     title='Song',
+    ...     artist=artist,
+    ...     entity_creator=web_user
     ... )
     >>> creation.save()
 
