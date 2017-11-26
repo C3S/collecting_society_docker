@@ -289,6 +289,26 @@ def db_demo_setup(context, dbname):
         print('Setup demo data, but database "%s" exists: Skip!' % dbname)
 
 
+@ado_do.command('db-test-setup')
+@click.argument('dbname')
+@click.pass_context
+def db_test_setup(context, dbname):
+    context.invoke(pip_install, container='tryton')
+    os.environ['DB_NAME'] = dbname
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        PROJECT_PATH, 'etc', 'trytond.conf'
+    )
+    subprocess.call(
+        [
+            '/usr/bin/python',
+            '-m', 'doctest',
+            '-v', os.path.join(
+                PROJECT_PATH, 'etc', 'scenario_test_data.txt'
+            )
+        ]
+    )
+
+
 @ado_do.command('create-test-db')
 @click.option('--dbtype', default='postgres',
               help='Type of database (default: postgres)')
