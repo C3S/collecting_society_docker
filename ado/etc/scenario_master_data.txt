@@ -65,8 +65,8 @@ Company
 
     >>> _ = party.addresses.pop()
     >>> party_address = party.addresses.new(
-    ...     street='Heyestraße 194',
-    ...     zip='40625',
+    ...     street='Rochusstraße 44',
+    ...     zip='40479',
     ...     city='Düsseldorf',
     ...     country=germany)
     >>> party.save()
