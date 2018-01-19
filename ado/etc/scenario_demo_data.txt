@@ -584,7 +584,6 @@ Add a new creation::
     >>> artist, = Artist.find([('name', '=', 'm.')])
     >>> Creation = Model.get('creation')
     >>> creation = Creation(
-    ...     title='Song',
     ...     artist=artist,
     ...     entity_creator=web_user
     ... )
