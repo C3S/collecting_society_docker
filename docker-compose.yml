@@ -37,7 +37,6 @@ portal:
 
 processing:
   build: Dockerfiles/processing
-#  command: service cron start; tail -f /ado/tmp/upload/repro.log
   command: cron && tail -f /ado/tmp/repro.log &
   volumes:
     - ./ado:/ado

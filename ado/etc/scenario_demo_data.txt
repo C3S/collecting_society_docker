@@ -566,6 +566,17 @@ Check creation
 
 Add artist
 
+Add release
+------------
+Add a new release::
+
+    >>> Release = Model.get('release')
+    >>> release = Release(
+    ...     title='Release',
+    ...     entity_creator=web_user
+    ... )
+    >>> release.save()
+
 Add creation
 ------------
 Add a new creation::
@@ -573,11 +584,19 @@ Add a new creation::
     >>> artist, = Artist.find([('name', '=', 'm.')])
     >>> Creation = Model.get('creation')
     >>> creation = Creation(
-    ...     title='Song',
     ...     artist=artist,
     ...     entity_creator=web_user
     ... )
     >>> creation.save()
+
+Add creation to the release::
+
+    >>> releasecreation = release.creations.new(
+    ...     creation=creation,
+    ...     release=release,
+    ...     title="Song"
+    ... )
+    >>> releasecreation.save()
 
 Add a file as attachment of the creation::
 
