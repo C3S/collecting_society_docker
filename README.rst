@@ -31,7 +31,7 @@ Requirements
 ============
 A Linux or OS X system, `docker <https://docs.docker.com/engine/installation/>`,
 `docker-compose  <https://docs.docker.com/compose/install/>`
-and `git <http://git-scm.com/downloads>`.
+and `git <http://git-scm.com/downloads>`::
 
     $ sudo apt-get install git docker docker-compose # if you don't want to read the docs
     $ sudo usermod -aG docker $USER # so you won't have to user sudo all the time
