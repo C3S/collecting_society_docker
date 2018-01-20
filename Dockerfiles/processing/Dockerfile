@@ -35,3 +35,8 @@ RUN echo "" > /ado/tmp/repro.log
 
 RUN echo "* * * * * cd /ado/src/c3sRepertoireProcessing; /usr/bin/python repro.py all 2>> /ado/tmp/repro.log >> /ado/tmp/repro.log" | crontab -
 RUN crontab -u root -l
+
+# winpdb debugger requires processing port "51000:51000" in docker-compose.yml
+# to allow winpdb to attach to a pyton script, uncomment the RUN and insert this line in the script where you want to debug:
+# import rpdb2; rpdb2.start_embedded_debugger("supersecret", fAllowRemote = True)
+# RUN apt-get update && apt-get install -y winpdb 
