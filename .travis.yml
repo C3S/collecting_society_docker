@@ -3,9 +3,10 @@ install:
   - curl -sSL https://get.docker.com/ | sudo sh
   - sudo pip install docker-compose
 
-
 script:
   - ls -lah
+
 notifications:
+
   email:
-- github@stoffels.it
+    - github@stoffels.it
