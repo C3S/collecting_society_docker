@@ -9,7 +9,6 @@ db:
 tryton:
   build: Dockerfiles/tryton
   command: ado-do deploy-tryton
-#  mem_limit: 1024m
   volumes:
     - ./ado:/ado
   ports:
@@ -39,10 +38,10 @@ portal:
 processing:
   build: Dockerfiles/processing
   #command: cron && tail -f /ado/tmp/repro.log &
-  command: bash -c "while true; do cd /ado/src/c3sRepertoireProcessing && python repro.py all; sleep 1; done"
+  command: bash -c "while true; do cd /ado/src/c3sRepertoireProcessing && python repro.py all; sleep 60; done"
   volumes:
     - ./ado:/ado
-  ports:
+  #ports:
   #  - "51000:51000"   # for winpdb debugger, also see processing dockerfile
   links:
     - tryton
