@@ -7,6 +7,7 @@ script:
   - ls -lah
   - ./update
   - docker-compose build
+  - docker-compose run portal ado-do run-tests
 
 notifications:
 
