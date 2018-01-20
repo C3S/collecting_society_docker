@@ -7,7 +7,6 @@ script:
   - ls -lah
   - ./update
   - docker-compose build
-  - docker-compose run tryton sh -c 'ado-do pip-install tryton && export DB_NAME=:memory: && python /ado/src/trytond/trytond/tests/run-tests.py'
 
 notifications:
 
