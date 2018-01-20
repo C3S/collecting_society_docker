@@ -1,3 +1,5 @@
+Develop: https://travis-ci.org/C3S/c3s.ado.repertoire.svg?branch=develop
+
 =======
 C3S ADO
 =======
