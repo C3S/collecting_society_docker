@@ -1,4 +1,5 @@
-[![Build Status Develop](https://travis-ci.org/C3S/c3s.ado.repertoire.svg?branch=develop)](https://travis-ci.org/C3S/c3s.ado.repertoire)
+.. image:: https://travis-ci.org/C3S/c3s.ado.repertoire.svg?branch=develop
+    :target: https://travis-ci.org/C3S/c3s.ado.repertoire
 
 =======
 C3S ADO
