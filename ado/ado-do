@@ -364,6 +364,18 @@ def create_test_db(context, dbtype, dbname):
         ]
     )
 
+    # Setup demo data
+    if os.environ.get('ENVIRONMENT') == 'development':
+        subprocess.call(
+            [
+                '/usr/bin/python',
+                '-m', 'doctest',
+                '-v', os.path.join(
+                    PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
+                )
+            ]
+        )
+
     # Copy database template
     if _db_type == 'sqlite':
         _db_dst_path = os.path.join(PROJECT_PATH, 'etc', _db_name + '.sqlite')
