@@ -4,10 +4,13 @@
 FROM c3sadorepertoire_tryton
 MAINTAINER Udo Spallek <udono@virtual-things.biz>
 
-RUN apt-get install -y --no-install-recommends  \
+RUN apt-get update && apt-get install -y --no-install-recommends  \
     cron \
     libtag1-dev \
-    libav-tools
+    libav-tools \
+    git \
+    libboost-dev \
+    zlib1g-dev
 
 WORKDIR /ado
 
@@ -22,17 +25,20 @@ RUN pip install  \
 # ffmpeg symlink to avconv
 RUN ln -s /usr/bin/avconv /usr/local/bin/ffmpeg
 
-# echoprint-codegen installation --> should be done outside the container...
-#                                    for the time being, make echoprint-codegen manually!
-#RUN apt-get install -y libboost-dev
-#RUN apt-get install -y zlib1g-dev
-#RUN apt-get install -y libtag1-dev <-- already installed in line 7
-#RUN cd /ado; cd /ado/src; cd /ado/src/echoprint-codegen; cd /ado/src/echoprint-codegen/src; /usr/bin/make <-- Makefile not found here :-/
-#
+# echoprint
+WORKDIR /opt
+RUN git clone https://github.com/spotify/echoprint-codegen.git
+WORKDIR /opt/echoprint-codegen
+RUN git checkout v4.12
+WORKDIR /opt/echoprint-codegen/src
+RUN make
+WORKDIR /opt/echoprint-codegen
+RUN chmod 755 echoprint-codegen
+RUN ln -s /opt/echoprint-codegen/echoprint-codegen /usr/local/bin/echoprint-codegen
+WORKDIR /ado
 
 RUN mkdir /ado/tmp
 RUN echo "" > /ado/tmp/repro.log
-
 RUN echo "* * * * * cd /ado/src/c3sRepertoireProcessing; /usr/bin/python repro.py all 2>> /ado/tmp/repro.log >> /ado/tmp/repro.log" | crontab -
 RUN crontab -u root -l
 
