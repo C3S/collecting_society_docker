@@ -19,6 +19,7 @@ Examples:
 
 from __future__ import print_function
 import os
+import sys
 import shutil
 import time
 import subprocess
@@ -502,7 +503,7 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
 
     # Start tests
     print("\nSTART TESTS ...\n")
-    subprocess.call(
+    exitcode = subprocess.call(
         [
             'nosetests',
             '--verbose',
@@ -514,6 +515,9 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
             '--cover-package='+','.join(modules),
         ] + list(nargs) + list(paths)
     )
+
+    # Return exitcode
+    sys.exit(exitcode)
 
 
 @ado_do.command('deploy-tryton')
