@@ -1,7 +1,7 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/c3s.ado.repertoire
 
-FROM c3sadorepertoire_tryton
+FROM c3s_repertoire_tryton
 MAINTAINER Udo Spallek <udono@virtual-things.biz>
 
 RUN apt-get update && apt-get install -y --no-install-recommends  \
