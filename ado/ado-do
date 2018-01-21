@@ -34,6 +34,9 @@ TMP_FILE = 'running_db_creation.delete_me'
 if os.path.isfile(TMP_FILE):
     os.remove(TMP_FILE)
 
+pg_hostname = 'db'
+pg_port = '5432'
+
 
 @click.group()
 def ado_do():
@@ -91,7 +94,6 @@ def db_create(context, dbname):
     """
     print('Create database "%s" ... ' % dbname, end='')
     context.invoke(pip_install, container='tryton')
-    pg_url = urlparse(os.environ.get('DB_1_PORT'))
 
     # check database
     if _db_exist(dbname):
@@ -102,8 +104,8 @@ def db_create(context, dbname):
     subprocess.call(
         [
             '/usr/bin/createdb',
-            '-h', pg_url.hostname,
-            '-p', str(pg_url.port),
+            '-h', pg_hostname,
+            '-p', pg_port,
             '-U', 'postgres',
             '-O', 'postgres',
             '-E UTF-8',
@@ -124,7 +126,6 @@ def db_delete(context, dbname):
     On error the deletion is retried 60 times.
     """
     print('Delete database "%s" ... ' % dbname, end='')
-    pg_url = urlparse(os.environ.get('DB_1_PORT'))
     max_tries = 60
     tries = 0
     result = 1
@@ -137,8 +138,8 @@ def db_delete(context, dbname):
         result = subprocess.call(
             [
                 '/usr/bin/dropdb',
-                '-h', pg_url.hostname,
-                '-p', str(pg_url.port),
+                '-h', pg_hostname,
+                '-p', pg_port,
                 '-U', 'postgres',
                 dbname
             ]
@@ -159,14 +160,13 @@ def db_copy(context, dbname_src, dbname_dst):
     Creates the postrges database DBNAME_DST from template DBNAME_SRC.
     """
     print('Copy database "%s" to "%s" ... ' % (dbname_src, dbname_dst), end='')
-    pg_url = urlparse(os.environ.get('DB_1_PORT'))
 
     # copy database
     subprocess.call(
         [
             '/usr/bin/createdb',
-            '-h', pg_url.hostname,
-            '-p', str(pg_url.port),
+            '-h', pg_hostname,
+            '-p', pg_port,
             '-U', 'postgres',
             '-O', 'postgres',
             '-T', dbname_src,
@@ -186,14 +186,13 @@ def db_psql(context, dbname):
     Opens a SQL console for the database DBNAME.
     """
     print('Use ctrl-d or \\q to quit ...')
-    pg_url = urlparse(os.environ.get('DB_1_PORT'))
 
     # open console
     subprocess.call(
         [
             '/usr/bin/psql',
-            '-h', pg_url.hostname,
-            '-p', str(pg_url.port),
+            '-h', pg_hostname,
+            '-p', pg_port,
             '-U', 'postgres',
             dbname
         ]
@@ -207,14 +206,13 @@ def db_backup(context, dbname):
     """
     Dumps the postgres database DBNAME to stdout.
     """
-    pg_url = urlparse(os.environ.get('DB_1_PORT'))
 
     # backup database
     subprocess.call(
         [
             '/usr/bin/pg_dump',
-            '-h', pg_url.hostname,
-            '-p', str(pg_url.port),
+            '-h', pg_hostname,
+            '-p', pg_port,
             '-U', 'postgres',
             dbname
         ]
