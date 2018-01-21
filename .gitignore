@@ -42,6 +42,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+ado/cover
 
 # Translations
 #*.mo   unless we integrate the translation tools into the build process, 

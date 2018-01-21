@@ -510,6 +510,8 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
             '--logging-level=CRITICAL',
             '--all-modules',
             '--with-coverage',
+            '--cover-html',
+            '--with-xunit',
             '--cover-erase',
             '--cover-inclusive',
             '--cover-package='+','.join(modules),
