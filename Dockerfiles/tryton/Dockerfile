@@ -43,6 +43,7 @@ RUN pip install  \
     interlude==1.3.1  \
     lxml==3.4.0  \
     mock==1.0.1  \
+    pdbpp==0.9.2  \
     polib==1.0.5  \
     "proteus<3.5.0" \
     psycopg2==2.5.4  \
