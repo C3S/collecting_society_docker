@@ -3,3 +3,5 @@
 
 FROM c3s_repertoire_api
 MAINTAINER Udo Spallek <udono@virtual-things.biz>
+
+# see api Dockerfile to enable winpdb debugging
