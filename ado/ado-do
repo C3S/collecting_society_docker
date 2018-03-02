@@ -24,6 +24,7 @@ import shutil
 import time
 import subprocess
 import glob
+import fcntl
 from urlparse import urlparse
 
 import pip
@@ -31,8 +32,8 @@ import click
 
 PROJECT_PATH = '/ado'
 TMP_FILE = 'running_db_creation.delete_me'
-if os.path.isfile(TMP_FILE):
-    os.remove(TMP_FILE)
+#if os.path.isfile(TMP_FILE):
+#    os.remove(TMP_FILE)
 
 pg_hostname = 'db'
 pg_port = '5432'
@@ -231,21 +232,24 @@ def db_demo_setup(context, dbname):
     Executes the scenario master data to set up the database.
     Executes the scenario demo data in development environment.
 
-    During installation a flagfile is created on the host to prevent multiple
+    During installation a lockfile is created on the host to prevent multiple
     execution from different docker containers.
     """
     context.invoke(pip_install, container='tryton')
 
-    # Check flagfile
-    if os.path.isfile(TMP_FILE):
-        while os.path.isfile(TMP_FILE):
-            pass
-        time.sleep(3)
+    # Check lockfile, if locked, wait till not locked any more
+    while True:
+        try:
+            lockfile = open(TMP_FILE, 'w+')
+            fcntl.flock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            print("Database creation commencing.")
+            break
+        except IOError:
+            time.sleep(3)
+            print("Waiting for the other process to finish database creation...")
 
     # Check database
     if not _db_exist(dbname):
-        with open(TMP_FILE, 'a'):
-            os.utime(TMP_FILE, None)
 
         # Create database
         context.invoke(db_create, dbname=dbname)
@@ -282,10 +286,17 @@ def db_demo_setup(context, dbname):
                 ]
             )
 
-        os.remove(TMP_FILE)
-
     else:
         print('Setup demo data, but database "%s" exists: Skip!' % dbname)
+
+    if lockfile:
+        # unlock file
+        fcntl.flock(lockfile, fcntl.LOCK_UN)
+        lockfile.close()
+        try:
+            os.remove(TMP_FILE)
+        except OSError:
+            print("Couldn't remove lock file, something has gone wrong here...")
 
 
 @ado_do.command('db-test-setup')
