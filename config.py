@@ -88,11 +88,6 @@ repositories = (
         'ado/src/collecting_society.portal'
     ),
     (
-        'https://github.com/C3S/collecting_society.portal.creative.git',
-        '--branch=develop',
-        'ado/src/collecting_society.portal.creative',
-    ),
-    (
         'https://github.com/C3S/collecting_society.portal.repertoire.git',
         '--branch=develop',
         'ado/src/collecting_society.portal.repertoire'
