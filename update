@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import config
+import sys
 
 base_path = os.path.dirname(os.path.abspath(__file__))
 git_branch = subprocess.check_output(
@@ -27,6 +28,21 @@ print("""=====================================================================
     base_path
 ))
 
+# update ado itself (of course won't recognize updates to the update script)
+try:
+    pull_result = subprocess.check_output(
+        ('git', 'pull'), cwd=base_path,
+        stderr=subprocess.STDOUT)
+    print(
+        'git pull "{}": '.format(os.path.basename(base_path)),
+        end='')
+    if pull_result:
+        print(pull_result)
+except subprocess.CalledProcessError as e2:
+    print("There was a problem: \n\n{}".format(e2.output))
+    sys.exit("Exiting. Please check for errors above!")
+
+# update all the modules
 for repo, branch, path in config.repositories:
     target_path = os.path.join(base_path, path)
     if not os.path.exists(target_path):
@@ -71,6 +87,7 @@ for source_filename, target_filename in config.configfiles:
 print("""Done.
 
   Now you may go ahead and use 
+    * 'docker-compose run tryton ado-do db-delete c3s'
     * 'docker-compose build' to build or
     * 'docker-compose up' to start the system.
 =====================================================================""")

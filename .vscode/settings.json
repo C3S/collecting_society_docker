@@ -1,8 +1,13 @@
 {
     "python.linting.pylintEnabled": true,
+    "python.linting.pylintArgs": [
+        "--disable=E0401"
+    ],
     "python.linting.pep8Enabled": false,
     "python.linting.flake8Enabled": true,
-    "python.linting.flake8Path": "/usr/bin/flake8",
-    "editor.rulers": [ 80, 120 ],
+    "python.linting.flake8Args": [
+        "--disable=F401"
+    ],    "python.linting.flake8Path": "/usr/bin/flake8",
+    "editor.rulers": [ 79, 119 ],
     "python.linting.enabled": true
 }
