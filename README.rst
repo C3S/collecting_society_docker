@@ -110,6 +110,7 @@ reverse proxy and load-balancer to the *portal* services host on *port 81*.
 
 Prior to the connection via browser, your /etc/hosts should contain
 repertoire.test and api.repertoire.test pointing to 0.0.0.0
+
 Connecting the portal, point your browser to::
     http://repertoire.test:81
 
