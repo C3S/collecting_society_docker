@@ -1,0 +1,28 @@
+=========
+Test Data
+=========
+Imports
+-------
+::
+
+    >>> import os
+    >>> import uuid
+    >>> import datetime
+    >>> from dateutil.relativedelta import relativedelta
+    >>> from decimal import Decimal
+    >>> from proteus import config, Model, Wizard
+    >>> today = datetime.date.today()
+    >>> now = datetime.datetime.now()
+    >>> config = config.set_trytond(
+    ...     config_file=os.environ.get('TRYTOND_CONFIG'))
+    >>> Country = Model.get('country.country')
+    >>> germany, = Country.find([('code', '=', 'DE')])
+    >>> Currency = Model.get('currency.currency')
+    >>> euro, = Currency.find([('code', '=', 'EUR')])
+    >>> Language = Model.get('ir.lang')
+    >>> german_language, = Language.find([('code', '=', 'de_DE')])
+
+Test
+----
+
+    >>> import interlude; interlude.interact(locals())

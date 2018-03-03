@@ -35,7 +35,7 @@ RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 ENV PYTHONUNBUFFERED 1
 RUN pip install  \
 #    PyWebDAV==0.9.8  \
-    click==4.0  \
+    click==4.0
 #    interlude==1.3.1  \
 #    lxml==3.4.0  \
 #    mock==1.0.1  \
@@ -53,7 +53,11 @@ RUN pip install  \
 #    vatnumber==1.2  \
 #    hurry.filesize==0.9
 
-
 RUN mkdir -p /ado
 WORKDIR /ado
 ENV PATH $PATH:/ado
+
+# winpdb debugger requires processing port "51000:51000" in docker-compose.yml
+# to allow winpdb to attach to a pyton script, uncomment the RUN and insert this line in the script where you want to debug:
+# import rpdb2; rpdb2.start_embedded_debugger("supersecret", fAllowRemote = True)
+RUN apt-get update && apt-get install -y winpdb 

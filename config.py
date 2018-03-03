@@ -115,16 +115,20 @@ configfiles = (
         'ado/etc/trytonpassfile',
     ),
     (
+        'tryton.env.example',
+        'tryton.env'
+    ),
+    (
         'portal.env.example',
         'portal.env'
     ),
     (
-        'processing.env.example',
-        'processing.env'
-    ),
-    (
         'api.env.example',
         'api.env'
+    ),
+    (
+        'processing.env.example',
+        'processing.env'
     ),
     (
         'ado/src/c3sRepertoireProcessing/config.ini.EXAMPLE',

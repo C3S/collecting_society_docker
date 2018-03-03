@@ -1,3 +1,8 @@
+Develop Branch:
+
+.. image:: https://travis-ci.org/C3S/c3s.ado.repertoire.svg?branch=develop
+    :target: https://travis-ci.org/C3S/c3s.ado.repertoire
+
 =======
 C3S ADO
 =======
@@ -31,7 +36,11 @@ Requirements
 ============
 A Linux or OS X system, `docker <https://docs.docker.com/engine/installation/>`,
 `docker-compose  <https://docs.docker.com/compose/install/>`
-and `git <http://git-scm.com/downloads>`.
+and `git <http://git-scm.com/downloads>`::
+
+    $ sudo apt-get install git docker docker-compose # if you don't want to read the docs
+    $ sudo usermod -aG docker $USER # so you won't have to user sudo all the time
+    $ newgrp docker # if you don't want to relogin
 
 
 Setup
@@ -429,13 +438,29 @@ container once and run the tests from within::
     $ docker-compose run portal bash
     $ ado-do run-tests [--path=PATH] [PARAMETER...]
 
-To allow the winpdb debugger to attach to a portal script, uncomment 
+Debugging with winpdb
+---------------------
+
+To allow the winpdb debugger to attach to a portal script, uncomment:: 
 
     #RUN apt-get update && apt-get install -y winpdb
 
-in Dockerfiles/portal/Dockerfile and in your python file insert
+in Dockerfiles/portal/Dockerfile and in your python file insert::
 
-    import rpdb2; rpdb2.start_embedded_debugger(pwd = "yourpassword", fAllowRemote = True)
+    import rpdb2; rpdb2.start_embedded_debugger("yourpassword", fAllowRemote = True)
+
+Make sure to open a port for the remote debugger in docker-compose.yml::
+
+  ports:
+   - "51000:51000"
+
+Install winpdb also outside the container and run it::
+
+  sudo apt-get install -y winpdb
+  winpdb
+
+The processing container can be setup for debugging the same way.
+Make sure to only enable either of the both containers for debugging, not both the same time.
 
 Problems
 ========

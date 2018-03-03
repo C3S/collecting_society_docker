@@ -19,10 +19,12 @@ Examples:
 
 from __future__ import print_function
 import os
+import sys
 import shutil
 import time
 import subprocess
 import glob
+import fcntl
 from urlparse import urlparse
 
 import pip
@@ -30,8 +32,11 @@ import click
 
 PROJECT_PATH = '/ado'
 TMP_FILE = 'running_db_creation.delete_me'
-if os.path.isfile(TMP_FILE):
-    os.remove(TMP_FILE)
+#if os.path.isfile(TMP_FILE):
+#    os.remove(TMP_FILE)
+
+pg_hostname = 'db'
+pg_port = '5432'
 
 
 @click.group()
@@ -90,7 +95,6 @@ def db_create(context, dbname):
     """
     print('Create database "%s" ... ' % dbname, end='')
     context.invoke(pip_install, container='tryton')
-    pg_url = urlparse(os.environ.get('DB_1_PORT'))
 
     # check database
     if _db_exist(dbname):
@@ -101,8 +105,8 @@ def db_create(context, dbname):
     subprocess.call(
         [
             '/usr/bin/createdb',
-            '-h', pg_url.hostname,
-            '-p', str(pg_url.port),
+            '-h', pg_hostname,
+            '-p', pg_port,
             '-U', 'postgres',
             '-O', 'postgres',
             '-E UTF-8',
@@ -123,7 +127,6 @@ def db_delete(context, dbname):
     On error the deletion is retried 60 times.
     """
     print('Delete database "%s" ... ' % dbname, end='')
-    pg_url = urlparse(os.environ.get('DB_1_PORT'))
     max_tries = 60
     tries = 0
     result = 1
@@ -136,8 +139,8 @@ def db_delete(context, dbname):
         result = subprocess.call(
             [
                 '/usr/bin/dropdb',
-                '-h', pg_url.hostname,
-                '-p', str(pg_url.port),
+                '-h', pg_hostname,
+                '-p', pg_port,
                 '-U', 'postgres',
                 dbname
             ]
@@ -158,14 +161,13 @@ def db_copy(context, dbname_src, dbname_dst):
     Creates the postrges database DBNAME_DST from template DBNAME_SRC.
     """
     print('Copy database "%s" to "%s" ... ' % (dbname_src, dbname_dst), end='')
-    pg_url = urlparse(os.environ.get('DB_1_PORT'))
 
     # copy database
     subprocess.call(
         [
             '/usr/bin/createdb',
-            '-h', pg_url.hostname,
-            '-p', str(pg_url.port),
+            '-h', pg_hostname,
+            '-p', pg_port,
             '-U', 'postgres',
             '-O', 'postgres',
             '-T', dbname_src,
@@ -185,14 +187,13 @@ def db_psql(context, dbname):
     Opens a SQL console for the database DBNAME.
     """
     print('Use ctrl-d or \\q to quit ...')
-    pg_url = urlparse(os.environ.get('DB_1_PORT'))
 
     # open console
     subprocess.call(
         [
             '/usr/bin/psql',
-            '-h', pg_url.hostname,
-            '-p', str(pg_url.port),
+            '-h', pg_hostname,
+            '-p', pg_port,
             '-U', 'postgres',
             dbname
         ]
@@ -206,14 +207,13 @@ def db_backup(context, dbname):
     """
     Dumps the postgres database DBNAME to stdout.
     """
-    pg_url = urlparse(os.environ.get('DB_1_PORT'))
 
     # backup database
     subprocess.call(
         [
             '/usr/bin/pg_dump',
-            '-h', pg_url.hostname,
-            '-p', str(pg_url.port),
+            '-h', pg_hostname,
+            '-p', pg_port,
             '-U', 'postgres',
             dbname
         ]
@@ -225,25 +225,31 @@ def db_backup(context, dbname):
 @click.pass_context
 def db_demo_setup(context, dbname):
     """
-    Creates the postgres database DBNAME and sets up demo data.
+    Creates and sets up the postgres database DBNAME.
 
     The execution is skipped if the database already exists.
 
-    During installation a flagfile is created on the host to prevent multiple
+    Executes the scenario master data to set up the database.
+    Executes the scenario demo data in development environment.
+
+    During installation a lockfile is created on the host to prevent multiple
     execution from different docker containers.
     """
     context.invoke(pip_install, container='tryton')
 
-    # Check flagfile
-    if os.path.isfile(TMP_FILE):
-        while os.path.isfile(TMP_FILE):
-            pass
-        time.sleep(3)
+    # Check lockfile, if locked, wait till not locked any more
+    while True:
+        try:
+            lockfile = open(TMP_FILE, 'w+')
+            fcntl.flock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            print("Database creation commencing.")
+            break
+        except IOError:
+            time.sleep(3)
+            print("Waiting for the other process to finish database creation...")
 
     # Check database
     if not _db_exist(dbname):
-        with open(TMP_FILE, 'a'):
-            os.utime(TMP_FILE, None)
 
         # Create database
         context.invoke(db_create, dbname=dbname)
@@ -255,7 +261,8 @@ def db_demo_setup(context, dbname):
             PROJECT_PATH, 'etc', 'trytond.conf'
         )
 
-        # Setup database
+        # Setup master data
+        print("\nSetup scenario master data.\n")
         subprocess.call(
             [
                 '/usr/bin/python',
@@ -266,10 +273,50 @@ def db_demo_setup(context, dbname):
             ]
         )
 
-        os.remove(TMP_FILE)
+        # Setup demo data
+        if os.environ.get('ENVIRONMENT') == 'development':
+            print('\nSetup scenario demo data.\n')
+            subprocess.call(
+                [
+                    '/usr/bin/python',
+                    '-m', 'doctest',
+                    '-v', os.path.join(
+                        PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
+                    )
+                ]
+            )
 
     else:
         print('Setup demo data, but database "%s" exists: Skip!' % dbname)
+
+    if lockfile:
+        # unlock file
+        fcntl.flock(lockfile, fcntl.LOCK_UN)
+        lockfile.close()
+        try:
+            os.remove(TMP_FILE)
+        except OSError:
+            print("Couldn't remove lock file, something has gone wrong here...")
+
+
+@ado_do.command('db-test-setup')
+@click.argument('dbname')
+@click.pass_context
+def db_test_setup(context, dbname):
+    context.invoke(pip_install, container='tryton')
+    os.environ['DB_NAME'] = dbname
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        PROJECT_PATH, 'etc', 'trytond.conf'
+    )
+    subprocess.call(
+        [
+            '/usr/bin/python',
+            '-m', 'doctest',
+            '-v', os.path.join(
+                PROJECT_PATH, 'etc', 'scenario_test_data.txt'
+            )
+        ]
+    )
 
 
 @ado_do.command('create-test-db')
@@ -326,6 +373,18 @@ def create_test_db(context, dbtype, dbname):
             )
         ]
     )
+
+    # Setup demo data
+    if os.environ.get('ENVIRONMENT') == 'development':
+        subprocess.call(
+            [
+                '/usr/bin/python',
+                '-m', 'doctest',
+                '-v', os.path.join(
+                    PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
+                )
+            ]
+        )
 
     # Copy database template
     if _db_type == 'sqlite':
@@ -453,18 +512,23 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
 
     # Start tests
     print("\nSTART TESTS ...\n")
-    subprocess.call(
+    exitcode = subprocess.call(
         [
             'nosetests',
             '--verbose',
             '--logging-level=CRITICAL',
             '--all-modules',
             '--with-coverage',
+            '--cover-html',
+            '--with-xunit',
             '--cover-erase',
             '--cover-inclusive',
             '--cover-package='+','.join(modules),
         ] + list(nargs) + list(paths)
     )
+
+    # Return exitcode
+    sys.exit(exitcode)
 
 
 @ado_do.command('deploy-tryton')
