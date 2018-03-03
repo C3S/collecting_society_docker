@@ -39,5 +39,7 @@ if num_containers == 0:
     print('no containers running.')
 print('-' * 75)
 print('to use the portal with a browser, use the frontend on port 81:')
-print(' * frontend: \t http://0.0.0.0.xip.io:81')
+print(' * frontend: \t http://repertoire.test:81')
+print(' portal.repertoire and api.portal.repertoire should point')
+print(' to 0.0.0.0 via /etc/hosts')
 print('=' * 75)

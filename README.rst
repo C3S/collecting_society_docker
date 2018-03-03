@@ -108,11 +108,13 @@ reverse proxy and load-balancer to the *portal* services host on *port 81*.
     Use the script ``c3s.ado.repertoire/show_external_urls`` or 
     ``docker-compose ps`` to find the port of a particular service.
 
+Prior to the connection via browser, your /etc/hosts should contain
+repertoire.test and api.repertoire.test pointing to 0.0.0.0
 Connecting the portal, point your browser to::
-    http://0.0.0.0.xip.io:81
+    http://repertoire.test:81
 
 Connecting the api, point your browser to::
-    http://api.0.0.0.0.xip.io:81
+    http://api.repertoire.test:81
 
 Connecting a specific instance of the portal service, point your browser to::
     http://localhost:<random external port on host system>/login
