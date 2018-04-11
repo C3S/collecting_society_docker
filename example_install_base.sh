@@ -3,7 +3,9 @@ apt-get install git python curl apt-transport-https ca-certificates gnupg2 softw
 apt-get install lsb-release --no-install-recommends
 # install docker for debian or ubuntu
 source /etc/os-release
-echo "deb [arch=`uname -r | cut -c 9-`] https://download.docker.com/linux/$ID `lsb_release -cs` stable" > /etc/apt/sources.list.d/docker.list
+a=$(arch)
+if [ $a == "x86_64" ]; then a="amd64"; fi
+echo "deb [arch=$a] https://download.docker.com/linux/$ID `lsb_release -cs` stable" > /etc/apt/sources.list.d/docker.list
 curl -fsSL https://download.docker.com/linux/$ID/gpg | apt-key add -
 apt-get update
 apt-get install docker-ce
