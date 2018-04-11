@@ -16,4 +16,4 @@ source ~/.profile
 # install is optional but can be helpful
 # apt-get install net-tools openssh-server vim
 
-# then do an ./update as user (not as root!) in the c3s repository and user docker-compose with options 'build' and 'up'
+# then do an ./update as user (not as root!) in the c3s repository and use docker-compose with options 'build' and 'up'
