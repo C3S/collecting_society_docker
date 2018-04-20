@@ -48,7 +48,7 @@ RUN pip install  \
     "proteus<3.5.0" \
     psycopg2==2.5.4  \
     py-bcrypt==0.4  \
-    pyOpenSSL==0.14  \
+    pyOpenSSL==17.5.0  \
     python-Levenshtein==0.11.2  \
     python-dateutil==2.2  \
     python-sql==0.4  \

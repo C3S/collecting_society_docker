@@ -27,7 +27,10 @@ import glob
 import fcntl
 from urlparse import urlparse
 
-import pip
+try:
+    from pip import main as pipmain
+except:
+    from pip._internal import main as pipmain
 import click
 
 PROJECT_PATH = '/ado'
@@ -65,7 +68,7 @@ def pip_install(context, container):
     if not os.path.exists(flagfile):
 
         # install packages
-        pip.main(
+        pipmain(
             [
                 'install',
                 '-qr',
