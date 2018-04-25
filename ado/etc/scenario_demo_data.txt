@@ -476,8 +476,50 @@ Add bank account to the band::
     >>> angstalt_bank_account.save()
     >>> angstalt.reload()
 
+Repertoire Portal Web user Scenario
+===================================
+Repertoire upload
+-----------------
+Create a web user for this scenario::
 
+    >>> web_user = WebUser()
 
+Set login credentials and other essentials and opt-in::
+
+    >>> web_user.email = 'max_repertoire@c3s.cc'
+    >>> web_user.password = 'mr'
+    >>> web_user.nickname = 'maxr'
+    >>> web_user.opt_in_state = 'opted-in'
+    >>> web_user.save()
+
+Create content::
+
+    >>> Content = Model.get('content')
+    >>> content = Content()
+    >>> logged_in_web_user = WebUser.authenticate(
+    ... 'max_repertoire@c3s.cc','mr',config.context)
+    >>> content.active = True
+    >>> content.uuid = 'a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce29'
+    >>> content.preview_path = '/ado/tmp/upload/previews/a/3/a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce29'
+    >>> content.sample_rate = 48000
+    >>> content.pre_ingest_excerpt_score = 0
+    >>> content.channels = 2
+    >>> content.name = 'scenario_test_content_dropped.wav'
+    >>> content.entity_origin = 'direct'
+    >>> content.entity_creator = WebUser(logged_in_web_user.id)
+    >>> content.size = 321542
+    >>> content.category = 'audio'
+    >>> content.create_uid = WebUser(logged_in_web_user.id)
+    >>> content.post_ingest_excerpt_score = 0
+    >>> content.processing_hostname = '4f7dd1c466d6'
+    >>> content.lenght = 1
+    >>> content.write_uid = WebUser(logged_in_web_user.id)
+    >>> content.sample_width = 16
+    >>> content.mime_type = 'audio/x-wav'
+    >>> content.processing_state = 'dropped'
+    >>> content.write_date = datetime.datetime.now()
+    >>> content.user_committed_state = False
+    >>> content.save()
 
 Client Scenario
 ===============
