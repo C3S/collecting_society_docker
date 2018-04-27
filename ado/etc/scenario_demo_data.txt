@@ -525,6 +525,7 @@ Create valid content::
 
 Create format error content::
 
+    >>> content = Content()
     >>> content.active = True
     >>> content.uuid = 'a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce30'
     >>> content.preview_path = '/ado/tmp/upload/previews/a/3/a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce30'
@@ -549,6 +550,7 @@ Create format error content::
 
 Create lossy compression content::
 
+    >>> content = Content()
     >>> content.active = True
     >>> content.uuid = 'a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce31'
     >>> content.preview_path = '/ado/tmp/upload/previews/a/3/a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce31'
@@ -564,7 +566,7 @@ Create lossy compression content::
     >>> content.processing_hostname = '4f7dd1c466d6'
     >>> content.lenght = 1
     >>> content.sample_width = 16
-    >>> content.mime_type = 'audio/mp3'
+    >>> content.mime_type = 'audio/x-mpeg'
     >>> content.processing_state = 'rejected'
     >>> content.rejection_reason = 'lossy_compression'
     >>> content.write_date = datetime.datetime.now()
