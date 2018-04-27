@@ -492,12 +492,16 @@ Set login credentials and other essentials and opt-in::
     >>> web_user.opt_in_state = 'opted-in'
     >>> web_user.save()
 
-Create content::
+Get required objects and login user::
 
     >>> Content = Model.get('content')
     >>> content = Content()
-    >>> logged_in_web_user = WebUser.authenticate(
+    >>> web_user_max = WebUser.authenticate(
     ... 'max_repertoire@c3s.cc','mr',config.context)
+    >>> web_user_max = WebUser(web_user_max.id)
+
+Create valid content::
+
     >>> content.active = True
     >>> content.uuid = 'a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce29'
     >>> content.preview_path = '/ado/tmp/upload/previews/a/3/a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce29'
@@ -506,17 +510,63 @@ Create content::
     >>> content.channels = 2
     >>> content.name = 'scenario_test_content_dropped.wav'
     >>> content.entity_origin = 'direct'
-    >>> content.entity_creator = WebUser(logged_in_web_user.id)
+    >>> content.entity_creator = web_user_max.party
     >>> content.size = 321542
     >>> content.category = 'audio'
-    >>> content.create_uid = WebUser(logged_in_web_user.id)
     >>> content.post_ingest_excerpt_score = 0
     >>> content.processing_hostname = '4f7dd1c466d6'
     >>> content.lenght = 1
-    >>> content.write_uid = WebUser(logged_in_web_user.id)
     >>> content.sample_width = 16
     >>> content.mime_type = 'audio/x-wav'
     >>> content.processing_state = 'dropped'
+    >>> content.write_date = datetime.datetime.now()
+    >>> content.user_committed_state = False
+    >>> content.save()
+
+Create format error content::
+
+    >>> content.active = True
+    >>> content.uuid = 'a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce30'
+    >>> content.preview_path = '/ado/tmp/upload/previews/a/3/a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce30'
+    >>> content.sample_rate = 48000
+    >>> content.pre_ingest_excerpt_score = 0
+    >>> content.channels = 2
+    >>> content.name = 'scenario_test_wrong_format.pdf'
+    >>> content.entity_origin = 'direct'
+    >>> content.entity_creator = web_user_max.party
+    >>> content.size = 320000
+    >>> content.category = 'audio'
+    >>> content.post_ingest_excerpt_score = 0
+    >>> content.processing_hostname = '4f7dd1c466d6'
+    >>> content.lenght = 1
+    >>> content.sample_width = 16
+    >>> content.mime_type = 'application/pdf'
+    >>> content.processing_state = 'rejected'
+    >>> content.rejection_reason = 'format_error'
+    >>> content.write_date = datetime.datetime.now()
+    >>> content.user_committed_state = False
+    >>> content.save()
+
+Create lossy compression content::
+
+    >>> content.active = True
+    >>> content.uuid = 'a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce31'
+    >>> content.preview_path = '/ado/tmp/upload/previews/a/3/a3d55e8e-18c3-4a22-a11b-ec5dc4a1ce31'
+    >>> content.sample_rate = 48000
+    >>> content.pre_ingest_excerpt_score = 0
+    >>> content.channels = 2
+    >>> content.name = 'scenario_test_lossy_compression.mp3'
+    >>> content.entity_origin = 'direct'
+    >>> content.entity_creator = web_user_max.party
+    >>> content.size = 320000
+    >>> content.category = 'audio'
+    >>> content.post_ingest_excerpt_score = 0
+    >>> content.processing_hostname = '4f7dd1c466d6'
+    >>> content.lenght = 1
+    >>> content.sample_width = 16
+    >>> content.mime_type = 'audio/mp3'
+    >>> content.processing_state = 'rejected'
+    >>> content.rejection_reason = 'lossy_compression'
     >>> content.write_date = datetime.datetime.now()
     >>> content.user_committed_state = False
     >>> content.save()
