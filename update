@@ -87,6 +87,7 @@ for source_filename, target_filename in config.configfiles:
 print("""Done.
 
   Now you may go ahead and use 
+    * 'docker-compose run tryton ado-do update c3s'
     * 'docker-compose run tryton ado-do db-delete c3s'
     * 'docker-compose build' to build or
     * 'docker-compose up' to start the system.
