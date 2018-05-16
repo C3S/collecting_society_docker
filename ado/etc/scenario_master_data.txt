@@ -247,6 +247,41 @@ Create transitory journal::
     ...     sequence=sequence_journal)
     >>> journal.save()
 
+Create Genre:
+
+    >>> Genre = Model.get('genre')
+
+    >>> g = Genre(name='Blues', description='')
+    >>> g.save()
+    >>> g = Genre(name='Brass & Military', description='')
+    >>> g.save()
+    >>> g = Genre(name='Children's', description='')
+    >>> g.save()
+    >>> g = Genre(name='Classical', description='')
+    >>> g.save()
+    >>> g = Genre(name='Electronic', description='')
+    >>> g.save()
+    >>> g = Genre(name='Folk, World, & Country', description='')
+    >>> g.save()
+    >>> g = Genre(name='Funk / Soul', description='')
+    >>> g.save()
+    >>> g = Genre(name='Hip-Hop', description='')
+    >>> g.save()
+    >>> g = Genre(name='Jazz', description='')
+    >>> g.save()
+    >>> g = Genre(name='Latin', description='')
+    >>> g.save()
+    >>> g = Genre(name='Non-Music', description='')
+    >>> g.save()
+    >>> g = Genre(name='Pop', description='')
+    >>> g.save()
+    >>> g = Genre(name='Reggae', description='')
+    >>> g.save()
+    >>> g = Genre(name='Rock', description='')
+    >>> g.save()
+    >>> g = Genre(name='Stage & Screen', description='')
+    >>> g.save()
+
 Create Label:
 
     >>> Label = Model.get('label')
