@@ -18,9 +18,7 @@ RUN pip install  \
     pyechonest==9.0.0  \
     pydub==0.18.0  \
     pytaglib==1.4.1  \
-    proteus==3.4.8  \
-    requests==2.9.1  \
-    click==6.7
+    requests==2.9.1 
 
 # ffmpeg symlink to avconv
 RUN ln -s /usr/bin/avconv /usr/local/bin/ffmpeg
