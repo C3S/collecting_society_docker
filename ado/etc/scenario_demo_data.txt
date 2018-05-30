@@ -726,3 +726,59 @@ Set Admin user to german language::
     >>> admin_user.language = german_language
     >>> admin_user.save()
     >>> # import interlude; interlude.interact(locals())
+
+
+Test Data
+=========
+
+Webuser
+-------
+
+    >>> test_web_user = WebUser(
+    ...     email='q@q.test',
+    ...     password='q',
+    ...     nickname='Test Webuser',
+    ...     opt_in_state='opted-in'
+    ... )
+    >>> test_web_user.save()
+
+Artists
+-------
+
+    >>> for i in range (1, 20):
+    ...     test_group_artist = Artist(
+    ...         name="Group Artist %s" % str(i).zfill(3),
+    ...         group=True,
+    ...         entity_creator=test_web_user,
+    ...         description='''
+    ...         Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed  
+    ...         diam nonumy eirmod tempor invidunt ut labore et dolore magna 
+    ...         aliquyam erat, sed diam voluptua. At vero eos et accusam et 
+    ...         justo duo dolores et ea rebum. Stet clita kasd gubergren, no 
+    ...         sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem 
+    ...         ipsum dolor sit amet, consetetur sadipscing elitr, sed diam 
+    ...         nonumy eirmod tempor invidunt ut labore et dolore magna 
+    ...         aliquyam erat, sed diam voluptua. At vero eos et accusam et 
+    ...         justo duo dolores et ea rebum. Stet clita kasd gubergren, no 
+    ...         sea takimata sanctus est Lorem ipsum dolor sit amet.'''
+    ...     )
+    ...     test_group_artist.save()
+    ...     for j in range (1, 5):
+    ...         test_solo_artist = test_group_artist.solo_artists.new(
+    ...             name="Solo Artist %s" % str(i*j).zfill(3),
+    ...             group=False,
+    ...             entity_creator=test_web_user,
+    ...             description='''
+    ...             Lorem ipsum dolor sit amet, consetetur sadipscing elitr, 
+    ...             sed diam nonumy eirmod tempor invidunt ut labore et dolore 
+    ...             magna aliquyam erat, sed diam voluptua. At vero eos et 
+    ...             accusam et justo duo dolores et ea rebum. Stet clita kasd 
+    ...             gubergren, no sea takimata sanctus est Lorem ipsum dolor 
+    ...             sit amet. Lorem ipsum dolor sit amet, consetetur 
+    ...             sadipscing elitr, sed diam nonumy eirmod tempor invidunt 
+    ...             ut labore et dolore magna aliquyam erat, sed diam 
+    ...             voluptua. At vero eos et accusam et justo duo dolores et 
+    ...             ea rebum. Stet clita kasd gubergren, no sea takimata 
+    ...             sanctus est Lorem ipsum dolor sit amet.'''
+    ...         )
+    ...         test_group_artist.save()
