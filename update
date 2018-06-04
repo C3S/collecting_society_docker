@@ -81,7 +81,8 @@ for repo, branch, path in config.repositories:
 
 for source_filename, target_filename in config.configfiles:
     target = os.path.join(base_path, target_filename)
-    if not os.path.isfile(target):
+    clean = len(sys.argv) > 1 and sys.argv[1] == "--reset"
+    if not os.path.isfile(target) or clean:
         source = os.path.join(base_path, source_filename)
         print('copy file %s to %s' % (source_filename, target_filename))
         shutil.copyfile(source, target)

@@ -17,8 +17,11 @@ docker-compose run portal ado-do db-delete test_template
 
 # update repositories
 echo -e "\n== update repositories"
-git pull # update the main repository
-./update # update all other repos
+git pull          # update the main repository
+./update --reset  # update all other repos
+
+# update env files
+
 
 # build docker container
 echo -e "\n== build docker container"
