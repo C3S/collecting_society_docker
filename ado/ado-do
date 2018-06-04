@@ -29,14 +29,14 @@ from urlparse import urlparse
 
 try:
     from pip import main as pipmain
-except:
+except:  # noqa: E722
     from pip._internal import main as pipmain
 import click
 
 PROJECT_PATH = '/ado'
 TMP_FILE = 'running_db_creation.delete_me'
-#if os.path.isfile(TMP_FILE):
-#    os.remove(TMP_FILE)
+# if os.path.isfile(TMP_FILE):
+#     os.remove(TMP_FILE)
 
 pg_hostname = 'db'
 pg_port = '5432'
@@ -249,7 +249,7 @@ def db_demo_setup(context, dbname):
             break
         except IOError:
             time.sleep(3)
-            print("Waiting for the other process to finish database creation...")
+            print("Waiting for the other process to finish db creation...")
 
     # Check database
     if not _db_exist(dbname):
@@ -299,7 +299,7 @@ def db_demo_setup(context, dbname):
         try:
             os.remove(TMP_FILE)
         except OSError:
-            print("Couldn't remove lock file, something has gone wrong here...")
+            print("Couldn't remove lock file, something has gone wrong here")
 
 
 @ado_do.command('db-test-setup')
@@ -351,7 +351,7 @@ def create_test_db(context, dbtype, dbname):
         if os.path.isfile(_db_src_path):
             os.unlink(_db_src_path)
         open(_db_src_path, 'w').close()
-        os.chmod(_db_src_path, 0777)
+        os.chmod(_db_src_path, 0777)  # noqa: E999
 
     if _db_type == 'postgres':
         _db_tpl = _db_name + "_template"

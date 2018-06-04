@@ -62,7 +62,8 @@ for repo, branch, path in config.repositories:
             print("Directory exists; using pull instead of clone:")
             # first: make sure the repo is on the correct branch
             checkout_branch = subprocess.check_output(
-                ('git', 'checkout', branch.lstrip('--branch=')), cwd=target_path,
+                ('git', 'checkout', branch.lstrip('--branch=')),
+                cwd=target_path,
                 stderr=subprocess.STDOUT)
             try:
                 pull_result = subprocess.check_output(
@@ -72,7 +73,8 @@ for repo, branch, path in config.repositories:
                     'git pull "{}": '.format(os.path.basename(target_path)),
                     end='')
                 if pull_result:
-                    print('::'.join(x for x in pull_result.strip().split('\n')))
+                    print(
+                        '::'.join(x for x in pull_result.strip().split('\n')))
             except subprocess.CalledProcessError as e2:
                 print("There was a problem: \n\n{}".format(e2.output))
                 sys.exit("Exiting. Please check for errors above!")
@@ -86,7 +88,7 @@ for source_filename, target_filename in config.configfiles:
 
 print("""Done.
 
-  Now you may go ahead and use 
+  Now you may go ahead and use
     * 'docker-compose run tryton ado-do update c3s'
     * 'docker-compose run tryton ado-do db-delete c3s'
     * 'docker-compose build' to build or
