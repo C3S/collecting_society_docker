@@ -286,7 +286,7 @@ Create Label:
 
     >>> Label = Model.get('label')
 
-    >>> l = Label(gvl_code='00000', name='[Label without GVL label code]')
+    >>> l = Label(gvl_code='00000', name='[Label without GVL label code / self release]')
     >>> l.save()
     >>> l = Label(gvl_code='00001', name='Ultraphone / Ult')
     >>> l.save()

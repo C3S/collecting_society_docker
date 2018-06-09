@@ -40,7 +40,7 @@ services:
       - ./ado:/ado
     ports:
       - "6543"
-    #  - "51000:51000"   # for winpdb debugger, also see portal dockerfile
+      - "51000:51000"   # for winpdb debugger, also see portal dockerfile
     links:
       - db
       - nginx
@@ -55,7 +55,7 @@ services:
       - ./ado:/ado
     ports:
       - "6543"
-      - "51000:51000"   # for winpdb debugger, also see portal dockerfile
+    #  - "51000:51000"   # for winpdb debugger, also see portal dockerfile
     links:
       - db
       - nginx
