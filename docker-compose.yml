@@ -1,12 +1,13 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/c3s.ado.repertoire
 
-version: '2'
+version: '2.2'
 services:
 
   nginx:
     build: Dockerfiles/nginx
     image: c3s_repertoire_nginx
+    restart: on-failure
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
     ports:
@@ -15,12 +16,14 @@ services:
   db:
     build: ./Dockerfiles/db
     image: c3s_repertoire_db            
+    restart: on-failure
     volumes:
       - ./postgresql-data:/var/lib/postgresql/data
 
   tryton:
     build: Dockerfiles/tryton
     image: c3s_repertoire_tryton
+    restart: on-failure
     command: ado-do deploy-tryton
     volumes:
       - ./ado:/ado
@@ -35,6 +38,7 @@ services:
   api:
     build: Dockerfiles/api
     image: c3s_repertoire_api
+    restart: on-failure
     command: ado-do deploy-api
     volumes:
       - ./ado:/ado
@@ -50,6 +54,7 @@ services:
   portal:
     build: Dockerfiles/portal
     image: c3s_repertoire_portal
+    restart: on-failure
     command: ado-do deploy-portal
     volumes:
       - ./ado:/ado
@@ -67,6 +72,9 @@ services:
   processing:
     build: Dockerfiles/processing
     image: c3s_repertoire_processing
+    restart: on-failure
+    cpu_percent: 50
+    mem_limit: 500m
     #command: cron && tail -f /ado/tmp/repro.log &
     command: bash -c "while true; do cd /ado/src/c3sRepertoireProcessing && python repro.py all; sleep 60; done"
     volumes:
