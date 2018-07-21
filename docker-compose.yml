@@ -7,7 +7,7 @@ services:
   nginx:
     build: Dockerfiles/nginx
     image: c3s_repertoire_nginx
-    restart: on-failure
+    # restart: always
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
     ports:
@@ -16,14 +16,14 @@ services:
   db:
     build: ./Dockerfiles/db
     image: c3s_repertoire_db            
-    restart: on-failure
+    # restart: on-failure
     volumes:
       - ./postgresql-data:/var/lib/postgresql/data
 
   tryton:
     build: Dockerfiles/tryton
     image: c3s_repertoire_tryton
-    restart: on-failure
+    # restart: on-failure
     command: ado-do deploy-tryton
     volumes:
       - ./ado:/ado
@@ -38,7 +38,7 @@ services:
   api:
     build: Dockerfiles/api
     image: c3s_repertoire_api
-    restart: on-failure
+    # restart: on-failure
     command: ado-do deploy-api
     volumes:
       - ./ado:/ado
@@ -54,7 +54,7 @@ services:
   portal:
     build: Dockerfiles/portal
     image: c3s_repertoire_portal
-    restart: on-failure
+    # restart: on-failure
     command: ado-do deploy-portal
     volumes:
       - ./ado:/ado
@@ -72,7 +72,7 @@ services:
   processing:
     build: Dockerfiles/processing
     image: c3s_repertoire_processing
-    restart: on-failure
+    # restart: on-failure
     cpu_percent: 50
     mem_limit: 500m
     #command: cron && tail -f /ado/tmp/repro.log &

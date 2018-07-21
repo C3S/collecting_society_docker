@@ -168,50 +168,50 @@ Create Transitory account view::
     >>> transitory_account_view.save()
 
 
-Create account for imp artist hat::
-
-    >>> AccountType = Model.get('account.account.type')
-    >>> hat_account_type = AccountType(
-    ...     name='Hat',
-    ...     company=company)
-    >>> hat_account_type.save()
-    >>> hat_account = Account(
-    ...     name='Hat',
-    ...     type=hat_account_type,
-    ...     kind='hat',
-    ...     parent=transitory_account_view,
-    ...     company=company)
-    >>> hat_account.save()
-
-.. todo:: This needs re-work: Balance, Income Staement, VAT
-
-Set hat account as default hat account::
-
-    >>> CSConfig = Model.get('collecting_society.configuration')
-    >>> csconfig, = CSConfig.find()
-    >>> csconfig.default_hat_account = hat_account
-    >>> csconfig.save()
-
-Create account for imp web user pocket::
-
-    >>> pocket_account_type = AccountType(
-    ...     name='Pocket',
-    ...     company=company)
-    >>> pocket_account_type.save()
-    >>> pocket_account = Account(
-    ...     name='Pocket',
-    ...     type=pocket_account_type,
-    ...     kind='pocket',
-    ...     parent=transitory_account_view,
-    ...     company=company)
-    >>> pocket_account.save()
-
-Set pocket account as default pocket account::
-
-    >>> CSConfig = Model.get('collecting_society.configuration')
-    >>> csconfig, = CSConfig.find()
-    >>> csconfig.default_pocket_account = pocket_account
-    >>> csconfig.save()
+# Create account for imp artist hat::
+# 
+#     >>> AccountType = Model.get('account.account.type')
+#     >>> hat_account_type = AccountType(
+#     ...     name='Hat',
+#     ...     company=company)
+#     >>> hat_account_type.save()
+#     >>> hat_account = Account(
+#     ...     name='Hat',
+#     ...     type=hat_account_type,
+#     ...     kind='hat',
+#     ...     parent=transitory_account_view,
+#     ...     company=company)
+#     >>> hat_account.save()
+# 
+# .. todo:: This needs re-work: Balance, Income Staement, VAT
+# 
+# Set hat account as default hat account::
+# 
+#     >>> CSConfig = Model.get('collecting_society.configuration')
+#     >>> csconfig, = CSConfig.find()
+#     >>> csconfig.default_hat_account = hat_account
+#     >>> csconfig.save()
+# 
+# Create account for imp web user pocket::
+# 
+#     >>> pocket_account_type = AccountType(
+#     ...     name='Pocket',
+#     ...     company=company)
+#     >>> pocket_account_type.save()
+#     >>> pocket_account = Account(
+#     ...     name='Pocket',
+#     ...     type=pocket_account_type,
+#     ...     kind='pocket',
+#     ...     parent=transitory_account_view,
+#     ...     company=company)
+#     >>> pocket_account.save()
+# 
+# Set pocket account as default pocket account::
+# 
+#     >>> CSConfig = Model.get('collecting_society.configuration')
+#     >>> csconfig, = CSConfig.find()
+#     >>> csconfig.default_pocket_account = pocket_account
+#     >>> csconfig.save()
 
 Create tax::
 
