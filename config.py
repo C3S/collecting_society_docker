@@ -126,6 +126,10 @@ configfiles = (
         'processing.env'
     ),
     (
+        'selenium.env.example',
+        'selenium.env'
+    ),
+    (
         'ado/src/c3sRepertoireProcessing/config.ini.EXAMPLE',
         'ado/src/c3sRepertoireProcessing/config.ini'
     ),

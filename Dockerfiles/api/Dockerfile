@@ -7,11 +7,6 @@ MAINTAINER Udo Spallek <udono@virtual-things.biz>
 RUN apt-get install -y --no-install-recommends  \
     libtag1-dev
 
-WORKDIR /opt
-RUN wget -O phantomjs.tar.bz2 https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2
-RUN mkdir phantomjs
-RUN tar -xf phantomjs.tar.bz2 -C phantomjs --strip-components=1
-RUN ln -s /opt/phantomjs/bin/phantomjs /usr/local/bin/phantomjs
 WORKDIR /ado
 
 RUN pip install  \
