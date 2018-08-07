@@ -108,7 +108,6 @@ Cubano
 Cumbia
 Cut-up/DJ
 DJ Battle Tool
-DJ Battle Tool
 Dance-pop
 Dancehall
 Danzon
@@ -137,7 +136,6 @@ Dub Poetry
 Dub Techno
 Dubstep
 Dungeon Synth
-EBM
 EBM
 Early
 East Coast Blues
@@ -271,7 +269,6 @@ Lao Music
 Latin
 Latin Jazz
 Laïkó
-Laïkó
 Leftfield
 Light Music
 Lo-Fi
@@ -280,7 +277,6 @@ Lounge
 Lovers Rock
 Luk Krung
 Luk Thung
-MPB
 MPB
 Makina
 Maloya
@@ -393,7 +389,6 @@ Ragtime
 Ranchera
 Rapso
 Ra誰
-Ra誰
 Rebetiko
 Reggae
 Reggae Gospel
@@ -462,7 +457,6 @@ Symphonic Rock
 Synth-pop
 Synthwave
 Sámi Music
-Sámi Music
 Séga
 Tango
 Tech House
@@ -499,5 +493,4 @@ Zamba
 Zemer Ivri
 Zouk
 Zydeco
-Éntekhno
 Éntekhno

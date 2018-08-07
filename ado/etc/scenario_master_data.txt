@@ -1159,6 +1159,20 @@ Create Label:
     >>> l = Label(gvl_code='01000', name='Vox Coelestis')
     >>> l.save()
 
+Create Style:
+
+    >>> Style = Model.get('style')
+
+    >>> import os
+    >>> print os.getcwd()
+    >>> with open('/ado/etc/discogs_styles.txt', 'r') as f:
+    ...     file_content = f.read().decode('UTF-8')
+    ...     styles = file_content.split('\n')
+    ...     for style in styles:
+    ...         if style != '':
+    ...             s = Style(name=style, description='')
+    ...             s.save()
+
 Create Licenses:
 
     >>> License = Model.get('license')
