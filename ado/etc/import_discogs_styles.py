@@ -19,16 +19,16 @@ import requests
 
 data = ''
 prefix = 'https://reference.discogslabs.com/browse/style?page='
-for page in range(1,13+1):
-    content = requests.get(prefix+str(page)).content # is type 'bytes'
-    data += BeautifulSoup(content, 'lxml').decode() # is type 'string'
+for page in range(1, 13+1):
+    content = requests.get(prefix+str(page)).content  # is type 'bytes'
+    data += BeautifulSoup(content, 'lxml').decode()   # is type 'string'
 end_keys = [m.end() for m in re.finditer("\"title\":", data)]
-start_quotes = [data.find('"',k) for k in end_keys]
-end_quotes = [data.find('"',q+1) for q in start_quotes]
-styles = [data[s+1:e] for s,e in zip(start_quotes,end_quotes)]
-#styles = [bytes(s).decode('unicode_escape') for s in styles]
+start_quotes = [data.find('"', k) for k in end_keys]
+end_quotes = [data.find('"', q+1) for q in start_quotes]
+styles = [data[s+1:e] for s, e in zip(start_quotes, end_quotes)]
+# styles = [bytes(s).decode('unicode_escape') for s in styles]
 dupes = set([x for x in styles if styles.count(x) > 1])
-styles = sorted(list(set(styles))) # remove dupes
+styles = sorted(list(set(styles)))  # remove dupes
 n = 0
 ignored = 0
 with open('discogs_styles.txt', 'w') as f:
