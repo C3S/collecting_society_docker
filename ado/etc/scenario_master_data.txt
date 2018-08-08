@@ -1163,8 +1163,6 @@ Create Style:
 
     >>> Style = Model.get('style')
 
-    >>> import os
-    >>> print os.getcwd()
     >>> with open('/ado/etc/discogs_styles.txt', 'r') as f:
     ...     file_content = f.read().decode('UTF-8')
     ...     styles = file_content.split('\n')
