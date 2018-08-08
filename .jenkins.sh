@@ -20,9 +20,6 @@ echo -e "\n== update repositories"
 git pull          # update the main repository
 ./update --reset  # update all other repos
 
-# update env files
-
-
 # build docker container
 echo -e "\n== build docker container"
 docker-compose build
