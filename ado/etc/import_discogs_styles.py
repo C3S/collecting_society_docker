@@ -11,7 +11,7 @@
 # - pip install lxml
 # - adapt number of pages in range(1,#+1) where # is current number of styles / 44
 #
-# After running the script, delete the database so the styles will be filled in the model
+# After running the script, delete the database so the styles will be filled into the table
 
 import re
 from bs4 import BeautifulSoup
@@ -28,7 +28,7 @@ end_quotes = [data.find('"',q+1) for q in start_quotes]
 styles = [data[s+1:e] for s,e in zip(start_quotes,end_quotes)]
 #styles = [bytes(s).decode('unicode_escape') for s in styles]
 dupes = set([x for x in styles if styles.count(x) > 1])
-styles = list(set(styles)) # remove dupes
+styles = sorted(list(set(styles))) # remove dupes
 n = 0
 ignored = 0
 with open('discogs_styles.txt', 'w') as f:
