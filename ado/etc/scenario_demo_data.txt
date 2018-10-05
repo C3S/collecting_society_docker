@@ -745,7 +745,9 @@ Webuser
 Artists
 -------
 
-    >>> for i in range (1, 20):
+    >>> group_artists = 20
+    >>> solo_artists_per_group = 5
+    >>> for i in range(1, group_artists + 1):
     ...     test_group_artist = Artist(
     ...         name="Group Artist %s" % str(i).zfill(3),
     ...         group=True,
@@ -763,9 +765,10 @@ Artists
     ...         sea takimata sanctus est Lorem ipsum dolor sit amet.'''
     ...     )
     ...     test_group_artist.save()
-    ...     for j in range (1, 5):
+    ...     for j in range(1, solo_artists_per_group + 1):
     ...         test_solo_artist = test_group_artist.solo_artists.new(
-    ...             name="Solo Artist %s" % str(i*j).zfill(3),
+    ...             name="Solo Artist %s" % str(
+    ...                 (i - 1) * solo_artists_per_group + j).zfill(3),
     ...             group=False,
     ...             entity_creator=test_web_user,
     ...             description='''
