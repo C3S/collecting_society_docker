@@ -747,22 +747,17 @@ Artists
 
     >>> group_artists = 20
     >>> solo_artists_per_group = 5
+    >>> description = '''Lorem ipsum dolor sit amet, consetetur diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren.
+    ...
+    ... Lorem ipsum.
+    ...
+    ... Sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'''
     >>> for i in range(1, group_artists + 1):
     ...     test_group_artist = Artist(
     ...         name="Group Artist %s" % str(i).zfill(3),
     ...         group=True,
     ...         entity_creator=test_web_user,
-    ...         description='''
-    ...         Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed  
-    ...         diam nonumy eirmod tempor invidunt ut labore et dolore magna 
-    ...         aliquyam erat, sed diam voluptua. At vero eos et accusam et 
-    ...         justo duo dolores et ea rebum. Stet clita kasd gubergren, no 
-    ...         sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem 
-    ...         ipsum dolor sit amet, consetetur sadipscing elitr, sed diam 
-    ...         nonumy eirmod tempor invidunt ut labore et dolore magna 
-    ...         aliquyam erat, sed diam voluptua. At vero eos et accusam et 
-    ...         justo duo dolores et ea rebum. Stet clita kasd gubergren, no 
-    ...         sea takimata sanctus est Lorem ipsum dolor sit amet.'''
+    ...         description=description
     ...     )
     ...     test_group_artist.save()
     ...     for j in range(1, solo_artists_per_group + 1):
@@ -771,17 +766,6 @@ Artists
     ...                 (i - 1) * solo_artists_per_group + j).zfill(3),
     ...             group=False,
     ...             entity_creator=test_web_user,
-    ...             description='''
-    ...             Lorem ipsum dolor sit amet, consetetur sadipscing elitr, 
-    ...             sed diam nonumy eirmod tempor invidunt ut labore et dolore 
-    ...             magna aliquyam erat, sed diam voluptua. At vero eos et 
-    ...             accusam et justo duo dolores et ea rebum. Stet clita kasd 
-    ...             gubergren, no sea takimata sanctus est Lorem ipsum dolor 
-    ...             sit amet. Lorem ipsum dolor sit amet, consetetur 
-    ...             sadipscing elitr, sed diam nonumy eirmod tempor invidunt 
-    ...             ut labore et dolore magna aliquyam erat, sed diam 
-    ...             voluptua. At vero eos et accusam et justo duo dolores et 
-    ...             ea rebum. Stet clita kasd gubergren, no sea takimata 
-    ...             sanctus est Lorem ipsum dolor sit amet.'''
+    ...             description=description
     ...         )
     ...         test_group_artist.save()
