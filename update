@@ -49,20 +49,55 @@ for repo, branch, path in config.repositories:
         print('Missing directory, creating {}'.format(path))
         os.makedirs(target_path)
     if repo:
-        print('------------------------------------------------------------')
+        print('\nREPO: ' + os.path.basename(os.path.normpath(target_path)))
+        print('--------------------------------------------------------------')
+        if branch.startswith('--branch='):
+            target_type = 'branch'
+            target_value = branch.lstrip('--branch=')
+            target_param = target_value
+        if branch.startswith('--tag='):
+            target_type = 'tag'
+            target_value = branch.lstrip('--tag=')
+            target_param = target_value
         try:
-            print('Will use git to clone "{}" branch "{}" into "{}": '.format(
-                repo, branch.lstrip('--branch='), path))
+            print('Will use git to clone "{}" {} "{}" into "{}": '.format(
+                repo, target_type, target_value, path))
             clone_result = subprocess.check_output(
-                ('git', 'clone', branch, repo, target_path),
+                ('git', 'clone', '--branch', target_param, repo, target_path),
                 stderr=subprocess.STDOUT)
             print(
                 'git clone "{}": '.format(os.path.basename(target_path)))
+            if clone_result:
+                    print('::'.join(
+                        x for x in clone_result.strip().split('\n')))
         except subprocess.CalledProcessError as e:
+            # check, if the working directory is clean
+            workingdir_dirty = subprocess.check_output(
+                ('git', 'status', '--untracked-files=no', '--porcelain'),
+                cwd=target_path,
+                stderr=subprocess.STDOUT)
+            if workingdir_dirty:
+                print("\033[91m" +
+                      "WARNING: Working directory not clean. Udpate omitted!" +
+                      "\n{}\033[0m".format(workingdir_dirty))
+                continue
             print("Directory exists; using pull instead of clone:")
             # first: make sure the repo is on the correct branch
+            if target_type == 'tag':
+                print(
+                    'git checkout "{}": '.format(
+                        os.path.basename(target_path)),
+                    end='')
+                checkout_result = subprocess.check_output(
+                    ('git', 'checkout', 'tags/' + target_param),
+                    cwd=target_path,
+                    stderr=subprocess.STDOUT)
+                if checkout_result:
+                    print('::'.join(
+                        x for x in checkout_result.strip().split('\n')))
+                continue
             checkout_branch = subprocess.check_output(
-                ('git', 'checkout', branch.lstrip('--branch=')),
+                ('git', 'checkout', target_param),
                 cwd=target_path,
                 stderr=subprocess.STDOUT)
             try:
@@ -87,8 +122,11 @@ for source_filename, target_filename in config.configfiles:
         print('copy file %s to %s' % (source_filename, target_filename))
         shutil.copyfile(source, target)
 
-print("""Done.
+print("""
 
+Done.
+
+=====================================================================
   Now you may go ahead and use
     * 'docker-compose run tryton ado-do update c3s'
     * 'docker-compose run tryton ado-do db-delete c3s'

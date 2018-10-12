@@ -17,6 +17,83 @@ repositories = (
         None,
         'ado/var/lib/trytond'
     ),
+    # sourcecode of libraries for reference
+    (
+        'https://github.com/pallets/click.git',
+        '--tag=4.0',
+        'ado/ref/click'
+    ),
+    (
+        'https://github.com/requests/requests.git',
+        '--tag=v2.18.4',
+        'ado/ref/requests'
+    ),
+    (
+        'https://github.com/psycopg/psycopg2.git',
+        '--tag=2_5_4',
+        'ado/ref/psycopg2'
+    ),
+    (
+        'https://github.com/tryton/proteus.git',
+        '--branch=3.4',
+        'ado/ref/proteus'
+    ),
+    (
+        'https://github.com/Pylons/webob.git',
+        '--tag=v1.8.2',
+        'ado/ref/webob'
+    ),
+    (
+        'https://github.com/Pylons/pyramid.git',
+        '--tag=1.9.2',
+        'ado/ref/pyramid'
+    ),
+    (
+        'https://github.com/Pylons/pyramid_beaker.git',
+        '--tag=0.8',
+        'ado/ref/pyramid_beaker'
+    ),
+    (
+        'https://github.com/Pylons/pyramid_chameleon.git',
+        '--tag=0.3',
+        'ado/ref/pyramid_chameleon'
+    ),
+    (
+        'https://github.com/Pylons/pyramid_mailer.git',
+        '--tag=0.15.1',
+        'ado/ref/pyramid_mailer'
+    ),
+    (
+        'https://github.com/Pylons/colander.git',
+        '--tag=1.4',
+        'ado/ref/colander'
+    ),
+    (
+        'https://github.com/Cornices/cornice.git',
+        '--tag=3.4.0',
+        'ado/ref/cornice'
+    ),
+    (
+        'https://github.com/Pylons/deform.git',
+        '--tag=2.0.5',
+        'ado/ref/deform'
+    ),
+    (
+        'https://github.com/jiaaro/pydub.git',
+        '--tag=v0.22.0',
+        'ado/ref/pydub'
+    ),
+    (
+        'https://github.com/supermihi/pytaglib.git',
+        '--tag=v1.4.3',
+        'ado/ref/pytaglib'
+    ),
+    (
+        'https://github.com/echonest/pyechonest.git',
+        '--tag=9.0.0',
+        'ado/ref/pyechonest'
+    ),
+    # included repositories
     (
         'https://github.com/tryton/trytond.git',
         '--branch=3.4',

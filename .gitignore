@@ -60,6 +60,7 @@ target/
 # Ado
 ado/etc/*.sqlite
 ado/src
+ado/ref
 ado/tmp
 postgresql-data
 
