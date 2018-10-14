@@ -201,10 +201,13 @@ Create transitory journal::
     ...     sequence=sequence_journal)
     >>> journal.save()
 
-Create Genres:
+
+Imports
+=======
+
+Create Genres::
 
     >>> Genre = Model.get('genre')
-
     >>> Genre(name='Blues', description='').save()
     >>> Genre(name='Brass & Military', description='').save()
     >>> Genre(name="Children's", description='').save()
@@ -221,10 +224,9 @@ Create Genres:
     >>> Genre(name='Rock', description='').save()
     >>> Genre(name='Stage & Screen', description='').save()
 
-Create Styles:
+Create Styles::
 
     >>> Style = Model.get('style')
-
     >>> with open('/ado/etc/discogs_styles.txt', 'r') as f:
     ...     file_content = f.read().decode('UTF-8')
     ...     styles = file_content.split('\n')
@@ -232,7 +234,7 @@ Create Styles:
     ...         if style != '':
     ...             Style(name=style, description='').save()
 
-Create Labels:
+Create Labels::
 
     >>> Label = Model.get('label')
 
@@ -439,59 +441,38 @@ Create Labels:
     >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00100',
     ...       name='LUMAS RECORDS').save()
 
-Create Licenses:
+Create Licenses::
 
     >>> License = Model.get('license')
-
-    >>> license_cc_by_nc_nd = License(
-    ...     code='CC BY-NC-DN',
+    >>> License(
+    ...     code='CC BY-NC-DN', version='1.0', country='de', freedom_rank=1000,
     ...     name='Creative Commons - Attribution NonCommercial NoDerivatives',
-    ...     freedom_rank=1000,
-    ...     version='1.0',
-    ...     country='de',
-    ...     link='http://url.test/license'.save()
-    >>> license_cc_by_nc_nd = License(
-    ...     code='CC BY-NC-SA',
+    ...     link='http://url.test/license').save()
+    >>> License(
+    ...     code='CC BY-NC-SA', version='1.0', country='de', freedom_rank=1100,
     ...     name='Creative Commons - Attribution NonCommercial ShareAlike',
-    ...     freedom_rank=1100,
-    ...     version='1.0',
-    ...     country='de',
-    ...     link='http://url.test/license'.save()
-    >>> license_cc_by_nc = License(
-    ...     code='CC BY-NC',
+    ...     link='http://url.test/license').save()
+    >>> License(
+    ...     code='CC BY-NC', version='1.0', country='de', freedom_rank=1200,
     ...     name='Creative Commons - Attribution NonCommercial',
-    ...     freedom_rank=1200,
-    ...     version='1.0',
-    ...     country='de',
-    ...     link='http://url.test/license'.save()
-    >>> license_cc_by_nd = License(
-    ...     code='CC BY-ND',
+    ...     link='http://url.test/license').save()
+    >>> License(
+    ...     code='CC BY-ND', version='1.0', country='de', freedom_rank=1300,
     ...     name='Creative Commons - Attribution NoDerivatives',
-    ...     freedom_rank=1300,
-    ...     version='1.0',
-    ...     country='de',
-    ...     link='http://url.test/license'.save()
-    >>> license_cc_by_sa = License(
-    ...     code='CC BY-SA',
+    ...     link='http://url.test/license').save()
+    >>> License(
+    ...     code='CC BY-SA', version='1.0', country='de', freedom_rank=1400,
     ...     name='Creative Commons - Attribution ShareAlike',
-    ...     freedom_rank=1400,
-    ...     version='1.0',
-    ...     country='de',
-    ...     link='http://url.test/license'.save()
-    >>> license_cc_by = License(
-    ...     code='CC BY',
+    ...     link='http://url.test/license').save()
+    >>> License(
+    ...     code='CC BY', version='1.0', country='de', freedom_rank=1600,
     ...     name='Creative Commons - Attribution',
-    ...     freedom_rank=1600,
-    ...     version='1.0',
-    ...     country='de',
-    ...     link='http://url.test/license'.save()
+    ...     link='http://url.test/license').save()
 
-Create employees:
-
-Create company internal users:
 
 Final
 =====
+
 Set configuration wizard items done::
 
     >>> Item = Model.get('ir.module.module.config_wizard.item')
@@ -506,3 +487,11 @@ Set German language translatable::
     >>> german_language, = Language.find([('code', '=', 'de_DE')])
     >>> german_language.translatable = True
     >>> german_language.save()
+
+Set Admin user to german language::
+
+    >>> User = Model.get('res.user')
+    >>> admin_user, = User.find([('login', '=', 'admin')])
+    >>> admin_user.language = german_language
+    >>> admin_user.save()
+    >>> # import interlude; interlude.interact(locals())
