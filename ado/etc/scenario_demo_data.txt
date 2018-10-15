@@ -520,7 +520,7 @@ Create valid content::
     >>> content.mime_type = 'audio/x-wav'
     >>> content.processing_state = 'dropped'
     >>> content.write_date = datetime.datetime.now()
-    >>> content.user_committed_state = False
+    >>> content.commit_state = 'uncommited'
     >>> content.save()
 
 Create format error content::
@@ -545,7 +545,7 @@ Create format error content::
     >>> content.processing_state = 'rejected'
     >>> content.rejection_reason = 'format_error'
     >>> content.write_date = datetime.datetime.now()
-    >>> content.user_committed_state = False
+    >>> content.commit_state = 'uncommited'
     >>> content.save()
 
 Create lossy compression content::
@@ -570,7 +570,7 @@ Create lossy compression content::
     >>> content.processing_state = 'rejected'
     >>> content.rejection_reason = 'lossy_compression'
     >>> content.write_date = datetime.datetime.now()
-    >>> content.user_committed_state = False
+    >>> content.commit_state = 'uncommited'
     >>> content.save()
 
 Client Scenario
