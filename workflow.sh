@@ -5,9 +5,6 @@ if ! [ `systemctl is-active docker` = "active" ]; then
     sudo systemctl start docker
 fi
 
-# start firefox
-firefox https://redmine.c3s.cc/login http://repertoire.test:81 &
-
 # terminal
 SESSIONNAME="C3S"
 tmux has-session -t $SESSIONNAME &> /dev/null
@@ -24,5 +21,9 @@ if [ $? != 0 ]; then
   tmux send-keys -t $SESSIONNAME "git status" C-m
   tmux select-window -t $SESSIONNAME:docker
 fi
+
+# start firefox after waiting till docker containers have been started
+sleep 10
+firefox https://redmine.c3s.cc/login http://repertoire.test:81 &
 
 tmux attach -t $SESSIONNAME
