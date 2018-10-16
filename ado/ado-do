@@ -290,17 +290,6 @@ def db_setup(context, dbname, master, test, demo, force):
 
         # Setup demo data
         if os.environ.get('ENVIRONMENT') == 'development':
-            if demo:
-                print('\nSetup scenario demo data.\n')
-                subprocess.call(
-                    [
-                        '/usr/bin/python',
-                        '-m', 'doctest',
-                        '-v', os.path.join(
-                            PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
-                        )
-                    ]
-                )
             if test:
                 print('\nSetup scenario test data.\n')
                 subprocess.call(
@@ -309,6 +298,17 @@ def db_setup(context, dbname, master, test, demo, force):
                         '-m', 'doctest',
                         '-v', os.path.join(
                             PROJECT_PATH, 'etc', 'scenario_test_data.txt'
+                        )
+                    ]
+                )
+            if demo:
+                print('\nSetup scenario demo data.\n')
+                subprocess.call(
+                    [
+                        '/usr/bin/python',
+                        '-m', 'doctest',
+                        '-v', os.path.join(
+                            PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
                         )
                     ]
                 )
