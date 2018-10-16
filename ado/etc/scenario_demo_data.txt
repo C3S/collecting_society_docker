@@ -8,7 +8,6 @@ Demo Data
 
 Imports
 -------
-
 ::
     >>> import os
     >>> import uuid
@@ -26,10 +25,10 @@ Imports
     >>> euro, = Currency.find([('code', '=', 'EUR')])
     >>> Language = Model.get('ir.lang')
     >>> german_language, = Language.find([('code', '=', 'de_DE')])
+    >>> # import interlude; interlude.interact(locals())
 
 Used Model Index
 ================
-
 ::
     >>> Artist = Model.get('artist')
     >>> ArtistPayeeAcceptance = Model.get('artist.payee.acceptance')
@@ -530,52 +529,3 @@ Create lossy compression content::
     >>> content.write_date = datetime.datetime.now()
     >>> content.commit_state = 'uncommited'
     >>> content.save()
-
-
-Bulk Data
-=========
-
-Webuser
--------
-
-    >>> test_web_user = WebUser(
-    ...     email='q@q.test',
-    ...     password='q',
-    ...     nickname='Test Webuser',
-    ...     opt_in_state='opted-in'
-    ... )
-    >>> test_web_user.save()
-
-Artists
--------
-
-    >>> group_artists = 20
-    >>> solo_artists_per_group = 5
-    >>> description = '''Lorem ipsum dolor sit amet, consetetur diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren.
-    ...
-    ... Lorem ipsum.
-    ...
-    ... Sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'''
-    >>> for i in range(1, group_artists + 1):
-    ...     test_group_artist = Artist(
-    ...         name="Group Artist %s" % str(i).zfill(3),
-    ...         group=True,
-    ...         entity_creator=test_web_user,
-    ...         entity_origin='direct',
-    ...         commit_state='commited',
-    ...         claim_state='revised',
-    ...         description=description
-    ...     )
-    ...     test_group_artist.save()
-    ...     for j in range(1, solo_artists_per_group + 1):
-    ...         test_solo_artist = test_group_artist.solo_artists.new(
-    ...             name="Solo Artist %s" % str(
-    ...                 (i - 1) * solo_artists_per_group + j).zfill(3),
-    ...             group=False,
-    ...             entity_creator=test_web_user,
-    ...             entity_origin='direct',
-    ...             commit_state='commited',
-    ...             claim_state='revised',
-    ...             description=description
-    ...         )
-    ...         test_group_artist.save()

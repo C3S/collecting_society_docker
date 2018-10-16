@@ -5,10 +5,10 @@
 ===========
 Master Data
 ===========
+
 Imports
 -------
 ::
-
     >>> import os
     >>> import uuid
     >>> import datetime
@@ -17,18 +17,17 @@ Imports
     >>> from proteus import config, Model, Wizard
     >>> today = datetime.date.today()
     >>> now = datetime.datetime.now()
+    >>> # import interlude; interlude.interact(locals())
 
 Create a Tryton database
 ------------------------
 ::
-
     >>> config = config.set_trytond(
     ...     config_file=os.environ.get('TRYTOND_CONFIG'))
 
 Install meta ado module into database
 -------------------------------------
 ::
-
     >>> Module = Model.get('ir.module.module')
     >>> c3s_module, = Module.find(
     ...     [('name', '=', 'collecting_society')])
@@ -37,6 +36,7 @@ Install meta ado module into database
 
 Common Defaults
 ---------------
+
 Country Germany::
 
     >>> Country = Model.get('country.country')
@@ -55,7 +55,6 @@ Set general precision for currencies::
 Company
 -------
 ::
-
     >>> Company = Model.get('company.company')
     >>> Party = Model.get('party.party')
 
@@ -201,275 +200,6 @@ Create transitory journal::
     ...     sequence=sequence_journal)
     >>> journal.save()
 
-
-Imports
-=======
-
-Create Genres::
-
-    >>> Genre = Model.get('genre')
-    >>> Genre(name='Blues', description='').save()
-    >>> Genre(name='Brass & Military', description='').save()
-    >>> Genre(name="Children's", description='').save()
-    >>> Genre(name='Classical', description='').save()
-    >>> Genre(name='Electronic', description='').save()
-    >>> Genre(name='Folk, World, & Country', description='').save()
-    >>> Genre(name='Funk / Soul', description='').save()
-    >>> Genre(name='Hip-Hop', description='').save()
-    >>> Genre(name='Jazz', description='').save()
-    >>> Genre(name='Latin', description='').save()
-    >>> Genre(name='Non-Music', description='').save()
-    >>> Genre(name='Pop', description='').save()
-    >>> Genre(name='Reggae', description='').save()
-    >>> Genre(name='Rock', description='').save()
-    >>> Genre(name='Stage & Screen', description='').save()
-
-Create Styles::
-
-    >>> Style = Model.get('style')
-    >>> with open('/ado/etc/discogs_styles.txt', 'r') as f:
-    ...     file_content = f.read().decode('UTF-8')
-    ...     styles = file_content.split('\n')
-    ...     for style in styles:
-    ...         if style != '':
-    ...             Style(name=style, description='').save()
-
-Create Labels::
-
-    >>> Label = Model.get('label')
-
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00000',
-    ...       name='[Label without GVL label code / self release]').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00001',
-    ...       name='Ultraphone / Ult').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00002',
-    ...       name='Paetec').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00003',
-    ...       name='Nytingale Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00004',
-    ...       name='Freshdax Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00005',
-    ...       name='Campus recordum').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00006',
-    ...       name='Leondra Music').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00007',
-    ...       name='Valois').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00008',
-    ...       name='Leiselaut').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00009',
-    ...       name='Immediate').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00010',
-    ...       name='Schallpark Recordings').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00011',
-    ...       name='Granaten Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00012',
-    ...       name='Edisonor').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00013',
-    ...       name='Audentity').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00014',
-    ...       name='Blue Stuff Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00015',
-    ...       name='Tang').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00016',
-    ...       name='Victory Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00017',
-    ...       name='Aline Davis Musikproduktion').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00018',
-    ...       name='Naxab').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00019',
-    ...       name='Mauseschwanz Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00020',
-    ...       name='Cattitude Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00021',
-    ...       name='ImHerz').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00022',
-    ...       name='Vocalion/Voca').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00023',
-    ...       name='Polish Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00024',
-    ...       name='Royal Bunker').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00025',
-    ...       name='Danish Point Records / POI').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00026',
-    ...       name='Vervetone').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00027',
-    ...       name='Audioson').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00028',
-    ...       name='Ermitage').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00029',
-    ...       name='Jump Line').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00030',
-    ...       name='Iramac').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00031',
-    ...       name='RGM').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00032',
-    ...       name='Waterman Music').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00033',
-    ...       name='Fun & Music').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00034',
-    ...       name='Lyrita Recorded Edition').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00035',
-    ...       name='Wing Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00036',
-    ...       name='Schmitt Mediatechnik').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00037',
-    ...       name='1000 und 1 Klang Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00038',
-    ...       name='Altrichter Music').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00039',
-    ...       name='Edition Laura').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00040',
-    ...       name='World Pacific Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00041',
-    ...       name='Moon Mind Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00042',
-    ...       name='Savoir Faire Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00043',
-    ...       name='Robot-Trax').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00044',
-    ...       name='Seraphim').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00045',
-    ...       name='Hubermusic').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00046',
-    ...       name='Delicate Frame Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00047',
-    ...       name='HELT (single artist: singer/songwriter Helt Oncale)').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00048',
-    ...       name='Lora Music').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00049',
-    ...       name='Sai So Sounds').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00050',
-    ...       name='Alco').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00051',
-    ...       name='Alhambra Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00052',
-    ...       name='Allegro').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00053',
-    ...       name='Blue Shade Edition').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00054',
-    ...       name='BRISHNI BRASHNI REC.').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00055',
-    ...       name='Amiga').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00056',
-    ...       name='redwinetunes').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00057',
-    ...       name='PHAN THOM - HÖRSPIELE').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00058',
-    ...       name='Ausfahrt Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00059',
-    ...       name='Dynasound').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00060',
-    ...       name='Apollo Sound').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00061',
-    ...       name='AVOID').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00062',
-    ...       name='Nesta Recordings').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00063',
-    ...       name='Incendiary Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00064',
-    ...       name='Verlag Singende Gemeinde').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00065',
-    ...       name='Capella').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00066',
-    ...       name='Moon (single artist: Volker Rosin)').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00067',
-    ...       name='Bärry').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00068',
-    ...       name='ProMedia GmbH').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00069',
-    ...       name='Step Music').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00070',
-    ...       name='Iron Pages Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00071',
-    ...       name='Utility Music Production (single artist: Georgi Georgiev)').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00072',
-    ...       name='Austria').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00073',
-    ...       name='Sinnbus Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00074',
-    ...       name='Whirlwind Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00075',
-    ...       name='KNUTSCH RECORDS').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00076',
-    ...       name='ComePRODUCTS').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00077',
-    ...       name='Egostyle Music').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00078',
-    ...       name='Big Flavour Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00079',
-    ...       name='Ensayo').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00080',
-    ...       name='PICAROmedia').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00081',
-    ...       name='DICORE').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00082',
-    ...       name='Sunday Service').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00083',
-    ...       name='Gift Music').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00084',
-    ...       name='Force Sense').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00085',
-    ...       name='Green Music').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00086',
-    ...       name='Bevision').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00087',
-    ...       name='MUSICPARK (Austria)').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00088',
-    ...       name='westermann').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00089',
-    ...       name='DENTZER-MUSIKPRODUKTION-52066 (DNB: one release)').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00090',
-    ...       name='MANGNALI RECORDS (DNB: one release)').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00091',
-    ...       name='ZAUBERKÜRBIS (Various Artists releases)').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00092',
-    ...       name='philigran (DNB: one release)').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00093',
-    ...       name='Almenland Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00094',
-    ...       name='Commodore Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00095',
-    ...       name='MS Music').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00096',
-    ...       name='JACQUES BONO Records (single artist: Jacques Bono)').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00097',
-    ...       name='starschnitt records (DNB: one release)').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00098',
-    ...       name='Bethlehem Records').save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00099',
-    ...       name="AX'S Music").save()
-    >>> Label(entity_origin='direct', entity_creator=party, gvl_code='00100',
-    ...       name='LUMAS RECORDS').save()
-
-Create Licenses::
-
-    >>> License = Model.get('license')
-    >>> License(
-    ...     code='CC BY-NC-DN', version='1.0', country='de', freedom_rank=1000,
-    ...     name='Creative Commons - Attribution NonCommercial NoDerivatives',
-    ...     link='http://url.test/license').save()
-    >>> License(
-    ...     code='CC BY-NC-SA', version='1.0', country='de', freedom_rank=1100,
-    ...     name='Creative Commons - Attribution NonCommercial ShareAlike',
-    ...     link='http://url.test/license').save()
-    >>> License(
-    ...     code='CC BY-NC', version='1.0', country='de', freedom_rank=1200,
-    ...     name='Creative Commons - Attribution NonCommercial',
-    ...     link='http://url.test/license').save()
-    >>> License(
-    ...     code='CC BY-ND', version='1.0', country='de', freedom_rank=1300,
-    ...     name='Creative Commons - Attribution NoDerivatives',
-    ...     link='http://url.test/license').save()
-    >>> License(
-    ...     code='CC BY-SA', version='1.0', country='de', freedom_rank=1400,
-    ...     name='Creative Commons - Attribution ShareAlike',
-    ...     link='http://url.test/license').save()
-    >>> License(
-    ...     code='CC BY', version='1.0', country='de', freedom_rank=1600,
-    ...     name='Creative Commons - Attribution',
-    ...     link='http://url.test/license').save()
-
-
 Final
 =====
 
@@ -494,4 +224,3 @@ Set Admin user to german language::
     >>> admin_user, = User.find([('login', '=', 'admin')])
     >>> admin_user.language = german_language
     >>> admin_user.save()
-    >>> # import interlude; interlude.interact(locals())

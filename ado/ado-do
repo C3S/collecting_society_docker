@@ -223,17 +223,27 @@ def db_backup(context, dbname):
     )
 
 
-@ado_do.command('db-demo-setup')
+@ado_do.command('db-setup')
 @click.argument('dbname')
+@click.option('--master/--no-master', default=False,
+              help='Execute master data (default: no)')
+@click.option('--test/--no-test', default=False,
+              help='Execute test data (default: no)')
+@click.option('--demo/--no-demo', default=False,
+              help='Execute demo data (default: no)')
+@click.option('--force/--no-force', default=False,
+              help='Force execution (default: no)')
 @click.pass_context
-def db_demo_setup(context, dbname):
+def db_setup(context, dbname, master, test, demo, force):
     """
     Creates and sets up the postgres database DBNAME.
 
     The execution is skipped if the database already exists.
+    The execution might be forced (omits the db creation, if it exists).
 
-    Executes the scenario master data to set up the database.
-    Executes the scenario demo data in development environment.
+    Executes scenario master data to set up the database, if master.
+    Executes scenario test data in development environment, if test.
+    Executes scenario demo data in development environment, if demo.
 
     During installation a lockfile is created on the host to prevent multiple
     execution from different docker containers.
@@ -252,42 +262,56 @@ def db_demo_setup(context, dbname):
             print("Waiting for the other process to finish db creation...")
 
     # Check database
-    if not _db_exist(dbname):
+    if not _db_exist(dbname) or force:
 
         # Create database
-        context.invoke(db_create, dbname=dbname)
+        if not _db_exist(dbname):
+            context.invoke(db_create, dbname=dbname)
+            _update(None, dbname)
 
-        # Update trytond
-        _update(None, dbname)
+        # Cofigure trytond
         os.environ['DB_NAME'] = dbname
         os.environ['TRYTOND_CONFIG'] = os.path.join(
             PROJECT_PATH, 'etc', 'trytond.conf'
         )
 
         # Setup master data
-        print("\nSetup scenario master data.\n")
-        subprocess.call(
-            [
-                '/usr/bin/python',
-                '-m', 'doctest',
-                '-v', os.path.join(
-                    PROJECT_PATH, 'etc', 'scenario_master_data.txt'
-                )
-            ]
-        )
-
-        # Setup demo data
-        if os.environ.get('ENVIRONMENT') == 'development':
-            print('\nSetup scenario demo data.\n')
+        if master:
+            print("\nSetup scenario master data.\n")
             subprocess.call(
                 [
                     '/usr/bin/python',
                     '-m', 'doctest',
                     '-v', os.path.join(
-                        PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
+                        PROJECT_PATH, 'etc', 'scenario_master_data.txt'
                     )
                 ]
             )
+
+        # Setup demo data
+        if os.environ.get('ENVIRONMENT') == 'development':
+            if demo:
+                print('\nSetup scenario demo data.\n')
+                subprocess.call(
+                    [
+                        '/usr/bin/python',
+                        '-m', 'doctest',
+                        '-v', os.path.join(
+                            PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
+                        )
+                    ]
+                )
+            if test:
+                print('\nSetup scenario test data.\n')
+                subprocess.call(
+                    [
+                        '/usr/bin/python',
+                        '-m', 'doctest',
+                        '-v', os.path.join(
+                            PROJECT_PATH, 'etc', 'scenario_test_data.txt'
+                        )
+                    ]
+                )
 
     else:
         print('Setup demo data, but database "%s" exists: Skip!' % dbname)
@@ -306,20 +330,18 @@ def db_demo_setup(context, dbname):
 @click.argument('dbname')
 @click.pass_context
 def db_test_setup(context, dbname):
-    context.invoke(pip_install, container='tryton')
-    os.environ['DB_NAME'] = dbname
-    os.environ['TRYTOND_CONFIG'] = os.path.join(
-        PROJECT_PATH, 'etc', 'trytond.conf'
-    )
-    subprocess.call(
-        [
-            '/usr/bin/python',
-            '-m', 'doctest',
-            '-v', os.path.join(
-                PROJECT_PATH, 'etc', 'scenario_test_data.txt'
-            )
-        ]
-    )
+    context.invoke(
+        db_setup, dbname=dbname,
+        master=True, test=True, demo=False, force=False)
+
+
+@ado_do.command('db-demo-setup')
+@click.argument('dbname')
+@click.pass_context
+def db_demo_setup(context, dbname):
+    context.invoke(
+        db_setup, dbname=dbname,
+        master=True, test=True, demo=True, force=False)
 
 
 @ado_do.command('create-test-db')
