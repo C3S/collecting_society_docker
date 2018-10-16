@@ -1,28 +1,646 @@
+# -*- coding: utf-8 -*-
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/c3s.ado.repertoire
+
 =========
 Test Data
 =========
+
+Preparation
+===========
+
 Imports
 -------
 ::
-
     >>> import os
-    >>> import uuid
+    >>> import csv
     >>> import datetime
-    >>> from dateutil.relativedelta import relativedelta
-    >>> from decimal import Decimal
+    >>> import random
+    >>> import uuid
     >>> from proteus import config, Model, Wizard
-    >>> today = datetime.date.today()
-    >>> now = datetime.datetime.now()
+    >>> # import interlude; interlude.interact(locals())
+
+Configuration
+-------------
+::
+    >>> publisher = 1
+    >>> tariff_systems = 1
+
+    >>> publisher = 20
+    >>> tariff_systems = 3
+    
+    >>> group_artists = 5
+    >>> solo_artists_per_group = 5
+    >>> releases_per_artist = 3
+    >>> creations_per_release = 3
+    >>> composer_per_creation = 5
+    >>> recorder_per_creation = 5
+    >>> texter_per_creation = 2
+    >>> producer_per_creation = 2
+    >>> master_per_creation = 2
+    >>> mixer_per_creation = 2
+    
+    >>> storehouses = 2
+    >>> harddisklabels_per_storehouse = 2
+    >>> harddisks_per_harddisklabel = 2
+    >>> filesystemlabels_per_harddisk = 2
+    >>> filesystems_per_filesystemlabel = 2
+
+    >>> delimiter = ','
+    >>> quotechar = '"'
+
     >>> config = config.set_trytond(
     ...     config_file=os.environ.get('TRYTOND_CONFIG'))
+
+Models
+------
+
+Upstream::
+
+    >>> Company = Model.get('company.company')
+    >>> User = Model.get('res.user')
     >>> Country = Model.get('country.country')
+    
+Extended::
+
+    >>> Party = Model.get('party.party')
+    >>> WebUser = Model.get('web.user')
+
+New::
+
+    >>> CollectingSociety = Model.get('collecting_society')
+    >>> TariffSystem = Model.get('tariff_system')
+    >>> TariffCategory = Model.get('tariff_system.category')
+    >>> Tariff = Model.get('tariff_system.tariff')
+    >>> Label = Model.get('label')
+    >>> Publisher = Model.get('publisher')
+    >>> License = Model.get('license')
+    >>> Artist = Model.get('artist')
+    >>> Release = Model.get('release')
+    >>> Genre = Model.get('genre')
+    >>> Style = Model.get('style')
+    >>> Creation = Model.get('creation')
+    >>> CreationContribution = Model.get('creation.contribution')
+    >>> ContributionRole = Model.get('creation.contribution-creation.role')
+    >>> CreationRole = Model.get('creation.role')
+    >>> CreationTariffCategory = Model.get('creation-tariff_category')
+    >>> Storehouse = Model.get('storehouse')
+    >>> Harddisk = Model.get('harddisk')
+    >>> HarddiskLabel = Model.get('harddisk.label')
+    >>> HarddiskTest = Model.get('harddisk.test')
+    >>> Filesystem = Model.get('harddisk.filesystem')
+    >>> FilesystemLabel = Model.get('harddisk.filesystem.label')
+    >>> Checksum = Model.get('checksum')
+    >>> Content = Model.get('content')
+
+Content
+-------
+::
+    >>> today = datetime.date.today()
+    >>> now = datetime.datetime.now()
+
+    >>> company, = Company.find([(
+    ...     'party.name', '=',
+    ...     'Cultural Commons Collecting Society SCE mit beschränkter Haftung'
+    ... )])
     >>> germany, = Country.find([('code', '=', 'DE')])
-    >>> Currency = Model.get('currency.currency')
-    >>> euro, = Currency.find([('code', '=', 'EUR')])
-    >>> Language = Model.get('ir.lang')
-    >>> german_language, = Language.find([('code', '=', 'de_DE')])
 
-Test
-----
+    >>> test_genres = '/ado/etc/import_genres.csv'
+    >>> test_styles = '/ado/etc/import_styles.csv'
+    >>> test_labels = '/ado/etc/import_labels.csv'
+    >>> test_licenses = '/ado/etc/import_licenses.csv'
+    >>> test_tariff_categories = '/ado/etc/import_tariff_categories.csv'
+    >>> test_creation_roles = '/ado/etc/import_creation_roles.csv'
 
-    >>> import interlude; interlude.interact(locals())
+    >>> test_text = '''Lorem ipsum dolor sit amet, consetetur diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren.\n\nLorem ipsum.\n\nSea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'''
+
+
+Data
+====
+
+Collecting Societies
+--------------------
+
+C3S::
+
+    >>> CollectingSociety(
+    ...     name=company.party.name,
+    ...     party=company.party,
+    ...     represents_copyright=True,
+    ...     represents_ancillary_copyright=True
+    ... ).save()
+
+Gema::
+
+    >>> party = Party(name='GEMA')
+    >>> _ = party.addresses.pop()
+    >>> party_address = party.addresses.new(
+    ...     street='Bayreuther Straße 37',
+    ...     zip='10787',
+    ...     city='Berlin',
+    ...     country=germany
+    ... )
+    >>> party.save()
+    >>> CollectingSociety(
+    ...     name=party.name,
+    ...     party=party,
+    ...     represents_copyright=True,
+    ...     represents_ancillary_copyright=False
+    ... ).save()
+    
+GVL:: 
+
+    >>> party = Party(name='GVL')
+    >>> _ = party.addresses.pop()
+    >>> party_address = party.addresses.new(
+    ...     street='Podbielskiallee 64',
+    ...     zip='14195',
+    ...     city='Berlin',
+    ...     country=germany
+    ... )
+    >>> party.save()
+    >>> CollectingSociety(
+    ...     name=party.name,
+    ...     party=party,
+    ...     represents_copyright=False,
+    ...     represents_ancillary_copyright=True
+    ... ).save()
+
+Genres
+------
+::
+    >>> with open(test_genres, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     for genre in reader:
+    ...         Genre(
+    ...             name=genre['name'],
+    ...             description=genre['description']
+    ...         ).save()
+
+Styles
+------
+::
+    >>> with open(test_styles, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     for style in reader:
+    ...         Style(
+    ...             name=style['name'],
+    ...             description=style['description']
+    ...         ).save()
+
+Labels
+------
+::
+    >>> with open(test_labels, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     for label in reader:
+    ...         Label(
+    ...             entity_creator=company.party,
+    ...             name=label['name'],
+    ...             gvl_code=label['gvl_code']
+    ...         ).save()
+
+Licenses
+--------
+::
+    >>> with open(test_licenses, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     for license in reader:
+    ...         License(
+    ...             code=license['code'],
+    ...             version=license['version'],
+    ...             country=license['country'],
+    ...             freedom_rank=int(license['freedom_rank']),
+    ...             link=license['link'],
+    ...             name=license['name']
+    ...         ).save()
+
+Tariff Systems
+--------------
+::
+    >>> for i in range(1, tariff_systems + 1):
+    ...     number = i
+    ...     TariffSystem(
+    ...         version="%s.0" % number,
+    ...         valid_from=today
+    ...     ).save()
+
+Tariff Categories
+-----------------
+::
+    >>> with open(test_tariff_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     for category in reader:
+    ...         TariffCategory(
+    ...             name=category['name'],
+    ...             code=category['code'],
+    ...             description=category['description']
+    ...         ).save()
+
+Tariffs
+-------
+::
+    >>> tariff_systems = TariffSystem.find([])
+    >>> tariff_categories = TariffCategory.find([])
+
+    >>> for system in tariff_systems:
+    ...     for category in tariff_categories:
+    ...         Tariff(
+    ...             system=system,
+    ...             category=category
+    ...         ).save()
+
+Publisher
+---------
+::
+    >>> for i in range(1, publisher + 1):
+    ...     number = i
+    ...     name = "Publisher %s" % str(number).zfill(3)
+    ...     party = Party(name=name)
+    ...     party.save()
+    ...     Publisher(
+    ...         entity_creator=company.party,
+    ...         party=party,
+    ...         name=name,
+    ...     ).save()
+
+Parties
+-------
+::
+    >>> for i in range(1, group_artists * solo_artists_per_group + 1):
+    ...     number = i
+    ...     WebUser(
+    ...         email='%s@rep.test' % number,
+    ...         password="%s" % number,
+    ...         nickname="Web User %s" % str(number).zfill(3),
+    ...         opt_in_state='opted-in'
+    ...     ).save()
+
+Artists
+-------
+::
+    >>> for i in range(1, group_artists + 1):
+    ...     number = i
+    ...     web_user_number = (number - 1) * solo_artists_per_group + 1
+    ...     web_user, = WebUser.find([(
+    ...         'email', '=', '%s@rep.test' % web_user_number)])
+    ...     group_artist = Artist(
+    ...         name="Group Artist %s" % str(number).zfill(3),
+    ...         group=True,
+    ...         entity_creator=web_user,
+    ...         entity_origin='direct',
+    ...         commit_state='commited',
+    ...         claim_state='revised',
+    ...         description=test_text
+    ...     )
+    ...     group_artist.save()
+    ...     for j in range(1, solo_artists_per_group + 1):
+    ...         number = (i - 1) * solo_artists_per_group + j
+    ...         web_user, = WebUser.find([(
+    ...             'email', '=', '%s@rep.test' % number)])
+    ...         solo_artist = group_artist.solo_artists.new(
+    ...             name="Solo Artist %s" % str(number).zfill(3),
+    ...             group=False,
+    ...             party=web_user.party,
+    ...             entity_creator=web_user,
+    ...             entity_origin='direct',
+    ...             commit_state='commited',
+    ...             claim_state='revised',
+    ...             description=test_text
+    ...         )
+    ...         group_artist.save()
+
+Releases
+--------
+::
+    >>> artists = Artist.find([])
+
+    >>> for i in range(1, len(artists) + 1):
+    ...     for j in range(1, releases_per_artist + 1):
+    ...         number = (i - 1) * releases_per_artist + j
+    ...         artist = artists[i-1]
+    ...         if artist.group:
+    ...             artist = artist.solo_artists[0]
+    ...         publishers = Publisher.find([])
+    ...         labels = Label.find([])
+    ...         genres = Genre.find([])
+    ...         styles = Style.find([])
+    ...         Release(
+    ...             entity_creator=artist.party,
+    ...             title="Release %s" % str(number).zfill(3),
+    ...             genres=random.sample(genres, 3),
+    ...             styles=random.sample(styles, 3),
+    ...             number_mediums=1,
+    ...             warning='WARNING: This is testdata!',
+    ...             copyright_date=today,
+    ...             production_date=today,
+    ...             ean_upc_code='012345678901',
+    ...             isrc_code='DEA123456789',
+    ...             release_date=today,
+    ...             release_cancellation_date=today,
+    ...             online_release_date=today,
+    ...             online_cancellation_date=today,
+    ...             distribution_territory='Germany',
+    ...             label=random.choice(labels),
+    ...             label_catalog_number='12345',
+    ...             publisher=random.choice(publishers)
+    ...         ).save()
+
+Creations
+---------
+::
+    >>> releases = Release.find([])
+    >>> allocation_types = ['adaption', 'cover', 'remix']
+
+    >>> for i in range(1, len(releases) + 1):
+    ...     for j in range(1, creations_per_release + 1):
+    ...         number = (i - 1) * creations_per_release + j
+    ...         artist_number = divmod(i-1, releases_per_artist)[0]
+    ...         artist = artists[artist_number]
+    ...         if artist.group:
+    ...             artist = artist.solo_artists[0]
+    ...         # creation
+    ...         creation = Creation(
+    ...             entity_creator=artist.party,
+    ...             artist=artist
+    ...         )
+    ...         creation.save()
+    ...         # tariff categories
+    ...         css = CollectingSociety.find([(
+    ...             'represents_copyright', '=', True)])
+    ...         tariffcs = TariffCategory.find([])
+    ...         categories = random.sample(
+    ...             tariffcs, random.randint(1, len(tariffcs)))
+    ...         for category in categories:
+    ...             CreationTariffCategory(
+    ...                 creation=creation,
+    ...                 category=category,
+    ...                 collecting_society=random.choice(css)
+    ...             ).save()
+    ...         # originals
+    ...         creations = Creation.find(['id', '!=', creation.id])
+    ...         if len(creations):
+    ...             originals = random.sample(creations, min(len(creations), 2))
+    ...             for original in originals:
+    ...                 cor = creation.original_relations.new()
+    ...                 cor.original_creation = original
+    ...                 cor.derivative_creation = creation
+    ...                 cor.allocation_type = random.choice(allocation_types)
+    ...                 cor.save()
+    ...                 creation.save()
+    ...         # release creation
+    ...         licenses = License.find([])
+    ...         cr = creation.releases.new()
+    ...         cr.creation=creation
+    ...         cr.release=releases[i-1]
+    ...         cr.title="Release %s" % str(number).zfill(3)
+    ...         cr.medium_number=1
+    ...         cr.track_number=j
+    ...         cr.license=random.choice(licenses)
+    ...         cr.save()
+    ...         creation.save()
+
+CreationRoles
+-------------
+::
+    >>> with open(test_creation_roles, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     for role in reader:
+    ...         artists = Artist.find([('group', '!=', True)])
+    ...         CreationRole(
+    ...             entity_creator=random.choice(artists).party,
+    ...             name=role['name'],
+    ...             description=role['description']
+    ...         ).save()
+
+CreationContributions
+---------------------
+::
+    >>> creations = Creation.find([])
+
+    >>> for i in range(0, len(creations)):
+    ...     creation = creations[i]
+    ...     artist = creation.artist
+    ...     contributors = [artist]
+    ...     if artist.group:
+    ...         contributors = artist.solo_artists
+    ...     roles = CreationRole.find([])
+    ...     
+    ...     # composer
+    ...     num_composers = min(len(contributors), composer_per_creation)
+    ...     composers = random.sample(contributors, num_composers)
+    ...     creation_roles = random.sample(roles, num_composers)
+    ...     for i, composer in enumerate(composers[:]):
+    ...         # composition
+    ...         cc = CreationContribution()
+    ...         cc.creation = creation
+    ...         cc.artist = composer
+    ...         cc.type = 'composition'
+    ...         cc.save()
+    ...         cr = ContributionRole()
+    ...         cr.contribution = cc
+    ...         cr.role = creation_roles[i]
+    ...         # import interlude; interlude.interact(locals())
+    ...         cr.save()
+    ...     
+    ...     # recorder
+    ...     num_recorders = min(len(contributors), recorder_per_creation)
+    ...     recorders = random.sample(contributors, num_recorders)
+    ...     for i, recorder in enumerate(recorders[:]):
+    ...         # composition
+    ...         cc = CreationContribution()
+    ...         cc.creation = creation
+    ...         cc.artist = recorder
+    ...         cc.type = 'performance'
+    ...         cc.performance = 'recording'
+    ...         cc.save()
+    ...         cr = ContributionRole()
+    ...         cr.contribution = cc
+    ...         cr.role = creation_roles[i]
+    ...         cr.save()
+    ...
+    ...     # texter
+    ...     num_texters = min(len(contributors), texter_per_creation)
+    ...     for texter in random.sample(contributors, num_texters):
+    ...         CreationContribution(
+    ...             creation=creation,
+    ...             artist=texter,
+    ...             type='text'
+    ...         ).save()
+    ...
+    ...     # producer
+    ...     nrss = CollectingSociety.find([(
+    ...         'represents_ancillary_copyright', '=', True)])
+    ...     num_producers = min(len(contributors), producer_per_creation)
+    ...     for producer in random.sample(contributors, num_producers):
+    ...         CreationContribution(
+    ...             creation=creation,
+    ...             artist=producer,
+    ...             type='performance',
+    ...             performance='producing',
+    ...             neighbouring_rights_society=random.choice(nrss),
+    ...         ).save()
+    ...
+    ...     # master
+    ...     nrss = CollectingSociety.find([(
+    ...         'represents_ancillary_copyright', '=', True)])
+    ...     num_masters = min(len(contributors), master_per_creation)
+    ...     for master in random.sample(contributors, num_masters):
+    ...         CreationContribution(
+    ...             creation=creation,
+    ...             artist=master,
+    ...             type='performance',
+    ...             performance='mastering',
+    ...             neighbouring_rights_society=random.choice(nrss),
+    ...         ).save()
+    ...
+    ...     # mixer
+    ...     nrss = CollectingSociety.find([(
+    ...         'represents_ancillary_copyright', '=', True)])
+    ...     num_mixers = min(len(contributors), mixer_per_creation)
+    ...     for mixer in random.sample(contributors, num_mixers):
+    ...         CreationContribution(
+    ...             creation=creation,
+    ...             artist=mixer,
+    ...             type='performance',
+    ...             performance='mixing',
+    ...             neighbouring_rights_society=random.choice(nrss),
+    ...         ).save()
+
+Archiving
+---------
+::
+    >>> for i in range(1, storehouses + 1):
+    ...     number = i
+    ...     host = uuid_host=str(uuid.uuid4())
+    ...     
+    ...     # admin
+    ...     admin = User(
+    ...         name="Storehouse Admin %s" % str(number).zfill(3),
+    ...         login="storehouse%s" % str(number).zfill(3),
+    ...         password="%s" % number
+    ...     )
+    ...     admin.save()
+    ...     
+    ...     # storehouse
+    ...     storehouse = Storehouse(
+    ...         code="%s" % str(number).zfill(3),
+    ...         details="Storehouse in City %s" % str(number).zfill(3),
+    ...         user=admin
+    ...     )
+    ...     storehouse.save()
+    ...
+    ...     # harddisk labels
+    ...     for j in range(1, harddisklabels_per_storehouse + 1):
+    ...         harddisk_label = HarddiskLabel()
+    ...         harddisk_label.save()
+    ...     
+    ...         # harddisks
+    ...         for k in range(1, harddisks_per_harddisklabel + 1):
+    ...             harddisk = Harddisk(
+    ...                 label=harddisk_label,
+    ...                 version=1,
+    ...                 storehouse=storehouse,
+    ...                 location='SomeMachine',
+    ...                 closed=False,
+    ...                 raid_type="1",
+    ...                 raid_number=str(k),
+    ...                 raid_total=str(harddisks_per_harddisklabel),
+    ...                 uuid_host=host,
+    ...                 uuid_harddisk=str(uuid.uuid4()),
+    ...                 user=admin,
+    ...                 online=True,
+    ...                 state='in_use'
+    ...             )
+    ...             harddisk.save()
+    ...
+    ...             # filesystem labels
+    ...             for l in range(1, filesystemlabels_per_harddisk + 1):
+    ...                 filesystem_label = FilesystemLabel()
+    ...                 filesystem_label.save()
+    ...
+    ...                 # filesystems
+    ...                 for m in range(1, filesystems_per_filesystemlabel + 1):
+    ...                     filesystem = Filesystem(
+    ...                         label=filesystem_label,
+    ...                         harddisk=harddisk,
+    ...                         closed=False,
+    ...                         partition_number=m,
+    ...                         uuid_partition=str(uuid.uuid4()),
+    ...                         uuid_raid=str(uuid.uuid4()),
+    ...                         uuid_raid_sub=str(uuid.uuid4()),
+    ...                         uuid_crypto=str(uuid.uuid4()),
+    ...                         uuid_lvm=str(uuid.uuid4()),
+    ...                         uuid_filesystem=str(uuid.uuid4())
+    ...                     )
+    ...                     filesystem.save()
+
+Contents
+--------
+::
+    >>> creations = Creation.find([])
+    >>> filesystem_labels = FilesystemLabel.find([])
+
+    >>> for i in range(1, len(creations) + 1):
+    ...     number = i
+    ...     creation = creations[number - 1]
+    ...     artist = creation.artist
+    ...     if artist.group:
+    ...         artist = artist.solo_artists[0]
+    ...     
+    ...     # audio
+    ...     c = Content()
+    ...     c.uuid = str(uuid.uuid4())
+    ...     c.entity_creator = artist.party
+    ...     c.category = 'audio'
+    ...     c.creation = creation
+    ...     # file metadata
+    ...     c.name = "Audio %s" % str(number).zfill(3)
+    ...     c.size = 12345
+    ...     c.mime_type = 'audio/x-wav'
+    ...     # file processing
+    ...     c.path = '/some/path'
+    ...     c.preview_path = '/some/preview/path'
+    ...     c.filesystem_label = random.choice(filesystem_labels)
+    ...     c.processing_state = 'archived'
+    ...     c.storage_hostname = 'archive_machine'
+    ...     c.mediation = False
+    ...     # low level audio metadata
+    ...     c.length = 42.0
+    ...     c.channels = 2
+    ...     c.sample_rate = 48000
+    ...     c.sample_width = 16
+    ...     # high level metadata
+    ...     c.metadata_artist = creation.artist.name
+    ...     c.metadata_title = creation.title
+    ...     c.metadata_release = creation.release.title
+    ...     c.metadata_release_date = str(creation.release.release_date)
+    ...     c.metadata_track_number = "0"
+    ...     c.save()
+    ...
+    ...     # sheets
+    ...     c = Content()
+    ...     c.uuid = str(uuid.uuid4())
+    ...     c.entity_creator = artist.party
+    ...     c.category = 'sheet'
+    ...     c.creation = creation
+    ...     # file metadata
+    ...     c.name = "Sheet %s" % str(number).zfill(3)
+    ...     c.size = 54321
+    ...     c.mime_type = 'application/pdf'
+    ...     # file processing
+    ...     c.path = '/some/path'
+    ...     c.filesystem_label = random.choice(filesystem_labels)
+    ...     c.processing_state = 'archived'
+    ...     c.storage_hostname = 'archive_machine'
+    ...     c.mediation = False
+    ...     c.save()
+    ...
+    ...     # lyrics
+    ...     c = Content()
+    ...     c.uuid = str(uuid.uuid4())
+    ...     c.entity_creator = artist.party
+    ...     c.category = 'lyrics'
+    ...     c.creation = creation
+    ...     c.lyrics = test_text
+    ...     c.save()

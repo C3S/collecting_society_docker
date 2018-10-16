@@ -31,10 +31,12 @@ dupes = set([x for x in styles if styles.count(x) > 1])
 styles = sorted(list(set(styles)))  # remove dupes
 n = 0
 ignored = 0
-with open('discogs_styles.txt', 'w') as f:
+with open('import_styles.csv', 'w') as f:
+    f.write('"name","description\n"')
     for s in styles:
         if s[:9] != u'Browsing ':
-            f.write(s.encode('UTF-8')+'\n')
+            style = s.encode('UTF-8')
+            f.write('"%s","%s"\n' % (style, "Description of " + style))
             n += 1
 print "Imported " + str(n) + " styles from discogs."
 if len(dupes) > 0:
