@@ -23,22 +23,16 @@ Imports
 Configuration
 -------------
 ::
-    >>> publisher = 1
-    >>> tariff_systems = 1
-
     >>> publisher = 20
     >>> tariff_systems = 3
     
     >>> group_artists = 5
-    >>> solo_artists_per_group = 5
-    >>> releases_per_artist = 3
-    >>> creations_per_release = 3
-    >>> composer_per_creation = 5
-    >>> recorder_per_creation = 5
-    >>> texter_per_creation = 2
-    >>> producer_per_creation = 2
-    >>> master_per_creation = 2
-    >>> mixer_per_creation = 2
+    >>> new_solo_artists_per_group = 3
+    >>> add_solo_artists_per_group = 2
+    >>> releases_per_artist = 2
+    >>> creations_per_release = 5
+    >>> sampler = 2
+    >>> creations_per_sampler = 20
     
     >>> storehouses = 2
     >>> harddisklabels_per_storehouse = 2
@@ -76,7 +70,9 @@ New::
     >>> Publisher = Model.get('publisher')
     >>> License = Model.get('license')
     >>> Artist = Model.get('artist')
+    >>> ArtistArtist = Model.get('artist-artist')
     >>> Release = Model.get('release')
+    >>> ReleaseCreation = Model.get('release-creation')
     >>> Genre = Model.get('genre')
     >>> Style = Model.get('style')
     >>> Creation = Model.get('creation')
@@ -264,10 +260,10 @@ Publisher
     ...         name=name,
     ...     ).save()
 
-Parties
--------
+Web Users
+---------
 ::
-    >>> for i in range(1, group_artists * solo_artists_per_group + 1):
+    >>> for i in range(1, group_artists * new_solo_artists_per_group + 1):
     ...     number = i
     ...     WebUser(
     ...         email='%s@rep.test' % number,
@@ -281,34 +277,48 @@ Artists
 ::
     >>> for i in range(1, group_artists + 1):
     ...     number = i
-    ...     web_user_number = (number - 1) * solo_artists_per_group + 1
+    ...     web_user_number = (number - 1) * new_solo_artists_per_group + 1
     ...     web_user, = WebUser.find([(
-    ...         'email', '=', '%s@rep.test' % web_user_number)])
+    ...         'nickname', '=', 'Web User %s' % str(web_user_number).zfill(3)
+    ...     )])
     ...     group_artist = Artist(
     ...         name="Group Artist %s" % str(number).zfill(3),
     ...         group=True,
-    ...         entity_creator=web_user,
+    ...         entity_creator=web_user.party,
     ...         entity_origin='direct',
-    ...         commit_state='commited',
+    ...         commit_state='revised',
     ...         claim_state='revised',
     ...         description=test_text
     ...     )
     ...     group_artist.save()
-    ...     for j in range(1, solo_artists_per_group + 1):
-    ...         number = (i - 1) * solo_artists_per_group + j
+    ...     for j in range(1, new_solo_artists_per_group + 1):
+    ...         number = (i - 1) * new_solo_artists_per_group + j
     ...         web_user, = WebUser.find([(
-    ...             'email', '=', '%s@rep.test' % number)])
+    ...             'nickname', '=', 'Web User %s' % str(number).zfill(3)
+    ...         )])
     ...         solo_artist = group_artist.solo_artists.new(
     ...             name="Solo Artist %s" % str(number).zfill(3),
     ...             group=False,
     ...             party=web_user.party,
-    ...             entity_creator=web_user,
+    ...             entity_creator=web_user.party,
     ...             entity_origin='direct',
-    ...             commit_state='commited',
+    ...             commit_state='revised',
     ...             claim_state='revised',
     ...             description=test_text
     ...         )
     ...         group_artist.save()
+
+    >>> groups = Artist.find(['group', '=', True])
+    >>> for i, group in enumerate(groups):
+    ...     solos = Artist.find(['group', '=', False])
+    ...     for j in range(0, add_solo_artists_per_group):
+    ...         if solos == group.solo_artists:
+    ...             continue
+    ...         solo = random.choice(solos)
+    ...         while solo in group.solo_artists:
+    ...             solo = random.choice(solos)
+    ...         group.solo_artists.extend([solo])
+    ...         group.save()
 
 Releases
 --------
@@ -327,6 +337,8 @@ Releases
     ...         styles = Style.find([])
     ...         Release(
     ...             entity_creator=artist.party,
+    ...             commit_state='revised',
+    ...             claim_state='revised',
     ...             title="Release %s" % str(number).zfill(3),
     ...             genres=random.sample(genres, 3),
     ...             styles=random.sample(styles, 3),
@@ -361,6 +373,8 @@ Creations
     ...             artist = artist.solo_artists[0]
     ...         # creation
     ...         creation = Creation(
+    ...             commit_state='revised',
+    ...             claim_state='revised',
     ...             entity_creator=artist.party,
     ...             artist=artist
     ...         )
@@ -393,7 +407,7 @@ Creations
     ...         cr = creation.releases.new()
     ...         cr.creation=creation
     ...         cr.release=releases[i-1]
-    ...         cr.title="Release %s" % str(number).zfill(3)
+    ...         cr.title="Song %s" % str(number).zfill(3)
     ...         cr.medium_number=1
     ...         cr.track_number=j
     ...         cr.license=random.choice(licenses)
@@ -427,10 +441,8 @@ CreationContributions
     ...     roles = CreationRole.find([])
     ...     
     ...     # composer
-    ...     num_composers = min(len(contributors), composer_per_creation)
-    ...     composers = random.sample(contributors, num_composers)
-    ...     creation_roles = random.sample(roles, num_composers)
-    ...     for i, composer in enumerate(composers[:]):
+    ...     num_composers = random.randint(0, min(4, len(contributors)))
+    ...     for composer in random.sample(contributors, num_composers):
     ...         # composition
     ...         cc = CreationContribution()
     ...         cc.creation = creation
@@ -439,14 +451,12 @@ CreationContributions
     ...         cc.save()
     ...         cr = ContributionRole()
     ...         cr.contribution = cc
-    ...         cr.role = creation_roles[i]
-    ...         # import interlude; interlude.interact(locals())
+    ...         cr.role = random.choice(roles)
     ...         cr.save()
     ...     
     ...     # recorder
-    ...     num_recorders = min(len(contributors), recorder_per_creation)
-    ...     recorders = random.sample(contributors, num_recorders)
-    ...     for i, recorder in enumerate(recorders[:]):
+    ...     num_recorders = random.randint(0, min(4, len(contributors)))
+    ...     for recorder in random.sample(contributors, num_recorders):
     ...         # composition
     ...         cc = CreationContribution()
     ...         cc.creation = creation
@@ -456,11 +466,11 @@ CreationContributions
     ...         cc.save()
     ...         cr = ContributionRole()
     ...         cr.contribution = cc
-    ...         cr.role = creation_roles[i]
+    ...         cr.role = random.choice(roles)
     ...         cr.save()
     ...
     ...     # texter
-    ...     num_texters = min(len(contributors), texter_per_creation)
+    ...     num_texters = random.randint(0, min(2, len(contributors)))
     ...     for texter in random.sample(contributors, num_texters):
     ...         CreationContribution(
     ...             creation=creation,
@@ -471,7 +481,7 @@ CreationContributions
     ...     # producer
     ...     nrss = CollectingSociety.find([(
     ...         'represents_ancillary_copyright', '=', True)])
-    ...     num_producers = min(len(contributors), producer_per_creation)
+    ...     num_producers = random.randint(0, min(2, len(contributors)))
     ...     for producer in random.sample(contributors, num_producers):
     ...         CreationContribution(
     ...             creation=creation,
@@ -484,7 +494,7 @@ CreationContributions
     ...     # master
     ...     nrss = CollectingSociety.find([(
     ...         'represents_ancillary_copyright', '=', True)])
-    ...     num_masters = min(len(contributors), master_per_creation)
+    ...     num_masters = random.randint(0, min(2, len(contributors)))
     ...     for master in random.sample(contributors, num_masters):
     ...         CreationContribution(
     ...             creation=creation,
@@ -497,7 +507,7 @@ CreationContributions
     ...     # mixer
     ...     nrss = CollectingSociety.find([(
     ...         'represents_ancillary_copyright', '=', True)])
-    ...     num_mixers = min(len(contributors), mixer_per_creation)
+    ...     num_mixers = random.randint(0, min(2, len(contributors)))
     ...     for mixer in random.sample(contributors, num_mixers):
     ...         CreationContribution(
     ...             creation=creation,
@@ -506,6 +516,57 @@ CreationContributions
     ...             performance='mixing',
     ...             neighbouring_rights_society=random.choice(nrss),
     ...         ).save()
+
+Sampler
+-------
+
+    >>> artists = Artist.find([])
+
+    >>> for i in range(1, sampler + 1):
+    ...     number = i
+    ...     solos = Artist.find(['group', '=', False])
+    ...     labels = Label.find([])
+    ...     genres = Genre.find([])
+    ...     styles = Style.find([])
+    ...     creations = Creation.find([])
+    ...     publishers = Publisher.find([])
+    ...
+    ...     # release
+    ...     release = Release(
+    ...         entity_creator=random.choice(solos).party,
+    ...         title="Sampler %s" % str(number).zfill(3),
+    ...         genres=random.sample(genres, 3),
+    ...         styles=random.sample(styles, 3),
+    ...         number_mediums=1,
+    ...         warning='WARNING: This is testdata!',
+    ...         copyright_date=today,
+    ...         production_date=today,
+    ...         ean_upc_code='012345678901',
+    ...         isrc_code='DEA123456789',
+    ...         release_date=today,
+    ...         release_cancellation_date=today,
+    ...         online_release_date=today,
+    ...         online_cancellation_date=today,
+    ...         distribution_territory='Germany',
+    ...         label=random.choice(labels),
+    ...         label_catalog_number='12345',
+    ...         publisher=random.choice(publishers)
+    ...     )
+    ...     release.save()
+    ...
+    ...     # release creation
+    ...     tracks = random.sample(creations, creations_per_sampler)
+    ...     for i in range(0, len(tracks)):
+    ...         licenses = License.find([])
+    ...         rc = ReleaseCreation()
+    ...         rc.creation=tracks[i]
+    ...         rc.release=release
+    ...         rc.title="Renamed Song %s on Another Release" % str(number).zfill(3)
+    ...         rc.medium_number=1
+    ...         rc.track_number=i
+    ...         rc.license=random.choice(licenses)
+    ...         rc.save()
+
 
 Archiving
 ---------
@@ -591,6 +652,7 @@ Contents
     ...     # audio
     ...     c = Content()
     ...     c.uuid = str(uuid.uuid4())
+    ...     c.commit_state = 'revised'
     ...     c.entity_creator = artist.party
     ...     c.category = 'audio'
     ...     c.creation = creation

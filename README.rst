@@ -219,7 +219,6 @@ Delete a database::
 
     $ docker-compose run tryton ado-do db-delete DATABASE_NAME
 
-
 Create a new database::
 
     $ docker-compose run tryton ado-do db-create DATABASE_NAME
@@ -263,8 +262,6 @@ Lookup a specific host port in use::
 Maintenance After c3s.ado.repertoire Update
 --------------------------------
 Some changes in the container setup require a rebuild of the whole system.
-Best is to move the actual ``c3s.ado.repertoire`` directory to another name and
-make a fresh clone of the ``c3s.ado.repertoire`` repository.
 
 Update the environment as usual::
 
@@ -395,6 +392,22 @@ To run the demo-setup again, use::
     $ docker-compose run tryton sh -c \
           'ado-do pip-install tryton \
           && python -m doctest -v etc/scenario_master_data.txt'
+
+To run the test-setup to creake bulk test data, use::
+
+    $ docker-compose run tryton sh -c \
+          'ado-do pip-install tryton \
+          && python -m doctest -v etc/scenario_test_data.txt'
+
+To develop the doctests, it's faster, to use a snapshot of the master-setup::
+
+    $ docker-compose run tryton bash
+    $ ado-do pip-install tryton
+    $ ado-do db-delete c3s_template && ado-do db-create c3s_template \
+        && ado-do db-setup --master --force c3s_template
+    $ ado-do db-delete c3s && ado-do db-copy c3s_template c3s \
+        && ado-do db-setup c3s --test --force > /ado/tmp/db-test-setup.log
+
 
 Portal
 ------
