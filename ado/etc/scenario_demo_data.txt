@@ -101,7 +101,7 @@ result is the authenticated web user object::
     ...     config.context)
     >>> assert(logged_in_web_user)
     >>> logged_in_web_user
-    Pool().get('web.user')(1)
+    Pool().get('web.user')(...)
 
     >>> logged_in_web_user = WebUser(logged_in_web_user.id)
     >>> assert(logged_in_web_user.nickname == u'wil')
