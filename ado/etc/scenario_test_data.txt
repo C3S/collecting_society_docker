@@ -33,6 +33,9 @@ Configuration
     >>> creations_per_release = 5
     >>> sampler = 2
     >>> creations_per_sampler = 20
+    >>> split_release = 2
+    >>> split_artists = 2
+    >>> creations_per_split_artist = 2
     
     >>> storehouses = 2
     >>> harddisklabels_per_storehouse = 2
@@ -62,6 +65,8 @@ Extended::
 
 New::
 
+    >>> AccessControlEntry = Model.get('ace')
+    >>> AccessControlPermission = Model.get('ace.permission')
     >>> CollectingSociety = Model.get('collecting_society')
     >>> TariffSystem = Model.get('tariff_system')
     >>> TariffCategory = Model.get('tariff_system.category')
@@ -291,6 +296,7 @@ Artists
     ...         description=test_text
     ...     )
     ...     group_artist.save()
+    ...
     ...     for j in range(1, new_solo_artists_per_group + 1):
     ...         number = (i - 1) * new_solo_artists_per_group + j
     ...         web_user, = WebUser.find([(
@@ -306,7 +312,17 @@ Artists
     ...             claim_state='revised',
     ...             description=test_text
     ...         )
+    ...         solo_artist.save()
     ...         group_artist.save()
+    ...
+    ...         permissions = AccessControlPermission.find(
+    ...             [('name', 'in', ['Stakeholder', 'Administrator'])])
+    ...         ace = AccessControlEntry()
+    ...         ace.party = web_user.party
+    ...         ace.entity = solo_artist
+    ...         ace.permissions.extend(permissions)
+    ...         ace.save()
+
 
     >>> groups = Artist.find(['group', '=', True])
     >>> for i, group in enumerate(groups):
@@ -319,6 +335,17 @@ Artists
     ...             solo = random.choice(solos)
     ...         group.solo_artists.extend([solo])
     ...         group.save()
+    
+    >>> groups = Artist.find(['group', '=', True])
+    >>> for group in groups:
+    ...     for solo in group.solo_artists:
+    ...         permissions = AccessControlPermission.find(
+    ...             [('name', 'in', ['Stakeholder', 'Administrator'])])
+    ...         ace = AccessControlEntry()
+    ...         ace.party = solo.party
+    ...         ace.entity = group
+    ...         ace.permissions.extend(permissions)
+    ...         ace.save()
 
 Releases
 --------
@@ -328,15 +355,17 @@ Releases
     >>> for i in range(1, len(artists) + 1):
     ...     for j in range(1, releases_per_artist + 1):
     ...         number = (i - 1) * releases_per_artist + j
-    ...         artist = artists[i-1]
-    ...         if artist.group:
-    ...             artist = artist.solo_artists[0]
+    ...         owner = artists[i-1]
+    ...         creator = owner
+    ...         if creator.group:
+    ...             creator = creator.solo_artists[0]
     ...         publishers = Publisher.find([])
     ...         labels = Label.find([])
     ...         genres = Genre.find([])
     ...         styles = Style.find([])
-    ...         Release(
-    ...             entity_creator=artist.party,
+    ...         release = Release(
+    ...             type="artist",
+    ...             entity_creator=creator.party,
     ...             commit_state='revised',
     ...             claim_state='revised',
     ...             title="Release %s" % str(number).zfill(3),
@@ -356,7 +385,12 @@ Releases
     ...             label=random.choice(labels),
     ...             label_catalog_number='12345',
     ...             publisher=random.choice(publishers)
-    ...         ).save()
+    ...         )
+    ...         ra = release.artists.new(
+    ...             artist=owner,
+    ...             release=release
+    ...         )
+    ...         release.save()
 
 Creations
 ---------
@@ -369,16 +403,18 @@ Creations
     ...         number = (i - 1) * creations_per_release + j
     ...         artist_number = divmod(i-1, releases_per_artist)[0]
     ...         artist = artists[artist_number]
-    ...         if artist.group:
-    ...             artist = artist.solo_artists[0]
+    ...         creator = artist
+    ...         if creator.group:
+    ...             creator = creator.solo_artists[0]
     ...         # creation
     ...         creation = Creation(
     ...             commit_state='revised',
     ...             claim_state='revised',
-    ...             entity_creator=artist.party,
+    ...             entity_creator=creator.party,
     ...             artist=artist
     ...         )
     ...         creation.save()
+    ...
     ...         # tariff categories
     ...         css = CollectingSociety.find([(
     ...             'represents_copyright', '=', True)])
@@ -530,10 +566,14 @@ Sampler
     ...     styles = Style.find([])
     ...     creations = Creation.find([])
     ...     publishers = Publisher.find([])
+    ...     creator = random.choice(solos)
     ...
     ...     # release
     ...     release = Release(
-    ...         entity_creator=random.choice(solos).party,
+    ...         type="compilation",
+    ...         entity_creator=creator.party,
+    ...         commit_state='revised',
+    ...         claim_state='revised',
     ...         title="Sampler %s" % str(number).zfill(3),
     ...         genres=random.sample(genres, 3),
     ...         styles=random.sample(styles, 3),
@@ -561,11 +601,80 @@ Sampler
     ...         rc = ReleaseCreation()
     ...         rc.creation=tracks[i]
     ...         rc.release=release
-    ...         rc.title="Renamed Song %s on Another Release" % str(number).zfill(3)
+    ...         rc.title="Renamed Song %s on a Compilation" % str(number).zfill(3)
     ...         rc.medium_number=1
     ...         rc.track_number=i
     ...         rc.license=random.choice(licenses)
     ...         rc.save()
+    ...
+    ...     permissions = AccessControlPermission.find(
+    ...         [('name', 'in', ['Stakeholder', 'Administrator'])])
+    ...     ace = AccessControlEntry()
+    ...     ace.party = creator.party
+    ...     ace.entity = release
+    ...     ace.permissions.extend(permissions)
+    ...     ace.save()
+
+Split Release
+-------------
+
+    >>> for i in range(1, split_release + 1):
+    ...     number = i
+    ...     artists = Artist.find([])
+    ...     labels = Label.find([])
+    ...     genres = Genre.find([])
+    ...     styles = Style.find([])
+    ...     creations = Creation.find([])
+    ...     publishers = Publisher.find([])
+    ...
+    ...     splits = random.sample(artists, split_artists)
+    ...     creator = splits[0]
+    ...     if creator.group:
+    ...         creator = creator.solo_artists[0]
+    ...
+    ...     # release
+    ...     release = Release(
+    ...         type='artist',
+    ...         entity_creator=creator.party,
+    ...         commit_state='revised',
+    ...         claim_state='revised',
+    ...         title="Split Release %s" % str(number).zfill(3),
+    ...         genres=random.sample(genres, 3),
+    ...         styles=random.sample(styles, 3),
+    ...         number_mediums=1,
+    ...         warning='WARNING: This is testdata!',
+    ...         copyright_date=today,
+    ...         production_date=today,
+    ...         ean_upc_code='012345678901',
+    ...         isrc_code='DEA123456789',
+    ...         release_date=today,
+    ...         release_cancellation_date=today,
+    ...         online_release_date=today,
+    ...         online_cancellation_date=today,
+    ...         distribution_territory='Germany',
+    ...         label=random.choice(labels),
+    ...         label_catalog_number='12345',
+    ...         publisher=random.choice(publishers)
+    ...     )
+    ...     for split in splits:
+    ...         ra = release.artists.new(artist=split, release=release)
+    ...     release.save()
+    ...
+    ...     # release creation
+    ...     for split in splits:
+    ...         tracks = random.sample(split.creations, 
+    ...             min(creations_per_split_artist,len(split.creations)))
+    ...         for i in range(0, len(tracks)):
+    ...             licenses = License.find([])
+    ...             rc = ReleaseCreation()
+    ...             rc.creation=tracks[i]
+    ...             rc.release=release
+    ...             rc.title="Renamed Song %s on a Split Release" % str(
+    ...                 number).zfill(3)
+    ...             rc.medium_number=1
+    ...             rc.track_number=i
+    ...             rc.license=random.choice(licenses)
+    ...             rc.save()
 
 
 Archiving
