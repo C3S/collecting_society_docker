@@ -200,20 +200,6 @@ Create transitory journal::
     ...     sequence=sequence_journal)
     >>> journal.save()
 
-ACL
----
-
-    >>> AccessControlPermission = Model.get('ace.permission')
-    >>> AccessControlPermission(
-    ...     name='Administrator',
-    ...     description='Permission to read/write the object.'
-    ... ).save()
-    >>> AccessControlPermission(
-    ...     name='Stakeholder',
-    ...     description='Adds the object to the lists of the web user.'
-    ... ).save()
-
-
 Final
 =====
 

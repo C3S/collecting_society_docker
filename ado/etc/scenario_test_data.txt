@@ -62,6 +62,7 @@ Extended::
 
     >>> Party = Model.get('party.party')
     >>> WebUser = Model.get('web.user')
+    >>> WebUserRole = Model.get('web.user.role')
 
 New::
 
@@ -270,12 +271,16 @@ Web Users
 ::
     >>> for i in range(1, group_artists * new_solo_artists_per_group + 1):
     ...     number = i
-    ...     WebUser(
+    ...     web_user = WebUser(
     ...         email='%s@rep.test' % number,
     ...         password="%s" % number,
-    ...         nickname="Web User %s" % str(number).zfill(3),
+    ...         nickname="Registered Name %s" % str(number).zfill(3),
     ...         opt_in_state='opted-in'
-    ...     ).save()
+    ...     )
+    ...     roles = WebUserRole.find([('code', '=', 'licenser')])
+    ...     web_user.roles.extend(roles)
+    ...     web_user.default_role = 'licenser'
+    ...     web_user.save()
 
 Artists
 -------
@@ -284,7 +289,8 @@ Artists
     ...     number = i
     ...     web_user_number = (number - 1) * new_solo_artists_per_group + 1
     ...     web_user, = WebUser.find([(
-    ...         'nickname', '=', 'Web User %s' % str(web_user_number).zfill(3)
+    ...         'nickname', '=', 'Registered Name %s' % str(
+    ...             web_user_number).zfill(3)
     ...     )])
     ...     group_artist = Artist(
     ...         name="Group Artist %s" % str(number).zfill(3),
@@ -300,7 +306,8 @@ Artists
     ...     for j in range(1, new_solo_artists_per_group + 1):
     ...         number = (i - 1) * new_solo_artists_per_group + j
     ...         web_user, = WebUser.find([(
-    ...             'nickname', '=', 'Web User %s' % str(number).zfill(3)
+    ...             'nickname', '=', 'Registered Name %s' % str(
+    ...                 number).zfill(3)
     ...         )])
     ...         solo_artist = group_artist.solo_artists.new(
     ...             name="Solo Artist %s" % str(number).zfill(3),
@@ -318,7 +325,7 @@ Artists
     ...         permissions = AccessControlPermission.find(
     ...             [('name', 'in', ['Stakeholder', 'Administrator'])])
     ...         ace = AccessControlEntry()
-    ...         ace.party = web_user.party
+    ...         ace.web_user = web_user
     ...         ace.entity = solo_artist
     ...         ace.permissions.extend(permissions)
     ...         ace.save()
@@ -339,10 +346,11 @@ Artists
     >>> groups = Artist.find(['group', '=', True])
     >>> for group in groups:
     ...     for solo in group.solo_artists:
+    ...         web_user, = WebUser.find([('party.id', '=', solo.party.id)])
     ...         permissions = AccessControlPermission.find(
     ...             [('name', 'in', ['Stakeholder', 'Administrator'])])
     ...         ace = AccessControlEntry()
-    ...         ace.party = solo.party
+    ...         ace.web_user = web_user
     ...         ace.entity = group
     ...         ace.permissions.extend(permissions)
     ...         ace.save()
@@ -568,6 +576,7 @@ Sampler
     ...     creations = Creation.find([])
     ...     publishers = Publisher.find([])
     ...     creator = random.choice(solos)
+    ...     web_user, = WebUser.find([('party.id', '=', creator.party.id)])
     ...
     ...     # release
     ...     release = Release(
@@ -611,7 +620,7 @@ Sampler
     ...     permissions = AccessControlPermission.find(
     ...         [('name', 'in', ['Stakeholder', 'Administrator'])])
     ...     ace = AccessControlEntry()
-    ...     ace.party = creator.party
+    ...     ace.web_user = web_user
     ...     ace.entity = release
     ...     ace.permissions.extend(permissions)
     ...     ace.save()
