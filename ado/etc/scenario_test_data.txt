@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/c3s.ado.repertoire
+# flake8: noqa
 
 =========
 Test Data
@@ -16,6 +17,7 @@ Imports
     >>> import csv
     >>> import datetime
     >>> import random
+    >>> import string
     >>> import uuid
     >>> from proteus import config, Model, Wizard
     >>> # import interlude; interlude.interact(locals())
@@ -23,25 +25,45 @@ Imports
 Configuration
 -------------
 ::
-    >>> publisher = 20
-    >>> tariff_systems = 3
+
+    >>> debug = False
+
+    >>> publisher = debug or 20
+    >>> tariff_systems = debug or 3
     
-    >>> group_artists = 5
-    >>> new_solo_artists_per_group = 3
-    >>> add_solo_artists_per_group = 2
-    >>> releases_per_artist = 2
-    >>> creations_per_release = 5
-    >>> sampler = 2
-    >>> creations_per_sampler = 20
-    >>> split_release = 2
-    >>> split_artists = 2
-    >>> creations_per_split_artist = 2
+    >>> group_artists = debug or 5
+    >>> new_solo_artists_per_group = debug or 3
+    >>> add_solo_artists_per_group = debug or 2
+    >>> foreign_artists_per_group = debug or 2
+    >>> releases_per_artist = debug or 2
+    >>> creations_per_release = debug or 5
+    >>> genres_per_release = debug or 3
+    >>> styles_per_release = debug or 3
+    >>> release_cancellation_chance = debug and 1 or 0.3
+    >>> originals_per_creation = debug or 2
+    >>> foreign_originals_per_creation = debug or 2
+    >>> max_composers_per_creation = debug or 4
+    >>> max_recorders_per_creation = debug or 4
+    >>> max_texters_per_creation = debug or 2
+    >>> max_producers_per_creation = debug or 2
+    >>> max_masters_per_creation = debug or 2
+    >>> max_mixers_per_creation = debug or 2
+    >>> foreign_contributions_per_creation = debug and 1 or 2
+    >>> audio_content_chance_per_creation = debug and 1 or 0.8
+    >>> lyric_content_chance_per_creation = debug and 1 or 0.6
+    >>> sheet_content_chance_per_creation = debug and 1 or 0.1
+
+    >>> sampler_releases = debug or 2
+    >>> creations_per_sampler = debug or 20    
+    >>> split_releases = debug or 2
+    >>> artists_per_split_release = debug or 2
+    >>> creations_per_split_artist = debug or 2
     
-    >>> storehouses = 2
-    >>> harddisklabels_per_storehouse = 2
-    >>> harddisks_per_harddisklabel = 2
-    >>> filesystemlabels_per_harddisk = 2
-    >>> filesystems_per_filesystemlabel = 2
+    >>> storehouses = debug or 2
+    >>> harddisklabels_per_storehouse = debug or 2
+    >>> harddisks_per_harddisklabel = debug or 2
+    >>> filesystemlabels_per_harddisk = debug or 2
+    >>> filesystems_per_filesystemlabel = debug or 2
 
     >>> delimiter = ','
     >>> quotechar = '"'
@@ -66,34 +88,53 @@ Extended::
 
 New::
 
-    >>> AccessControlEntry = Model.get('ace')
-    >>> AccessControlPermission = Model.get('ace.permission')
     >>> CollectingSociety = Model.get('collecting_society')
     >>> TariffSystem = Model.get('tariff_system')
     >>> TariffCategory = Model.get('tariff_system.category')
     >>> Tariff = Model.get('tariff_system.tariff')
-    >>> Label = Model.get('label')
-    >>> Publisher = Model.get('publisher')
+    >>> Allocation = Model.get('distribution.allocation')
+    >>> Distribution = Model.get('distribution')
+    
     >>> License = Model.get('license')
     >>> Artist = Model.get('artist')
     >>> ArtistArtist = Model.get('artist-artist')
-    >>> Release = Model.get('release')
-    >>> ReleaseCreation = Model.get('release-creation')
-    >>> Genre = Model.get('genre')
-    >>> Style = Model.get('style')
+    >>> ArtistRelease = Model.get('artist-release')
+    >>> ArtistPayeeAcceptance = Model.get('artist.payee.acceptance')
     >>> Creation = Model.get('creation')
+    >>> CreationDerivative = Model.get('creation.original.derivative')
     >>> CreationContribution = Model.get('creation.contribution')
-    >>> ContributionRole = Model.get('creation.contribution-creation.role')
+    >>> CreationContributionRole = Model.get('creation.contribution-creation.role')
     >>> CreationRole = Model.get('creation.role')
     >>> CreationTariffCategory = Model.get('creation-tariff_category')
+    >>> Release = Model.get('release')
+    >>> ReleaseTrack = Model.get('release.track')
+    >>> ReleaseGenre = Model.get('release-genre')
+    >>> ReleaseStyle = Model.get('release-style')
+    >>> Genre = Model.get('genre')
+    >>> Style = Model.get('style')
+    >>> Label = Model.get('label')
+    >>> Publisher = Model.get('publisher')
+
+    >>> Utilisation = Model.get('creation.utilisation')
+    >>> Client = Model.get('client')
+    >>> Identifier = Model.get('creation.identification.identifier')
+    >>> Identification = Model.get('creation.identification')
+    >>> Fingerprintlog = Model.get('content.fingerprintlog')
+
     >>> Storehouse = Model.get('storehouse')
     >>> Harddisk = Model.get('harddisk')
     >>> HarddiskLabel = Model.get('harddisk.label')
     >>> HarddiskTest = Model.get('harddisk.test')
     >>> Filesystem = Model.get('harddisk.filesystem')
     >>> FilesystemLabel = Model.get('harddisk.filesystem.label')
-    >>> Checksum = Model.get('checksum')
     >>> Content = Model.get('content')
+    >>> Checksum = Model.get('checksum')
+    
+    >>> AccessControlEntry = Model.get('ace')
+    >>> AccessControlEntryRole = Model.get('ace-ace.role')
+    >>> AccessRole = Model.get('ace.role')
+    >>> AccessRolePermission = Model.get('ace.role-ace.permission')
+    >>> AccessPermission = Model.get('ace.permission')
 
 Content
 -------
@@ -106,6 +147,26 @@ Content
     ...     'Cultural Commons Collecting Society SCE mit beschränkter Haftung'
     ... )])
     >>> germany, = Country.find([('code', '=', 'DE')])
+    >>> countries = Country.find([])
+
+    >>> contribution_types = [
+    ...     'composition',
+    ...     'performance',
+    ...     'text',
+    ... ]
+    
+    >>> performance_types = [
+    ...     'recording',
+    ...     'producing',
+    ...     'mastering',
+    ...     'mixing',
+    ... ]
+
+    >>> allocation_types = [
+    ...     'adaption',
+    ...     'cover',
+    ...     'remix',
+    ... ]
 
     >>> test_genres = '/ado/etc/import_genres.csv'
     >>> test_styles = '/ado/etc/import_styles.csv'
@@ -173,7 +234,11 @@ Genres
 ::
     >>> with open(test_genres, 'r') as f:
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
     ...     for genre in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
     ...         Genre(
     ...             name=genre['name'],
     ...             description=genre['description']
@@ -184,7 +249,11 @@ Styles
 ::
     >>> with open(test_styles, 'r') as f:
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
     ...     for style in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
     ...         Style(
     ...             name=style['name'],
     ...             description=style['description']
@@ -195,7 +264,11 @@ Labels
 ::
     >>> with open(test_labels, 'r') as f:
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
     ...     for label in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
     ...         Label(
     ...             entity_creator=company.party,
     ...             name=label['name'],
@@ -207,7 +280,11 @@ Licenses
 ::
     >>> with open(test_licenses, 'r') as f:
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
     ...     for license in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
     ...         License(
     ...             code=license['code'],
     ...             version=license['version'],
@@ -232,7 +309,11 @@ Tariff Categories
 ::
     >>> with open(test_tariff_categories, 'r') as f:
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
     ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
     ...         TariffCategory(
     ...             name=category['name'],
     ...             code=category['code'],
@@ -284,7 +365,9 @@ Web Users
 
 Artists
 -------
-::
+
+Create group and members artists::
+
     >>> for i in range(1, group_artists + 1):
     ...     number = i
     ...     web_user_number = (number - 1) * new_solo_artists_per_group + 1
@@ -292,17 +375,20 @@ Artists
     ...         'nickname', '=', 'Registered Name %s' % str(
     ...             web_user_number).zfill(3)
     ...     )])
+    ...
+    ...     # group artists
     ...     group_artist = Artist(
     ...         name="Group Artist %s" % str(number).zfill(3),
     ...         group=True,
     ...         entity_creator=web_user.party,
     ...         entity_origin='direct',
-    ...         commit_state='revised',
-    ...         claim_state='revised',
+    ...         commit_state='commited',
+    ...         claim_state='claimed',
     ...         description=test_text
     ...     )
     ...     group_artist.save()
     ...
+    ...     # members
     ...     for j in range(1, new_solo_artists_per_group + 1):
     ...         number = (i - 1) * new_solo_artists_per_group + j
     ...         web_user, = WebUser.find([(
@@ -315,50 +401,102 @@ Artists
     ...             party=web_user.party,
     ...             entity_creator=web_user.party,
     ...             entity_origin='direct',
-    ...             commit_state='revised',
-    ...             claim_state='revised',
+    ...             commit_state='commited',
+    ...             claim_state='claimed',
     ...             description=test_text
     ...         )
     ...         solo_artist.save()
     ...         group_artist.save()
     ...
-    ...         permissions = AccessControlPermission.find(
+    ...         # access
+    ...         access_roles = AccessRole.find(
     ...             [('name', 'in', ['Stakeholder', 'Administrator'])])
     ...         ace = AccessControlEntry()
     ...         ace.web_user = web_user
     ...         ace.entity = solo_artist
-    ...         ace.permissions.extend(permissions)
+    ...         ace.roles.extend(access_roles)
     ...         ace.save()
+    ...
+    ...     # foreign members
+    ...     for k in range(1, foreign_artists_per_group + 1):
+    ...         number = (i - 1) * foreign_artists_per_group + k
+    ...         name = "Foreign Member Solo Artist %s" % str(number).zfill(3)
+    ...         foreign_solo_artist_party = Party(
+    ...             name=name,
+    ...             email="foreign_member_%s@rep.test" % number
+    ...         )
+    ...         foreign_solo_artist_party.save()
+    ...         foreign_solo_artist = group_artist.solo_artists.new(
+    ...             name=name,
+    ...             group=False,
+    ...             party=foreign_solo_artist_party,
+    ...             entity_creator=web_user.party,
+    ...             entity_origin='indirect',
+    ...             commit_state='uncommited',
+    ...             claim_state='unclaimed'
+    ...         )
+    ...         foreign_solo_artist.save()
+    ...         group_artist.save()
 
+Add existing solo artists to group artists::
 
-    >>> groups = Artist.find(['group', '=', True])
+    >>> groups = Artist.find([
+    ...     ('claim_state', '!=', 'unclaimed'),
+    ...     ('group', '=', True)])
     >>> for i, group in enumerate(groups):
-    ...     solos = Artist.find(['group', '=', False])
+    ...     solos = Artist.find([
+    ...         ('claim_state', '!=', 'unclaimed'),
+    ...         ('group', '=', False)])
     ...     for j in range(0, add_solo_artists_per_group):
-    ...         if solos == group.solo_artists:
+    ...         if solos <= group.solo_artists:
     ...             continue
     ...         solo = random.choice(solos)
     ...         while solo in group.solo_artists:
     ...             solo = random.choice(solos)
     ...         group.solo_artists.extend([solo])
     ...         group.save()
+
+Add access roles for group artist members::
     
-    >>> groups = Artist.find(['group', '=', True])
+    >>> groups = Artist.find([
+    ...     ('claim_state', '!=', 'unclaimed'),
+    ...     ('group', '=', True)])
     >>> for group in groups:
     ...     for solo in group.solo_artists:
+    ...         if solo.claim_state == 'unclaimed':
+    ...             continue
     ...         web_user, = WebUser.find([('party.id', '=', solo.party.id)])
-    ...         permissions = AccessControlPermission.find(
+    ...         access_roles = AccessRole.find(
     ...             [('name', 'in', ['Stakeholder', 'Administrator'])])
     ...         ace = AccessControlEntry()
     ...         ace.web_user = web_user
     ...         ace.entity = group
-    ...         ace.permissions.extend(permissions)
+    ...         ace.roles.extend(access_roles)
     ...         ace.save()
+
+CreationRoles
+-------------
+::
+    >>> with open(test_creation_roles, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for role in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         artists = Artist.find([
+    ...             ('claim_state', '!=', 'unclaimed'),
+    ...             ('group', '!=', True)])
+    ...         CreationRole(
+    ...             entity_creator=random.choice(artists).party,
+    ...             name=role['name'],
+    ...             description=role['description']
+    ...         ).save()
 
 Releases
 --------
 ::
-    >>> artists = Artist.find([])
+    >>> artists = Artist.find([('claim_state', '!=', 'unclaimed')])
 
     >>> for i in range(1, len(artists) + 1):
     ...     for j in range(1, releases_per_artist + 1):
@@ -366,34 +504,47 @@ Releases
     ...         owner = artists[i-1]
     ...         creator = owner
     ...         if creator.group:
-    ...             creator = creator.solo_artists[0]
+    ...             for solo in creator.solo_artists:
+    ...                 if solo.claim_state != 'unclaimed':
+    ...                     creator = solo
+    ...                     break
     ...         publishers = Publisher.find([])
     ...         labels = Label.find([])
     ...         genres = Genre.find([])
     ...         styles = Style.find([])
+    ...         release_date = datetime.date(
+    ...             random.randint(1800, 2017),
+    ...             random.randint(1, 12),
+    ...             random.randint(1, 28))
+    ...         isrc = ''.join(random.sample(string.ascii_uppercase, 3)) + \
+    ...             str(random.randint(1,999999999)).zfill(9)
     ...         release = Release(
     ...             type="artist",
     ...             entity_creator=creator.party,
-    ...             commit_state='revised',
-    ...             claim_state='revised',
+    ...             commit_state='commited',
+    ...             claim_state='claimed',
     ...             title="Release %s" % str(number).zfill(3),
-    ...             genres=random.sample(genres, 3),
-    ...             styles=random.sample(styles, 3),
+    ...             genres=random.sample(genres, min(
+    ...                 genres_per_release, len(genres))),
+    ...             styles=random.sample(styles, min(
+    ...                 styles_per_release, len(styles))),
     ...             number_mediums=1,
     ...             warning='WARNING: This is testdata!',
-    ...             copyright_date=today,
-    ...             production_date=today,
-    ...             ean_upc_code='012345678901',
-    ...             isrc_code='DEA123456789',
-    ...             release_date=today,
-    ...             release_cancellation_date=today,
-    ...             online_release_date=today,
-    ...             online_cancellation_date=today,
-    ...             distribution_territory='Germany',
+    ...             copyright_date=release_date - datetime.timedelta(10),
+    ...             production_date=release_date - datetime.timedelta(30),
+    ...             ean_upc_code=str(random.randint(1,999999999999)).zfill(12),
+    ...             isrc_code=isrc,
+    ...             release_date=release_date,
+    ...             online_release_date=release_date,
+    ...             distribution_territory=random.choice(countries).code,
     ...             label=random.choice(labels),
-    ...             label_catalog_number='12345',
+    ...             label_catalog_number=str(random.randint(10000, 99999)),
     ...             publisher=random.choice(publishers)
     ...         )
+    ...         if random.random() < release_cancellation_chance:
+    ...             cancellation_date = release_date + datetime.timedelta(300)
+    ...             release.release_cancellation_date = cancellation_date
+    ...             release.online_cancellation_date = cancellation_date
     ...         ra = release.artists.new(
     ...             artist=owner,
     ...             release=release
@@ -403,8 +554,7 @@ Releases
 Creations
 ---------
 ::
-    >>> releases = Release.find([])
-    >>> allocation_types = ['adaption', 'cover', 'remix']
+    >>> releases = Release.find([('claim_state', '!=', 'unclaimed')])
 
     >>> for i in range(1, len(releases) + 1):
     ...     for j in range(1, creations_per_release + 1):
@@ -417,8 +567,8 @@ Creations
     ...         # creation
     ...         creation = Creation(
     ...             title="Working Title of Song %s" % str(number).zfill(3),
-    ...             commit_state='revised',
-    ...             claim_state='revised',
+    ...             commit_state='commited',
+    ...             claim_state='claimed',
     ...             entity_creator=creator.party,
     ...             artist=artist
     ...         )
@@ -436,17 +586,7 @@ Creations
     ...                 category=category,
     ...                 collecting_society=random.choice(css)
     ...             ).save()
-    ...         # originals
-    ...         creations = Creation.find(['id', '!=', creation.id])
-    ...         if len(creations):
-    ...             originals = random.sample(creations, min(len(creations), 2))
-    ...             for original in originals:
-    ...                 cor = creation.original_relations.new()
-    ...                 cor.original_creation = original
-    ...                 cor.derivative_creation = creation
-    ...                 cor.allocation_type = random.choice(allocation_types)
-    ...                 cor.save()
-    ...                 creation.save()
+    ...
     ...         # release creation
     ...         licenses = License.find([])
     ...         cr = creation.releases.new()
@@ -459,23 +599,70 @@ Creations
     ...         cr.save()
     ...         creation.save()
 
-CreationRoles
+Derivatives
+-----------
+::
+    >>> creations = Creation.find([('claim_state', '!=', 'unclaimed')])
+
+Exisiting creations::
+
+    >>> for i in range(0, len(creations)):
+    ...     creation = creations[i]
+    ...     if not creation.release:
+    ...         continue
+    ...     others = []
+    ...     for other in creations:
+    ...         if not other.release or other.id == creation.id:
+    ...             continue
+    ...         others.append(other)
+    ...     originals = random.sample(others, min(
+    ...         originals_per_creation, len(others)))
+    ...     for original in originals:
+    ...         cor = creation.original_relations.new()
+    ...         cor.original_creation = original
+    ...         cor.derivative_creation = creation
+    ...         cor.allocation_type = random.choice(allocation_types)
+    ...         cor.save()
+    ...         creation.save()
+
+Foreign originals::
+
+    >>> for i in range(0, len(creations)):
+    ...     creation = creations[i]
+    ...     for j in range(1, foreign_originals_per_creation + 1):
+    ...         number = i * foreign_originals_per_creation + j
+    ...         foreign_artist = Artist(
+    ...             name="Foreign Original Artist %s" % str(number).zfill(3),
+    ...             group=False,
+    ...             entity_creator=creation.entity_creator,
+    ...             entity_origin='indirect',
+    ...             commit_state='uncommited',
+    ...             claim_state='unclaimed'
+    ...         )
+    ...         foreign_artist.save()
+    ...         foreign_original = Creation(
+    ...             title="Foreign Original Song %s" % str(number).zfill(3),
+    ...             artist=foreign_artist,
+    ...             entity_creator=creation.entity_creator,
+    ...             entity_origin='indirect',
+    ...             commit_state='uncommited',
+    ...             claim_state='unclaimed'
+    ...         )
+    ...         foreign_original.save()
+    ...
+    ...         cor = creation.original_relations.new()
+    ...         cor.original_creation = foreign_original
+    ...         cor.derivative_creation = creation
+    ...         cor.allocation_type = random.choice(allocation_types)
+    ...         cor.save()
+    ...         creation.save()
+
+Contributions
 -------------
 ::
-    >>> with open(test_creation_roles, 'r') as f:
-    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-    ...     for role in reader:
-    ...         artists = Artist.find([('group', '!=', True)])
-    ...         CreationRole(
-    ...             entity_creator=random.choice(artists).party,
-    ...             name=role['name'],
-    ...             description=role['description']
-    ...         ).save()
+    >>> creations = Creation.find([('claim_state', '!=', 'unclaimed')])
 
-CreationContributions
----------------------
-::
-    >>> creations = Creation.find([])
+Existing solo or member artists::
 
     >>> for i in range(0, len(creations)):
     ...     creation = creations[i]
@@ -486,7 +673,8 @@ CreationContributions
     ...     roles = CreationRole.find([])
     ...     
     ...     # composer
-    ...     num_composers = random.randint(0, min(4, len(contributors)))
+    ...     num_composers = random.randint(0, min(
+    ...         max_composers_per_creation, len(contributors)))
     ...     for composer in random.sample(contributors, num_composers):
     ...         # composition
     ...         cc = CreationContribution()
@@ -494,13 +682,14 @@ CreationContributions
     ...         cc.artist = composer
     ...         cc.type = 'composition'
     ...         cc.save()
-    ...         cr = ContributionRole()
+    ...         cr = CreationContributionRole()
     ...         cr.contribution = cc
     ...         cr.role = random.choice(roles)
     ...         cr.save()
     ...     
     ...     # recorder
-    ...     num_recorders = random.randint(0, min(4, len(contributors)))
+    ...     num_recorders = random.randint(0, min(
+    ...         max_recorders_per_creation, len(contributors)))
     ...     for recorder in random.sample(contributors, num_recorders):
     ...         # composition
     ...         cc = CreationContribution()
@@ -509,13 +698,14 @@ CreationContributions
     ...         cc.type = 'performance'
     ...         cc.performance = 'recording'
     ...         cc.save()
-    ...         cr = ContributionRole()
+    ...         cr = CreationContributionRole()
     ...         cr.contribution = cc
     ...         cr.role = random.choice(roles)
     ...         cr.save()
     ...
     ...     # texter
-    ...     num_texters = random.randint(0, min(2, len(contributors)))
+    ...     num_texters = random.randint(0, min(
+    ...         max_texters_per_creation, len(contributors)))
     ...     for texter in random.sample(contributors, num_texters):
     ...         CreationContribution(
     ...             creation=creation,
@@ -526,7 +716,8 @@ CreationContributions
     ...     # producer
     ...     nrss = CollectingSociety.find([(
     ...         'represents_ancillary_copyright', '=', True)])
-    ...     num_producers = random.randint(0, min(2, len(contributors)))
+    ...     num_producers = random.randint(0, min(
+    ...         max_producers_per_creation, len(contributors)))
     ...     for producer in random.sample(contributors, num_producers):
     ...         CreationContribution(
     ...             creation=creation,
@@ -539,7 +730,8 @@ CreationContributions
     ...     # master
     ...     nrss = CollectingSociety.find([(
     ...         'represents_ancillary_copyright', '=', True)])
-    ...     num_masters = random.randint(0, min(2, len(contributors)))
+    ...     num_masters = random.randint(0, min(
+    ...         max_masters_per_creation, len(contributors)))
     ...     for master in random.sample(contributors, num_masters):
     ...         CreationContribution(
     ...             creation=creation,
@@ -552,7 +744,8 @@ CreationContributions
     ...     # mixer
     ...     nrss = CollectingSociety.find([(
     ...         'represents_ancillary_copyright', '=', True)])
-    ...     num_mixers = random.randint(0, min(2, len(contributors)))
+    ...     num_mixers = random.randint(0, min(
+    ...         max_mixers_per_creation, len(contributors)))
     ...     for mixer in random.sample(contributors, num_mixers):
     ...         CreationContribution(
     ...             creation=creation,
@@ -562,18 +755,69 @@ CreationContributions
     ...             neighbouring_rights_society=random.choice(nrss),
     ...         ).save()
 
-Sampler
--------
+Foreign contributions::
 
-    >>> artists = Artist.find([])
+    >>> for i in range(0, len(creations)):
+    ...     for j in range(1, foreign_contributions_per_creation + 1):
+    ...         number = i * foreign_contributions_per_creation + j
+    ...         creation = creations[i]
+    ...         roles = CreationRole.find([])
+    ...         nrss = CollectingSociety.find([(
+    ...             'represents_ancillary_copyright', '=', True)])
+    ...
+    ...         # foreign artist
+    ...         name = "Foreign Contributor Solo Artist %s" % str(
+    ...             number).zfill(3)
+    ...         foreign_solo_artist_party = Party(
+    ...             name=name,
+    ...             email="foreign_contributor_%s@rep.test" % number
+    ...         )
+    ...         foreign_solo_artist_party.save()
+    ...         foreign_solo_artist = Artist(
+    ...             name=name,
+    ...             group=False,
+    ...             party=foreign_solo_artist_party,
+    ...             entity_creator=creation.entity_creator,
+    ...             entity_origin='indirect',
+    ...             commit_state='uncommited',
+    ...             claim_state='unclaimed'
+    ...         )
+    ...         foreign_solo_artist.save()
+    ...         
+    ...         # contribution
+    ...         cc = CreationContribution()
+    ...         cc.creation = creation
+    ...         cc.artist = foreign_solo_artist
+    ...         cc.type = random.choice(contribution_types)
+    ...         if cc.type == 'performance':
+    ...             cc.performance = random.choice(performance_types)
+    ...             if random.choice([False, True]):
+    ...                 cc.neighbouring_rights_society = random.choice(nrss)
+    ...         cc.save()
+    ...
+    ...         # contribution role
+    ...         if cc.type == 'composition' or cc.performance == 'recording':
+    ...             cr = CreationContributionRole()
+    ...             cr.contribution = cc
+    ...             cr.role = random.choice(roles)
+    ...             cr.save()
 
-    >>> for i in range(1, sampler + 1):
+Sampler Releases
+----------------
+
+    >>> artists = Artist.find([('claim_state', '!=', 'unclaimed')])
+
+    >>> for i in range(1, sampler_releases + 1):
     ...     number = i
-    ...     solos = Artist.find(['group', '=', False])
+    ...     solos = Artist.find([
+    ...         ('claim_state', '!=', 'unclaimed'),
+    ...         ('group', '=', False)])
     ...     labels = Label.find([])
     ...     genres = Genre.find([])
     ...     styles = Style.find([])
-    ...     creations = Creation.find([])
+    ...     isrc = ''.join(random.sample(string.ascii_uppercase, 3)) + \
+    ...         str(random.randint(1,999999999)).zfill(9)
+    ...     creations = Creation.find([('claim_state', '!=', 'unclaimed')])
     ...     publishers = Publisher.find([])
     ...     creator = random.choice(solos)
     ...     web_user, = WebUser.find([('party.id', '=', creator.party.id)])
@@ -582,62 +826,71 @@ Sampler
     ...     release = Release(
     ...         type="compilation",
     ...         entity_creator=creator.party,
-    ...         commit_state='revised',
-    ...         claim_state='revised',
+    ...         commit_state='commited',
+    ...         claim_state='claimed',
     ...         title="Sampler %s" % str(number).zfill(3),
-    ...         genres=random.sample(genres, 3),
-    ...         styles=random.sample(styles, 3),
+    ...         genres=random.sample(genres, min(
+    ...             genres_per_release, len(genres))),
+    ...         styles=random.sample(styles, min(
+    ...             styles_per_release, len(styles))),
     ...         number_mediums=1,
     ...         warning='WARNING: This is testdata!',
-    ...         copyright_date=today,
-    ...         production_date=today,
-    ...         ean_upc_code='012345678901',
-    ...         isrc_code='DEA123456789',
-    ...         release_date=today,
-    ...         release_cancellation_date=today,
-    ...         online_release_date=today,
-    ...         online_cancellation_date=today,
-    ...         distribution_territory='Germany',
+    ...         ean_upc_code=str(random.randint(1,999999999999)).zfill(12),
+    ...         isrc_code=isrc,
+    ...         distribution_territory=random.choice(countries).code,
     ...         label=random.choice(labels),
-    ...         label_catalog_number='12345',
+    ...         label_catalog_number=str(random.randint(10000, 99999)),
     ...         publisher=random.choice(publishers)
     ...     )
     ...     release.save()
     ...
     ...     # release creation
     ...     tracks = random.sample(creations, creations_per_sampler)
+    ...     last_date = datetime.date(1,1,1)
     ...     for i in range(0, len(tracks)):
+    ...         track = tracks[i]
+    ...         if track.release.release_date > last_date:
+    ...             last_date = track.release.release_date
     ...         licenses = License.find([])
-    ...         rc = ReleaseCreation()
-    ...         rc.creation=tracks[i]
+    ...         rc = ReleaseTrack()
+    ...         rc.creation=track
     ...         rc.release=release
-    ...         rc.title="Renamed Song %s on a Compilation" % str(number).zfill(3)
+    ...         rc.title="Renamed Song %s on a Compilation" % str(
+    ...             number).zfill(3)
     ...         rc.medium_number=1
     ...         rc.track_number=i
     ...         rc.license=random.choice(licenses)
     ...         rc.save()
     ...
-    ...     permissions = AccessControlPermission.find(
+    ...     release.production_date = last_date + datetime.timedelta(50)
+    ...     release.copyright_date = last_date + datetime.timedelta(80)
+    ...     release.release_date = last_date + datetime.timedelta(100)
+    ...     release.online_release_date = last_date + datetime.timedelta(100)
+    ...     release.save()
+    ...
+    ...     access_roles = AccessRole.find(
     ...         [('name', 'in', ['Stakeholder', 'Administrator'])])
     ...     ace = AccessControlEntry()
     ...     ace.web_user = web_user
     ...     ace.entity = release
-    ...     ace.permissions.extend(permissions)
+    ...     ace.roles.extend(access_roles)
     ...     ace.save()
 
-Split Release
--------------
+Split Releases
+--------------
 
-    >>> for i in range(1, split_release + 1):
+    >>> for i in range(1, split_releases + 1):
     ...     number = i
-    ...     artists = Artist.find([])
+    ...     artists = Artist.find([('claim_state', '!=', 'unclaimed')])
     ...     labels = Label.find([])
     ...     genres = Genre.find([])
     ...     styles = Style.find([])
-    ...     creations = Creation.find([])
+    ...     isrc = ''.join(random.sample(string.ascii_uppercase, 3)) + \
+    ...         str(random.randint(1,999999999)).zfill(9)
+    ...     creations = Creation.find([('claim_state', '!=', 'unclaimed')])
     ...     publishers = Publisher.find([])
     ...
-    ...     splits = random.sample(artists, split_artists)
+    ...     splits = random.sample(artists, artists_per_split_release)
     ...     creator = splits[0]
     ...     if creator.group:
     ...         creator = creator.solo_artists[0]
@@ -646,21 +899,17 @@ Split Release
     ...     release = Release(
     ...         type='artist',
     ...         entity_creator=creator.party,
-    ...         commit_state='revised',
-    ...         claim_state='revised',
+    ...         commit_state='commited',
+    ...         claim_state='claimed',
     ...         title="Split Release %s" % str(number).zfill(3),
-    ...         genres=random.sample(genres, 3),
-    ...         styles=random.sample(styles, 3),
+    ...         genres=random.sample(genres, min(
+    ...             genres_per_release, len(genres))),
+    ...         styles=random.sample(styles, min(
+    ...             styles_per_release, len(styles))),
     ...         number_mediums=1,
     ...         warning='WARNING: This is testdata!',
-    ...         copyright_date=today,
-    ...         production_date=today,
     ...         ean_upc_code='012345678901',
     ...         isrc_code='DEA123456789',
-    ...         release_date=today,
-    ...         release_cancellation_date=today,
-    ...         online_release_date=today,
-    ...         online_cancellation_date=today,
     ...         distribution_territory='Germany',
     ...         label=random.choice(labels),
     ...         label_catalog_number='12345',
@@ -671,13 +920,17 @@ Split Release
     ...     release.save()
     ...
     ...     # release creation
+    ...     last_date = datetime.date(1,1,1)
     ...     for split in splits:
     ...         tracks = random.sample(split.creations, 
     ...             min(creations_per_split_artist,len(split.creations)))
     ...         for i in range(0, len(tracks)):
+    ...             track = tracks[i]
+    ...             if track.release.release_date > last_date:
+    ...                 last_date = track.release.release_date
     ...             licenses = License.find([])
-    ...             rc = ReleaseCreation()
-    ...             rc.creation=tracks[i]
+    ...             rc = ReleaseTrack()
+    ...             rc.creation=track
     ...             rc.release=release
     ...             rc.title="Renamed Song %s on a Split Release" % str(
     ...                 number).zfill(3)
@@ -685,6 +938,12 @@ Split Release
     ...             rc.track_number=i
     ...             rc.license=random.choice(licenses)
     ...             rc.save()
+    ...
+    ...     release.production_date = last_date + datetime.timedelta(50)
+    ...     release.copyright_date = last_date + datetime.timedelta(80)
+    ...     release.release_date = last_date + datetime.timedelta(100)
+    ...     release.online_release_date = last_date + datetime.timedelta(100)
+    ...     release.save()
 
 
 Archiving
@@ -758,12 +1017,16 @@ Archiving
 Contents
 --------
 ::
-    >>> creations = Creation.find([])
+    >>> creations = Creation.find([('claim_state', '!=', 'unclaimed')])
     >>> filesystem_labels = FilesystemLabel.find([])
 
+Audio Files::
+
+    >>> audio_number = 1
     >>> for i in range(1, len(creations) + 1):
-    ...     number = i
-    ...     creation = creations[number - 1]
+    ...     if random.random() > audio_content_chance_per_creation:
+    ...         continue
+    ...     creation = creations[i - 1]
     ...     artist = creation.artist
     ...     if artist.group:
     ...         artist = artist.solo_artists[0]
@@ -771,12 +1034,12 @@ Contents
     ...     # audio
     ...     c = Content()
     ...     c.uuid = str(uuid.uuid4())
-    ...     c.commit_state = 'revised'
+    ...     c.commit_state = 'commited'
     ...     c.entity_creator = artist.party
     ...     c.category = 'audio'
     ...     c.creation = creation
     ...     # file metadata
-    ...     c.name = "Audio %s" % str(number).zfill(3)
+    ...     c.name = "audio_%s.wav" % str(audio_number).zfill(3)
     ...     c.size = 12345
     ...     c.mime_type = 'audio/x-wav'
     ...     # file processing
@@ -798,15 +1061,44 @@ Contents
     ...     c.metadata_release_date = str(creation.release.release_date)
     ...     c.metadata_track_number = "0"
     ...     c.save()
+    ...     audio_number += 1
+    
+Lyrics::
+
+    >>> for i in range(1, len(creations) + 1):
+    ...     if random.random() > lyric_content_chance_per_creation:
+    ...         continue
+    ...     creation = creations[i - 1]
+    ...     artist = creation.artist
+    ...     if artist.group:
+    ...         artist = artist.solo_artists[0]
     ...
-    ...     # sheets
+    ...     c = Content()
+    ...     c.uuid = str(uuid.uuid4())
+    ...     c.entity_creator = artist.party
+    ...     c.category = 'lyrics'
+    ...     c.creation = creation
+    ...     c.lyrics = test_text
+    ...     c.save()
+
+Sheet Pdfs::
+
+    >>> sheet_number = 1
+    >>> for i in range(1, len(creations) + 1):
+    ...     if random.random() > sheet_content_chance_per_creation:
+    ...         continue
+    ...     creation = creations[i - 1]
+    ...     artist = creation.artist
+    ...     if artist.group:
+    ...         artist = artist.solo_artists[0]
+    ...
     ...     c = Content()
     ...     c.uuid = str(uuid.uuid4())
     ...     c.entity_creator = artist.party
     ...     c.category = 'sheet'
     ...     c.creation = creation
     ...     # file metadata
-    ...     c.name = "Sheet %s" % str(number).zfill(3)
+    ...     c.name = "sheet_%s.pdf" % str(sheet_number).zfill(3)
     ...     c.size = 54321
     ...     c.mime_type = 'application/pdf'
     ...     # file processing
@@ -816,12 +1108,4 @@ Contents
     ...     c.storage_hostname = 'archive_machine'
     ...     c.mediation = False
     ...     c.save()
-    ...
-    ...     # lyrics
-    ...     c = Content()
-    ...     c.uuid = str(uuid.uuid4())
-    ...     c.entity_creator = artist.party
-    ...     c.category = 'lyrics'
-    ...     c.creation = creation
-    ...     c.lyrics = test_text
-    ...     c.save()
+    ...     sheet_number += 1
