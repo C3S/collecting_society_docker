@@ -408,15 +408,6 @@ Create group and members artists::
     ...         solo_artist.save()
     ...         group_artist.save()
     ...
-    ...         # access
-    ...         access_roles = AccessRole.find(
-    ...             [('name', 'in', ['Stakeholder', 'Administrator'])])
-    ...         ace = AccessControlEntry()
-    ...         ace.web_user = web_user
-    ...         ace.entity = solo_artist
-    ...         ace.roles.extend(access_roles)
-    ...         ace.save()
-    ...
     ...     # foreign members
     ...     for k in range(1, foreign_artists_per_group + 1):
     ...         number = (i - 1) * foreign_artists_per_group + k
@@ -455,24 +446,6 @@ Add existing solo artists to group artists::
     ...             solo = random.choice(solos)
     ...         group.solo_artists.extend([solo])
     ...         group.save()
-
-Add access roles for group artist members::
-    
-    >>> groups = Artist.find([
-    ...     ('claim_state', '!=', 'unclaimed'),
-    ...     ('group', '=', True)])
-    >>> for group in groups:
-    ...     for solo in group.solo_artists:
-    ...         if solo.claim_state == 'unclaimed':
-    ...             continue
-    ...         web_user, = WebUser.find([('party.id', '=', solo.party.id)])
-    ...         access_roles = AccessRole.find(
-    ...             [('name', 'in', ['Stakeholder', 'Administrator'])])
-    ...         ace = AccessControlEntry()
-    ...         ace.web_user = web_user
-    ...         ace.entity = group
-    ...         ace.roles.extend(access_roles)
-    ...         ace.save()
 
 CreationRoles
 -------------
@@ -867,14 +840,6 @@ Sampler Releases
     ...     release.release_date = last_date + datetime.timedelta(100)
     ...     release.online_release_date = last_date + datetime.timedelta(100)
     ...     release.save()
-    ...
-    ...     access_roles = AccessRole.find(
-    ...         [('name', 'in', ['Stakeholder', 'Administrator'])])
-    ...     ace = AccessControlEntry()
-    ...     ace.web_user = web_user
-    ...     ace.entity = release
-    ...     ace.roles.extend(access_roles)
-    ...     ace.save()
 
 Split Releases
 --------------
