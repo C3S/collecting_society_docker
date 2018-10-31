@@ -41,14 +41,14 @@ Configuration
     >>> styles_per_release = debug or 3
     >>> release_cancellation_chance = debug and 1 or 0.3
     >>> originals_per_creation = debug or 2
-    >>> foreign_originals_per_creation = debug or 2
+    >>> foreign_originals_per_creation = debug and 1 or 1
     >>> max_composers_per_creation = debug or 4
     >>> max_recorders_per_creation = debug or 4
     >>> max_texters_per_creation = debug or 2
     >>> max_producers_per_creation = debug or 2
     >>> max_masters_per_creation = debug or 2
     >>> max_mixers_per_creation = debug or 2
-    >>> foreign_contributions_per_creation = debug and 1 or 2
+    >>> foreign_contribution_chance_per_creation = debug and 1 or 0.3
     >>> audio_content_chance_per_creation = debug and 1 or 0.8
     >>> lyric_content_chance_per_creation = debug and 1 or 0.6
     >>> sheet_content_chance_per_creation = debug and 1 or 0.1
@@ -413,8 +413,11 @@ Create group and members artists::
     ...         number = (i - 1) * foreign_artists_per_group + k
     ...         name = "Foreign Member Solo Artist %s" % str(number).zfill(3)
     ...         foreign_solo_artist_party = Party(
-    ...             name=name,
-    ...             email="foreign_member_%s@rep.test" % number
+    ...             name=name
+    ...         )
+    ...         email = foreign_solo_artist_party.contact_mechanisms.new(
+    ...             type='email',
+    ...             value="foreign_member_%s@rep.test" % number
     ...         )
     ...         foreign_solo_artist_party.save()
     ...         foreign_solo_artist = group_artist.solo_artists.new(
@@ -729,51 +732,56 @@ Existing solo or member artists::
     ...         ).save()
 
 Foreign contributions::
-
+    
+    >>> number = 0
     >>> for i in range(0, len(creations)):
-    ...     for j in range(1, foreign_contributions_per_creation + 1):
-    ...         number = i * foreign_contributions_per_creation + j
-    ...         creation = creations[i]
-    ...         roles = CreationRole.find([])
-    ...         nrss = CollectingSociety.find([(
-    ...             'represents_ancillary_copyright', '=', True)])
-    ...
-    ...         # foreign artist
-    ...         name = "Foreign Contributor Solo Artist %s" % str(
-    ...             number).zfill(3)
-    ...         foreign_solo_artist_party = Party(
-    ...             name=name,
-    ...             email="foreign_contributor_%s@rep.test" % number
-    ...         )
-    ...         foreign_solo_artist_party.save()
-    ...         foreign_solo_artist = Artist(
-    ...             name=name,
-    ...             group=False,
-    ...             party=foreign_solo_artist_party,
-    ...             entity_creator=creation.entity_creator,
-    ...             entity_origin='indirect',
-    ...             commit_state='uncommited',
-    ...             claim_state='unclaimed'
-    ...         )
-    ...         foreign_solo_artist.save()
-    ...         
-    ...         # contribution
-    ...         cc = CreationContribution()
-    ...         cc.creation = creation
-    ...         cc.artist = foreign_solo_artist
-    ...         cc.type = random.choice(contribution_types)
-    ...         if cc.type == 'performance':
-    ...             cc.performance = random.choice(performance_types)
-    ...             if random.choice([False, True]):
-    ...                 cc.neighbouring_rights_society = random.choice(nrss)
-    ...         cc.save()
-    ...
-    ...         # contribution role
-    ...         if cc.type == 'composition' or cc.performance == 'recording':
-    ...             cr = CreationContributionRole()
-    ...             cr.contribution = cc
-    ...             cr.role = random.choice(roles)
-    ...             cr.save()
+    ...     if random.random() > foreign_contribution_chance_per_creation:
+    ...         continue
+    ...     number = number + 1
+    ...     creation = creations[i]
+    ...     roles = CreationRole.find([])
+    ...     nrss = CollectingSociety.find([(
+    ...         'represents_ancillary_copyright', '=', True)])
+    ...     
+    ...     # foreign artist
+    ...     name = "Foreign Contributor Solo Artist %s" % str(
+    ...         number).zfill(3)
+    ...     foreign_solo_artist_party = Party(
+    ...         name=name
+    ...     )
+    ...     email = foreign_solo_artist_party.contact_mechanisms.new(
+    ...         type='email',
+    ...         value="foreign_contributor_%s@rep.test" % number
+    ...     )
+    ...     foreign_solo_artist_party.save()
+    ...     foreign_solo_artist = Artist(
+    ...         name=name,
+    ...         group=False,
+    ...         party=foreign_solo_artist_party,
+    ...         entity_creator=creation.entity_creator,
+    ...         entity_origin='indirect',
+    ...         commit_state='uncommited',
+    ...         claim_state='unclaimed'
+    ...     )
+    ...     foreign_solo_artist.save()
+    ...     
+    ...     # contribution
+    ...     cc = CreationContribution()
+    ...     cc.creation = creation
+    ...     cc.artist = foreign_solo_artist
+    ...     cc.type = random.choice(contribution_types)
+    ...     if cc.type == 'performance':
+    ...         cc.performance = random.choice(performance_types)
+    ...         if random.choice([False, True]):
+    ...             cc.neighbouring_rights_society = random.choice(nrss)
+    ...     cc.save()
+    ...     
+    ...     # contribution role
+    ...     if cc.type == 'composition' or cc.performance == 'recording':
+    ...         cr = CreationContributionRole()
+    ...         cr.contribution = cc
+    ...         cr.role = random.choice(roles)
+    ...         cr.save()
 
 Sampler Releases
 ----------------
