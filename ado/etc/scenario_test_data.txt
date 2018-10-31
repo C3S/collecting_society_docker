@@ -504,7 +504,6 @@ Releases
     ...                 genres_per_release, len(genres))),
     ...             styles=random.sample(styles, min(
     ...                 styles_per_release, len(styles))),
-    ...             number_mediums=1,
     ...             warning='WARNING: This is testdata!',
     ...             copyright_date=release_date - datetime.timedelta(10),
     ...             production_date=release_date - datetime.timedelta(30),
@@ -814,7 +813,6 @@ Sampler Releases
     ...             genres_per_release, len(genres))),
     ...         styles=random.sample(styles, min(
     ...             styles_per_release, len(styles))),
-    ...         number_mediums=1,
     ...         warning='WARNING: This is testdata!',
     ...         ean_upc_code=str(random.randint(1,999999999999)).zfill(12),
     ...         isrc_code=isrc,
@@ -879,7 +877,6 @@ Split Releases
     ...             genres_per_release, len(genres))),
     ...         styles=random.sample(styles, min(
     ...             styles_per_release, len(styles))),
-    ...         number_mediums=1,
     ...         warning='WARNING: This is testdata!',
     ...         ean_upc_code='012345678901',
     ...         isrc_code='DEA123456789',
