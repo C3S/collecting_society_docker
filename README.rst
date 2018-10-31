@@ -223,15 +223,17 @@ Create a new database::
 
     $ docker-compose run tryton ado-do db-create DATABASE_NAME
 
-Re-new a database::
+Setup test data::
 
-    $ docker-compose run tryton ado-do db-delete DATABASE_NAME
+    $ docker-compose run tryton ado-do db-test-setup DATABASE_NAME
+
+Setup demo data::
+
     $ docker-compose run tryton ado-do db-demo-setup DATABASE_NAME
 
-The ``ado-do db-demo-setup`` command combines the following two steps::
+Rebuild a database::
 
-    $ # docker-compose run tryton ado-do db-create DATABASE_NAME
-    $ # docker-compose run tryton ado-do update DATABASE_NAME
+    $ docker-compose run tryton ado-do db-rebuild DATABASE_NAME
 
 
 Service Scaling
@@ -393,7 +395,7 @@ To run the demo-setup again, use::
           'ado-do pip-install tryton \
           && python -m doctest -v etc/scenario_master_data.txt'
 
-To run the test-setup to creake bulk test data, use::
+To run the test-setup again, use::
 
     $ docker-compose run tryton sh -c \
           'ado-do pip-install tryton \
@@ -406,7 +408,7 @@ To develop the doctests, it's faster, to use a snapshot of the master-setup::
     $ ado-do db-delete c3s_template && ado-do db-create c3s_template \
         && ado-do db-setup --master --force c3s_template
     $ ado-do db-delete c3s && ado-do db-copy c3s_template c3s \
-        && ado-do db-setup c3s --test --force > /ado/tmp/db-test-setup.log
+        && ado-do db-setup c3s --test --force
 
 
 Portal

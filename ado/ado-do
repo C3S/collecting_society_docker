@@ -277,21 +277,25 @@ def db_setup(context, dbname, master, test, demo, force):
 
         # Setup master data
         if master:
-            print("\nSetup scenario master data.\n")
+            print("\nSetup scenario master data -> /ado/tmp/db-master.log\n")
+            logfile = open("/ado/tmp/db-master.log", "w")
             subprocess.call(
                 [
                     '/usr/bin/python',
                     '-m', 'doctest',
                     '-v', os.path.join(
                         PROJECT_PATH, 'etc', 'scenario_master_data.txt'
-                    )
-                ]
+                    ),
+                    ''
+                ], stdout=logfile
             )
+            logfile.close()
 
         # Setup demo data
         if os.environ.get('ENVIRONMENT') == 'development':
             if test:
-                print('\nSetup scenario test data.\n')
+                print("\nSetup scenario test data -> /ado/tmp/db-test.log\n")
+                logfile = open("/ado/tmp/db-test.log", "w")
                 subprocess.call(
                     [
                         '/usr/bin/python',
@@ -299,10 +303,12 @@ def db_setup(context, dbname, master, test, demo, force):
                         '-v', os.path.join(
                             PROJECT_PATH, 'etc', 'scenario_test_data.txt'
                         )
-                    ]
+                    ], stdout=logfile
                 )
+                logfile.close()
             if demo:
-                print('\nSetup scenario demo data.\n')
+                print('\nSetup scenario demo data -> /ado/tmp/db-demo.log\n')
+                logfile = open("/ado/tmp/db-demo.log", "w")
                 subprocess.call(
                     [
                         '/usr/bin/python',
@@ -310,8 +316,9 @@ def db_setup(context, dbname, master, test, demo, force):
                         '-v', os.path.join(
                             PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
                         )
-                    ]
+                    ], stdout=logfile
                 )
+                logfile.close()
 
     else:
         print('Setup demo data, but database "%s" exists: Skip!' % dbname)
@@ -341,7 +348,24 @@ def db_test_setup(context, dbname):
 def db_demo_setup(context, dbname):
     context.invoke(
         db_setup, dbname=dbname,
-        master=True, test=True, demo=True, force=False)
+        master=True, test=False, demo=True, force=False)
+
+
+@ado_do.command('db-rebuild')
+@click.argument('dbname')
+@click.pass_context
+def db_rebuild(context, dbname):
+    """
+    Deletes DBNAME and executes db setup
+    """
+
+    # delete database
+    context.invoke(db_delete, dbname=dbname)
+
+    # setup database
+    context.invoke(
+        db_setup, dbname=dbname,
+        master=True, test=True, demo=False, force=False)
 
 
 @ado_do.command('create-test-db')
@@ -584,7 +608,7 @@ def deploy_portal(context):
     portal service (pserve).
     """
     context.invoke(pip_install, container='portal')
-    context.invoke(db_demo_setup, dbname='c3s')
+    context.invoke(db_test_setup, dbname='c3s')
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
     environment = str(os.environ.get('ENVIRONMENT')) + '.ini'
     subprocess.call(
@@ -609,7 +633,7 @@ def deploy_api(context):
     api service (pserve).
     """
     context.invoke(pip_install, container='api')
-    context.invoke(db_demo_setup, dbname='c3s')
+    context.invoke(db_test_setup, dbname='c3s')
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
     environment = str(os.environ.get('ENVIRONMENT')) + '.ini'
     subprocess.call(
