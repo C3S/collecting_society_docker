@@ -26,7 +26,7 @@ Configuration
 -------------
 ::
 
-    >>> debug = False
+    >>> debug = 1
 
     >>> publisher = debug or 20
     >>> tariff_systems = debug or 3
@@ -545,6 +545,7 @@ Creations
     ...             commit_state='commited',
     ...             claim_state='claimed',
     ...             entity_creator=creator.party,
+    ...             lyrics=test_text,
     ...             artist=artist
     ...         )
     ...         creation.save()
@@ -1032,24 +1033,6 @@ Audio Files::
     ...     c.metadata_track_number = "0"
     ...     c.save()
     ...     audio_number += 1
-    
-Lyrics::
-
-    >>> for i in range(1, len(creations) + 1):
-    ...     if random.random() > lyric_content_chance_per_creation:
-    ...         continue
-    ...     creation = creations[i - 1]
-    ...     artist = creation.artist
-    ...     if artist.group:
-    ...         artist = artist.solo_artists[0]
-    ...
-    ...     c = Content()
-    ...     c.uuid = str(uuid.uuid4())
-    ...     c.entity_creator = artist.party
-    ...     c.category = 'lyrics'
-    ...     c.creation = creation
-    ...     c.lyrics = test_text
-    ...     c.save()
 
 Sheet Pdfs::
 
