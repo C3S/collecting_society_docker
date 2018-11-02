@@ -519,11 +519,8 @@ Releases
     ...         if random.random() < release_cancellation_chance:
     ...             cancellation_date = release_date + datetime.timedelta(300)
     ...             release.release_cancellation_date = cancellation_date
-    ...             release.online_cancellation_date = cancellation_date
-    ...         ra = release.artists.new(
-    ...             artist=owner,
-    ...             release=release
-    ...         )
+    ...             release.online_cancellation_date = cancellation_date    
+    ...         release.artists.append(owner)
     ...         release.save()
 
 Creations
@@ -887,7 +884,7 @@ Split Releases
     ...         publisher=random.choice(publishers)
     ...     )
     ...     for split in splits:
-    ...         ra = release.artists.new(artist=split, release=release)
+    ...         release.artists.append(split)
     ...     release.save()
     ...
     ...     # release creation
