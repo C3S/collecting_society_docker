@@ -26,7 +26,7 @@ Configuration
 -------------
 ::
 
-    >>> debug = 1
+    >>> debug = False
 
     >>> publisher = debug or 20
     >>> tariff_systems = debug or 3
