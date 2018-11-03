@@ -866,7 +866,7 @@ Split Releases
     ...
     ...     # release
     ...     release = Release(
-    ...         type='artist',
+    ...         type='split',
     ...         entity_creator=creator.party,
     ...         commit_state='commited',
     ...         claim_state='claimed',
