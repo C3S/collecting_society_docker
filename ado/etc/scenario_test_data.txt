@@ -519,8 +519,9 @@ Releases
     ...         if random.random() < release_cancellation_chance:
     ...             cancellation_date = release_date + datetime.timedelta(300)
     ...             release.release_cancellation_date = cancellation_date
-    ...             release.online_cancellation_date = cancellation_date    
-    ...         release.artists.append(owner)
+    ...             release.online_cancellation_date = cancellation_date
+    ...         owner_artist, = Artist.find([('id', '=', owner.id)])
+    ...         release.artists.append(owner_artist)
     ...         release.save()
 
 Creations
