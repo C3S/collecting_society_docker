@@ -11,6 +11,8 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock
     ports:
       - "81:80"
+    logging:
+      driver: none
 
   db:
     build: ./Dockerfiles/db

@@ -26,7 +26,7 @@ Configuration
 -------------
 ::
 
-    >>> debug = 1
+    >>> debug = False
 
     >>> publisher = debug or 20
     >>> tariff_systems = debug or 3
@@ -519,8 +519,9 @@ Releases
     ...         if random.random() < release_cancellation_chance:
     ...             cancellation_date = release_date + datetime.timedelta(300)
     ...             release.release_cancellation_date = cancellation_date
-    ...             release.online_cancellation_date = cancellation_date    
-    ...         release.artists.append(owner)
+    ...             release.online_cancellation_date = cancellation_date
+    ...         owner_artist, = Artist.find([('id', '=', owner.id)])
+    ...         release.artists.append(owner_artist)
     ...         release.save()
 
 Creations
@@ -866,7 +867,7 @@ Split Releases
     ...
     ...     # release
     ...     release = Release(
-    ...         type='artist',
+    ...         type='split',
     ...         entity_creator=creator.party,
     ...         commit_state='commited',
     ...         claim_state='claimed',
