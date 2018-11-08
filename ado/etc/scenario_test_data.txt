@@ -352,16 +352,28 @@ Web Users
 ::
     >>> for i in range(1, group_artists * new_solo_artists_per_group + 1):
     ...     number = i
+    ...     birthdate = datetime.date(
+    ...         random.randint(1950, 2000),
+    ...         random.randint(1, 12),
+    ...         random.randint(1, 28))
+    ...     firstname = "Registered Name"
+    ...     lastname = "%s" % str(number).zfill(3)
     ...     web_user = WebUser(
     ...         email='%s@rep.test' % number,
+    ...         nickname=firstname + ' ' + lastname,
     ...         password="%s" % number,
-    ...         nickname="Registered Name %s" % str(number).zfill(3),
     ...         opt_in_state='opted-in'
     ...     )
     ...     roles = WebUserRole.find([('code', '=', 'licenser')])
     ...     web_user.roles.extend(roles)
     ...     web_user.default_role = 'licenser'
     ...     web_user.save()
+    ...     web_user.party.firstname = firstname
+    ...     web_user.party.lastname = lastname
+    ...     web_user.party.name = firstname + ' ' + lastname
+    ...     web_user.party.repertoire_terms_accepted = True
+    ...     web_user.party.birthdate = birthdate
+    ...     web_user.party.save()
 
 Artists
 -------
