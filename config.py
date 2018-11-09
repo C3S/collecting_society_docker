@@ -156,17 +156,17 @@ repositories = (
     ),
     (
         'https://github.com/C3S/collecting_society.git',
-        '--branch=develop',
+        '--branch=master',
         'ado/src/collecting_society'
     ),
     (
         'https://github.com/C3S/collecting_society.portal.git',
-        '--branch=develop',
+        '--branch=master',
         'ado/src/collecting_society.portal'
     ),
     (
         'https://github.com/C3S/collecting_society.portal.repertoire.git',
-        '--branch=develop',
+        '--branch=master',
         'ado/src/collecting_society.portal.repertoire'
     ),
     (
