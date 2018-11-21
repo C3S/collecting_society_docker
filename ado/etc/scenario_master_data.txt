@@ -59,8 +59,7 @@ Company
     >>> Party = Model.get('party.party')
 
     >>> party = Party(
-    ...     name='Cultural Commons Collecting Society SCE '
-    ...         'mit beschränkter Haftung')
+    ...     name='C3S SCE')
 
     >>> _ = party.addresses.pop()
     >>> party_address = party.addresses.new(
