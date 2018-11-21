@@ -144,7 +144,7 @@ Content
 
     >>> company, = Company.find([(
     ...     'party.name', '=',
-    ...     'Cultural Commons Collecting Society SCE mit beschränkter Haftung'
+    ...     'C3S SCE'
     ... )])
     >>> germany, = Country.find([('code', '=', 'DE')])
     >>> countries = Country.find([])
