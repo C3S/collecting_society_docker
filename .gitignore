@@ -70,3 +70,6 @@ ado/mail
 # Configuration files for docker container
 /*.env
 /ado/etc/trytonpassfile
+
+# VS Code remnants
+/.vscode/*
