@@ -31,7 +31,8 @@ RUN pip install  \
     requests==2.18.4  \
     selenium==3.12.0  \
     WebTest==2.0.29  \
-    waitress==1.1.0
+    waitress==1.1.0 \
+    Pillow
 
 # winpdb debugger requires either portal or api to have an open port 51000 
 # (add "51000:51000" in docker-compose.yml -- make sure you open it only in
