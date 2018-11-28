@@ -551,7 +551,7 @@ Creations
     ...             creator = creator.solo_artists[0]
     ...         # creation
     ...         creation = Creation(
-    ...             title="Working Title of Song %s" % str(number).zfill(3),
+    ...             title="Title of Song %s" % str(number).zfill(3),
     ...             commit_state='commited',
     ...             claim_state='claimed',
     ...             entity_creator=creator.party,
