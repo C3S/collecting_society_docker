@@ -451,6 +451,22 @@ container once and run the tests from within::
     $ docker-compose run --use-aliases portal bash
     $ ado-do run-tests [--path=PATH] [PARAMETER...]
 
+Debugging with ptvsd
+---------------------
+
+If you use Visual Studio Code as your editor, you would want to install the Remote Containers extension,
+so you can work directly in the docker containers, including source level debugging from within VS Code.
+Just make sure that 'ENVIRONMENT' is set to 'development' in the resp. containers .env file found in the ado folder.
+The necessary .devcontainer.json and launch.json files are already included in the repositories.
+
+To start debugging a container, click on the green field in the lower left corner of VS Code, 
+Then select 'Remote-Containers: Reopen Folder in Container'. Then make sure you the Python extension 
+is installed in the containers VS Code instance and reload, if necessary.
+Press Ctrl-Shift-D to open the debug sidebar and select the debug configuration 
+in the drop-down box on the top, e.g. 'Portal Attach'. It is located in the file /ado/.vscode/launch.settings.
+Press the play button left to the debug config drop-down box and a debug toolbar should appear.
+If you wish to debug the api service, change the service entry in .devcontainer.json accordingly.
+
 Debugging with winpdb
 ---------------------
 

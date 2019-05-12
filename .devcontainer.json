@@ -1,0 +1,15 @@
+// See https://aka.ms/vscode-remote/containers for the
+// documentation about the devcontainer.json format
+{
+	"name": "ado container",
+	"context": "..",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "portal",
+	"workspaceFolder": "/ado",
+	"cwd": "/ado",
+	"shutdownAction": "none",
+	"extensions": [
+		"ms-python.python",
+		"visualstudioexptteam.vscodeintellicode"
+	]
+}

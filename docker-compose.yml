@@ -42,7 +42,7 @@ services:
       - ./ado:/ado
     ports:
       - "6543"
-    #  - "51000:51000"   # for winpdb debugger, also see portal dockerfile
+      - "51001:51001"   # for debugger
     depends_on:
       - db
       - nginx
@@ -57,7 +57,7 @@ services:
       - ./ado:/ado
     ports:
       - "6543"
-      - "51000:51000"   # for winpdb debugger, also see portal dockerfile
+      - "51000:51000"   # for debugger
     depends_on:
       - db
       - nginx
@@ -76,8 +76,8 @@ services:
     command: bash -c "while true; do cd /ado/src/c3sRepertoireProcessing && python repro.py all; sleep 60; done"
     volumes:
       - ./ado:/ado
-    #ports:
-    #  - "51000:51000"   # for winpdb debugger, also see processing dockerfile
+    ports:
+      - "51002:51002"   # for debugger
     depends_on:
       - tryton
     env_file:

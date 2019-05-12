@@ -18,7 +18,8 @@ RUN pip install  \
     pyechonest==9.0.0  \
     pydub==0.18.0  \
     pytaglib==1.4.1  \
-    requests==2.9.1 
+    requests==2.9.1 \
+    ptvsd
 
 # ffmpeg symlink to avconv
 RUN ln -s /usr/bin/avconv /usr/local/bin/ffmpeg
@@ -43,4 +44,4 @@ RUN crontab -u root -l
 # winpdb debugger requires processing port "51000:51000" in docker-compose.yml
 # to allow winpdb to attach to a pyton script, uncomment the RUN and insert this line in the script where you want to debug:
 # import rpdb2; rpdb2.start_embedded_debugger("supersecret", fAllowRemote = True)
-RUN apt-get update && apt-get install -y winpdb 
+#RUN apt-get update && apt-get install -y winpdb 
