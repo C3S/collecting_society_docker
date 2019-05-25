@@ -32,8 +32,8 @@ RUN pip install  \
     selenium==3.12.0  \
     WebTest==2.0.29  \
     waitress==1.1.0 \
-    Pillow \
-    ptvsd
+    Pillow==6.0.0 \
+    ptvsd==4.2.10
     
 # winpdb debugger requires either portal or api to have an open port 51000 
 # (add "51000:51000" in docker-compose.yml -- make sure you open it only in
@@ -42,11 +42,4 @@ RUN pip install  \
 # and insert this line in the script where you want to debug:
 # import rpdb2; rpdb2.start_embedded_debugger("supersecret", fAllowRemote = True)
 #RUN apt-get update && apt-get install -y winpdb 
-
-# ptvsd debugger requires either portal or api to have an open port 51000 
-# (add "51000:51000" in docker-compose.yml -- make sure you open it only in
-# a single container at a given time)
-# to allow ptvsd to attach to a pyton script, make sure ptvsd is pip-installed
-# above and insert this line in the script where you want to debug:
-# import rpdb2; rpdb2.start_embedded_debugger("supersecret", fAllowRemote = True)
 
