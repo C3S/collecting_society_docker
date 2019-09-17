@@ -62,6 +62,7 @@ ado/etc/*.sqlite
 ado/src
 ado/ref
 ado/tmp
+ado/pyramid_debugtoolbar_templates_exception_summary_dbtmako
 postgresql-data
 
 # pyramid_mailer.debug
