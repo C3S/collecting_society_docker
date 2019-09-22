@@ -416,39 +416,45 @@ Portal
 
 Create a database template, which will be copied and used for tests::
 
-    $ docker-compose run --use-aliases portal ado-do create-test-db
+    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+        ado-do create-test-db
 
 Run all tests in PATH (optional) with nosetests PARAMETER (optional)::
 
-    $ docker-compose run --use-aliases portal ado-do run-tests [--path=PATH] [PARAMETER]
+    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+        ado-do run-tests [--path=PATH] [PARAMETER]
 
 Run all tests for portal + plugins::
 
-    $ docker-compose run --use-aliases portal ado-do run-tests
+    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+        ado-do run-tests
 
 Run all tests for portal + plugins quiet, drop into pdb on failures or errors::
 
-    $ docker-compose run --use-aliases portal ado-do run-tests --quiet --pdb
+    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+        ado-do run-tests --quiet --pdb
 
 Run only tests for portal::
 
-    $ docker-compose run --use-aliases portal ado-do run-tests \
-        --path src/collecting_society.portal
+    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+        ado-do run-tests --path src/collecting_society.portal
 
 Run only unittests of portal::
 
-    $ docker-compose run --use-aliases portal ado-do run-tests \
+    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+        ado-do run-tests \
         --path src/collecting_society.portal/collecting_society_portal/tests/unit
 
 Run a specific unittest for a model of portal::
 
-    $ docker-compose run --use-aliases portal ado-do run-tests \
+    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+        ado-do run-tests \
         --path src/collecting_society.portal/collecting_society_portal/tests/unit/models.py:TESTCLASS.TESTMETHOD
 
 For repeated testing without recreating the container every time, start the
 container once and run the tests from within::
 
-    $ docker-compose run --use-aliases portal bash
+    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal bash
     $ ado-do run-tests [--path=PATH] [PARAMETER...]
 
 Debugging with ptvsd

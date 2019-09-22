@@ -26,7 +26,7 @@ docker-compose build
 
 # run tests !
 echo -e "\n== run tests"
-docker-compose run --rm --use-aliases portal ado-do run-tests
+docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal ado-do run-tests
 EXITCODE=$?
 
 echo `date +%Y-%m-%d:%H:%M:%S`
