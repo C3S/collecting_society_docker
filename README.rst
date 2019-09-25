@@ -462,16 +462,22 @@ Debugging with ptvsd
 
 If you use Visual Studio Code as your editor, you would want to install the Remote Containers extension,
 so you can work directly in the docker containers, including source level debugging from within VS Code.
-Just make sure that 'ENVIRONMENT' is set to 'development' in the resp. containers .env file found in the ado folder.
+Just make sure that 'ENVIRONMENT' is set to 'development' in the resp. containers .env file found in the ado folder,
+then cd to c3s.ado.repertoire and start VSCode with *"code ."*.
 The necessary .devcontainer.json and launch.json files are already included in the repositories.
 
-To start debugging a container, click on the green field in the lower left corner of VS Code, 
-Then select 'Remote-Containers: Reopen Folder in Container'. Then make sure you the Python extension 
+To start debugging a container, click on the toast notification that will come up in the bottom right corner or
+click on the green field in the lower left corner of VS Code and select 
+'Remote-Containers: Reopen in Container'. Then make sure the Python extension 
 is installed in the containers VS Code instance and reload, if necessary.
-Press Ctrl-Shift-D to open the debug sidebar and select the debug configuration 
-in the drop-down box on the top, e.g. 'Portal Attach'. It is located in the file /ado/.vscode/launch.settings.
+*Git History* and *GitLens* are recommended but will require you to *apt-get install git" in the container.
+To start Debugging, press Ctrl-Shift-D to open the debug sidebar and select the debug configuration 
+in the drop-down box on the top, e.g. 'Portal Attach'. 
+(Settings for attaching the container can be adjusted in the file /ado/.vscode/launch.settings.)
 Press the play button left to the debug config drop-down box and a debug toolbar should appear.
-If you wish to debug the api service, change the service entry in .devcontainer.json accordingly.
+_Important note_: If you wish to debug other containers besides the default *portal*, e.g. *api* or *processing*, 
+change the *service* entry in .devcontainer.json accordingly. This will determine which container is being selected
+by the Remote-Containers plugin.
 
 Debugging with winpdb
 ---------------------

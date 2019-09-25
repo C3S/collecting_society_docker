@@ -33,6 +33,7 @@ RUN pip install  \
     WebTest==2.0.29  \
     waitress==1.1.0 \
     Pillow==6.0.0 \
+    cornice-swagger==0.7.0 \
     ptvsd==4.2.10
     
 # winpdb debugger requires either portal or api to have an open port 51000 

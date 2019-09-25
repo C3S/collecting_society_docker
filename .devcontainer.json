@@ -4,7 +4,7 @@
 	"name": "ado container",
 	"context": "..",
 	"dockerComposeFile": "docker-compose.yml",
-	"service": "portal",
+	"service": "api",
 	"workspaceFolder": "/ado",
 	"cwd": "/ado",
 	"shutdownAction": "none",

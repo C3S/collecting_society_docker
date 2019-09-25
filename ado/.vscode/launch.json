@@ -17,7 +17,7 @@
             "type": "python",
             "request": "attach",
             "port": 51001,
-            "host": "localhost",
+            "host": "127.0.0.1",
             "console": "integratedTerminal"
         },
         {
