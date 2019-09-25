@@ -475,9 +475,11 @@ To start Debugging, press Ctrl-Shift-D to open the debug sidebar and select the 
 in the drop-down box on the top, e.g. *'Portal Attach'*. 
 (Settings for attaching the container can be adjusted in the file */ado/.vscode/launch.settings*.)
 Press the play button left to the debug config drop-down box and a debug toolbar should appear.
+
 **Important note**: If you wish to debug other containers besides the default *portal*, e.g. *api* or *processing*, 
-change the *service* entry in .devcontainer.json accordingly. This will determine which container is being selected
-by the Remote-Containers plugin.
+change the *service* entry in .devcontainer.json accordingly, otherwise you will experience 
+'connection refused' errors. The *service* entry in .devcontainer.json will determine which 
+container is being selected by the *Remote-Containers* plugin.
 
 Debugging with winpdb
 ---------------------
