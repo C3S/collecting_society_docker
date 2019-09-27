@@ -10,11 +10,6 @@ echo `date +%Y-%m-%d:%H:%M:%S`
 echo -e "\n== stop docker containers"
 docker-compose stop
 
-# delete database c3s
-echo -e "\n== delete test databases"
-docker-compose run portal ado-do db-delete test
-docker-compose run portal ado-do db-delete test_template
-
 # update repositories
 echo -e "\n== update repositories"
 git pull          # update the main repository
@@ -24,7 +19,11 @@ git pull          # update the main repository
 echo -e "\n== build docker container"
 docker-compose build
 
-# run tests !
+# recreate test database
+echo -e "\n== recreate test databases"
+docker-compose run -rm tryton ado-do create-test-db
+
+# run tests
 echo -e "\n== run tests"
 docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal ado-do run-tests
 EXITCODE=$?
