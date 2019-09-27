@@ -21,12 +21,16 @@ docker-compose build
 
 # recreate test database
 echo -e "\n== recreate test databases"
-docker-compose run -rm tryton ado-do create-test-db
+docker-compose run --rm tryton ado-do create-test-db
 
 # run tests
 echo -e "\n== run tests"
 docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal ado-do run-tests
 EXITCODE=$?
+
+# remove docker containers
+echo -e "\n== stop docker containers"
+docker-compose rm -fs
 
 echo `date +%Y-%m-%d:%H:%M:%S`
 echo "====================================================================="
