@@ -42,7 +42,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-ado/cover
+shared/cover
 
 # Translations
 #*.mo   unless we integrate the translation tools into the build process, 
@@ -58,19 +58,19 @@ docs/_build/
 target/
 
 # Ado
-ado/etc/*.sqlite
-ado/src
-ado/ref
-ado/tmp
-ado/pyramid_debugtoolbar_templates_exception_summary_dbtmako
+shared/etc/*.sqlite
+shared/src
+shared/ref
+shared/tmp
+shared/pyramid_debugtoolbar_templates_exception_summary_dbtmako
 postgresql-data
 
 # pyramid_mailer.debug
-ado/mail
+shared/mail
 
 # Configuration files for docker container
 /*.env
-/ado/etc/trytonpassfile
+/shared/etc/trytonpassfile
 
 # VS Code remnants
 /.vscode/*

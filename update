@@ -15,10 +15,10 @@ git_branch = subprocess.check_output(
     ('git', 'rev-parse', '--abbrev-ref', 'HEAD'),
     stderr=subprocess.STDOUT)
 print("""=====================================================================
-  This is the c3s.ado.repertoire update script.
+  This is the collecting_society_docker update script.
   It will get or update some relevant repositories.
 
-  Using c3s.ado.repertoire on branch {}
+  Using collecting_society_docker on branch {}
   Installing/updating in {}
   Reading info from config...
   Checking repositories...
@@ -28,7 +28,7 @@ print("""=====================================================================
     base_path
 ))
 
-# update ado itself (of course won't recognize updates to the update script)
+# update setup itself (of course won't recognize updates to the update script)
 try:
     pull_result = subprocess.check_output(
         ('git', 'pull'), cwd=base_path,
@@ -68,8 +68,8 @@ for repo, branch, path in config.repositories:
             print(
                 'git clone "{}": '.format(os.path.basename(target_path)))
             if clone_result:
-                    print('::'.join(
-                        x for x in clone_result.strip().split('\n')))
+                print('::'.join(
+                    x for x in clone_result.strip().split('\n')))
         except subprocess.CalledProcessError as e:
             # check, if the working directory is clean
             workingdir_dirty = subprocess.check_output(
@@ -128,8 +128,8 @@ Done.
 
 =====================================================================
   Now you may go ahead and use
-    * 'docker-compose run tryton ado-do update c3s'
-    * 'docker-compose run tryton ado-do db-delete c3s'
+    * 'docker-compose run tryton execute update c3s'
+    * 'docker-compose run tryton execute db-delete c3s'
     * 'docker-compose build' to build or
     * 'docker-compose up' to start the system.
 =====================================================================""")

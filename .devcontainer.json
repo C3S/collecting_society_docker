@@ -1,12 +1,12 @@
 // See https://aka.ms/vscode-remote/containers for the
 // documentation about the devcontainer.json format
 {
-	"name": "ado container",
+	"name": "collecting_society_docker container",
 	"context": "..",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "api",
-	"workspaceFolder": "/ado",
-	"cwd": "/ado",
+	"workspaceFolder": "/shared",
+	"cwd": "/shared",
 	"shutdownAction": "none",
 	"extensions": [
 		"ms-python.python",

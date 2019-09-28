@@ -11,13 +11,13 @@ tmux has-session -t $SESSIONNAME &> /dev/null
 if [ $? != 0 ]; then
   tmux new-session -s $SESSIONNAME -n docker -c . -d
   tmux send-keys -t $SESSIONNAME "docker-compose up" C-m
-  tmux new-window -a -t $SESSIONNAME -n ado -c .
+  tmux new-window -a -t $SESSIONNAME -n docker -c .
   tmux send-keys -t $SESSIONNAME "git status" C-m
-  tmux new-window -a -t $SESSIONNAME -n collecting_society -c ./ado/src/collecting_society
+  tmux new-window -a -t $SESSIONNAME -n collecting_society -c ./shared/src/collecting_society
   tmux send-keys -t $SESSIONNAME "git status" C-m
-  tmux new-window -a -t $SESSIONNAME -n portal -c ./ado/src/collecting_society.portal
+  tmux new-window -a -t $SESSIONNAME -n portal -c ./shared/src/collecting_society.portal
   tmux send-keys -t $SESSIONNAME "git status" C-m
-  tmux new-window -a -t $SESSIONNAME -n repertoire -c ./ado/src/collecting_society.portal.repertoire
+  tmux new-window -a -t $SESSIONNAME -n repertoire -c ./shared/src/collecting_society.portal.repertoire
   tmux send-keys -t $SESSIONNAME "git status" C-m
   tmux select-window -t $SESSIONNAME:docker
 fi

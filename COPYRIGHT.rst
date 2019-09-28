@@ -3,14 +3,14 @@ Core Application
 
 ::
 
-    c3s.ado.repertoire - registration of reportoire for a collecting society.
+    collecting_society_docker - docker setup for a collecting society.
 
-    Copyright (C) 2014-2016 Alexander Blum <alexander.blum@c3s.cc>
+    Copyright (C) 2014-2019 Cultural Commons Collecting Society SCE mit
+                            beschränkter Haftung (C3S SCE)
+    Copyright (C) 2014-2019 Alexander Blum <alexander.blum@c3s.cc>
     Copyright (C) 2014-2015 Udo Spallek <udono@virtual-things.biz>
     Copyright (C) 2014-2015 Korbinian Preisler <timitos@virtual-things.biz>
     Copyright (C) 2014-2015 virtual things <info@virtual-things.biz>
-    Copyright (C) 2014-2015 Cultural Commons Collecting Society SCE mit
-                            beschränkter Haftung (C3S SCE)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as

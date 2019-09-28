@@ -7,7 +7,7 @@ MAINTAINER Udo Spallek <udono@virtual-things.biz>
 RUN apt-get install -y --no-install-recommends  \
     libtag1-dev
 
-WORKDIR /ado
+WORKDIR /shared
 
 RUN pip install  \
     colander==1.4  \

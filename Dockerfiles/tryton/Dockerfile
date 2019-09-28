@@ -59,6 +59,6 @@ RUN pip install  \
     hurry.filesize==0.9
 
 
-RUN mkdir -p /ado
-WORKDIR /ado
-ENV PATH $PATH:/ado
+RUN mkdir -p /shared
+WORKDIR /shared
+ENV PATH $PATH:/shared
