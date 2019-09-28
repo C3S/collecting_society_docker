@@ -1,0 +1,684 @@
+#!/usr/bin/env python
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/c3s.ado.repertoire
+
+"""
+Command line tool to setup and maintain services in docker containers.
+
+The commands may be executed by `docker-compose` or within a container.
+
+Examples:
+
+    Execution by `docker-compose`:
+    >>> docker-compose run portal execute --help
+
+    Execution within a container:
+    >>> docker-compose run portal bash
+    >>> execute --help
+"""
+
+from __future__ import print_function
+import os
+import sys
+import shutil
+import time
+import subprocess
+import glob
+import fcntl
+from urlparse import urlparse
+
+try:
+    from pip import main as pipmain
+except:  # noqa: E722
+    from pip._internal import main as pipmain
+import click
+
+PROJECT_PATH = '/shared'
+TMP_FILE = 'running_db_creation.delete_me'
+# if os.path.isfile(TMP_FILE):
+#     os.remove(TMP_FILE)
+
+pg_hostname = 'db'
+pg_port = '5432'
+
+
+@click.group()
+def execute():
+    """
+    Command line tool to setup and maintain services in docker containers.
+    """
+
+
+@execute.command('pip-install')
+@click.argument('container')
+@click.pass_context
+def pip_install(context, container):
+    """
+    Installs required packages for a CONTAINER with pip.
+
+    Requirements have to be defined in
+    `./shared/etc/requirements-CONTAINER.txt`.
+
+    After installation a flag file is created within the container to avoid
+    multiple execution during its lifespan.
+    """
+    print('Install packages for ' + container + ' ... ', end='')
+    flagfile = "/tmp/pip_install_" + container
+
+    # check flagfile
+    if not os.path.exists(flagfile):
+
+        # install packages
+        pipmain(
+            [
+                'install',
+                '-qr',
+                os.path.join(
+                    PROJECT_PATH, 'etc',
+                    'requirements-%s.txt' % container
+                )
+            ]
+        )
+
+        # create flagfile
+        open(flagfile, 'w').close()
+
+    import site
+    reload(site)
+    print('ok')
+
+
+@execute.command('db-create')
+@click.argument('dbname')
+@click.pass_context
+def db_create(context, dbname):
+    """
+    Creates the postrges database DBNAME.
+
+    The execution is skipped if the database already exists.
+    """
+    print('Create database "%s" ... ' % dbname, end='')
+    context.invoke(pip_install, container='tryton')
+
+    # check database
+    if _db_exist(dbname):
+        print('Create, but database "%s" exists: Skip!' % dbname)
+        return
+
+    # create database
+    subprocess.call(
+        [
+            '/usr/bin/createdb',
+            '-h', pg_hostname,
+            '-p', pg_port,
+            '-U', 'postgres',
+            '-O', 'postgres',
+            '-E UTF-8',
+            dbname
+        ]
+    )
+
+    print('ok')
+
+
+@execute.command('db-delete')
+@click.argument('dbname')
+@click.pass_context
+def db_delete(context, dbname):
+    """
+    Deletes the postrges database DBNAME.
+
+    On error the deletion is retried 60 times.
+    """
+    print('Delete database "%s" ... ' % dbname, end='')
+    max_tries = 60
+    tries = 0
+    result = 1
+
+    # retry
+    while ((tries < max_tries) and (result == 1)):
+        tries += 1
+
+        # delete database
+        result = subprocess.call(
+            [
+                '/usr/bin/dropdb',
+                '-h', pg_hostname,
+                '-p', pg_port,
+                '-U', 'postgres',
+                dbname
+            ]
+        )
+
+    if result is 0:
+        print("ok")
+    else:
+        print("error: {}".format(result))
+
+
+@execute.command('db-copy')
+@click.argument('dbname-src')
+@click.argument('dbname-dst')
+@click.pass_context
+def db_copy(context, dbname_src, dbname_dst):
+    """
+    Creates the postrges database DBNAME_DST from template DBNAME_SRC.
+    """
+    print('Copy database "%s" to "%s" ... ' % (dbname_src, dbname_dst), end='')
+
+    # copy database
+    subprocess.call(
+        [
+            '/usr/bin/createdb',
+            '-h', pg_hostname,
+            '-p', pg_port,
+            '-U', 'postgres',
+            '-O', 'postgres',
+            '-T', dbname_src,
+            '-E UTF-8',
+            dbname_dst
+        ]
+    )
+
+    print('ok')
+
+
+@execute.command('db-psql')
+@click.argument('dbname')
+@click.pass_context
+def db_psql(context, dbname):
+    """
+    Opens a SQL console for the database DBNAME.
+    """
+    print('Use ctrl-d or \\q to quit ...')
+
+    # open console
+    subprocess.call(
+        [
+            '/usr/bin/psql',
+            '-h', pg_hostname,
+            '-p', pg_port,
+            '-U', 'postgres',
+            dbname
+        ]
+    )
+
+
+@execute.command('db-backup')
+@click.argument('dbname')
+@click.pass_context
+def db_backup(context, dbname):
+    """
+    Dumps the postgres database DBNAME to stdout.
+    """
+
+    # backup database
+    subprocess.call(
+        [
+            '/usr/bin/pg_dump',
+            '-h', pg_hostname,
+            '-p', pg_port,
+            '-U', 'postgres',
+            dbname
+        ]
+    )
+
+
+@execute.command('db-setup')
+@click.argument('dbname')
+@click.option('--master/--no-master', default=False,
+              help='Execute master data (default: no)')
+@click.option('--demo/--no-demo', default=False,
+              help='Execute demo data (default: no)')
+@click.option('--force/--no-force', default=False,
+              help='Force execution (default: no)')
+@click.pass_context
+def db_setup(context, dbname, master, demo, force):
+    """
+    Creates and sets up the postgres database DBNAME.
+
+    The execution is skipped if the database already exists.
+    The execution might be forced (omits the db creation, if it exists).
+
+    Executes scenario master data to set up the database, if master.
+    Executes scenario demo data in development environment, if demo.
+
+    During installation a lockfile is created on the host to prevent multiple
+    execution from different docker containers.
+    """
+    context.invoke(pip_install, container='tryton')
+
+    # Check lockfile, if locked, wait till not locked any more
+    while True:
+        try:
+            lockfile = open(TMP_FILE, 'w+')
+            fcntl.flock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            print("Database creation commencing.")
+            break
+        except IOError:
+            time.sleep(3)
+            print("Waiting for the other process to finish db creation...")
+
+    # Check database
+    if not _db_exist(dbname) or force:
+
+        # Create database
+        if not _db_exist(dbname):
+            context.invoke(db_create, dbname=dbname)
+            _update(None, dbname)
+
+        # Cofigure trytond
+        os.environ['DB_NAME'] = dbname
+        os.environ['TRYTOND_CONFIG'] = os.path.join(
+            PROJECT_PATH, 'etc', 'trytond.conf'
+        )
+
+        # Setup master data
+        if master:
+            print(
+                "\nSetup scenario master data -> /shared/tmp/db-master.log\n")
+            logfile = open("/shared/tmp/db-master.log", "w")
+            subprocess.call(
+                [
+                    '/usr/bin/python',
+                    '-m', 'doctest',
+                    '-v', os.path.join(
+                        PROJECT_PATH, 'etc', 'scenario_master_data.txt'
+                    ),
+                    ''
+                ], stdout=logfile
+            )
+            logfile.close()
+
+        # Setup demo data
+        if os.environ.get('ENVIRONMENT') == 'development':
+            if demo:
+                print(
+                    '\nSetup scenario demo data -> /shared/tmp/db-demo.log\n')
+                logfile = open("/shared/tmp/db-demo.log", "w")
+                subprocess.call(
+                    [
+                        '/usr/bin/python',
+                        '-m', 'doctest',
+                        '-v', os.path.join(
+                            PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
+                        )
+                    ], stdout=logfile
+                )
+                logfile.close()
+
+    else:
+        print('Setup demo data, but database "%s" exists: Skip!' % dbname)
+
+    if lockfile:
+        # unlock file
+        fcntl.flock(lockfile, fcntl.LOCK_UN)
+        lockfile.close()
+        try:
+            os.remove(TMP_FILE)
+        except OSError:
+            print("Couldn't remove lock file, something has gone wrong here")
+
+
+@execute.command('db-demo-setup')
+@click.argument('dbname')
+@click.pass_context
+def db_demo_setup(context, dbname):
+    context.invoke(
+        db_setup, dbname=dbname,
+        master=True, demo=True, force=False)
+
+
+@execute.command('db-rebuild')
+@click.argument('dbname')
+@click.pass_context
+def db_rebuild(context, dbname):
+    """
+    Deletes DBNAME and executes db setup
+    """
+
+    # delete database
+    context.invoke(db_delete, dbname=dbname)
+
+    # setup database
+    context.invoke(
+        db_setup, dbname=dbname,
+        master=True, demo=True, force=False)
+
+
+@execute.command('create-test-db')
+@click.option('--dbtype', default='postgres',
+              help='Type of database (default: postgres)')
+@click.option('--dbname', default='test',
+              help='Name of database (default: test)')
+@click.pass_context
+def create_test_db(context, dbtype, dbname):
+    """
+    Recreates DBTYPE database DBNAME_template, sets it up and copies to DBNAME.
+
+    The old database template and database will be overwritten.
+
+    DBTYPE 'sqlite' throws errors on setup, so postgres is recommended.
+    """
+    _db_type = dbtype
+    _db_name = dbname
+    _trytond_conf = 'trytond_test_' + _db_type + '.conf'
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        PROJECT_PATH, 'etc', _trytond_conf
+    )
+
+    # Rereate database template
+    if _db_type == 'sqlite':
+        _file_path = os.path.join(PROJECT_PATH, 'tmp', 'files')
+        _db_src_path = os.path.join(_file_path, _db_name + '.sqlite')
+        os.environ['DB_NAME'] = _db_name
+        if os.path.isfile(_db_src_path):
+            os.unlink(_db_src_path)
+        open(_db_src_path, 'w').close()
+        os.chmod(_db_src_path, 0777)  # noqa: E999
+
+    if _db_type == 'postgres':
+        _db_tpl = _db_name + "_template"
+        os.environ['DB_NAME'] = _db_tpl
+        context.invoke(db_delete, dbname=_db_tpl)
+        context.invoke(db_create, dbname=_db_tpl)
+
+    # Setup trytond
+    if _db_type == 'sqlite':
+        _update(None, _db_name, _trytond_conf)
+
+    if _db_type == 'postgres':
+        _update(None, _db_tpl, _trytond_conf)
+
+    # Setup database template
+    subprocess.call(
+        [
+            '/usr/bin/python',
+            '-m', 'doctest',
+            '-v', os.path.join(
+                PROJECT_PATH, 'etc', 'scenario_master_data.txt'
+            )
+        ]
+    )
+
+    # Copy database template
+    if _db_type == 'sqlite':
+        _db_dst_path = os.path.join(PROJECT_PATH, 'etc', _db_name + '.sqlite')
+        if os.path.isfile(_db_dst_path):
+            os.unlink(_db_dst_path)
+        shutil.copyfile(_db_src_path, _db_dst_path)
+        os.chmod(_db_src_path, 0777)
+
+    if _db_type == 'postgres':
+        context.invoke(db_delete, dbname=_db_name)
+        context.invoke(db_copy, dbname_src=_db_tpl, dbname_dst=_db_name)
+
+
+@execute.command('run-tests', context_settings=dict(
+    ignore_unknown_options=True))
+@click.option('--dbtype', default='postgres',
+              help='Type of database (default: postgres)')
+@click.option('--dbname', default='test',
+              help='Name of database (default: test)')
+@click.option('--reset/--no-reset', default=True,
+              help='Reset the database (default: yes)')
+@click.option('--path', default=False,
+              help='Searchpath for tests (see nosetest)')
+@click.argument('nargs', nargs=-1, type=click.UNPROCESSED)
+@click.pass_context
+def run_tests(context, dbtype, dbname, reset, path, nargs):
+    """
+    Runs all tests for portal and plugins.
+
+    Starts nosetests and prints output to stdout.
+
+    Creates the test database template DBNAME_template, if not existant.
+    On RESET, the database DBNAME will be recreated from this template and
+    the temporary tryton file folder will be deleted.
+
+    The location of the temporary tryton upload folder is configured in
+    `./shared/etc/tryton_test_DBTYPE.conf` (currently `./shared/tmp/files`).
+
+    The location of the screenshots of integration tests is configured within
+    `<portal>/tests/config.py` (currenty `./shared/tmp/screenshots).
+
+    The PATH to tests may be defined to test certain testfiles, testclasses or
+    test methods (see nosetests for the syntax).
+    If no PATH is given, all tests of portal and plugins are included.
+    The test files should be stored below the following subpaths by convention:
+
+        <portal||plugin>/tests/unit (unittest)
+
+        <portal||plugin>/tests/functional (webtest)
+
+        <portal||plugin>/tests/integration (selenium)
+
+    Additional NARGS will be passed to nosetests.
+    """
+    _db_type = dbtype
+    _db_name = dbname
+    _db_tpl = _db_name + "_template"
+    _file_path = os.path.join(PROJECT_PATH, 'tmp', 'files')
+    _trytond_conf = 'trytond_test_' + _db_type + '.conf'
+    os.environ['DB_NAME'] = _db_name
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        PROJECT_PATH, 'etc', _trytond_conf
+    )
+    print("\nCONFIGURE TESTS ...\n")
+    print("- testpath: %s" % (path or 'all'))
+    print("- parameter: %s" % list(nargs))
+    print("- dbtype: %s" % _db_type)
+    print("- dbname: %s" % _db_name)
+    print("- reset: %s" % bool(reset))
+    print("- trytondconf: %s" % os.environ['TRYTOND_CONFIG'])
+    print("- filepath: %s" % _file_path)
+
+    # Setup containers
+    print("\nPREPARE TESTS ...\n")
+    context.invoke(pip_install, container='portal')
+
+    if reset:
+
+        # Delete files
+        if os.path.exists(_file_path):
+            shutil.rmtree(_file_path)
+        os.makedirs(_file_path)
+
+        # Recreate database
+        if _db_type == 'postgres':
+            if _db_exist(_db_tpl):
+                context.invoke(db_delete, dbname=_db_name)
+                context.invoke(
+                    db_copy, dbname_src=_db_tpl, dbname_dst=_db_name
+                )
+            else:
+                context.invoke(
+                    create_test_db, dbtype=_db_type, dbname=_db_name
+                )
+        if _db_type == 'sqlite':
+            _db_src_path = os.path.join(PROJECT_PATH, 'etc', 'test.sqlite')
+            _db_dst_path = os.path.join(_file_path, _db_name + '.sqlite')
+            if os.path.isfile(_db_src_path):
+                shutil.copyfile(_db_src_path, _db_dst_path)
+                os.chmod(_db_src_path, 0777)
+            else:
+                context.invoke(
+                    create_test_db, dbtype=_db_type, dbname=_db_name
+                )
+
+    # Prepare paths
+    # 2DO: Reuse code in portal config.py; use plugins.pattern in portal .ini
+    basepaths = glob.glob(
+        os.path.join(PROJECT_PATH, 'src', 'collecting_society.portal*')
+    )
+    modules = []
+    testpaths = []
+    for basepath in basepaths:
+        module = os.path.basename(os.path.normpath(basepath)).replace('.', '_')
+        modules.append(module)
+        testpaths.append(os.path.join(basepath, module, 'tests'))
+    if path:
+        paths = [os.path.join(PROJECT_PATH, path)]
+    else:
+        paths = [os.path.join(path, 'unit') for path in testpaths] +\
+                [os.path.join(path, 'functional') for path in testpaths] +\
+                [os.path.join(path, 'integration') for path in testpaths]
+
+    # Start tests
+    print("\nSTART TESTS ...\n")
+    exitcode = subprocess.call(
+        [
+            'nosetests',
+            '--verbose',
+            '--logging-level=CRITICAL',
+            '--all-modules',
+            '--with-coverage',
+            '--cover-html',
+            '--with-xunit',
+            '--cover-erase',
+            '--cover-inclusive',
+            '--cover-package='+','.join(modules),
+        ] + list(nargs) + list(paths)
+    )
+
+    # Return exitcode
+    sys.exit(exitcode)
+
+
+@execute.command('deploy-tryton')
+@click.pass_context
+def deploy_tryton(context):
+    """
+    Deploys the tryton service.
+
+    Installs pip packages, creates and sets up database 'c3s' and runs the
+    tryton service (trytond).
+    """
+    context.invoke(pip_install, container='tryton')
+    service = [
+        '/usr/local/bin/trytond',
+        '--dev',
+        '-c', os.path.join(PROJECT_PATH, 'etc', 'trytond.conf')
+    ]
+    subprocess.call(service)
+
+
+@execute.command('deploy-portal')
+@click.pass_context
+def deploy_portal(context):
+    """
+    Deploys the portal service.
+
+    Installs pip packages, creates and sets up database 'c3s' and runs the
+    portal service (pserve).
+    """
+    context.invoke(pip_install, container='portal')
+    if str(os.environ.get('ENVIRONMENT')) != "testing":
+        context.invoke(db_demo_setup, dbname='c3s')
+    trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
+    environment = str(os.environ.get('ENVIRONMENT')) + '.ini'
+    subprocess.call(
+        [
+            '/usr/local/bin/pserve',
+            os.path.join(
+                PROJECT_PATH, 'src', 'collecting_society.portal', environment
+            ),
+            trusted_proxy,
+            '--reload'
+        ]
+    )
+
+
+@execute.command('deploy-api')
+@click.pass_context
+def deploy_api(context):
+    """
+    Deploys the portal service.
+
+    Installs pip packages, creates and sets up database 'c3s' and runs the
+    api service (pserve).
+    """
+    context.invoke(pip_install, container='api')
+    if str(os.environ.get('ENVIRONMENT')) != "testing":
+        context.invoke(db_demo_setup, dbname='c3s')
+    trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
+    environment = str(os.environ.get('ENVIRONMENT')) + '.ini'
+    subprocess.call(
+        [
+            '/usr/local/bin/pserve',
+            os.path.join(
+                PROJECT_PATH, 'src', 'collecting_society.portal', environment
+            ),
+            trusted_proxy,
+            '--reload'
+        ]
+    )
+
+
+@execute.command()
+@click.option(
+    '--modules', '-m',
+    help='Single module or comma separated list of modules to update. '
+    'Whitspace not allowed!')
+@click.argument('dbname')
+@click.pass_context
+def update(context, modules, dbname):
+    """
+    Updates tryton modules for database DBNAME.
+    """
+    context.invoke(pip_install, container='tryton')
+    _update(modules, dbname)
+
+
+def _update(modules, dbname, trytondconf=False):
+    """
+    Updates tryton modules for database DBNAME.
+
+    Args:
+        modules (str): Comma separated list of modules to update.
+        dbname (str): Name of database.
+        trytondconf (Optional[str]): Name of tryton config file.
+    """
+    print('Update services ...')
+    if modules:
+        modules = modules.split(',')
+    _trytond_conf = trytondconf or 'trytond.conf'
+    os.environ['TRYTONPASSFILE'] = 'etc/trytonpassfile'
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        PROJECT_PATH, 'etc', _trytond_conf
+    )
+    command = [
+        '/usr/local/bin/trytond',
+        '-d', dbname,
+        '-c', os.environ['TRYTOND_CONFIG']
+    ]
+    if modules:
+        command.append('-u')
+        command.extend(modules)
+    else:
+        command.append('--all')
+    subprocess.call(command)
+
+
+def _db_exist(dbname):
+    """
+    Checks if database exists.
+
+    Args:
+        dbname (str): Name of database.
+    """
+    from trytond.config import config
+    from trytond import backend
+    config.update_etc(os.path.join(PROJECT_PATH, 'etc', 'trytond.conf'))
+    Database = backend.get('Database')
+    database = Database().connect()
+    cursor = database.cursor()
+    databases = database.list(cursor)
+    exist = dbname in databases
+    cursor.close()
+    database.close()
+    return exist
+
+
+if __name__ == '__main__':
+    execute()
