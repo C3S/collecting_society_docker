@@ -1,4 +1,6 @@
 #!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
 apt-get install git python curl apt-transport-https ca-certificates gnupg2 software-properties-common
 apt-get install lsb-release --no-install-recommends
 # install docker for debian or ubuntu

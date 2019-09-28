@@ -3,7 +3,7 @@ Core Application
 
 ::
 
-    collecting_society_docker - docker setup for a collecting society.
+    collecting_society_docker - Docker setup for collecting society services.
 
     Copyright (C) 2014-2019 Cultural Commons Collecting Society SCE mit
                             beschränkter Haftung (C3S SCE)

@@ -1,17 +1,20 @@
+#!/usr/bin/env python
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
-# Repository: https://github.com/C3S/c3s.ado.repertoire
+# Repository: https://github.com/C3S/collecting_society_docker
 #
-# This script strips all styles from the discogs webpage to be fed into our database
+# This script strips all styles from the discogs webpage to be fed into our db
 #
 # adapted from lukeldb's post https://www.discogs.com/forum/thread/757820
 #
-# prior to running this, first 
+# prior to running this, first
 # - pip install beautifulsoup4
 # - pip install releases
 # - pip install lxml
-# - adapt number of pages in range(1,#+1) where # is current number of styles / 44
+# - adapt number of pages in range(1,#+1)
+#   where # is current number of styles / 44
 #
-# After running the script, delete the database so the styles will be filled into the table
+# After running the script, delete the database so the styles will be filled
+# into the table
 
 import re
 from bs4 import BeautifulSoup

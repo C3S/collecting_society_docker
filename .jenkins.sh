@@ -1,8 +1,10 @@
 #!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
 
 echo "====================================================================="
 echo "====================================================================="
-echo "= this script stops, updates, builds and tests the docker setup"
+echo "= this script stops, updates, builds and tests the docker setup     ="
 echo "====================================================================="
 echo `date +%Y-%m-%d:%H:%M:%S`
 

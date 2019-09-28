@@ -1,4 +1,6 @@
 #!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
 read -p "Do you REALLY want to remove all docker containers, images, cached images and the database on this system? (Y/N) " input
 if [[ $input='y' || $input = 'Y' ]]
 then

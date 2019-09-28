@@ -2,7 +2,7 @@
 collecting_society_docker
 =========================
 
-Docker development and deployment setup for a collecting society.
+Docker development and deployment setup for collecting society services.
 
 
 Overview

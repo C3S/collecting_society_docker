@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
-# Repository: https://github.com/C3S/c3s.ado.repertoire
+# Repository: https://github.com/C3S/collecting_society_docker
 '''Monitor container'''
 from __future__ import print_function
 
