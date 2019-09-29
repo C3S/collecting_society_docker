@@ -23,6 +23,11 @@ project = "collecting_society"
 environment = "development"
 tryton_version = "3.4"
 
+# branch
+branch = "master"
+if environment in ["development", "testing"]:
+    branch = "develop"
+
 # directories
 dirs = {}
 dirs['root'] = get_root_dir()
@@ -142,35 +147,35 @@ clone_sources = [
     # included repositories: tryton custom
     (
         'https://github.com/C3S/archiving.git',
-        '--branch=' + environment,
+        '--branch=' + branch,
         'archiving'
     ),
     (
         'https://github.com/C3S/portal.git',
-        '--branch=' + environment,
+        '--branch=' + branch,
         'portal'
     ),
     (
         'https://github.com/C3S/collecting_society.git',
-        '--branch=' + environment,
+        '--branch=' + branch,
         'collecting_society'
     ),
     # included repositories: pyramid
     (
         'https://github.com/C3S/portal_web.git',
-        '--branch=' + environment,
+        '--branch=' + branch,
         'portal_web'
     ),
     (
         'https://github.com/C3S/collecting_society_web.git',
-        '--branch=' + environment,
+        '--branch=' + branch,
         'collecting_society_web'
     ),
     # included repositories: worker
     (
         'https://github.com/C3S/collecting_society_worker.git',
         '--branch=master',
-        'collecting_society_woker'
+        'collecting_society_worker'
     ),
     (
         'https://github.com/spotify/echoprint-codegen.git',

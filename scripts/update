@@ -43,43 +43,46 @@ footer = """\n\nDone.\n
 
 def update_self():
     """Updates the update script."""
+
+    # check for updates
+    print('checking for updates of this script ... ', end='')
     try:
-        print('checking for updates of this script ... ', end='')
-        status_result = subprocess.check_output(
-            ('git', 'status'),
+        subprocess.check_output(
+            ('git', 'diff', '--quiet', 'remotes/origin/HEAD'),
             cwd=base_path, stderr=subprocess.STDOUT
             ).rstrip().decode('utf-8')
-        if 'commits behind' in status_result:
-            print('updates found.')
-            pull_result = subprocess.check_output(
-                ('git', 'pull'),
-                cwd=base_path, stderr=subprocess.STDOUT
-                ).rstrip().decode('utf-8')
-            print('git pull "' + project + '": ', end='')
-            if pull_result:
-                print(pull_result)
-            subprocess.check_output(update_script, stderr=subprocess.STDOUT)
-            exit()
-        elif 'up-to-date' in status_result:
-            print('up-to-date.')
-        else:
-            print("There was a problem: \n\n\033[91m{}\033[0m".format(
-                status_result))
-            sys.exit("Exiting. Please check for errors above!")
+        print('up-to-date.')
+        return
+    except subprocess.CalledProcessError:
+        print('differences found, trying to update.')
+
+    # update
+    try:
+        print('git pull "' + project + '": ', end='')
+        pull_result = subprocess.check_output(
+            ('git', 'pull'),
+            cwd=base_path, stderr=subprocess.STDOUT
+            ).rstrip().decode('utf-8')
+        if pull_result:
+            print(pull_result)
+        subprocess.check_output(
+            update_script, stderr=subprocess.STDOUT)
+        exit()
 
     except subprocess.CalledProcessError as e2:
-        print("There was a problem: \n\n\033[91m{}\033[0m".format(
+        print("There was a problem: \n\n\033[91m{}\033[0m\n".format(
             e2.output.rstrip().decode('utf-8')))
         sys.exit("Exiting. Please check for errors above!")
 
 
 def update_repository(repo, branch, path):
-    """Updates a repository."""
+    """Updates a BRANCH of a repository REPO in PATH."""
 
     # sanity checks
     if not repo or not branch or not path:
         return
     repo_relpath = os.path.relpath(path, base_path)
+    repo_name = os.path.basename(os.path.normpath(path))
 
     # create path
     if not os.path.exists(path):
@@ -96,7 +99,7 @@ def update_repository(repo, branch, path):
         target_value = branch.lstrip('--tag=')
         target_param = target_value
 
-    print('\nREPO: ' + repo_relpath)
+    print('\nREPO: ' + repo_name)
     print('--------------------------------------------------------------')
 
     # clone repository
@@ -106,7 +109,7 @@ def update_repository(repo, branch, path):
         clone_result = subprocess.check_output(
             ('git', 'clone', '--branch', target_param, repo, path),
             stderr=subprocess.STDOUT).rstrip().decode('utf-8')
-        print('git clone "{}": '.format(repo_relpath))
+        print('git clone "{}": '.format(repo_name))
         if clone_result:
             print('::'.join(
                 x for x in clone_result.strip().split('\n')))
@@ -126,7 +129,7 @@ def update_repository(repo, branch, path):
 
         # checkout tag
         if target_type == 'tag':
-            print('git checkout "{}": '.format(repo_relpath), end='')
+            print('git checkout "{}": '.format(repo_name), end='')
             checkout_result = subprocess.check_output(
                 ('git', 'checkout', 'tags/' + target_param),
                 cwd=path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
@@ -145,14 +148,37 @@ def update_repository(repo, branch, path):
             pull_result = subprocess.check_output(
                 ('git', 'pull'),
                 cwd=path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
-            print('git pull "{}": '.format(repo_relpath), end='')
+            print('git pull "{}": '.format(repo_name), end='')
             if pull_result:
                 print('::'.join(
                     x for x in pull_result.strip().split('\n')))
         except subprocess.CalledProcessError as e2:
-            print("There was a problem: \n\n\033[91m{}\033[0m".format(
+            print("There was a problem: \n\n\033[91m{}\033[0m\n".format(
                 e2.output.rstrip().decode('utf-8')))
             sys.exit("Exiting. Please check for errors above!")
+
+
+def create_folder(path):
+    """Creates a folder in PATH."""
+    if not os.path.isdir(path):
+        os.makedirs(path)
+        print('\t[create] %s' % path)
+    else:
+        print('\t[exists] %s' % path)
+
+
+def copy_file(source_file, target_file, reset=False):
+    """Copies a file from base_path/SOURCE_FILE to base_path/TARGET_FILE."""
+    target = os.path.join(base_path, target_file)
+    if not os.path.isfile(target) or reset:
+        source = os.path.join(base_path, source_file)
+        shutil.copyfile(source, target)
+        if reset:
+            print('\t[forced] %s' % target_file)
+        else:
+            print('\t[copied] %s' % target_file)
+    else:
+        print('\t[exists] %s' % target_file)
 
 
 def update():
@@ -176,19 +202,15 @@ def update():
             update_repository(repo, branch, repo_path)
 
     # create folders
+    print("\nCreating folders ...\n")
     for folder in config.create_folders:
-        if not os.path.isfolder(folder):
-            print('create folder %s' % folder)
-            os.makedirs(folder)
+        create_folder(folder)
 
     # copy files
+    print("\nCopying files ...\n")
     for source_filename, target_filename in config.copy_files:
-        target = os.path.join(base_path, target_filename)
-        clean = len(sys.argv) > 1 and sys.argv[1] == "--reset"
-        if not os.path.isfile(target) or clean:
-            source = os.path.join(base_path, source_filename)
-            print('copy file %s to %s' % (source_filename, target_filename))
-            shutil.copyfile(source, target)
+        reset = len(sys.argv) > 1 and sys.argv[1] == "--reset"
+        copy_file(source_filename, target_filename, reset)
 
     # footer
     print(footer)
