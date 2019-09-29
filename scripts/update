@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+"""Builds and updates development and production environment"""
+
+import os
+import sys
+import shutil
+import subprocess
+import config
+
+project = config.project + "_docker"
+update_script = os.path.abspath(__file__)
+base_path = config.dirs['root']
+os.chdir(base_path)
+git_branch = subprocess.check_output(
+    ('git', 'rev-parse', '--abbrev-ref', 'HEAD'),
+    stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+
+header = """
+==============================================================================
+  This is the {} update script.
+  It will create folders and copy files, if not present (use --reset to force)
+  and clone or pull the neccessary repositories.
+
+  Using {} on branch {}
+  Installing/updating in {}
+  Reading info from config...
+  Checking repositories...
+------------------------------------------------------------------------------
+"""
+
+footer = """\n\nDone.\n
+=====================================================================
+  Now you may go ahead and use
+    * 'docker-compose run tryton execute update c3s'
+    * 'docker-compose run tryton execute db-delete c3s'
+    * 'docker-compose build' to build or
+    * 'docker-compose up' to start the system.
+=====================================================================
+"""
+
+
+def update_self():
+    """Updates the update script."""
+    try:
+        print('checking for updates of this script ... ', end='')
+        status_result = subprocess.check_output(
+            ('git', 'status'),
+            cwd=base_path, stderr=subprocess.STDOUT
+            ).rstrip().decode('utf-8')
+        if 'commits behind' in status_result:
+            print('updates found.')
+            pull_result = subprocess.check_output(
+                ('git', 'pull'),
+                cwd=base_path, stderr=subprocess.STDOUT
+                ).rstrip().decode('utf-8')
+            print('git pull "' + project + '": ', end='')
+            if pull_result:
+                print(pull_result)
+            subprocess.check_output(update_script, stderr=subprocess.STDOUT)
+            exit()
+        elif 'up-to-date' in status_result:
+            print('up-to-date.')
+        else:
+            print("There was a problem: \n\n\033[91m{}\033[0m".format(
+                status_result))
+            sys.exit("Exiting. Please check for errors above!")
+
+    except subprocess.CalledProcessError as e2:
+        print("There was a problem: \n\n\033[91m{}\033[0m".format(
+            e2.output.rstrip().decode('utf-8')))
+        sys.exit("Exiting. Please check for errors above!")
+
+
+def update_repository(repo, branch, path):
+    """Updates a repository."""
+
+    # sanity checks
+    if not repo or not branch or not path:
+        return
+    repo_relpath = os.path.relpath(path, base_path)
+
+    # create path
+    if not os.path.exists(path):
+        print('Missing directory, creating {}'.format(repo_relpath))
+        os.makedirs(path)
+
+    # get git option
+    if branch.startswith('--branch='):
+        target_type = 'branch'
+        target_value = branch.lstrip('--branch=')
+        target_param = target_value
+    if branch.startswith('--tag='):
+        target_type = 'tag'
+        target_value = branch.lstrip('--tag=')
+        target_param = target_value
+
+    print('\nREPO: ' + repo_relpath)
+    print('--------------------------------------------------------------')
+
+    # clone repository
+    try:
+        print('Will use git to clone "{}" {} "{}" into "{}": '.format(
+            repo, target_type, target_value, repo_relpath))
+        clone_result = subprocess.check_output(
+            ('git', 'clone', '--branch', target_param, repo, path),
+            stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+        print('git clone "{}": '.format(repo_relpath))
+        if clone_result:
+            print('::'.join(
+                x for x in clone_result.strip().split('\n')))
+
+    # pull repository
+    except subprocess.CalledProcessError:
+
+        # check, if the working directory is clean
+        workingdir_dirty = subprocess.check_output(
+            ('git', 'status', '--untracked-files=no', '--porcelain'),
+            cwd=path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+        if workingdir_dirty:
+            print("WARNING: Working directory not clean. Udpate omitted!" +
+                  "\n\033[91m{}\033[0m".format(workingdir_dirty))
+            return
+        print("Directory exists; using pull instead of clone:")
+
+        # checkout tag
+        if target_type == 'tag':
+            print('git checkout "{}": '.format(repo_relpath), end='')
+            checkout_result = subprocess.check_output(
+                ('git', 'checkout', 'tags/' + target_param),
+                cwd=path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+            if checkout_result:
+                print('::'.join(
+                    x for x in checkout_result.strip().split('\n')))
+            return
+
+        # checkout branch
+        subprocess.check_output(
+            ('git', 'checkout', target_param),
+            cwd=path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+
+        # pull
+        try:
+            pull_result = subprocess.check_output(
+                ('git', 'pull'),
+                cwd=path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+            print('git pull "{}": '.format(repo_relpath), end='')
+            if pull_result:
+                print('::'.join(
+                    x for x in pull_result.strip().split('\n')))
+        except subprocess.CalledProcessError as e2:
+            print("There was a problem: \n\n\033[91m{}\033[0m".format(
+                e2.output.rstrip().decode('utf-8')))
+            sys.exit("Exiting. Please check for errors above!")
+
+
+def update():
+    """Updates itself and the repositories, creates folders, copies files."""
+
+    # header
+    print(header.format(project, project, git_branch, base_path))
+
+    # update update script itself
+    update_self()
+
+    # update source repositories
+    for repo, branch, path in config.clone_sources:
+        repo_path = os.path.join(config.dirs['src'], path)
+        update_repository(repo, branch, repo_path)
+
+    # update reference repositories
+    if config.environment == "development":
+        for repo, branch, path in config.clone_references:
+            repo_path = os.path.join(config.dirs['ref'], path)
+            update_repository(repo, branch, repo_path)
+
+    # create folders
+    for folder in config.create_folders:
+        if not os.path.isfolder(folder):
+            print('create folder %s' % folder)
+            os.makedirs(folder)
+
+    # copy files
+    for source_filename, target_filename in config.copy_files:
+        target = os.path.join(base_path, target_filename)
+        clean = len(sys.argv) > 1 and sys.argv[1] == "--reset"
+        if not os.path.isfile(target) or clean:
+            source = os.path.join(base_path, source_filename)
+            print('copy file %s to %s' % (source_filename, target_filename))
+            shutil.copyfile(source, target)
+
+    # footer
+    print(footer)
+
+
+if __name__ == "__main__":
+    update()

@@ -2,7 +2,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 # environment
-VIRTUAL_HOST=repertoire.test
+VIRTUAL_HOST=$VIRTUAL_HOST_GUI
 PYRAMID_SERVICE=portal
 
 # secrets
