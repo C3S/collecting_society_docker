@@ -28,6 +28,6 @@ fi
 
 # start firefox after waiting till docker containers have been started
 sleep 10
-firefox https://redmine.c3s.cc/login http://repertoire.test:81 &
+firefox https://redmine.c3s.cc/login http://collecting_society.test:81 &
 
 tmux attach -t $SESSIONNAME
