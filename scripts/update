@@ -73,7 +73,7 @@ def update_self():
         sys.exit("Exiting. Please check for errors above!")
 
 
-def update_repository(repo, branch, path):
+def update_repository(repo, branch, path, username=False, useremail=False):
     """Updates a BRANCH of a repository REPO in PATH."""
 
     # sanity checks
@@ -115,6 +115,11 @@ def update_repository(repo, branch, path):
     # pull repository
     except subprocess.CalledProcessError:
 
+        # ensure, right remote url is set
+        subprocess.check_output(
+            ('git', 'remote', 'set-url', 'origin', repo),
+            cwd=path, stderr=subprocess.STDOUT)
+
         # check, if the working directory is clean
         workingdir_dirty = subprocess.check_output(
             ('git', 'status', '--untracked-files=no', '--porcelain'),
@@ -155,6 +160,22 @@ def update_repository(repo, branch, path):
                 e2.output.rstrip().decode('utf-8')))
             sys.exit("Exiting. Please check for errors above!")
 
+    # configure user
+    if username and useremail:
+        print('configure user {} <{}>: '.format(username, useremail), end='')
+        try:
+            subprocess.check_output(
+                ('git', 'config', 'user.name', '"{}"'.format(username)),
+                cwd=path, stderr=subprocess.STDOUT)
+            subprocess.check_output(
+                ('git', 'config', 'user.email', '"{}"'.format(useremail)),
+                cwd=path, stderr=subprocess.STDOUT)
+            print('ok.')
+        except subprocess.CalledProcessError as e2:
+            print("There was a problem: \n\n\033[91m{}\033[0m\n".format(
+                e2.output.rstrip().decode('utf-8')))
+            sys.exit("Exiting. Please check for errors above!")
+
 
 def create_folder(path):
     """Creates a folder in PATH."""
@@ -186,18 +207,30 @@ def update():
     print(header.format(project, project, git_branch, base_path))
 
     # update update script itself
-    update_self()
+    # update_self()
 
     # update source repositories
-    for repo, branch, path in config.clone_sources:
-        repo_path = os.path.join(config.dirs['src'], path)
-        update_repository(repo, branch, repo_path)
+    for repo in config.clone_sources:
+        url = repo['url']
+        if int(config.env.get('GIT_SSH')) and 'ssh' in repo:
+            url = repo['ssh']
+        option = repo['option']
+        path = os.path.join(config.dirs['src'], repo['path'])
+        username = config.env.get('GIT_USER_NAME')
+        useremail = config.env.get('GIT_USER_EMAIL')
+        update_repository(url, option, path, username, useremail)
 
     # update reference repositories
     if config.env['ENVIRONMENT'] == "development":
-        for repo, branch, path in config.clone_references:
-            repo_path = os.path.join(config.dirs['ref'], path)
-            update_repository(repo, branch, repo_path)
+        for repo in config.clone_references:
+            url = repo['url']
+            if int(config.env['GIT_SSH']) and 'ssh' in repo:
+                url = repo['ssh']
+            option = repo['option']
+            path = os.path.join(config.dirs['ref'], repo['path'])
+            username = config.env.get('GIT_USER_NAME')
+            useremail = config.env.get('GIT_USER_EMAIL')
+            update_repository(url, option, path, username, useremail)
 
     # create folders
     print("\nCreating folders ...\n")
@@ -206,9 +239,9 @@ def update():
 
     # copy files
     print("\nCopying files ...\n")
-    for source_filename, target_filename in config.copy_files:
+    for file in config.copy_files:
         reset = len(sys.argv) > 1 and sys.argv[1] == "--reset"
-        copy_file(source_filename, target_filename, reset)
+        copy_file(file['source'], file['target'], reset)
 
     # footer
     print(footer)

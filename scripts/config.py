@@ -71,222 +71,220 @@ create_folders = [
 #    destination
 # )
 copy_files = [
-    (
-        dirs['shared'] + '/etc/trytonpassfile.example',
-        dirs['shared'] + '/etc/trytonpassfile',
-    ),
-    (
-        dirs['environment'] + '/shared.example',
-        dirs['environment'] + '/shared'
-    ),
-    (
-        dirs['environment'] + '/webgui.example',
-        dirs['environment'] + '/webgui'
-    ),
-    (
-        dirs['environment'] + '/webapi.example',
-        dirs['environment'] + '/webapi'
-    ),
-    (
-        dirs['environment'] + '/worker.example',
-        dirs['environment'] + '/worker'
-    ),
-    (
-        dirs['src'] + '/collecting_society_worker/config.ini.EXAMPLE',
-        dirs['src'] + '/collecting_society_worker/config.ini'
-    ),
+    {
+        'source': dirs['shared'] + '/etc/trytonpassfile.example',
+        'target': dirs['shared'] + '/etc/trytonpassfile',
+    },
+    {
+        'source': dirs['environment'] + '/shared.example',
+        'target': dirs['environment'] + '/shared'
+    },
+    {
+        'source': dirs['environment'] + '/webgui.example',
+        'target': dirs['environment'] + '/webgui'
+    },
+    {
+        'source': dirs['environment'] + '/webapi.example',
+        'target': dirs['environment'] + '/webapi'
+    },
+    {
+        'source': dirs['environment'] + '/worker.example',
+        'target': dirs['environment'] + '/worker'
+    },
+    {
+        'source':
+            dirs['src'] + '/collecting_society_worker/config.ini.EXAMPLE',
+        'target': dirs['src'] + '/collecting_society_worker/config.ini'
+    },
 ]
 
 # source repositories to clone
-# (
-#     git repository url,
-#     git clone option,
-#     folder name
-# ),
 clone_sources = [
-    # included repositories: tryton upstream
-    (
-        'https://github.com/tryton/trytond.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'trytond'
-    ),
-    (
-        'https://github.com/tryton/country.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'country'
-    ),
-    (
-        'https://github.com/tryton/currency.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'currency'
-    ),
-    (
-        'https://github.com/tryton/party.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'party'
-    ),
-    (
-        'https://github.com/tryton/company.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'company'
-    ),
-    (
-        'https://github.com/tryton/product.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'product'
-    ),
-    (
-        'https://github.com/tryton/account.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'account'
-    ),
-    (
-        'https://github.com/tryton/account_product.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'account_product'
-    ),
-    (
-        'https://github.com/tryton/account_invoice.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'account_invoice'
-    ),
-    (
-        'https://github.com/tryton/account_invoice_line_standalone.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'account_invoice_line_standalone'
-    ),
-    (
-        'https://github.com/tryton/bank.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'bank'
-    ),
-    (
-        'https://github.com/virtualthings/web_user.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'web_user'
-    ),
-    # included repositories: tryton custom
-    (
-        'https://github.com/C3S/archiving.git',
-        '--branch=' + branch,
-        'archiving'
-    ),
-    (
-        'https://github.com/C3S/portal.git',
-        '--branch=' + branch,
-        'portal'
-    ),
-    (
-        'https://github.com/C3S/collecting_society.git',
-        '--branch=' + branch,
-        'collecting_society'
-    ),
-    # included repositories: pyramid
-    (
-        'https://github.com/C3S/portal_web.git',
-        '--branch=' + branch,
-        'portal_web'
-    ),
-    (
-        'https://github.com/C3S/collecting_society_web.git',
-        '--branch=' + branch,
-        'collecting_society_web'
-    ),
-    # included repositories: worker
-    (
-        'https://github.com/C3S/collecting_society_worker.git',
-        '--branch=master',
-        'collecting_society_worker'
-    ),
-    (
-        'https://github.com/spotify/echoprint-codegen.git',
-        '--branch=master',
-        'echoprint-codegen'
-    ),
+    # upstream: tryton
+    {
+        'url': 'https://github.com/tryton/trytond.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'trytond'
+    },
+    {
+        'url': 'https://github.com/tryton/country.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'country'
+    },
+    {
+        'url': 'https://github.com/tryton/currency.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'currency'
+    },
+    {
+        'url': 'https://github.com/tryton/party.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'party'
+    },
+    {
+        'url': 'https://github.com/tryton/company.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'company'
+    },
+    {
+        'url': 'https://github.com/tryton/product.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'product'
+    },
+    {
+        'url': 'https://github.com/tryton/account.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'account'
+    },
+    {
+        'url': 'https://github.com/tryton/account_product.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'account_product'
+    },
+    {
+        'url': 'https://github.com/tryton/account_invoice.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'account_invoice'
+    },
+    {
+        'url': 'https://github.com/tryton/account_invoice_line_standalone.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'account_invoice_line_standalone'
+    },
+    {
+        'url': 'https://github.com/tryton/bank.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'bank'
+    },
+    {
+        'url': 'https://github.com/virtualthings/web_user.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'web_user'
+    },
+    # custom: tryton
+    {
+        'url': 'https://github.com/C3S/archiving.git',
+        'ssh': 'git@github.com:C3S/archiving.git',
+        'option': '--branch=' + branch,
+        'path': 'archiving'
+    },
+    {
+        'url': 'https://github.com/C3S/portal.git',
+        'ssh': 'git@github.com:C3S/portal.git',
+        'option': '--branch=' + branch,
+        'path': 'portal'
+    },
+    {
+        'url': 'https://github.com/C3S/collecting_society.git',
+        'ssh': 'git@github.com:C3S/collecting_society.git',
+        'option': '--branch=' + branch,
+        'path': 'collecting_society'
+    },
+    # custom: pyramid
+    {
+        'url': 'https://github.com/C3S/portal_web.git',
+        'ssh': 'git@github.com:C3S/portal_web.git',
+        'option': '--branch=' + branch,
+        'path': 'portal_web'
+    },
+    {
+        'url': 'https://github.com/C3S/collecting_society_web.git',
+        'ssh': 'git@github.com:C3S/collecting_society_web.git',
+        'option': '--branch=' + branch,
+        'path': 'collecting_society_web'
+    },
+    # upstream: worker
+    {
+        'url': 'https://github.com/spotify/echoprint-codegen.git',
+        'option': '--branch=master',
+        'path': 'echoprint-codegen'
+    },
+    # custom: worker
+    {
+        'url': 'https://github.com/C3S/collecting_society_worker.git',
+        'ssh': 'git@github.com:C3S/collecting_society_worker.git',
+        'option': '--branch=master',
+        'path': 'collecting_society_worker'
+    },
 ]
 
-# reference repositories to clone (development stage only)
-# (
-#     git repository url,
-#     git clone option,
-#     folder name
-# ),
+# reference repositories to clone development stage only
 clone_references = [
-    (
-        'https://github.com/pallets/click.git',
-        '--tag=4.0',
-        'click'
-    ),
-    (
-        'https://github.com/requests/requests.git',
-        '--tag=v2.18.4',
-        'requests'
-    ),
-    (
-        'https://github.com/psycopg/psycopg2.git',
-        '--tag=2_5_4',
-        'psycopg2'
-    ),
-    (
-        'https://github.com/tryton/proteus.git',
-        '--branch=' + env['TRYTON_VERSION'],
-        'proteus'
-    ),
-    (
-        'https://github.com/Pylons/webob.git',
-        '--tag=v1.8.2',
-        'webob'
-    ),
-    (
-        'https://github.com/Pylons/pyramid.git',
-        '--tag=1.9.2',
-        'pyramid'
-    ),
-    (
-        'https://github.com/Pylons/pyramid_beaker.git',
-        '--tag=0.8',
-        'pyramid_beaker'
-    ),
-    (
-        'https://github.com/Pylons/pyramid_chameleon.git',
-        '--tag=0.3',
-        'pyramid_chameleon'
-    ),
-    (
-        'https://github.com/Pylons/pyramid_mailer.git',
-        '--tag=0.15.1',
-        'pyramid_mailer'
-    ),
-    (
-        'https://github.com/Pylons/colander.git',
-        '--tag=1.4',
-        'colander'
-    ),
-    (
-        'https://github.com/Cornices/cornice.git',
-        '--tag=3.4.0',
-        'cornice'
-    ),
-    (
-        'https://github.com/Pylons/deform.git',
-        '--tag=2.0.5',
-        'deform'
-    ),
-    (
-        'https://github.com/jiaaro/pydub.git',
-        '--tag=v0.22.0',
-        'pydub'
-    ),
-    (
-        'https://github.com/supermihi/pytaglib.git',
-        '--tag=v1.4.3',
-        'pytaglib'
-    ),
-    (
-        'https://github.com/echonest/pyechonest.git',
-        '--tag=9.0.0',
-        'pyechonest'
-    ),
+    {
+        'url': 'https://github.com/pallets/click.git',
+        'option': '--tag=4.0',
+        'path': 'click'
+    },
+    {
+        'url': 'https://github.com/requests/requests.git',
+        'option': '--tag=v2.18.4',
+        'path': 'requests'
+    },
+    {
+        'url': 'https://github.com/psycopg/psycopg2.git',
+        'option': '--tag=2_5_4',
+        'path': 'psycopg2'
+    },
+    {
+        'url': 'https://github.com/tryton/proteus.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'proteus'
+    },
+    {
+        'url': 'https://github.com/Pylons/webob.git',
+        'option': '--tag=v1.8.2',
+        'path': 'webob'
+    },
+    {
+        'url': 'https://github.com/Pylons/pyramid.git',
+        'option': '--tag=1.9.2',
+        'path': 'pyramid'
+    },
+    {
+        'url': 'https://github.com/Pylons/pyramid_beaker.git',
+        'option': '--tag=0.8',
+        'path': 'pyramid_beaker'
+    },
+    {
+        'url': 'https://github.com/Pylons/pyramid_chameleon.git',
+        'option': '--tag=0.3',
+        'path': 'pyramid_chameleon'
+    },
+    {
+        'url': 'https://github.com/Pylons/pyramid_mailer.git',
+        'option': '--tag=0.15.1',
+        'path': 'pyramid_mailer'
+    },
+    {
+        'url': 'https://github.com/Pylons/colander.git',
+        'option': '--tag=1.4',
+        'path': 'colander'
+    },
+    {
+        'url': 'https://github.com/Cornices/cornice.git',
+        'option': '--tag=3.4.0',
+        'path': 'cornice'
+    },
+    {
+        'url': 'https://github.com/Pylons/deform.git',
+        'option': '--tag=2.0.5',
+        'path': 'deform'
+    },
+    {
+        'url': 'https://github.com/jiaaro/pydub.git',
+        'option': '--tag=v0.22.0',
+        'path': 'pydub'
+    },
+    {
+        'url': 'https://github.com/supermihi/pytaglib.git',
+        'option': '--tag=v1.4.3',
+        'path': 'pytaglib'
+    },
+    {
+        'url': 'https://github.com/echonest/pyechonest.git',
+        'option': '--tag=9.0.0',
+        'path': 'pyechonest'
+    },
 ]
 
 if __name__ == "__main__":
@@ -294,7 +292,7 @@ if __name__ == "__main__":
     print("CONFIG\n------\n")
     pprint.pprint({
         'env': env,
-        'branch': branch,
+        'option': branch,
         'dirs': dirs,
         'create_folders': create_folders,
         'copy_files': copy_files,

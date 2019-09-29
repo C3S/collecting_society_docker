@@ -1,9 +1,12 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 
-# environment
+# project
 PROJECT=collecting_society
 ENVIRONMENT=development
+GIT_SSH=0
+# GIT_USER_NAME=Firstname Lastname
+# GIT_USER_EMAIL=firstname.lastname@c3s.cc
 
 # tryton
 TRYTON_VERSION=3.4
