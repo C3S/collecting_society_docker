@@ -266,6 +266,11 @@ clone_references = [
         'path': 'cornice'
     },
     {
+        'url': 'https://github.com/Cornices/cornice.ext.swagger.git',
+        'option': '--tag=0.7.0',
+        'path': 'cornice_swagger'
+    },
+    {
         'url': 'https://github.com/Pylons/deform.git',
         'option': '--tag=2.0.5',
         'path': 'deform'

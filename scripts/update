@@ -207,7 +207,7 @@ def update():
     print(header.format(project, project, git_branch, base_path))
 
     # update update script itself
-    # update_self()
+    update_self()
 
     # update source repositories
     for repo in config.clone_sources:
