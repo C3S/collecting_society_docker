@@ -5,6 +5,7 @@
 
 import os
 import subprocess
+import re
 
 
 def get_root_dir():
@@ -18,16 +19,6 @@ def get_root_dir():
         return os.path.realpath(os.path.join(directory, ".."))
 
 
-# TODO: import from env files
-project = "collecting_society"
-environment = "development"
-tryton_version = "3.4"
-
-# branch
-branch = "master"
-if environment in ["development", "testing"]:
-    branch = "develop"
-
 # directories
 dirs = {}
 dirs['root'] = get_root_dir()
@@ -37,6 +28,36 @@ dirs['scripts'] = dirs['root'] + "/scripts"
 dirs['shared'] = dirs['root'] + "/shared"
 dirs['ref'] = dirs['shared'] + "/ref"
 dirs['src'] = dirs['shared'] + "/src"
+
+
+def get_shared_env(path=False):
+    """Reads the shared environment file and parses it into a dictionary."""
+
+    # get path
+    if not path:
+        path = os.path.join(dirs['environment'], 'shared')
+    if not os.path.isfile(path):
+        path = os.path.join(dirs['environment'], 'shared.example')
+    assert os.path.isfile(path)
+
+    # parse file
+    result = {}
+    envre = re.compile(r'''^([^\s=]+)=(?:[\s"']*)(.+?)(?:[\s"']*)$''')
+    with open(path) as ins:
+        for line in ins:
+            match = envre.match(line)
+            if match is not None:
+                result[match.group(1)] = match.group(2)
+    return result
+
+
+# shared env
+env = get_shared_env()
+
+# branch
+branch = "master"
+if env['ENVIRONMENT'] in ["development", "testing"]:
+    branch = "develop"
 
 # folders to create
 create_folders = [
@@ -86,62 +107,62 @@ clone_sources = [
     # included repositories: tryton upstream
     (
         'https://github.com/tryton/trytond.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'trytond'
     ),
     (
         'https://github.com/tryton/country.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'country'
     ),
     (
         'https://github.com/tryton/currency.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'currency'
     ),
     (
         'https://github.com/tryton/party.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'party'
     ),
     (
         'https://github.com/tryton/company.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'company'
     ),
     (
         'https://github.com/tryton/product.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'product'
     ),
     (
         'https://github.com/tryton/account.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'account'
     ),
     (
         'https://github.com/tryton/account_product.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'account_product'
     ),
     (
         'https://github.com/tryton/account_invoice.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'account_invoice'
     ),
     (
         'https://github.com/tryton/account_invoice_line_standalone.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'account_invoice_line_standalone'
     ),
     (
         'https://github.com/tryton/bank.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'bank'
     ),
     (
         'https://github.com/virtualthings/web_user.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'web_user'
     ),
     # included repositories: tryton custom
@@ -208,7 +229,7 @@ clone_references = [
     ),
     (
         'https://github.com/tryton/proteus.git',
-        '--branch=' + tryton_version,
+        '--branch=' + env['TRYTON_VERSION'],
         'proteus'
     ),
     (
@@ -272,8 +293,8 @@ if __name__ == "__main__":
     import pprint
     print("CONFIG\n------\n")
     pprint.pprint({
-        'environment': environment,
-        'tryton_version': tryton_version,
+        'env': env,
+        'branch': branch,
         'dirs': dirs,
         'create_folders': create_folders,
         'copy_files': copy_files,

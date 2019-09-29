@@ -2,12 +2,18 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 # environment
+PROJECT=collecting_society
 ENVIRONMENT=development
 
-# web
+# tryton
+TRYTON_VERSION=3.4
+
+# nginx
 VIRTUAL_HOST_GUI=repertoire.test
 VIRTUAL_HOST_API=api.repertoire.test
 VIRTUAL_PORT=6543
+
+# pserve
 TRUSTED_PROXY=0.0.0.0
 
 # apis
