@@ -5,15 +5,15 @@
 PROJECT=collecting_society
 ENVIRONMENT=development
 GIT_SSH=0
-# GIT_USER_NAME=Firstname Lastname
-# GIT_USER_EMAIL=firstname.lastname@c3s.cc
+GIT_USER_NAME=
+GIT_USER_EMAIL=
 
 # tryton
 TRYTON_VERSION=3.4
 
 # nginx
-VIRTUAL_HOST_GUI=repertoire.test
-VIRTUAL_HOST_API=api.repertoire.test
+VIRTUAL_HOST_GUI=$PROJECT.test
+VIRTUAL_HOST_API=api.$PROJECT.test
 VIRTUAL_PORT=6543
 
 # pserve
