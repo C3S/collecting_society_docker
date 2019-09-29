@@ -1,8 +1,8 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 
-FROM c3s_repertoire_tryton
-MAINTAINER Udo Spallek <udono@virtual-things.biz>
+FROM cs_erpserver
+MAINTAINER Alexander Blum <alexander.blum@c3s.cc>
 
 RUN apt-get install -y --no-install-recommends  \
     libtag1-dev
@@ -35,7 +35,7 @@ RUN pip install  \
     Pillow==6.0.0 \
     cornice-swagger==0.7.0 \
     ptvsd==4.2.10
-    
+
 # winpdb debugger requires either portal or api to have an open port 51000 
 # (add "51000:51000" in docker-compose.yml -- make sure you open it only in
 # a single container at a given time)
@@ -43,4 +43,3 @@ RUN pip install  \
 # and insert this line in the script where you want to debug:
 # import rpdb2; rpdb2.start_embedded_debugger("supersecret", fAllowRemote = True)
 #RUN apt-get update && apt-get install -y winpdb 
-

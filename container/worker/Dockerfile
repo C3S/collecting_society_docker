@@ -1,8 +1,8 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 
-FROM c3s_repertoire_tryton
-MAINTAINER Udo Spallek <udono@virtual-things.biz>
+FROM cs_erpserver
+MAINTAINER Alexander Blum <alexander.blum@c3s.cc>
 
 RUN apt-get update && apt-get install -y --no-install-recommends  \
     cron \
@@ -44,4 +44,4 @@ RUN crontab -u root -l
 # winpdb debugger requires processing port "51000:51000" in docker-compose.yml
 # to allow winpdb to attach to a pyton script, uncomment the RUN and insert this line in the script where you want to debug:
 # import rpdb2; rpdb2.start_embedded_debugger("supersecret", fAllowRemote = True)
-#RUN apt-get update && apt-get install -y winpdb 
+#RUN apt-get update && apt-get install -y winpdb

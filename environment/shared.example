@@ -2,30 +2,31 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 # environment
-VIRTUAL_HOST=api.repertoire.test
+ENVIRONMENT=development
+
+# web
 VIRTUAL_PORT=6543
 TRUSTED_PROXY=0.0.0.0
-PYRAMID_SERVICE=api
-ENVIRONMENT=development
-# DEBUGGER=ptvsd
 
-# secrets
-AUTHENTICATION_SECRET=s0secret!!
-SESSION_SECRET=s0secret!!
+# apis
+API_C3SUPLOAD_URL=http://api.repertoire.test:81/repertoire
+API_C3SUPLOAD_VERSION=v1
+API_C3SUPLOAD_CORS_ORIGINS=http://repertoire.test:81
+API_C3SUPLOAD_CONTENTBASEPATH=/shared/tmp/upload
+API_C3SUPLOAD_STORAGEBASEPATH=/shared/tmp/upload
 
-# contacts
+API_DATATABLES_URL=http://api.repertoire.test:81/datatables
+API_DATATABLES_VERSION=v1
+API_DATATABLES_CORS_ORIGINS=http://repertoire.test:81
+
+API_C3SMEMBERSHIP_URL=http://api:6543/c3smembership
+API_C3SMEMBERSHIP_VERSION=v1
+
+# mail
 MAIL_HOST=localhost
 MAIL_PORT=25
 MAIL_DEFAULT_SENDER=sender@portal.test
 MAIL_TO_REAL_WORLD=0
 
-# apis
-API_C3SUPLOAD_CORS_ORIGINS=http://repertoire.test:81
-API_C3SUPLOAD_CONTENTBASEPATH=/shared/tmp/upload
-API_C3SUPLOAD_STORAGEBASEPATH=/shared/tmp/upload
-API_C3SUPLOAD_URL=http://api.repertoire.test:81/repertoire
-API_C3SUPLOAD_VERSION=v1
-
-API_DATATABLES_URL=http://api.repertoire.test:81/datatables
-API_DATATABLES_CORS_ORIGINS=http://repertoire.test:81
-API_DATATABLES_VERSION=v1
+# debug
+# DEBUGGER=ptvsd

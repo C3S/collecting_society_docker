@@ -210,27 +210,23 @@ configfiles = (
         'shared/etc/trytonpassfile',
     ),
     (
-        'tryton.env.example',
-        'tryton.env'
+        'environment/shared.example',
+        'environment/shared'
     ),
     (
-        'portal.env.example',
-        'portal.env'
+        'environment/webgui.example',
+        'environment/webgui'
     ),
     (
-        'api.env.example',
-        'api.env'
+        'environment/webapi.example',
+        'environment/webapi'
     ),
     (
-        'processing.env.example',
-        'processing.env'
+        'environment/worker.example',
+        'environment/worker'
     ),
     (
-        'selenium.env.example',
-        'selenium.env'
-    ),
-    (
-        'shared/src/collecting_society_worker/config.ini.EXAMPLE',
-        'shared/src/collecting_society_worker/config.ini'
+        src + 'collecting_society_worker/config.ini.EXAMPLE',
+        src + 'collecting_society_worker/config.ini'
     ),
 )

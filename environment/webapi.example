@@ -2,7 +2,9 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 # environment
-ENVIRONMENT=development
+VIRTUAL_HOST=api.repertoire.test
+PYRAMID_SERVICE=api
 
-# echoprint
-ECHOPRINT_SERVER_TOKEN=s0secret!!
+# secrets
+AUTHENTICATION_SECRET=s0secret!!
+SESSION_SECRET=s0secret!!

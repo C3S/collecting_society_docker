@@ -2,7 +2,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 FROM debian:jessie
-MAINTAINER Udo Spallek <udono@virtual-things.biz>
+MAINTAINER Alexander Blum <alexander.blum@c3s.cc>
 
 RUN apt-get update && apt-get install -y --no-install-recommends  \
     locales  \
@@ -57,7 +57,6 @@ RUN pip install  \
     simplejson==3.6.5  \
     vatnumber==1.2  \
     hurry.filesize==0.9
-
 
 RUN mkdir -p /shared
 WORKDIR /shared

@@ -1,0 +1,11 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
+# environment
+VIRTUAL_HOST=repertoire.test
+PYRAMID_SERVICE=portal
+
+# secrets
+AUTHENTICATION_SECRET=s0secret!!
+SESSION_SECRET=s0secret!!
+API_C3SMEMBERSHIP_API_KEY=s0secret!!

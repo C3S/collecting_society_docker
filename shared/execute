@@ -545,34 +545,35 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
     sys.exit(exitcode)
 
 
-@execute.command('deploy-tryton')
+@execute.command('deploy-erpserver')
 @click.pass_context
-def deploy_tryton(context):
+def deploy_erpserver(context):
     """
-    Deploys the tryton service.
+    Deploys the erpserver service.
 
     Installs pip packages, creates and sets up database 'c3s' and runs the
-    tryton service (trytond).
+    erpserver service (trytond).
     """
-    context.invoke(pip_install, container='tryton')
-    service = [
-        '/usr/local/bin/trytond',
-        '--dev',
-        '-c', os.path.join(PROJECT_PATH, 'etc', 'trytond.conf')
-    ]
-    subprocess.call(service)
+    context.invoke(pip_install, container='erpserver')
+    subprocess.call(
+        [
+            '/usr/local/bin/trytond',
+            '--dev',
+            '-c', os.path.join(PROJECT_PATH, 'etc', 'trytond.conf')
+        ]
+    )
 
 
-@execute.command('deploy-portal')
+@execute.command('deploy-webgui')
 @click.pass_context
-def deploy_portal(context):
+def deploy_webgui(context):
     """
-    Deploys the portal service.
+    Deploys the webgui service.
 
     Installs pip packages, creates and sets up database 'c3s' and runs the
-    portal service (pserve).
+    webgui service (pserve).
     """
-    context.invoke(pip_install, container='portal')
+    context.invoke(pip_install, container='webgui')
     if str(os.environ.get('ENVIRONMENT')) != "testing":
         context.invoke(db_demo_setup, dbname='c3s')
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
@@ -589,16 +590,16 @@ def deploy_portal(context):
     )
 
 
-@execute.command('deploy-api')
+@execute.command('deploy-webapi')
 @click.pass_context
-def deploy_api(context):
+def deploy_webapi(context):
     """
-    Deploys the portal service.
+    Deploys the webapi service.
 
     Installs pip packages, creates and sets up database 'c3s' and runs the
-    api service (pserve).
+    webapi service (pserve).
     """
-    context.invoke(pip_install, container='api')
+    context.invoke(pip_install, container='webapi')
     if str(os.environ.get('ENVIRONMENT')) != "testing":
         context.invoke(db_demo_setup, dbname='c3s')
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
