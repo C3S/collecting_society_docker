@@ -581,7 +581,7 @@ def deploy_portal(context):
         [
             '/usr/local/bin/pserve',
             os.path.join(
-                PROJECT_PATH, 'src', 'collecting_society.portal', environment
+                PROJECT_PATH, 'src', 'portal_web', environment
             ),
             trusted_proxy,
             '--reload'
@@ -607,7 +607,7 @@ def deploy_api(context):
         [
             '/usr/local/bin/pserve',
             os.path.join(
-                PROJECT_PATH, 'src', 'collecting_society.portal', environment
+                PROJECT_PATH, 'src', 'portal_web', environment
             ),
             trusted_proxy,
             '--reload'

@@ -432,32 +432,31 @@ Run all tests in PATH (optional) with nosetests PARAMETER (optional)::
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
         execute run-tests [--path=PATH] [PARAMETER]
 
-Run all tests for portal + plugins::
+Run all tests for portal_web + plugins::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
         execute run-tests
 
-Run all tests for portal + plugins quiet, drop into pdb on failures or errors::
+Run all tests for portal_web + plugins quiet, drop into pdb on errors::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
         execute run-tests --quiet --pdb
 
-Run only tests for portal::
+Run only tests for portal_web::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
-        execute run-tests --path src/collecting_society.portal
+        execute run-tests --path src/portal_web
 
 Run only unittests of portal::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
-        execute run-tests \
-        --path src/collecting_society.portal/collecting_society_portal/tests/unit
+        execute run-tests --path src/portal_web/portal_web/tests/unit
 
 Run a specific unittest for a model of portal::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
-        execute run-tests \
-        --path src/collecting_society.portal/collecting_society_portal/tests/unit/models.py:TESTCLASS.TESTMETHOD
+        execute run-tests --path \
+        src/portal_web/portal_web/tests/unit/models.py:TESTCLASS.TESTMETHOD
 
 For repeated testing without recreating the container every time, start the
 container once and run the tests from within::

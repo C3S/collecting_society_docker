@@ -8,6 +8,7 @@ Core Application
     Copyright (C) 2014-2019 Cultural Commons Collecting Society SCE mit
                             beschränkter Haftung (C3S SCE)
     Copyright (C) 2014-2019 Alexander Blum <alexander.blum@c3s.cc>
+    Copyright (C) 2014-2019 Thomas Mielke <thomas.mielke@c3s.cc>
     Copyright (C) 2014-2015 Udo Spallek <udono@virtual-things.biz>
     Copyright (C) 2014-2015 Korbinian Preisler <timitos@virtual-things.biz>
     Copyright (C) 2014-2015 virtual things <info@virtual-things.biz>

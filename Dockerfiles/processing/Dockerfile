@@ -38,7 +38,7 @@ WORKDIR /shared
 
 RUN mkdir /shared/tmp
 RUN echo "" > /shared/tmp/repro.log
-RUN echo "* * * * * cd /shared/src/c3sRepertoireProcessing; /usr/bin/python repro.py all 2>> /shared/tmp/repro.log >> /shared/tmp/repro.log" | crontab -
+RUN echo "* * * * * cd /shared/src/collecting_society_worker; /usr/bin/python repro.py all 2>> /shared/tmp/repro.log >> /shared/tmp/repro.log" | crontab -
 RUN crontab -u root -l
 
 # winpdb debugger requires processing port "51000:51000" in docker-compose.yml
