@@ -33,8 +33,9 @@ header = """
 footer = """\n\nDone.\n
 =====================================================================
   Now you may go ahead and use
-    * 'docker-compose build' to build or
-    * 'docker-compose up' to start the system.
+    * 'docker-compose build' to build the project
+    * 'docker-compose up' to start the project
+    * './scripts/up' to start the project within a tmux session
 =====================================================================
 """
 
