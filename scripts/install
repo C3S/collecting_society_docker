@@ -18,7 +18,7 @@ fi
 # get confirmation
 echo "This script installs docker and docker-compose on debian/ubuntu,"
 echo "adds a user to the docker group and updates/build the project."
-echo -e "\n\033[91mNote: It will change your host environment.\033[0m\n"
+echo -e "\n\033[91mWARNING: It will change your host environment.\033[0m\n"
 while true; do
     read -p "Do you want to continue (y/n)? " YN
     case $YN in
