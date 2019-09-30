@@ -1,5 +1,5 @@
 --no-index
 
--r requirements-tryton.txt
+-r requirements-erpserver.txt
 -e src/portal_web
 -e src/collecting_society_web

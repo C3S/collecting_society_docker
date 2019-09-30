@@ -57,7 +57,7 @@ def pip_install(context, container):
     Installs required packages for a CONTAINER with pip.
 
     Requirements have to be defined in
-    `./shared/etc/requirements-CONTAINER.txt`.
+    `./shared/pip/CONTAINER.txt`.
 
     After installation a flag file is created within the container to avoid
     multiple execution during its lifespan.
@@ -74,8 +74,7 @@ def pip_install(context, container):
                 'install',
                 '-qr',
                 os.path.join(
-                    PROJECT_PATH, 'etc',
-                    'requirements-%s.txt' % container
+                    PROJECT_PATH, 'config', 'requirements-%s.txt' % container
                 )
             ]
         )
@@ -247,6 +246,7 @@ def db_setup(context, dbname, master, demo, force):
     execution from different docker containers.
     """
     context.invoke(pip_install, container='tryton')
+    environment = str(os.environ.get('ENVIRONMENT'))
 
     # Check lockfile, if locked, wait till not locked any more
     while True:
@@ -270,7 +270,7 @@ def db_setup(context, dbname, master, demo, force):
         # Cofigure trytond
         os.environ['DB_NAME'] = dbname
         os.environ['TRYTOND_CONFIG'] = os.path.join(
-            PROJECT_PATH, 'etc', 'trytond.conf'
+            PROJECT_PATH, 'config', 'trytond_' + environment + '.conf'
         )
 
         # Setup master data
@@ -283,7 +283,7 @@ def db_setup(context, dbname, master, demo, force):
                     '/usr/bin/python',
                     '-m', 'doctest',
                     '-v', os.path.join(
-                        PROJECT_PATH, 'etc', 'scenario_master_data.txt'
+                        PROJECT_PATH, 'data', 'master.txt'
                     ),
                     ''
                 ], stdout=logfile
@@ -291,7 +291,7 @@ def db_setup(context, dbname, master, demo, force):
             logfile.close()
 
         # Setup demo data
-        if os.environ.get('ENVIRONMENT') == 'development':
+        if environment == 'development':
             if demo:
                 print(
                     '\nSetup scenario demo data -> /shared/tmp/db-demo.log\n')
@@ -301,7 +301,7 @@ def db_setup(context, dbname, master, demo, force):
                         '/usr/bin/python',
                         '-m', 'doctest',
                         '-v', os.path.join(
-                            PROJECT_PATH, 'etc', 'scenario_demo_data.txt'
+                            PROJECT_PATH, 'data', 'demo.txt'
                         )
                     ], stdout=logfile
                 )
@@ -362,14 +362,14 @@ def create_test_db(context, dbtype, dbname):
     """
     _db_type = dbtype
     _db_name = dbname
-    _trytond_conf = 'trytond_test_' + _db_type + '.conf'
+    _trytond_conf = 'trytond_testing_' + _db_type + '.conf'
     os.environ['TRYTOND_CONFIG'] = os.path.join(
-        PROJECT_PATH, 'etc', _trytond_conf
+        PROJECT_PATH, 'config', _trytond_conf
     )
 
     # Rereate database template
     if _db_type == 'sqlite':
-        _file_path = os.path.join(PROJECT_PATH, 'tmp', 'files')
+        _file_path = os.path.join(PROJECT_PATH, 'tmp')
         _db_src_path = os.path.join(_file_path, _db_name + '.sqlite')
         os.environ['DB_NAME'] = _db_name
         if os.path.isfile(_db_src_path):
@@ -396,14 +396,15 @@ def create_test_db(context, dbtype, dbname):
             '/usr/bin/python',
             '-m', 'doctest',
             '-v', os.path.join(
-                PROJECT_PATH, 'etc', 'scenario_master_data.txt'
+                PROJECT_PATH, 'data', 'master.txt'
             )
         ]
     )
 
     # Copy database template
     if _db_type == 'sqlite':
-        _db_dst_path = os.path.join(PROJECT_PATH, 'etc', _db_name + '.sqlite')
+        _db_dst_path = os.path.join(
+            PROJECT_PATH, 'config', _db_name + '.sqlite')
         if os.path.isfile(_db_dst_path):
             os.unlink(_db_dst_path)
         shutil.copyfile(_db_src_path, _db_dst_path)
@@ -437,7 +438,8 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
     the temporary tryton file folder will be deleted.
 
     The location of the temporary tryton upload folder is configured in
-    `./shared/etc/tryton_test_DBTYPE.conf` (currently `./shared/tmp/files`).
+    `./shared/config/tryton_testing_DBTYPE.conf`
+    (currently `./shared/tmp/files`).
 
     The location of the screenshots of integration tests is configured within
     `<portal>/tests/config.py` (currenty `./shared/tmp/screenshots).
@@ -459,10 +461,10 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
     _db_name = dbname
     _db_tpl = _db_name + "_template"
     _file_path = os.path.join(PROJECT_PATH, 'tmp', 'files')
-    _trytond_conf = 'trytond_test_' + _db_type + '.conf'
+    _trytond_conf = 'trytond_testing_' + _db_type + '.conf'
     os.environ['DB_NAME'] = _db_name
     os.environ['TRYTOND_CONFIG'] = os.path.join(
-        PROJECT_PATH, 'etc', _trytond_conf
+        PROJECT_PATH, 'config', _trytond_conf
     )
     print("\nCONFIGURE TESTS ...\n")
     print("- testpath: %s" % (path or 'all'))
@@ -496,7 +498,7 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
                     create_test_db, dbtype=_db_type, dbname=_db_name
                 )
         if _db_type == 'sqlite':
-            _db_src_path = os.path.join(PROJECT_PATH, 'etc', 'test.sqlite')
+            _db_src_path = os.path.join(PROJECT_PATH, 'tmp', 'test.sqlite')
             _db_dst_path = os.path.join(_file_path, _db_name + '.sqlite')
             if os.path.isfile(_db_src_path):
                 shutil.copyfile(_db_src_path, _db_dst_path)
@@ -555,11 +557,13 @@ def deploy_erpserver(context):
     erpserver service (trytond).
     """
     context.invoke(pip_install, container='erpserver')
+    environment = str(os.environ.get('ENVIRONMENT'))
     subprocess.call(
         [
             '/usr/local/bin/trytond',
             '--dev',
-            '-c', os.path.join(PROJECT_PATH, 'etc', 'trytond.conf')
+            '-c', os.path.join(
+                PROJECT_PATH, 'config', 'trytond_' + environment + '.conf')
         ]
     )
 
@@ -641,12 +645,13 @@ def _update(modules, dbname, trytondconf=False):
         trytondconf (Optional[str]): Name of tryton config file.
     """
     print('Update services ...')
+    environment = str(os.environ.get('ENVIRONMENT'))
     if modules:
         modules = modules.split(',')
-    _trytond_conf = trytondconf or 'trytond.conf'
-    os.environ['TRYTONPASSFILE'] = 'etc/trytonpassfile'
+    _trytond_conf = trytondconf or 'trytond_' + environment + '.conf'
+    os.environ['TRYTONPASSFILE'] = 'config/trytonpassfile'
     os.environ['TRYTOND_CONFIG'] = os.path.join(
-        PROJECT_PATH, 'etc', _trytond_conf
+        PROJECT_PATH, 'config', _trytond_conf
     )
     command = [
         '/usr/local/bin/trytond',
@@ -670,7 +675,9 @@ def _db_exist(dbname):
     """
     from trytond.config import config
     from trytond import backend
-    config.update_etc(os.path.join(PROJECT_PATH, 'etc', 'trytond.conf'))
+    environment = str(os.environ.get('ENVIRONMENT'))
+    config.update_etc(os.path.join(
+        PROJECT_PATH, 'config', 'trytond_' + environment + '.conf'))
     Database = backend.get('Database')
     database = Database().connect()
     cursor = database.cursor()

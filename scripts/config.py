@@ -67,8 +67,9 @@ if env['ENVIRONMENT'] in ["development", "testing"]:
 
 # folders to create
 create_folders = [
-    dirs['root'] + '/postgresql-data',
-    dirs['shared'] + '/var/lib/trytond'
+    dirs['root'] + '/database',
+    dirs['shared'] + '/var/lib/trytond',
+    dirs['shared'] + '/tmp'
 ]
 
 # files to copy
@@ -78,8 +79,8 @@ create_folders = [
 # )
 copy_files = [
     {
-        'source': dirs['shared'] + '/etc/trytonpassfile.example',
-        'target': dirs['shared'] + '/etc/trytonpassfile',
+        'source': dirs['shared'] + '/config/tryton_passfile.example',
+        'target': dirs['shared'] + '/config/tryton_passfile',
     },
     {
         'source': dirs['environment'] + '/shared.example',

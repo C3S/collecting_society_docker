@@ -54,7 +54,7 @@ remove_quietly  \
 
 # remove database
 echo -e "\nRemove databases ..."
-remove_quietly "$ROOT_DIR/postgresql-data"
+remove_quietly "$ROOT_DIR/database"
 
 echo -e "\n\nDone."
 

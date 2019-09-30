@@ -45,7 +45,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-shared/cover
+/shared/cover
 
 # Translations
 #*.mo   unless we integrate the translation tools into the build process, 
@@ -60,21 +60,22 @@ docs/_build/
 # PyBuilder
 target/
 
-# Ado
-shared/etc/*.sqlite
-shared/src
-shared/ref
-shared/tmp
-shared/pyramid_debugtoolbar_templates_exception_summary_dbtmako
-postgresql-data
+# Database
+/database
+
+# Created foldes
+/shared/src
+/shared/ref
+/shared/tmp
+/shared/pyramid_debugtoolbar_templates_exception_summary_dbtmako
 
 # pyramid_mailer.debug
-shared/mail
+/shared/mail
 
 # Configuration files for docker container
 /environment/*
 !/environment/*.example
-/shared/etc/trytonpassfile
+/shared/config/tryton_passfile
 
 # VS Code remnants
 /.vscode/*

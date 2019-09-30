@@ -12,4 +12,6 @@
 -e src/account_invoice_line_standalone
 -e src/bank
 -e src/web_user
+-e src/archive
+-e src/portal
 -e src/collecting_society

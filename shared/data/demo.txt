@@ -29,6 +29,7 @@ Configuration
     >>> debug = False
 
     >>> publisher = debug or 20
+    >>> label = debug or 20
     >>> tariff_systems = debug or 3
     
     >>> group_artists = debug or 5
@@ -168,12 +169,12 @@ Content
     ...     'remix',
     ... ]
 
-    >>> test_genres = '/shared/etc/import_genres.csv'
-    >>> test_styles = '/shared/etc/import_styles.csv'
-    >>> test_labels = '/shared/etc/import_labels.csv'
-    >>> test_licenses = '/shared/etc/import_licenses.csv'
-    >>> test_tariff_categories = '/shared/etc/import_tariff_categories.csv'
-    >>> test_creation_roles = '/shared/etc/import_creation_roles.csv'
+    >>> test_genres = '/shared/data/csv/genres.csv'
+    >>> test_styles = '/shared/data/csv/styles.csv'
+    >>> test_labels = '/shared/data/csv/labels_samples.csv'
+    >>> test_licenses = '/shared/data/csv/licenses.csv'
+    >>> test_tariff_categories = '/shared/data/csv/tariff_categories.csv'
+    >>> test_creation_roles = '/shared/data/csv/creation_roles.csv'
 
     >>> test_text = '''Lorem ipsum dolor sit amet, consetetur diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren.\n\nLorem ipsum.\n\nSea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'''
 
@@ -237,6 +238,8 @@ Genres
     ...     i = 1
     ...     for genre in reader:
     ...         if debug and i > debug:
+    ...             break
+    ...         if label and i > label:
     ...             break
     ...         i += 1
     ...         Genre(
