@@ -73,10 +73,6 @@ create_folders = [
 ]
 
 # files to copy
-# (
-#    source,
-#    destination
-# )
 copy_files = [
     {
         'source': dirs['shared'] + '/config/tryton_passfile.example',
