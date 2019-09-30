@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
-"""Builds and updates development and production environment"""
+"""
+Builds and updates development and production environment.
+
+Usage: ./update [--reset]
+
+Options:
+    --reset: overrides the configuration files with .example
+"""
 
 import os
 import sys

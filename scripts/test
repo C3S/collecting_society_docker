@@ -1,6 +1,11 @@
 #!/bin/bash
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
+#
+# Usage: ./test [--update]
+#
+# Options:
+#     --update: updates the repositories (e.g. for continous integration)
 
 echo "====================================================================="
 echo "====================================================================="
@@ -8,14 +13,25 @@ echo "= this script stops, updates, builds and tests the docker setup     ="
 echo "====================================================================="
 echo `date +%Y-%m-%d:%H:%M:%S`
 
+# get directories
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT_DIR="$( dirname $SCRIPT_DIR )"
+cd $ROOT_DIR
+
+# get options
+UPDATE=false
+if [ $1 = "--update" ]; then UPDATE=true; fi
+
 # stop docker containers
 echo -e "\n== stop docker containers"
 docker-compose stop
 
 # update repositories
-echo -e "\n== update repositories"
-git pull          # update the main repository
-./update --reset  # update all other repos
+if $UPDATE; then
+    echo -e "\n== update repositories"
+    git pull                    # update the main repository
+    $SCRIPT_DIR/update --reset  # update all other repos
+fi
 
 # build docker containers
 echo -e "\n== build docker containers"
@@ -38,5 +54,5 @@ echo `date +%Y-%m-%d:%H:%M:%S`
 echo "====================================================================="
 echo "====================================================================="
 
+cd -
 exit $EXITCODE
-
