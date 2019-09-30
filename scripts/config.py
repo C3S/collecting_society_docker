@@ -42,9 +42,9 @@ def get_shared_env(path=False):
 
     # get path
     if not path:
-        path = os.path.join(dirs['environment'], 'shared')
+        path = os.path.join(dirs['environment'], 'shared.env')
     if not os.path.isfile(path):
-        path = os.path.join(dirs['environment'], 'shared.example')
+        path = os.path.join(dirs['environment'], 'shared.example.env')
     assert os.path.isfile(path)
 
     # parse file

@@ -62,6 +62,7 @@ target/
 
 # Database
 /volumes/postgresql-data
+/volumes/trytond-files
 
 # Created foldes
 /volumes/shared/src
