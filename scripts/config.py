@@ -75,24 +75,24 @@ create_folders = [
 # files to copy
 copy_files = [
     {
-        'source': dirs['shared'] + '/config/tryton_passfile.example',
-        'target': dirs['shared'] + '/config/tryton_passfile',
+        'source': dirs['shared'] + '/config/trytond/passfile.example',
+        'target': dirs['shared'] + '/config/trytond/passfile',
     },
     {
-        'source': dirs['environment'] + '/shared.example',
-        'target': dirs['environment'] + '/shared'
+        'source': dirs['environment'] + '/example/shared.env.example',
+        'target': dirs['environment'] + '/shared.env'
     },
     {
-        'source': dirs['environment'] + '/webgui.example',
-        'target': dirs['environment'] + '/webgui'
+        'source': dirs['environment'] + '/example/webgui.env.example',
+        'target': dirs['environment'] + '/webgui.env'
     },
     {
-        'source': dirs['environment'] + '/webapi.example',
-        'target': dirs['environment'] + '/webapi'
+        'source': dirs['environment'] + '/example/webapi.env.example',
+        'target': dirs['environment'] + '/webapi.env'
     },
     {
-        'source': dirs['environment'] + '/worker.example',
-        'target': dirs['environment'] + '/worker'
+        'source': dirs['environment'] + '/example/worker.env.example',
+        'target': dirs['environment'] + '/worker.env'
     },
     {
         'source':

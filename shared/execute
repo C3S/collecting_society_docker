@@ -57,7 +57,7 @@ def pip_install(context, container):
     Installs required packages for a CONTAINER with pip.
 
     Requirements have to be defined in
-    `./shared/pip/CONTAINER.txt`.
+    `./shared/config/pip/CONTAINER.pip`.
 
     After installation a flag file is created within the container to avoid
     multiple execution during its lifespan.
@@ -74,7 +74,7 @@ def pip_install(context, container):
                 'install',
                 '-qr',
                 os.path.join(
-                    PROJECT_PATH, 'config', 'requirements-%s.txt' % container
+                    PROJECT_PATH, 'config', 'pip', '%s.pip' % container
                 )
             ]
         )
@@ -270,7 +270,7 @@ def db_setup(context, dbname, master, demo, force):
         # Cofigure trytond
         os.environ['DB_NAME'] = dbname
         os.environ['TRYTOND_CONFIG'] = os.path.join(
-            PROJECT_PATH, 'config', 'trytond_' + environment + '.conf'
+            PROJECT_PATH, 'config', 'trytond', environment + '.conf'
         )
 
         # Setup master data
@@ -362,9 +362,9 @@ def create_test_db(context, dbtype, dbname):
     """
     _db_type = dbtype
     _db_name = dbname
-    _trytond_conf = 'trytond_testing_' + _db_type + '.conf'
+    _trytond_conf = 'testing_' + _db_type + '.conf'
     os.environ['TRYTOND_CONFIG'] = os.path.join(
-        PROJECT_PATH, 'config', _trytond_conf
+        PROJECT_PATH, 'config', 'trytond', _trytond_conf
     )
 
     # Rereate database template
@@ -461,10 +461,10 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
     _db_name = dbname
     _db_tpl = _db_name + "_template"
     _file_path = os.path.join(PROJECT_PATH, 'tmp', 'files')
-    _trytond_conf = 'trytond_testing_' + _db_type + '.conf'
+    _trytond_conf = 'testing_' + _db_type + '.conf'
     os.environ['DB_NAME'] = _db_name
     os.environ['TRYTOND_CONFIG'] = os.path.join(
-        PROJECT_PATH, 'config', _trytond_conf
+        PROJECT_PATH, 'config', 'trytond', _trytond_conf
     )
     print("\nCONFIGURE TESTS ...\n")
     print("- testpath: %s" % (path or 'all'))
@@ -563,7 +563,7 @@ def deploy_erpserver(context):
             '/usr/local/bin/trytond',
             '--dev',
             '-c', os.path.join(
-                PROJECT_PATH, 'config', 'trytond_' + environment + '.conf')
+                PROJECT_PATH, 'config', 'trytond', environment + '.conf')
         ]
     )
 
@@ -648,8 +648,8 @@ def _update(modules, dbname, trytondconf=False):
     environment = str(os.environ.get('ENVIRONMENT'))
     if modules:
         modules = modules.split(',')
-    _trytond_conf = trytondconf or 'trytond_' + environment + '.conf'
-    os.environ['TRYTONPASSFILE'] = 'config/trytonpassfile'
+    _trytond_conf = trytondconf or environment + '.conf'
+    os.environ['TRYTONPASSFILE'] = 'config/trytond/passfile'
     os.environ['TRYTOND_CONFIG'] = os.path.join(
         PROJECT_PATH, 'config', _trytond_conf
     )
@@ -677,7 +677,7 @@ def _db_exist(dbname):
     from trytond import backend
     environment = str(os.environ.get('ENVIRONMENT'))
     config.update_etc(os.path.join(
-        PROJECT_PATH, 'config', 'trytond_' + environment + '.conf'))
+        PROJECT_PATH, 'config', 'trytond', environment + '.conf'))
     Database = backend.get('Database')
     database = Database().connect()
     cursor = database.cursor()

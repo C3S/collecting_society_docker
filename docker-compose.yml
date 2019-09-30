@@ -22,7 +22,7 @@ services:
     depends_on:
       - database
     env_file:
-      - ./environment/shared
+      - ./environment/shared.env
 
   webserver:
     build: container/webserver
@@ -46,8 +46,8 @@ services:
       - database
       - webserver
     env_file:
-      - ./environment/shared
-      - ./environment/webapi
+      - ./environment/shared.env
+      - ./environment/webapi.env
 
   webgui:
     build: container/webgui
@@ -64,8 +64,8 @@ services:
       - erpserver
       - browser
     env_file:
-      - ./environment/shared
-      - ./environment/webgui
+      - ./environment/shared.env
+      - ./environment/webgui.env
 
   worker:
     build: container/worker
@@ -79,8 +79,8 @@ services:
     depends_on:
       - erpserver
     env_file:
-      - ./environment/shared
-      - ./environment/worker
+      - ./environment/shared.env
+      - ./environment/worker.env
 
   browser:
     build: container/browser

@@ -1,5 +1,5 @@
 --no-index
 
--r requirements-erpserver.txt
+-r erpserver.pip
 -e src/portal_web
 -e src/collecting_society_web

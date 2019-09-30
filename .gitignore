@@ -73,9 +73,8 @@ target/
 /shared/mail
 
 # Configuration files for docker container
-/environment/*
-!/environment/*.example
-/shared/config/tryton_passfile
+/environment/*.env
+/shared/config/trytond/passfile
 
 # VS Code remnants
 /.vscode/*
