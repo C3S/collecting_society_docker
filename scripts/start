@@ -9,6 +9,7 @@ PROJECT="collecting_society"
 # get directories
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR="$( dirname $SCRIPT_DIR )"
+SHARED_DIR=$ROOT_DIR/volumes/shared
 
 # start docker
 if ! [ `systemctl is-active docker` = "active" ]; then
@@ -27,16 +28,16 @@ if [ $? != 0 ]; then
     tmux new-window -a -t $PROJECT -n collecting_society_docker -c $ROOT_DIR
     tmux send-keys -t $PROJECT "git status" C-m
     # portal
-    tmux new-window -a -t $PROJECT -n portal -c $ROOT_DIR/shared/src/portal
+    tmux new-window -a -t $PROJECT -n portal -c $SHARED_DIR/src/portal
     tmux send-keys -t $PROJECT "git status" C-m
     # collecting_society
-    tmux new-window -a -t $PROJECT -n collecting_society -c $ROOT_DIR/shared/src/collecting_society
+    tmux new-window -a -t $PROJECT -n collecting_society -c $SHARED_DIR/src/collecting_society
     tmux send-keys -t $PROJECT "git status" C-m
     # portal_web
-    tmux new-window -a -t $PROJECT -n portal_web -c $ROOT_DIR/shared/src/portal_web
+    tmux new-window -a -t $PROJECT -n portal_web -c $SHARED_DIR/src/portal_web
     tmux send-keys -t $PROJECT "git status" C-m
     # collecting_society_web
-    tmux new-window -a -t $PROJECT -n collecting_society_web -c $ROOT_DIR/shared/src/collecting_society_web
+    tmux new-window -a -t $PROJECT -n collecting_society_web -c $SHARED_DIR/src/collecting_society_web
     tmux send-keys -t $PROJECT "git status" C-m
     # select active window
     tmux select-window -t $PROJECT:logs

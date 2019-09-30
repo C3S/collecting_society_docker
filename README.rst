@@ -78,7 +78,7 @@ a development setup are given:
     * ``./tryton.env``
 
 Change the password for the *admin* user in
-``./shared/etc/trytonpassfile``
+``./volumes/shared/config/trytond/passfile``
 
 Start containers::
 

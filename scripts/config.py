@@ -31,7 +31,8 @@ dirs['root'] = get_root_dir()
 dirs['container'] = dirs['root'] + "/container"
 dirs['environment'] = dirs['root'] + "/environment"
 dirs['scripts'] = dirs['root'] + "/scripts"
-dirs['shared'] = dirs['root'] + "/shared"
+dirs['volumes'] = dirs['root'] + "/volumes"
+dirs['shared'] = dirs['volumes'] + "/shared"
 dirs['ref'] = dirs['shared'] + "/ref"
 dirs['src'] = dirs['shared'] + "/src"
 
@@ -67,8 +68,8 @@ if env['ENVIRONMENT'] in ["development", "testing"]:
 
 # folders to create
 create_folders = [
-    dirs['root'] + '/database',
-    dirs['shared'] + '/var/lib/trytond',
+    dirs['volumes'] + '/postgresql-data',
+    dirs['volumes'] + '/trytond-files',
     dirs['shared'] + '/tmp'
 ]
 

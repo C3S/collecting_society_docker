@@ -8,14 +8,15 @@ services:
     build: container/database
     image: cs_database
     volumes:
-      - ./database:/var/lib/postgresql/data
+      - ./volumes/postgresql-data:/var/lib/postgresql/data
 
   erpserver:
     build: container/erpserver
     image: cs_erpserver
     command: execute deploy-erpserver
     volumes:
-      - ./shared:/shared
+      - ./volumes/shared:/shared
+      - ./volumes/trytond-files:/var/lib/trytond
     ports:
       - "8000:8000"  # jsonrpc (tryton client)
       - "8069:8069"  # xmlrpc (proteus)
@@ -39,7 +40,7 @@ services:
     image: cs_webapi
     command: execute deploy-webapi
     volumes:
-      - ./shared:/shared
+      - ./volumes/shared:/shared
     ports:
       - "6543"  # pyramid pserve
     depends_on:
@@ -54,7 +55,7 @@ services:
     image: cs_webgui
     command: execute deploy-webgui
     volumes:
-      - ./shared:/shared
+      - ./volumes/shared:/shared
     ports:
       - "6543"  # pyramid pserve
     depends_on:
@@ -75,7 +76,7 @@ services:
     #command: cron && tail -f /shared/tmp/repro.log &
     command: bash -c "while true; do cd /shared/src/collecting_society_worker && python repro.py all; sleep 60; done"
     volumes:
-      - ./shared:/shared
+      - ./volumes/shared:/shared
     depends_on:
       - erpserver
     env_file:
@@ -86,5 +87,5 @@ services:
     build: container/browser
     image: cs_browser
     volumes:
-      - ./shared:/shared
+      - ./volumes/shared:/shared
       - /dev/shm:/dev/shm

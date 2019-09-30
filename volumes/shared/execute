@@ -438,7 +438,7 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
     the temporary tryton file folder will be deleted.
 
     The location of the temporary tryton upload folder is configured in
-    `./shared/config/tryton_testing_DBTYPE.conf`
+    `./shared/config/trytond/testing_DBTYPE.conf`
     (currently `./shared/tmp/files`).
 
     The location of the screenshots of integration tests is configured within

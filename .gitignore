@@ -45,7 +45,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-/shared/cover
+/volumes/shared/cover
 
 # Translations
 #*.mo   unless we integrate the translation tools into the build process, 
@@ -61,20 +61,20 @@ docs/_build/
 target/
 
 # Database
-/database
+/volumes/postgresql-data
 
 # Created foldes
-/shared/src
-/shared/ref
-/shared/tmp
-/shared/pyramid_debugtoolbar_templates_exception_summary_dbtmako
+/volumes/shared/src
+/volumes/shared/ref
+/volumes/shared/tmp
+/volumes/shared/pyramid_debugtoolbar_templates_exception_summary_dbtmako
 
 # pyramid_mailer.debug
-/shared/mail
+/volumes/shared/mail
 
 # Configuration files for docker container
 /environment/*.env
-/shared/config/trytond/passfile
+/volumes/shared/config/trytond/passfile
 
 # VS Code remnants
 /.vscode/*
