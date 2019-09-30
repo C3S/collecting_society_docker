@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
-'''Shows name and external url of all running containers'''
+"""
+Shows name and external url of all running containers.
+
+Usage: ./ports
+"""
 
 import os
 import subprocess

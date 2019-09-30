@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
-"""Configures folders to create, files to copy and repos to clone."""
+"""
+Configures folders to create, files to copy and repos to clone.
+
+Meant to be included. Direct execution prints the configuratin.
+
+Usage: ./config.py
+"""
 
 import os
 import subprocess

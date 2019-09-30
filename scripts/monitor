@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
-'''Monitor container'''
-from __future__ import print_function
+"""
+Monitors container.
+
+Usage: watch ./monitor
+"""
 
 import os
 import subprocess
-
 
 PREFIX = os.path.basename(os.path.split(os.path.realpath(__file__))[0])
 for char in ('_', '-', '.'):
