@@ -65,6 +65,7 @@ target/
 /volumes/trytond-files
 
 # Created foldes
+/code
 /volumes/shared/src
 /volumes/shared/ref
 /volumes/shared/tmp

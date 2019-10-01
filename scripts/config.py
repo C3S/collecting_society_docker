@@ -28,6 +28,7 @@ def get_root_dir():
 # directories
 dirs = {}
 dirs['root'] = get_root_dir()
+dirs['code'] = dirs['root'] + "/code"
 dirs['container'] = dirs['root'] + "/container"
 dirs['environment'] = dirs['root'] + "/environment"
 dirs['scripts'] = dirs['root'] + "/scripts"
@@ -68,6 +69,7 @@ if env['ENVIRONMENT'] in ["development", "testing"]:
 
 # folders to create
 create_folders = [
+    dirs['code'],
     dirs['volumes'] + '/postgresql-data',
     dirs['volumes'] + '/trytond-files',
     dirs['shared'] + '/tmp'
@@ -170,32 +172,37 @@ clone_sources = [
         'url': 'https://github.com/C3S/archiving.git',
         'ssh': 'git@github.com:C3S/archiving.git',
         'option': '--branch=' + branch,
-        'path': 'archiving'
+        'path': 'archiving',
+        'symlink': True
     },
     {
         'url': 'https://github.com/C3S/portal.git',
         'ssh': 'git@github.com:C3S/portal.git',
         'option': '--branch=' + branch,
-        'path': 'portal'
+        'path': 'portal',
+        'symlink': True
     },
     {
         'url': 'https://github.com/C3S/collecting_society.git',
         'ssh': 'git@github.com:C3S/collecting_society.git',
         'option': '--branch=' + branch,
-        'path': 'collecting_society'
+        'path': 'collecting_society',
+        'symlink': True
     },
     # custom: pyramid
     {
         'url': 'https://github.com/C3S/portal_web.git',
         'ssh': 'git@github.com:C3S/portal_web.git',
         'option': '--branch=' + branch,
-        'path': 'portal_web'
+        'path': 'portal_web',
+        'symlink': True
     },
     {
         'url': 'https://github.com/C3S/collecting_society_web.git',
         'ssh': 'git@github.com:C3S/collecting_society_web.git',
         'option': '--branch=' + branch,
-        'path': 'collecting_society_web'
+        'path': 'collecting_society_web',
+        'symlink': True
     },
     # upstream: worker
     {
@@ -208,7 +215,8 @@ clone_sources = [
         'url': 'https://github.com/C3S/collecting_society_worker.git',
         'ssh': 'git@github.com:C3S/collecting_society_worker.git',
         'option': '--branch=master',
-        'path': 'collecting_society_worker'
+        'path': 'collecting_society_worker',
+        'symlink': True
     },
 ]
 

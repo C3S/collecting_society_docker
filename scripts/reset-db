@@ -6,7 +6,7 @@
 
 echo "====================================================================="
 echo "====================================================================="
-echo "= this script resets the database of the project                    ="
+echo "= this script rebuilds the database of the project                  ="
 echo "====================================================================="
 echo `date +%Y-%m-%d:%H:%M:%S`
 
@@ -21,12 +21,7 @@ docker-compose stop
 
 # delete database
 echo -e "\n== delete database"
-docker-compose run --rm tryton execute db-delete c3s
-echo "exitcode: $?"
-
-# re-create database
-echo -e "\n== re-create database"
-docker-compose run --rm tryton execute db-demo-setup c3s &> /dev/null
+docker-compose run --rm tryton execute db-rebuild
 echo "exitcode: $?"
 
 # start docker containers
