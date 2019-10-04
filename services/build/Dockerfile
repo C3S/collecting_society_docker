@@ -53,6 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y --no-install-recommends \
         vim \
         net-tools \
+        iputils-ping \
     && rm -rf /var/lib/apt/lists/*
 
 ### result
@@ -97,6 +98,7 @@ RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && apt-get update && apt-get install -y --no-install-recommends \
         postgresql-client-9.4  \
         sqlite3 \
+        libxslt1.1 \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/man/*
 
@@ -233,10 +235,18 @@ FROM jessie_trytond_${ENVIRONMENT}_compiled AS jessie_trytond_compiled
 FROM jessie_trytond_compiled AS jessie_pyramid_production_compiled
 RUN pip install \
     colander==1.4 \
+    cornice==3.4.0 \
+    cornice-swagger==0.7.0 \
     cryptacular==1.4.1 \
+    Pillow==6.0.0 \
+    deform==2.0.5 \
+        # 29.5.18: requirement of deform 2.0.5 not handled automaticly
+        "iso8601<0.1.12" \
     pyramid==1.9.2 \
     pyramid-beaker==0.8 \
+    pyramid-chameleon==0.3 \
     pyramid-mailer==0.15.1 \
+    python-magic==0.4.15 \
     raven==6.10.0 \
     requests==2.18.4 \
     waitress==1.1.0
@@ -256,46 +266,6 @@ RUN pip install \
 
 ### result
 FROM jessie_pyramid_${ENVIRONMENT}_compiled AS jessie_pyramid_compiled
-
-
-#--- [COMPILE] python -> trytond -> pyramid -> PYRAMIDGUI ---------------------
-
-### production
-FROM jessie_pyramid_compiled AS jessie_pyramidgui_production_compiled
-RUN pip install \
-    deform==2.0.5 \
-        # 29.5.18: requirement of deform 2.0.5 not handled automaticly
-        "iso8601<0.1.12" \
-    Pillow==6.0.0 \
-    pyramid-chameleon==0.3 \
-    python-magic==0.4.15
-
-### testing
-FROM jessie_pyramidgui_production_compiled AS jessie_pyramidgui_testing_compiled
-
-### development
-FROM jessie_pyramidgui_testing_compiled AS jessie_pyramidgui_development_compiled
-
-### result
-FROM jessie_pyramidgui_${ENVIRONMENT}_compiled AS jessie_pyramidgui_compiled
-
-
-#--- [COMPILE] python -> trytond -> pyramid -> PYRAMIDAPI ---------------------
-
-### production
-FROM jessie_pyramid_compiled AS jessie_pyramidapi_production_compiled
-RUN pip install \
-    cornice==3.4.0 \
-    cornice-swagger==0.7.0
-
-### testing
-FROM jessie_pyramidapi_production_compiled AS jessie_pyramidapi_testing_compiled
-
-### development
-FROM jessie_pyramidapi_testing_compiled AS jessie_pyramidapi_development_compiled
-
-### result
-FROM jessie_pyramidapi_${ENVIRONMENT}_compiled AS jessie_pyramidapi_compiled
 
 
 #--- [COMPILE] python -> FILEPROCESSING ---------------------------------------
@@ -333,12 +303,8 @@ FROM jessie_fileprocessing_${ENVIRONMENT}_compiled AS jessie_fileprocessing_comp
 
 FROM postgres:9.4 AS database
 
-#--- base -> python -> trytond -> ERPSERVER -----------------------------------
 
-FROM ${DEBIAN}_trytond AS erpserver
-COPY --from=jessie_trytond_compiled /opt/venv /opt/venv
-
-#--- webserver ----------------------------------------------------------------
+#--- WEBSERVER ----------------------------------------------------------------
 
 FROM jwilder/nginx-proxy AS webserver
 RUN { \
@@ -346,15 +312,11 @@ RUN { \
       echo 'error_log off;'; \
     } > /etc/nginx/conf.d/my_proxy.conf
 
-#--- base -> python -> WEBGUI -------------------------------------------------
 
-FROM ${DEBIAN}_python AS webgui
-COPY --from=jessie_pyramidgui_compiled /opt/venv /opt/venv
+#--- BROWSER ------------------------------------------------------------------
 
-#--- base -> python -> WEBAPI -------------------------------------------------
+FROM selenium/standalone-firefox AS browser
 
-FROM ${DEBIAN}_python AS webapi
-COPY --from=jessie_pyramidapi_compiled /opt/venv /opt/venv
 
 #--- base -> python -> WORKER -------------------------------------------------
 
@@ -363,6 +325,20 @@ COPY --from=jessie_fileprocessing_compiled /opt/echoprint-codegen/echoprint-code
 COPY --from=jessie_fileprocessing_compiled /opt/venv /opt/venv
 COPY worker.cron /etc/cron.d/worker
 
-#--- BROWSER ------------------------------------------------------------------
 
-FROM selenium/standalone-firefox AS browser
+#--- base -> python -> trytond -> ERPSERVER -----------------------------------
+
+FROM ${DEBIAN}_trytond AS erpserver
+COPY --from=jessie_trytond_compiled /opt/venv /opt/venv
+
+
+#--- base -> python -> trytond -> WEBAPI --------------------------------------
+
+FROM ${DEBIAN}_trytond AS webapi
+COPY --from=jessie_pyramid_compiled /opt/venv /opt/venv
+
+
+#--- base -> python -> trytond -> WEBGUI --------------------------------------
+
+FROM webapi AS webgui
+

@@ -35,12 +35,11 @@ import click
 
 PROJECT = str(os.environ.get('PROJECT'))
 ENVIRONMENT = str(os.environ.get('ENVIRONMENT'))
-SHARED_PATH = '/shared'
+SHARED_PATH = str(os.environ.get('WORKDIR'))
+PG_HOSTNAME = str(os.environ.get('PG_HOSTNAME'))
+PG_PORT = str(os.environ.get('PG_PORT'))
 
 TMP_FILE = 'running_db_creation.delete_me'
-
-pg_hostname = 'db'
-pg_port = '5432'
 
 
 @click.group()
@@ -98,7 +97,7 @@ def db_create(context, dbname):
     The execution is skipped if the database already exists.
     """
     print('Create database "%s" ... ' % dbname, end='')
-    context.invoke(pip_install, container='tryton')
+    context.invoke(pip_install, container='erpserver')
 
     # check database
     if _db_exist(dbname):
@@ -109,8 +108,8 @@ def db_create(context, dbname):
     subprocess.call(
         [
             '/usr/bin/createdb',
-            '-h', pg_hostname,
-            '-p', pg_port,
+            '-h', PG_HOSTNAME,
+            '-p', PG_PORT,
             '-U', 'postgres',
             '-O', 'postgres',
             '-E UTF-8',
@@ -143,8 +142,8 @@ def db_delete(context, dbname):
         result = subprocess.call(
             [
                 '/usr/bin/dropdb',
-                '-h', pg_hostname,
-                '-p', pg_port,
+                '-h', PG_HOSTNAME,
+                '-p', PG_PORT,
                 '-U', 'postgres',
                 dbname
             ]
@@ -170,8 +169,8 @@ def db_copy(context, dbname_src, dbname_dst):
     subprocess.call(
         [
             '/usr/bin/createdb',
-            '-h', pg_hostname,
-            '-p', pg_port,
+            '-h', PG_HOSTNAME,
+            '-p', PG_PORT,
             '-U', 'postgres',
             '-O', 'postgres',
             '-T', dbname_src,
@@ -196,8 +195,8 @@ def db_psql(context, dbname):
     subprocess.call(
         [
             '/usr/bin/psql',
-            '-h', pg_hostname,
-            '-p', pg_port,
+            '-h', PG_HOSTNAME,
+            '-p', PG_PORT,
             '-U', 'postgres',
             dbname
         ]
@@ -216,8 +215,8 @@ def db_backup(context, dbname):
     subprocess.call(
         [
             '/usr/bin/pg_dump',
-            '-h', pg_hostname,
-            '-p', pg_port,
+            '-h', PG_HOSTNAME,
+            '-p', PG_PORT,
             '-U', 'postgres',
             dbname
         ]
@@ -246,7 +245,8 @@ def db_setup(context, dbname, master, demo, force):
     During installation a lockfile is created on the host to prevent multiple
     execution from different docker containers.
     """
-    context.invoke(pip_install, container='tryton')
+    context.invoke(pip_install, container='erpserver')
+    print(dbname)
 
     # Check lockfile, if locked, wait till not locked any more
     while True:
@@ -404,7 +404,7 @@ def create_test_db(context, dbtype, dbname):
     # Copy database template
     if _db_type == 'sqlite':
         _db_dst_path = os.path.join(
-            SHARED_PATH, 'config', _db_name + '.sqlite')
+            SHARED_PATH, 'tmp', _db_name + '.sqlite')
         if os.path.isfile(_db_dst_path):
             os.unlink(_db_dst_path)
         shutil.copyfile(_db_src_path, _db_dst_path)
@@ -628,7 +628,7 @@ def update(context, modules, dbname):
     """
     Updates tryton modules for database DBNAME.
     """
-    context.invoke(pip_install, container='tryton')
+    context.invoke(pip_install, container='erpserver')
     _update(modules, dbname)
 
 
@@ -647,7 +647,7 @@ def _update(modules, dbname, trytondconf=False):
     _trytond_conf = trytondconf or ENVIRONMENT + '.conf'
     os.environ['TRYTONPASSFILE'] = 'config/trytond/passfile'
     os.environ['TRYTOND_CONFIG'] = os.path.join(
-        SHARED_PATH, 'config', _trytond_conf
+        SHARED_PATH, 'config', 'trytond', _trytond_conf
     )
     command = [
         'trytond',

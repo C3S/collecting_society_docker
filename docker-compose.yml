@@ -2,6 +2,11 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 version: '2.4'
+
+networks:
+  frontend:
+  backend:
+
 services:
 
   database:
@@ -12,10 +17,12 @@ services:
         ENVIRONMENT: ${ENVIRONMENT}
         APT_CACHERURL: ${APT_CACHERURL}
         APT_REFRESH: ${APT_REFRESH}
-        WORKDIR: /shared
+        WORKDIR: ${WORKDIR}
         DEBIAN: ${DEBIAN}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+    networks:
+      - backend
     volumes:
       - ./volumes/postgresql-data:/var/lib/postgresql/data
 
@@ -28,6 +35,8 @@ services:
     volumes:
       - ./volumes/shared:/shared
       - ./volumes/trytond-files:/var/lib/trytond
+    networks:
+      - backend
     ports:
       - "8000:8000"  # jsonrpc (tryton client)
       - "8069:8069"  # xmlrpc (proteus)
@@ -43,6 +52,8 @@ services:
       args: *buildargs
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
+    networks:
+      - frontend
     ports:
       - "80:80"  # http
     logging:
@@ -56,6 +67,9 @@ services:
     command: execute deploy-webapi
     volumes:
       - ./volumes/shared:/shared
+    networks:
+      - frontend
+      - backend
     ports:
       - "6543"  # pyramid pserve
       - "51001:51001"  # debugger
@@ -74,15 +88,14 @@ services:
     command: execute deploy-webgui
     volumes:
       - ./volumes/shared:/shared
+    networks:
+      - frontend
+      - backend
     ports:
       - "6543"  # pyramid pserve
       - "51000:51000"  # debugger
     depends_on:
-      - database
-      - webserver
       - webapi
-      - erpserver
-      - browser
     env_file:
       - .env
       - services/webgui.env
@@ -98,6 +111,8 @@ services:
     command: bash -c "while true; do cd /shared/src/collecting_society_worker && python repro.py all; sleep 60; done"
     volumes:
       - ./volumes/shared:/shared
+    networks:
+      - backend
     depends_on:
       - erpserver
     env_file:
@@ -112,3 +127,5 @@ services:
     volumes:
       - ./volumes/shared:/shared
       - /dev/shm:/dev/shm
+    networks:
+      - frontend
