@@ -34,7 +34,7 @@ except:  # noqa: E722
 import click
 
 PROJECT = str(os.environ.get('PROJECT'))
-ENVIRONMENT = srt(os.environ.get('ENVIRONMENT'))
+ENVIRONMENT = str(os.environ.get('ENVIRONMENT'))
 SHARED_PATH = '/shared'
 
 TMP_FILE = 'running_db_creation.delete_me'
@@ -559,7 +559,7 @@ def deploy_erpserver(context):
     context.invoke(pip_install, container='erpserver')
     subprocess.call(
         [
-            '/usr/local/bin/trytond',
+            'trytond',
             '--dev',
             '-c', os.path.join(
                 SHARED_PATH, 'config', 'trytond', ENVIRONMENT + '.conf')
@@ -582,7 +582,7 @@ def deploy_webgui(context):
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
     subprocess.call(
         [
-            '/usr/local/bin/pserve',
+            'pserve',
             os.path.join(
                 SHARED_PATH, 'src', 'portal_web', ENVIRONMENT + '.ini'
             ),
@@ -607,7 +607,7 @@ def deploy_webapi(context):
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
     subprocess.call(
         [
-            '/usr/local/bin/pserve',
+            'pserve',
             os.path.join(
                 SHARED_PATH, 'src', 'portal_web', ENVIRONMENT + '.ini'
             ),
@@ -650,7 +650,7 @@ def _update(modules, dbname, trytondconf=False):
         SHARED_PATH, 'config', _trytond_conf
     )
     command = [
-        '/usr/local/bin/trytond',
+        'trytond',
         '-d', dbname,
         '-c', os.environ['TRYTOND_CONFIG']
     ]
