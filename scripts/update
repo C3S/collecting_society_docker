@@ -243,7 +243,7 @@ def update():
     print(header.format(project, project, git_branch, base_path))
 
     # update update script itself
-    update_self()
+    # update_self()
 
     # create folders
     print("\nCreating folders ...\n")
