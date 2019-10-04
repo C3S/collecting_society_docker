@@ -80,6 +80,24 @@ def update_self():
             e2.output.rstrip().decode('utf-8')))
         sys.exit("Exiting. Please check for errors above!")
 
+    # configure user
+    username = config.env.get('GIT_USER_NAME')
+    useremail = config.env.get('GIT_USER_EMAIL')
+    if username and useremail:
+        print('configure user {} <{}>: '.format(username, useremail), end='')
+        try:
+            subprocess.check_output(
+                ('git', 'config', 'user.name', '"{}"'.format(username)),
+                cwd=base_path, stderr=subprocess.STDOUT)
+            subprocess.check_output(
+                ('git', 'config', 'user.email', '"{}"'.format(useremail)),
+                cwd=base_path, stderr=subprocess.STDOUT)
+            print('ok.')
+        except subprocess.CalledProcessError as e2:
+            print("There was a problem: \n\n\033[91m{}\033[0m\n".format(
+                e2.output.rstrip().decode('utf-8')))
+            sys.exit("Exiting. Please check for errors above!")
+
 
 def update_repository(repo, branch, path, username=False, useremail=False,
                       symlink=False):

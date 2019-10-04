@@ -1,18 +1,29 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 
-version: '2.2'
+version: '2.4'
 services:
 
   database:
-    build: container/database
-    image: cs_database
+    build:
+      context: ./services/build
+      target: database
+      args: &buildargs
+        ENVIRONMENT: ${ENVIRONMENT}
+        APT_CACHERURL: ${APT_CACHERURL}
+        APT_REFRESH: ${APT_REFRESH}
+        WORKDIR: /shared
+        DEBIAN: ${DEBIAN}
+        DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
+        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
     volumes:
       - ./volumes/postgresql-data:/var/lib/postgresql/data
 
   erpserver:
-    build: container/erpserver
-    image: cs_erpserver
+    build:
+      context: ./services/build
+      target: erpserver
+      args: *buildargs
     command: execute deploy-erpserver
     volumes:
       - ./volumes/shared:/shared
@@ -23,11 +34,13 @@ services:
     depends_on:
       - database
     env_file:
-      - ./environment/shared.env
+      - .env
 
   webserver:
-    build: container/webserver
-    image: cs_webserver
+    build:
+      context: ./services/build
+      target: webserver
+      args: *buildargs
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
     ports:
@@ -36,8 +49,10 @@ services:
       driver: none
 
   webapi:
-    build: container/webapi
-    image: cs_webapi
+    build:
+      context: ./services/build
+      target: webapi
+      args: *buildargs
     command: execute deploy-webapi
     volumes:
       - ./volumes/shared:/shared
@@ -47,12 +62,14 @@ services:
       - database
       - webserver
     env_file:
-      - ./environment/shared.env
-      - ./environment/webapi.env
+      - .env
+      - environment/webapi.env
 
   webgui:
-    build: container/webgui
-    image: cs_webgui
+    build:
+      context: ./services/build
+      target: webgui
+      args: *buildargs
     command: execute deploy-webgui
     volumes:
       - ./volumes/shared:/shared
@@ -65,12 +82,14 @@ services:
       - erpserver
       - browser
     env_file:
-      - ./environment/shared.env
-      - ./environment/webgui.env
+      - .env
+      - environment/webgui.env
 
   worker:
-    build: container/worker
-    image: cs_worker
+    build:
+      context: ./services/build
+      target: worker
+      args: *buildargs
     cpu_percent: 50
     mem_limit: 500m
     #command: cron && tail -f /shared/tmp/repro.log &
@@ -80,12 +99,17 @@ services:
     depends_on:
       - erpserver
     env_file:
-      - ./environment/shared.env
-      - ./environment/worker.env
+      - .env
+      - environment/worker.env
 
   browser:
-    build: container/browser
-    image: cs_browser
+    build:
+      context: ./services/build
+      target: browser
+      args: *buildargs
     volumes:
       - ./volumes/shared:/shared
       - /dev/shm:/dev/shm
+
+volumes:
+  collecting_society_aptcacher:

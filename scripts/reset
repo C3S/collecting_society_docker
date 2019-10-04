@@ -42,20 +42,21 @@ docker rmi -f "$(docker-compose images -q)"
 
 # remove files
 echo -e "\nRemove files ..."
-remove_quietly  \
-    "$SCRIPT_DIR/__pycache__"  \
-    "$ROOT_DIR/volumes/shared/cover"  \
-    "$ROOT_DIR/volumes/shared/ref"  \
-    "$ROOT_DIR/volumes/shared/src"  \
-    "$ROOT_DIR/volumes/shared/tmp"  \
-    "$ROOT_DIR/volumes/shared/var"  \
-    "$ROOT_DIR/volumes/shared/.coverage"  \
+remove_quietly \
+    "$SCRIPT_DIR/__pycache__" \
+    "$ROOT_DIR/code" \
+    "$ROOT_DIR/volumes/shared/cover" \
+    "$ROOT_DIR/volumes/shared/ref" \
+    "$ROOT_DIR/volumes/shared/src" \
+    "$ROOT_DIR/volumes/shared/tmp" \
+    "$ROOT_DIR/volumes/shared/.coverage" \
     "$ROOT_DIR/volumes/shared/nosetests.xml"
 
 # remove database
 echo -e "\nRemove databases ..."
 remove_quietly \
-    "$ROOT_DIR/volumes/postgresql-data"  \
+    "$ROOT_DIR/volumes/aptcacher" \
+    "$ROOT_DIR/volumes/postgresql-data" \
     "$ROOT_DIR/volumes/trytond-files"
 
 echo -e "\n\nDone."

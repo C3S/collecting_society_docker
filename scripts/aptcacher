@@ -1,0 +1,26 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Runs a docker countainer with apt-cacher-ng
+#
+# Usage: sudo ./aptcacher
+#
+# To use the apt-cacher:
+# 1. set APTCACHER_URL=http://172.17.0.1:3142 in build args
+# 2. start this script
+# 3. run docker-compose build
+
+# get directories
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT_DIR="$( dirname $SCRIPT_DIR )"
+
+VOLUME=$ROOT_DIR/volumes/aptcacher
+mkdir -p $VOLUME
+
+docker run \
+  --rm \
+  --init \
+  --publish 3142:3142 \
+  --volume $VOLUME:/var/cache/apt-cacher-ng \
+  sameersbn/apt-cacher-ng

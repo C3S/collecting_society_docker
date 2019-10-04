@@ -64,6 +64,9 @@ target/
 /volumes/postgresql-data
 /volumes/trytond-files
 
+# Aptcacher
+/volumes/aptcacher
+
 # Created foldes
 /code
 /volumes/shared/src
@@ -75,7 +78,9 @@ target/
 /volumes/shared/mail
 
 # Configuration files for docker container
-/environment/*.env
+/.env
+/services/*.env
+!/services/build
 /volumes/shared/config/trytond/passfile
 
 # VS Code remnants

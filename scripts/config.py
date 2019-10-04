@@ -29,13 +29,14 @@ def get_root_dir():
 dirs = {}
 dirs['root'] = get_root_dir()
 dirs['code'] = dirs['root'] + "/code"
-dirs['container'] = dirs['root'] + "/container"
-dirs['environment'] = dirs['root'] + "/environment"
 dirs['scripts'] = dirs['root'] + "/scripts"
+dirs['services'] = dirs['root'] + "/services"
 dirs['volumes'] = dirs['root'] + "/volumes"
 dirs['shared'] = dirs['volumes'] + "/shared"
 dirs['ref'] = dirs['shared'] + "/ref"
 dirs['src'] = dirs['shared'] + "/src"
+dirs['tmp'] = dirs['shared'] + "/tmp"
+dirs['logs'] = dirs['tmp'] + "/logs"
 
 
 def get_shared_env(path=False):
@@ -43,9 +44,9 @@ def get_shared_env(path=False):
 
     # get path
     if not path:
-        path = os.path.join(dirs['environment'], 'shared.env')
+        path = os.path.join(dirs['root'], '.env')
     if not os.path.isfile(path):
-        path = os.path.join(dirs['environment'], 'shared.example.env')
+        path = os.path.join(dirs['root'], '.env.example')
     assert os.path.isfile(path)
 
     # parse file
@@ -72,30 +73,31 @@ create_folders = [
     dirs['code'],
     dirs['volumes'] + '/postgresql-data',
     dirs['volumes'] + '/trytond-files',
-    dirs['shared'] + '/tmp'
+    dirs['tmp'],
+    dirs['logs'],
 ]
 
 # files to copy
 copy_files = [
     {
+        'source': dirs['root'] + '/.env.example',
+        'target': dirs['root'] + '/.env'
+    },
+    {
         'source': dirs['shared'] + '/config/trytond/passfile.example',
         'target': dirs['shared'] + '/config/trytond/passfile',
     },
     {
-        'source': dirs['environment'] + '/example/shared.env.example',
-        'target': dirs['environment'] + '/shared.env'
+        'source': dirs['services'] + '/webgui.env.example',
+        'target': dirs['services'] + '/webgui.env'
     },
     {
-        'source': dirs['environment'] + '/example/webgui.env.example',
-        'target': dirs['environment'] + '/webgui.env'
+        'source': dirs['services'] + '/webapi.env.example',
+        'target': dirs['services'] + '/webapi.env'
     },
     {
-        'source': dirs['environment'] + '/example/webapi.env.example',
-        'target': dirs['environment'] + '/webapi.env'
-    },
-    {
-        'source': dirs['environment'] + '/example/worker.env.example',
-        'target': dirs['environment'] + '/worker.env'
+        'source': dirs['services'] + '/worker.env.example',
+        'target': dirs['services'] + '/worker.env'
     },
     {
         'source':
