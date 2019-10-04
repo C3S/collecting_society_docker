@@ -58,12 +58,13 @@ services:
       - ./volumes/shared:/shared
     ports:
       - "6543"  # pyramid pserve
+      - "51001:51001"  # debugger
     depends_on:
       - database
       - webserver
     env_file:
       - .env
-      - environment/webapi.env
+      - services/webapi.env
 
   webgui:
     build:
@@ -75,6 +76,7 @@ services:
       - ./volumes/shared:/shared
     ports:
       - "6543"  # pyramid pserve
+      - "51000:51000"  # debugger
     depends_on:
       - database
       - webserver
@@ -83,7 +85,7 @@ services:
       - browser
     env_file:
       - .env
-      - environment/webgui.env
+      - services/webgui.env
 
   worker:
     build:
@@ -100,7 +102,7 @@ services:
       - erpserver
     env_file:
       - .env
-      - environment/worker.env
+      - services/worker.env
 
   browser:
     build:
