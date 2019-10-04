@@ -60,12 +60,9 @@ docs/_build/
 # PyBuilder
 target/
 
-# Database
-/volumes/postgresql-data
-/volumes/trytond-files
-
-# Aptcacher
-/volumes/aptcacher
+# Volumes
+/volumes/*
+!/volumes/shared
 
 # Created foldes
 /code

@@ -44,7 +44,7 @@ services:
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
     ports:
-      - "81:80"  # http
+      - "80:80"  # http
     logging:
       driver: none
 
