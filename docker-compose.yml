@@ -112,6 +112,3 @@ services:
     volumes:
       - ./volumes/shared:/shared
       - /dev/shm:/dev/shm
-
-volumes:
-  collecting_society_aptcacher:
