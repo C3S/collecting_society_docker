@@ -429,7 +429,7 @@ def create_test_db(context, dbtype, dbname):
 @click.pass_context
 def run_tests(context, dbtype, dbname, reset, path, nargs):
     """
-    Runs all tests for portal and plugins.
+    Runs all tests for portal_web and plugins.
 
     Starts nosetests and prints output to stdout.
 
@@ -442,18 +442,18 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
     (currently `./shared/tmp/files`).
 
     The location of the screenshots of integration tests is configured within
-    `<portal>/tests/config.py` (currenty `./shared/tmp/screenshots).
+    `<portal_web>/tests/config.py` (currenty `./shared/tmp/screenshots).
 
     The PATH to tests may be defined to test certain testfiles, testclasses or
     test methods (see nosetests for the syntax).
-    If no PATH is given, all tests of portal and plugins are included.
+    If no PATH is given, all tests of portal_web and plugins are included.
     The test files should be stored below the following subpaths by convention:
 
-        <portal||plugin>/tests/unit (unittest)
+        <portal_web||plugin>/tests/unit (unittest)
 
-        <portal||plugin>/tests/functional (webtest)
+        <portal_web||plugin>/tests/functional (webtest)
 
-        <portal||plugin>/tests/integration (selenium)
+        <portal_web||plugin>/tests/integration (selenium)
 
     Additional NARGS will be passed to nosetests.
     """
@@ -477,7 +477,7 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
 
     # Setup containers
     print("\nPREPARE TESTS ...\n")
-    context.invoke(pip_install, container='portal')
+    context.invoke(pip_install, container='webgui')
 
     if reset:
 
@@ -509,9 +509,9 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
                 )
 
     # Prepare paths
-    # 2DO: Reuse code in portal config.py; use plugins.pattern in portal .ini
+    # 2DO: Reuse code in portal_web config.py; use plugins.pattern in .ini
     basepaths = glob.glob(
-        os.path.join(SHARED_PATH, 'src', 'collecting_society.portal*')
+        os.path.join(SHARED_PATH, 'src', '*_web')
     )
     modules = []
     testpaths = []
