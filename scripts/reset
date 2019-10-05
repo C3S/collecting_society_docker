@@ -1,0 +1,64 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Usage: sudo ./reset
+
+# get directories
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT_DIR="$( dirname $SCRIPT_DIR )"
+cd $ROOT_DIR
+
+remove_quietly() {
+    for f; do [ -e "$f" ] && rm -r "$f" && echo "Deleted $f"; done
+}
+
+# ensure sudo
+if [[ $UID != 0 ]]; then
+  echo "Please run this script with sudo:"
+  echo "sudo $0 $*"
+  exit 1
+fi
+
+# get confirmation
+echo "This script resets the project. It removes all containers, images, files"
+echo "and databases created by the project. The environment files are kept."
+echo -e "\n\033[91mWARNING: The data cannot be restored.\033[0m\n"
+while true; do
+    read -p "Do you REALLY want to continue (y/n)? " YN
+    case $YN in
+        [Yy] ) break;;
+        [Nn] ) echo "aborted."; exit 1;;
+    esac
+done
+
+# remove containers
+echo -e "\nRemove containers ..."
+docker-compose rm -fs
+
+# remove images
+echo -e "\nRemove images ..."
+docker rmi -f "$(docker-compose images -q)"
+
+# remove files
+echo -e "\nRemove files ..."
+remove_quietly \
+    "$SCRIPT_DIR/__pycache__" \
+    "$ROOT_DIR/code" \
+    "$ROOT_DIR/volumes/shared/cover" \
+    "$ROOT_DIR/volumes/shared/ref" \
+    "$ROOT_DIR/volumes/shared/src" \
+    "$ROOT_DIR/volumes/shared/tmp" \
+    "$ROOT_DIR/volumes/shared/.coverage" \
+    "$ROOT_DIR/volumes/shared/nosetests.xml"
+
+# remove database
+echo -e "\nRemove databases ..."
+remove_quietly \
+    "$ROOT_DIR/volumes/aptcacher" \
+    "$ROOT_DIR/volumes/postgresql-data" \
+    "$ROOT_DIR/volumes/trytond-files"
+
+echo -e "\n\nDone."
+
+exit 0

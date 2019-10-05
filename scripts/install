@@ -1,0 +1,70 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Usage: sudo ./install
+
+# get directories
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT_DIR="$( dirname $SCRIPT_DIR )"
+
+# ensure sudo
+if [[ $UID != 0 ]]; then
+  echo "Please run this script with sudo:"
+  echo "sudo $0 $*"
+  exit 1
+fi
+
+# get confirmation
+echo "This script installs docker and docker-compose on debian/ubuntu,"
+echo "adds a user to the docker group and updates/build the project."
+echo -e "\n\033[91mWARNING: It will change your host environment.\033[0m\n"
+while true; do
+    read -p "Do you want to continue (y/n)? " YN
+    case $YN in
+        [Yy] ) break;;
+        [Nn] ) echo "aborted."; exit 1;;
+    esac
+done
+
+# install dependencies
+echo "Install dependencies ..."
+apt-get install -y git python curl apt-transport-https ca-certificates gnupg2 software-properties-common
+apt-get install -y lsb-release --no-install-recommends
+
+# add sources for docker (debian or ubuntu)
+echo "Add sources ..."
+source /etc/os-release
+a=$(arch)
+if [ $a == "x86_64" ]; then a="amd64"; fi
+echo "deb [arch=$a] https://download.docker.com/linux/$ID `lsb_release -cs` stable" > /etc/apt/sources.list.d/docker.list
+curl -fsSL https://download.docker.com/linux/$ID/gpg | apt-key add -
+apt-get update
+
+# install docker
+echo "Install docker ..."
+apt-get -y install docker-ce
+
+# install docker-compose
+echo "Install docker-compose ..."
+curl -L https://github.com/docker/compose/releases/download/1.18.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+source ~/.profile
+
+# add user to docker group
+while true; do
+    echo && read -p "Which user shall be added to the docker group? " DOCKERUSER
+    if id -u $DOCKERUSER > /dev/null; then break; fi
+done
+usermod -a -G docker $DOCKERUSER
+
+# update project
+echo "Update project ..."
+su $DOCKERUSER -c cd $SCRIPT_DIR && ./update
+
+# build docker containers
+echo "Build docker containers ..."
+su $DOCKERUSER -c cd $ROOT_DIR && docker-compose build
+
+echo -e "\n\nDone.\n"
+echo "You can now start the containers via 'docker-compose up' or './scripts/up'"

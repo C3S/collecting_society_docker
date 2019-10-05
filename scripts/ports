@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+"""
+Shows name and external url of all running containers.
+
+Usage: ./ports
+"""
+
+import os
+import subprocess
+import config
+
+real_path = os.path.realpath(__file__)
+directory = os.path.dirname(real_path)
+os.chdir(directory)
+
+PREFIX = os.path.basename(os.path.split(real_path)[0])
+for char in ('_', '-', '.'):
+    PREFIX = PREFIX.replace(char, "")
+PREFIX = PREFIX + '_'
+CONTAINERS = subprocess.check_output(
+    'docker-compose ps', shell=True).split('\n')
+
+
+def clean(x):
+    return x.strip().split(' ')
+
+
+print('=' * 75)
+print('the services run in containers, URIs with port numbers shown here:')
+num_containers = 0
+for name, url in [(clean(x).pop(0), clean(x).pop()) for x in CONTAINERS[2:]]:
+    num_containers += 1
+    name = name.replace(PREFIX, '')
+    if not url:
+        continue
+    external_port = None
+    internal_port = url
+    if url.find('->') > -1:
+        external_port, internal_port = url.split('->')
+    if external_port:
+        print(' * %s \t http://%s' % (name, external_port))
+if num_containers == 0:
+    print('no containers running.')
+    exit()
+print('-' * 75)
+print('Browser url: http://{}:81\n'.format(config.env['VIRTUAL_HOST_GUI']))
+print('Add to your /etc/hosts:')
+print('---8<---')
+print('0.0.0.0\t{}'.format(config.env['VIRTUAL_HOST_GUI']))
+print('0.0.0.0\t{}'.format(config.env['VIRTUAL_HOST_API']))
+print('---8<---')
+print('=' * 75)

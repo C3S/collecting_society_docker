@@ -1,12 +1,15 @@
+// For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+// Repository: https://github.com/C3S/collecting_society_docker
+//
 // See https://aka.ms/vscode-remote/containers for the
 // documentation about the devcontainer.json format
 {
-	"name": "ado container",
+	"name": "collecting society container",
 	"context": "..",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "api",
-	"workspaceFolder": "/ado",
-	"cwd": "/ado",
+	"workspaceFolder": "/shared",
+	"cwd": "/shared",
 	"shutdownAction": "none",
 	"extensions": [
 		"ms-python.python",

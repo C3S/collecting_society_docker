@@ -1,5 +1,0 @@
---no-index
-
--r requirements-tryton.txt
--e src/collecting_society.portal
--e src/collecting_society.portal.repertoire

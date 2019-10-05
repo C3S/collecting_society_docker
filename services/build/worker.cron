@@ -1,0 +1,1 @@
+* * * * * root cd /shared/src/collecting_society_worker && /opt/venv/bin/python repro.py all

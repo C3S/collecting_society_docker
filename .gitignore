@@ -1,3 +1,6 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
 # Swap files
 *~
 
@@ -42,7 +45,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-ado/cover
+/volumes/shared/cover
 
 # Translations
 #*.mo   unless we integrate the translation tools into the build process, 
@@ -57,20 +60,25 @@ docs/_build/
 # PyBuilder
 target/
 
-# Ado
-ado/etc/*.sqlite
-ado/src
-ado/ref
-ado/tmp
-ado/pyramid_debugtoolbar_templates_exception_summary_dbtmako
-postgresql-data
+# Volumes
+/volumes/*
+!/volumes/shared
+
+# Created foldes
+/code
+/volumes/shared/src
+/volumes/shared/ref
+/volumes/shared/tmp
+/volumes/shared/pyramid_debugtoolbar_templates_exception_summary_dbtmako
 
 # pyramid_mailer.debug
-ado/mail
+/volumes/shared/mail
 
 # Configuration files for docker container
-/*.env
-/ado/etc/trytonpassfile
+/.env
+/services/*.env
+!/services/build
+/volumes/shared/config/trytond/passfile
 
 # VS Code remnants
 /.vscode/*

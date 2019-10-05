@@ -1,94 +1,130 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
-# Repository: https://github.com/C3S/c3s.ado.repertoire
+# Repository: https://github.com/C3S/collecting_society_docker
 
-version: '2.2'
+version: '2.4'
+
+networks:
+  frontend:
+  backend:
+
 services:
 
-  nginx:
-    build: Dockerfiles/nginx
-    image: c3s_repertoire_nginx
+  database:
+    build:
+      context: ./services/build
+      target: database
+      args: &buildargs
+        ENVIRONMENT: ${ENVIRONMENT}
+        APT_CACHERURL: ${APT_CACHERURL}
+        WORKDIR: ${WORKDIR}
+        DEBIAN: ${DEBIAN}
+        DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
+        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+    networks:
+      - backend
+    volumes:
+      - ./volumes/postgresql-data:/var/lib/postgresql/data
+
+  erpserver:
+    build:
+      context: ./services/build
+      target: erpserver
+      args: *buildargs
+    command: execute deploy-erpserver
+    volumes:
+      - ./volumes/shared:/shared
+      - ./volumes/trytond-files:/var/lib/trytond
+    networks:
+      - backend
+    ports:
+      - "8000:8000"  # jsonrpc (tryton client)
+      - "8069:8069"  # xmlrpc (proteus)
+    depends_on:
+      - database
+    env_file:
+      - .env
+
+  webserver:
+    build:
+      context: ./services/build
+      target: webserver
+      args: *buildargs
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
+    networks:
+      - frontend
     ports:
-      - "81:80"
+      - "80:80"  # http
     logging:
       driver: none
 
-  db:
-    build: ./Dockerfiles/db
-    image: c3s_repertoire_db
+  webapi:
+    build:
+      context: ./services/build
+      target: webapi
+      args: *buildargs
+    command: execute deploy-webapi
     volumes:
-      - ./postgresql-data:/var/lib/postgresql/data
-
-  tryton:
-    build: Dockerfiles/tryton
-    image: c3s_repertoire_tryton
-    command: ado-do deploy-tryton
-    volumes:
-      - ./ado:/ado
+      - ./volumes/shared:/shared
+    networks:
+      - frontend
+      - backend
     ports:
-      - "8000:8000"
-      - "8069:8069"
+      - "6543"  # pyramid pserve
+      - "51001:51001"  # debugger
     depends_on:
-      - db
+      - database
+      - webserver
     env_file:
-      - ./tryton.env
+      - .env
+      - services/webapi.env
 
-  api:
-    build: Dockerfiles/api
-    image: c3s_repertoire_api
-    command: ado-do deploy-api
+  webgui:
+    build:
+      context: ./services/build
+      target: webgui
+      args: *buildargs
+    command: execute deploy-webgui
     volumes:
-      - ./ado:/ado
+      - ./volumes/shared:/shared
+    networks:
+      - frontend
+      - backend
     ports:
-      - "6543"
-      - "51001:51001"   # for debugger
+      - "6543"  # pyramid pserve
+      - "51000:51000"  # debugger
     depends_on:
-      - db
-      - nginx
+      - webapi
     env_file:
-      - ./api.env
+      - .env
+      - services/webgui.env
 
-  portal:
-    build: Dockerfiles/portal
-    image: c3s_repertoire_portal
-    command: ado-do deploy-portal
-    volumes:
-      - ./ado:/ado
-    ports:
-      - "6543"
-      - "51000:51000"   # for debugger
-    depends_on:
-      - db
-      - nginx
-      - api
-      - tryton
-      - selenium
-    env_file:
-      - ./portal.env
-
-  processing:
-    build: Dockerfiles/processing
-    image: c3s_repertoire_processing
+  worker:
+    build:
+      context: ./services/build
+      target: worker
+      args: *buildargs
     cpu_percent: 50
     mem_limit: 500m
-    #command: cron && tail -f /ado/tmp/repro.log &
-    command: bash -c "while true; do cd /ado/src/c3sRepertoireProcessing && python repro.py all; sleep 60; done"
+    #command: cron && tail -f /shared/tmp/repro.log &
+    command: bash -c "while true; do cd /shared/src/collecting_society_worker && python repro.py all; sleep 60; done"
     volumes:
-      - ./ado:/ado
-    ports:
-      - "51002:51002"   # for debugger
+      - ./volumes/shared:/shared
+    networks:
+      - backend
     depends_on:
-      - tryton
+      - erpserver
     env_file:
-      - ./processing.env
+      - .env
+      - services/worker.env
 
-  selenium:
-    build: Dockerfiles/selenium
-    image: c3s_repertoire_selenium
+  browser:
+    build:
+      context: ./services/build
+      target: browser
+      args: *buildargs
     volumes:
-      - ./ado:/ado
+      - ./volumes/shared:/shared
       - /dev/shm:/dev/shm
-    env_file:
-      - ./selenium.env
-
+    networks:
+      - frontend

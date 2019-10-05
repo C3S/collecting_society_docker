@@ -1,54 +1,51 @@
-=======
-C3S ADO
-=======
+=========================
+collecting_society_docker
+=========================
 
-    *Much Ado About Nothing* by William Shakespeare
-
-Ado is a collection of services which are helpful when setting up a collecting
-society.
-
-c3s.ado.repertoire is the development and deploy setup for registration
-of the reportoire of the c3s.
+Docker development and deployment setup for collecting society services.
 
 
 Overview
 ========
-The ado setup creates and maintains `Docker <http://docs.docker.com>`
-containers for development and also production use.
-`Docker-compose <https://docs.docker.com/compose/>`, - vagrant for docker containers, - is used as a creator
-and configurator for the needed Docker container setups:
 
-    1. Postgres database (db)
-       A database with name ``c3s`` is created automatically.
-       Demo data included.
-    2. Web portal service including Tryton and Pyramid (portal)
-       All Tryton and Pyramid dependencies installed
-    3. Tryton service (tryton)
+The setup creates and maintains `Docker <http://docs.docker.com>`
+containers for development and production use.
+`Docker-compose <https://docs.docker.com/compose/>`, is used as a creator
+and configurator for the Docker containers:
 
+* db: Postgres database
+* tryton: Tryton server
+* nginx: Web server
+* portal: Pyramid web portal
+* api: Pyramid web api
+* processing: File processing
+* selenium: Headless browser for integration tests
 
 
 Requirements
 ============
+
 A Linux or OS X system, `docker <https://docs.docker.com/engine/installation/>`,
 `docker-compose  <https://docs.docker.com/compose/install/>`
-and `git <http://git-scm.com/downloads>`::
+and `git <http://git-scm.com/downloads>`. Summary::
 
-    $ sudo apt-get install git docker docker-compose # if you don't want to read the docs
-    $ sudo usermod -aG docker $USER # so you won't have to user sudo all the time
-    $ newgrp docker # if you don't want to relogin
+    $ sudo apt-get install git docker docker-compose
+    $ sudo usermod -aG docker $USER
+    $ newgrp docker
 
 
 Setup
 =====
+
 Clone this repository into your working space::
 
     $ cd MY/WORKING/SPACE
-    $ git clone https://github.com/C3S/c3s.ado.repertoire.git
+    $ git clone https://github.com/C3S/collecting_society_docker.git
     
 All setup and maintenance tasks are done in the root path of the
-``c3s.ado.repertoire/`` repository::
+``collecting_society_docker/`` repository::
 
-    $ cd c3s.ado.repertoire
+    $ cd collecting_society_docker
 
 Choose the environment to build:
 
@@ -74,23 +71,28 @@ Later builds will take less time.
 Adjust environment files for containers, if neccessary. Sane defaults for
 a development setup are given:
 
-    * ``./portal.env``
     * ``./api.env``
+    * ``./portal.env``
+    * ``./processing.env``
+    * ``./selenium.env``
+    * ``./tryton.env``
 
 Change the password for the *admin* user in
-``ado/etc/trytonpassfile``
+``./volumes/shared/config/trytond/passfile``
 
 Start containers::
 
     $ docker-compose up
 
-This starts all *ado* service containers.
+This starts all service containers.
 
 
 Clients
 =======
+
 Web
 ---
+
 The number of *portal* services is implemented scalable.
 Because of this it is not possible to hard code the external port number of
 a service.
@@ -100,8 +102,8 @@ reverse proxy and load-balancer to the *portal* services host on *port 81*.
 
 .. note: To connect a client to a particular service, it is
     needed to find out the hosta nd the port of the service.
-    Use the script ``c3s.ado.repertoire/show_external_urls`` or 
-    ``docker-compose ps`` to find the port of a particular service.
+    Use the script ``./show_external_urls`` or ``docker-compose ps``
+    to find the port of a particular service.
 
 Prior to the connection via browser, your /etc/hosts should contain
 repertoire.test and api.repertoire.test pointing to 0.0.0.0
@@ -117,6 +119,7 @@ Connecting a specific instance of the portal service, point your browser to::
 
 Tryton
 ------
+
 To connect to trytond you can use one of the several Tryton client
 applications or APIs.
 For back-office use of the application the Gtk2 based Tryton client is
@@ -141,22 +144,24 @@ On the host system connect to::
 
 Using containers
 ================
+
 Services
 --------
+
 For development purposes it is convenient to have the possibility to debug the
 running code.
 To start only the necessary services for developing a service
 use e.g::
 
-    $ docker-compose run --service-ports portal ado-do deploy-portal
-    $ docker-compose run --service-ports api ado-do deploy-api
-    $ docker-compose run --service-ports portal ado-do deploy-tryton
+    $ docker-compose run --service-ports portal execute deploy-portal
+    $ docker-compose run --service-ports api execute deploy-api
+    $ docker-compose run --service-ports portal execute deploy-tryton
 
 
-The portal service is started with ``ado-do`` inside a portal container.
+The portal service is started with ``execute`` inside a portal container.
 The tryton service can be started with::
 
-    $ docker-compose run --service-ports tryton ado-do deploy-tryton
+    $ docker-compose run --service-ports tryton execute deploy-tryton
 
 The flag ``service-ports`` runs the container and all its dependecies
 with the service's ports enabled and mapped to the host.
@@ -177,67 +182,65 @@ the container::
     does not connect to a running container. To enter a running container use
     ``docker exec``. See below for further instructions.
 
-*Ado-do* is a command line tool to setup and maintain services in a container.
-To start the ``ado-do`` command from inside a container the
-``docker-compose run ado`` must be removed from the following examples.
+*execute* is a command line tool to setup and maintain services in a container.
+To start the ``execute`` command from inside a container the
+``docker-compose run`` must be removed from the following examples.
 
-Get acquainted with ``ado-do`` a command driven tool which performs tasks on
+Get acquainted with ``execute`` a command driven tool which performs tasks on
 container start::
 
-    $ docker-compose run portal ado-do --help
-    $ docker-compose run portal ado-do COMMAND --help
-
+    $ docker-compose run portal execute --help
+    $ docker-compose run portal execute <COMMAND> --help
 
 Database
 --------
+
 Update all modules in an existing database with name DATABASE_NAME::
 
-    $ docker-compose run tryton ado-do update DATABASE_NAME
-
+    $ docker-compose run tryton execute update DATABASE_NAME
 
 Update specific modules in an existing database::
 
-    $ docker-compose run tryton ado-do update  \
+    $ docker-compose run tryton execute update  \
         -m MODULE_NAME1[,MODULE_NAME2,…] DATABASE_NAME
 
 E.g.::
 
-    $ docker-compose run tryton ado-do update  \
+    $ docker-compose run tryton execute update  \
         -m party,account,collecting_society c3s
-
 
 Examine and edit a database, use::
 
-    $ docker-compose run tryton ado-do db-psql DATABASE_NAME
+    $ docker-compose run tryton execute db-psql DATABASE_NAME
 
 Backup a database::
 
-    $ docker-compose run tryton ado-do db-backup DATABASE_NAME  \
+    $ docker-compose run tryton execute db-backup DATABASE_NAME  \
         > `date +%F.%T`_DATABASE_NAME.backup
 
 Delete a database::
 
-    $ docker-compose run tryton ado-do db-delete DATABASE_NAME
+    $ docker-compose run tryton execute db-delete DATABASE_NAME
 
 Create a new database::
 
-    $ docker-compose run tryton ado-do db-create DATABASE_NAME
+    $ docker-compose run tryton execute db-create DATABASE_NAME
 
 Setup test data::
 
-    $ docker-compose run tryton ado-do db-test-setup DATABASE_NAME
+    $ docker-compose run tryton execute db-test-setup DATABASE_NAME
 
 Setup demo data::
 
-    $ docker-compose run tryton ado-do db-demo-setup DATABASE_NAME
+    $ docker-compose run tryton execute db-demo-setup DATABASE_NAME
 
 Rebuild a database::
 
-    $ docker-compose run tryton ado-do db-rebuild DATABASE_NAME
-
+    $ docker-compose run tryton execute db-rebuild DATABASE_NAME
 
 Service Scaling
 ---------------
+
 To scale increasing load it is possible to start more service containers on
 demand::
 
@@ -249,7 +252,7 @@ To scale decreasing load it is possible to stop service containers on demand::
 
 Lookup all host ports in use::
 
-    $ /path/to/c3s.ado.repertoire/show_external_urls
+    $ /path/to/collecting_society_docker/show_external_urls
 
 … or use ``docker-compose ps`` as an alternative.
 
@@ -257,17 +260,14 @@ Lookup a specific host port in use::
 
     $ docker-compose --index=1 port tryton 8000
 
-.. note:: This command has a fixed but not merged and released bug:
-    https://github.com/docker/compose/issues/667
+Maintenance After Update
+------------------------
 
-
-Maintenance After c3s.ado.repertoire Update
---------------------------------
 Some changes in the container setup require a rebuild of the whole system.
 
 Update the environment as usual::
 
-    $ cd c3s.ado.repertoire
+    $ cd collecting_society_docker
     $ ./update
 
 Build containers, this time without a cache::
@@ -281,8 +281,10 @@ Start containers::
 
 Deployment
 ==========
+
 Monitoring
 ----------
+
 To monitor all running containers use::
 
     $ watch ./monitor
@@ -291,22 +293,25 @@ To monitor all running containers use::
     rss+cache size. The most informative metrics to use for monitoring
     are a moving target.
 
+
 Development
 ===========
+
 The general Python requirements are provided by default Debian packages from
 Jessie (actual testing) if available, otherwise from PyPI.
-Packages under development are located in ``ado/src`` and can be edited on the
-host system, outside the containers.
+Packages under development are located in ``./shared/src`` and can be edited on 
+the host system, outside the containers.
 For developer convenience all Tryton modules use a git mirror of the upstream
 Tryton repositories.
 For this setup the Tryton release branch 3.4 is used.
 
 Architecture
 ------------
+
 This repository is build by the following files and directories::
 
-    ├── ado  # This directory is mapped into portal and tryton container
-    │   ├── ado-do  # Maintenance Utility for containers
+    ├── shared  # This directory is mapped into portal and tryton container
+    │   ├── execute  # Maintenance Utility for containers
     │   ├── etc
     │   │   ├── requirements-portal.txt  # Pip requirements for portal service
     │   │   ├── requirements-tryton.txt  # Pip requirements for Tryton service
@@ -332,6 +337,7 @@ This repository is build by the following files and directories::
 
 Packages and Debs
 -----------------
+
 This setup maintains three levels of package inclusion:
 
     1. Debian packages
@@ -350,7 +356,7 @@ stored in ``config.py`` in variable ``repositories``::
 These packages are cloned or updated with the ``./update`` command and must
 be pip installable.
 To install a source repository package in a container, it is be declared in
-*one* of the ``ado/etc/requirements*.txt`` files.
+*one* of the ``shared/etc/requirements*.txt`` files.
 
 .. note:: The ``requirements-portal.txt`` inherits the
     ``requirements-tryton.txt``.
@@ -366,6 +372,7 @@ Debian and Python packages are included in one of the ``Dockerfiles``:
 
 Remove Database
 ---------------
+
 The database files are stored in ``postgresql-data``.
 To rebuild a new database use the following pattern::
 
@@ -376,6 +383,7 @@ To rebuild a new database use the following pattern::
 
 .. warning:: All data in this database will be deleted!
 
+
 Testing
 =======
 
@@ -385,30 +393,30 @@ Tryton
 To run tests in the tryton container use::
 
     $ docker-compose run tryton sh -c \
-          'ado-do pip-install tryton \
+          'execute pip-install tryton \
           && export DB_NAME=:memory: \
-          && python /ado/src/trytond/trytond/tests/run-tests.py'
+          && python /shared/src/trytond/trytond/tests/run-tests.py'
 
 To run the demo-setup again, use::
 
     $ docker-compose run tryton sh -c \
-          'ado-do pip-install tryton \
+          'execute pip-install tryton \
           && python -m doctest -v etc/scenario_master_data.txt'
 
 To run the test-setup again, use::
 
     $ docker-compose run tryton sh -c \
-          'ado-do pip-install tryton \
+          'execute pip-install tryton \
           && python -m doctest -v etc/scenario_test_data.txt'
 
 To develop the doctests, it's faster, to use a snapshot of the master-setup::
 
     $ docker-compose run tryton bash
-    $ ado-do pip-install tryton
-    $ ado-do db-delete c3s_template && ado-do db-create c3s_template \
-        && ado-do db-setup --master --force c3s_template
-    $ ado-do db-delete c3s && ado-do db-copy c3s_template c3s \
-        && ado-do db-setup c3s --test --force
+    $ execute pip-install tryton
+    $ execute db-delete c3s_template && execute db-create c3s_template \
+        && execute db-setup --master --force c3s_template
+    $ execute db-delete c3s && execute db-copy c3s_template c3s \
+        && execute db-setup c3s --test --force
 
 
 Portal
@@ -417,68 +425,72 @@ Portal
 Create a database template, which will be copied and used for tests::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
-        ado-do create-test-db
+        execute create-test-db
 
 Run all tests in PATH (optional) with nosetests PARAMETER (optional)::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
-        ado-do run-tests [--path=PATH] [PARAMETER]
+        execute run-tests [--path=PATH] [PARAMETER]
 
-Run all tests for portal + plugins::
-
-    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
-        ado-do run-tests
-
-Run all tests for portal + plugins quiet, drop into pdb on failures or errors::
+Run all tests for portal_web + plugins::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
-        ado-do run-tests --quiet --pdb
+        execute run-tests
 
-Run only tests for portal::
+Run all tests for portal_web + plugins quiet, drop into pdb on errors::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
-        ado-do run-tests --path src/collecting_society.portal
+        execute run-tests --quiet --pdb
+
+Run only tests for portal_web::
+
+    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+        execute run-tests --path src/portal_web
 
 Run only unittests of portal::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
-        ado-do run-tests \
-        --path src/collecting_society.portal/collecting_society_portal/tests/unit
+        execute run-tests --path src/portal_web/portal_web/tests/unit
 
 Run a specific unittest for a model of portal::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
-        ado-do run-tests \
-        --path src/collecting_society.portal/collecting_society_portal/tests/unit/models.py:TESTCLASS.TESTMETHOD
+        execute run-tests --path \
+        src/portal_web/portal_web/tests/unit/models.py:TESTCLASS.TESTMETHOD
 
 For repeated testing without recreating the container every time, start the
 container once and run the tests from within::
 
     $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal bash
-    $ ado-do run-tests [--path=PATH] [PARAMETER...]
+    $ execute run-tests [--path=PATH] [PARAMETER...]
 
 Debugging with ptvsd
 ---------------------
 
-If you use Visual Studio Code as your editor, you would want to install the Remote Containers extension,
-so you can work directly in the docker containers, including source level debugging from within VS Code.
-Just make sure that 'ENVIRONMENT' is set to 'development' in the resp. containers .env file found in the ado folder,
-then cd to c3s.ado.repertoire and start VSCode with *"code ."*.
-The necessary .devcontainer.json and launch.json files are already included in the repositories.
+If you use Visual Studio Code as your editor, you would want to install the 
+Remote Containers extension, so you can work directly in the docker containers, 
+including source level debugging from within VS Code. Just make sure that 
+'ENVIRONMENT' is set to 'development' in the resp. containers .env file found 
+in the shared folder, then cd to collecting_society_docker and start VSCode 
+with *"code ."*. The necessary .devcontainer.json and launch.json files are 
+already included in the repositories.
 
-To start debugging a container, click on the toast notification that will come up in the bottom right corner or
-click on the green field in the lower left corner of VS Code and select 
-'Remote-Containers: Reopen in Container'. Then make sure the Python extension 
-is installed in the container's VS Code instance and reload, if necessary.
-*Git History* and *GitLens* are recommended but will require you to *"apt-get install git"* in the container.
-To start Debugging, press Ctrl-Shift-D to open the debug sidebar and select the debug configuration 
-in the drop-down box on the top, e.g. *'Portal Attach'*. 
-(Settings for attaching the container can be adjusted in the file */ado/.vscode/launch.settings*.)
-Press the play button left to the debug config drop-down box and a debug toolbar should appear.
+To start debugging a container, click on the toast notification that will come 
+up in the bottom right corner or click on the green field in the lower left 
+corner of VS Code and select 'Remote-Containers: Reopen in Container'. Then 
+make sure the Python extension is installed in the container's VS Code instance 
+and reload, if necessary. *Git History* and *GitLens* are recommended but will 
+require you to *"apt-get install git"* in the container. To start Debugging, 
+press Ctrl-Shift-D to open the debug sidebar and select the debug configuration 
+in the drop-down box on the top, e.g. *'Portal Attach'*. (Settings for 
+attaching the container can be adjusted in the file 
+*/shared/.vscode/launch.settings*.) Press the play button left to the debug 
+config drop-down box and a debug toolbar should appear.
 
-**Important note**: If you wish to debug other containers besides the default *portal*, e.g. *api* or *processing*, 
-change the *service* entry in .devcontainer.json accordingly, otherwise you will experience 
-'connection refused' errors. The *service* entry in .devcontainer.json will determine which 
+**Important note**: If you wish to debug other containers besides the default 
+*portal*, e.g. *api* or *processing*, change the *service* entry in 
+.devcontainer.json accordingly, otherwise you will experience 'connection 
+refused' errors. The *service* entry in .devcontainer.json will determine which 
 container is being selected by the *Remote-Containers* plugin.
 
 Debugging with winpdb
@@ -490,27 +502,31 @@ To allow the winpdb debugger to attach to a portal script, uncomment::
 
 in Dockerfiles/portal/Dockerfile and in your python file insert::
 
-    import rpdb2; rpdb2.start_embedded_debugger("yourpassword", fAllowRemote = True)
+    import rpdb2; rpdb2.start_embedded_debugger("password", fAllowRemote = True)
 
 Make sure to open a port for the remote debugger in docker-compose.yml::
 
-  ports:
-   - "51000:51000"
+    ports:
+      - "51000:51000"
 
 Install winpdb also outside the container and run it::
 
-  sudo apt-get install -y winpdb
-  winpdb
+    $ sudo apt-get install -y winpdb
+    $ winpdb
 
 The processing container can be setup for debugging the same way.
-Make sure to only enable either of the both containers for debugging, not both the same time.
+Make sure to only enable either of the both containers for debugging, not both 
+the same time.
+
 
 Problems
 ========
+
 Couldn't connect to Docker daemon
 ---------------------------------
 Docker-compose cannot start container <id> port has already been allocated
 --------------------------------------------------------------------------
+
 If docker fails to start and you get messages like this:
 "Couldn't connect to Docker daemon at http+unix://var/run/docker.sock
 [...]" or "docker-compose cannot start container <docker id> port has already
@@ -528,6 +544,7 @@ been allocated"
 
 Bad Fingerprint
 ---------------
+
 If the Tryton client already connected the *tryton*-container, the fingerprint
 check could restrict the login with the message: Bad Fingerprint!
 
@@ -546,18 +563,18 @@ simply remove the whole file, if the setup is not in production use::
 
 Engine Room
 -----------
+
 This is a collection of docker internals.
 Good to have but seldom useful.
 
 Show running container (docker-compose level), e.g. ::
 
     $ docker-compose ps
-        Name                 Command                      State    Ports
-    ---------------------------------------------------------------------------
-    c3sadointernal_db_1      /docker-entrypoint.sh postgres  Up  5432/tcp
-    c3sadointernal_portal_1  ado-do deploy-portal            Up  6543->6543/tcp
-    c3sadointernal_tryton_1  ado-do deploy-tryton c3s        Up  8000->8000/tcp
-
+    Name          Command                          State  Ports
+    --------------------------------------------------------------------
+    c3s_db_1      /docker-entrypoint.sh postgres   Up     5432/tcp
+    c3s_portal_1  execute deploy-portal            Up     6543->6543/tcp
+    c3s_tryton_1  execute deploy-tryton c3s        Up     8000->8000/tcp
 
 Use docker help::
 
@@ -571,10 +588,8 @@ Enter a running container by id (Docker>=1.3;Kernel>3.8)::
 
     $ docker exec -it <container-id> bash
 
-
 .. note:: The docker containers are usually stored under ``/var/lib/docker``
     and can occupy some gigabyte diskspace.
-
 
 Docker is memory intensive. To Stop and remove all containers use::
 
@@ -591,14 +606,17 @@ In case you need disk space, remove all local cached images::
 
 Should images not been removed, try the -f (force) switch.
 
+
 Copyright / License
 ===================
+
 For infos on copyright and licenses, see ``./COPYRIGHT.rst``
 
 
 References
 ==========
-    * http://crosbymichael.com/dockerfile-best-practices.html
-    * http://crosbymichael.com/dockerfile-best-practices-take-2.html
-    * https://crosbymichael.com/advanced-docker-volumes.html
-    * http://blog.jacius.info/git-submodule-cheat-sheet/
+
+* http://crosbymichael.com/dockerfile-best-practices.html
+* http://crosbymichael.com/dockerfile-best-practices-take-2.html
+* https://crosbymichael.com/advanced-docker-volumes.html
+* http://blog.jacius.info/git-submodule-cheat-sheet/

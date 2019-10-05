@@ -1,0 +1,35 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Usage: ./reset-db
+
+echo "====================================================================="
+echo "====================================================================="
+echo "= this script rebuilds the database of the project                  ="
+echo "====================================================================="
+echo `date +%Y-%m-%d:%H:%M:%S`
+
+# get directories
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT_DIR="$( dirname $SCRIPT_DIR )"
+cd $ROOT_DIR
+
+# stop docker containers
+echo -e "\n== stop docker containers"
+docker-compose stop
+
+# delete database
+echo -e "\n== delete database"
+docker-compose run --rm tryton execute db-rebuild
+echo "exitcode: $?"
+
+# start docker containers
+echo -e "\n== start docker containers"
+docker-compose up -d
+
+echo `date +%Y-%m-%d:%H:%M:%S`
+echo "====================================================================="
+echo "====================================================================="
+
+exit 0
