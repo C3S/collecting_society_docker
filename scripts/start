@@ -52,7 +52,7 @@ if command -v firefox > /dev/null; then
     done
     echo -e "\nStart firefox ..."
     firefox "https://redmine.c3s.cc/login?back_url=https%3A%2F%2Fredmine.c3s.cc%2Fprojects%2F$PROJECT" &
-    firefox "http://$PROJECT.test:81" &
+    firefox "http://$PROJECT.test" &
 fi
 
 # attach to tmux session
