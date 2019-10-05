@@ -50,8 +50,18 @@ footer = """\n\nDone.\n
 def update_self():
     """Updates the update script."""
 
-    # check for updates
     print('checking for updates of this script ... ', end='')
+
+    # check workingdir
+    workingdir_dirty = subprocess.check_output(
+        ('git', 'status', '--untracked-files=no', '--porcelain'),
+        cwd=base_path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+    if workingdir_dirty:
+        print("\nWARNING: Working directory not clean. Udpate omitted!" +
+              "\n\033[91m{}\033[0m".format(workingdir_dirty))
+        return
+
+    # check for updates
     try:
         subprocess.check_output(
             ('git', 'diff', '--quiet', 'remotes/origin/HEAD'),
@@ -71,8 +81,7 @@ def update_self():
             ).rstrip().decode('utf-8')
         if pull_result:
             print(pull_result)
-        subprocess.check_output(
-            update_script, stderr=subprocess.STDOUT)
+        subprocess.call(update_script)
         exit()
 
     except subprocess.CalledProcessError as e2:
