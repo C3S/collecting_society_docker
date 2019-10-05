@@ -64,6 +64,10 @@ def update_self():
     # check for updates
     try:
         subprocess.check_output(
+            ('git', 'fetch'),
+            cwd=base_path, stderr=subprocess.STDOUT
+            ).rstrip().decode('utf-8')
+        subprocess.check_output(
             ('git', 'diff', '--quiet', 'remotes/origin/HEAD'),
             cwd=base_path, stderr=subprocess.STDOUT
             ).rstrip().decode('utf-8')
