@@ -1,6 +1,6 @@
 =========================
 collecting_society_docker
-=========================
+========================= 
 
 Docker development and deployment setup for collecting society services.
 
