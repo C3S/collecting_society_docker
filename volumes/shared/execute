@@ -36,8 +36,8 @@ import click
 PROJECT = str(os.environ.get('PROJECT'))
 ENVIRONMENT = str(os.environ.get('ENVIRONMENT'))
 SHARED_PATH = str(os.environ.get('WORKDIR'))
-PG_HOSTNAME = str(os.environ.get('PG_HOSTNAME'))
-PG_PORT = str(os.environ.get('PG_PORT'))
+POSTGRES_HOSTNAME = str(os.environ.get('POSTGRES_HOSTNAME'))
+POSTGRES_PORT = str(os.environ.get('POSTGRES_PORT'))
 
 TMP_FILE = 'running_db_creation.delete_me'
 
@@ -107,9 +107,9 @@ def db_create(context, dbname):
     # create database
     subprocess.call(
         [
-            '/usr/bin/createdb',
-            '-h', PG_HOSTNAME,
-            '-p', PG_PORT,
+            'createdb',
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
             '-U', 'postgres',
             '-O', 'postgres',
             '-E UTF-8',
@@ -141,9 +141,9 @@ def db_delete(context, dbname):
         # delete database
         result = subprocess.call(
             [
-                '/usr/bin/dropdb',
-                '-h', PG_HOSTNAME,
-                '-p', PG_PORT,
+                'dropdb',
+                '-h', POSTGRES_HOSTNAME,
+                '-p', POSTGRES_PORT,
                 '-U', 'postgres',
                 dbname
             ]
@@ -168,9 +168,9 @@ def db_copy(context, dbname_src, dbname_dst):
     # copy database
     subprocess.call(
         [
-            '/usr/bin/createdb',
-            '-h', PG_HOSTNAME,
-            '-p', PG_PORT,
+            'createdb',
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
             '-U', 'postgres',
             '-O', 'postgres',
             '-T', dbname_src,
@@ -194,9 +194,9 @@ def db_psql(context, dbname):
     # open console
     subprocess.call(
         [
-            '/usr/bin/psql',
-            '-h', PG_HOSTNAME,
-            '-p', PG_PORT,
+            'psql',
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
             '-U', 'postgres',
             dbname
         ]
@@ -214,9 +214,9 @@ def db_backup(context, dbname):
     # backup database
     subprocess.call(
         [
-            '/usr/bin/pg_dump',
-            '-h', PG_HOSTNAME,
-            '-p', PG_PORT,
+            'pg_dump',
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
             '-U', 'postgres',
             dbname
         ]
@@ -280,7 +280,7 @@ def db_setup(context, dbname, master, demo, force):
             logfile = open("/shared/tmp/db-master.log", "w")
             subprocess.call(
                 [
-                    '/usr/bin/python',
+                    'python',
                     '-m', 'doctest',
                     '-v', os.path.join(
                         SHARED_PATH, 'data', 'master.txt'
@@ -298,7 +298,7 @@ def db_setup(context, dbname, master, demo, force):
                 logfile = open("/shared/tmp/db-demo.log", "w")
                 subprocess.call(
                     [
-                        '/usr/bin/python',
+                        'python',
                         '-m', 'doctest',
                         '-v', os.path.join(
                             SHARED_PATH, 'data', 'demo.txt'
@@ -393,7 +393,7 @@ def create_test_db(context, dbtype, dbname):
     # Setup database template
     subprocess.call(
         [
-            '/usr/bin/python',
+            'python',
             '-m', 'doctest',
             '-v', os.path.join(
                 SHARED_PATH, 'data', 'master.txt'

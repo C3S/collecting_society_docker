@@ -1,7 +1,6 @@
 ARG ENVIRONMENT
 ARG WORKDIR
 ARG APT_CACHERURL
-ARG APT_REFRESH
 ARG DEBIAN
 ARG DEBUGGER_WINPDB
 ARG DEBUGGER_PTVSD
@@ -23,8 +22,6 @@ RUN mkdir -p $WORKDIR
 WORKDIR $WORKDIR
 # configure apt
 ENV DEBIAN_FRONTEND noninteractive
-ARG APT_REFRESH
-ENV APT_REFRESH $APT_REFRESH
 ARG APT_CACHERURL
 RUN if [ ${APT_CACHERURL} ]; then \
         echo "Acquire::HTTP::Proxy ${APT_CACHERURL};" >> /etc/apt/apt.conf.d/01proxy \
@@ -51,9 +48,11 @@ FROM jessie_base_testing AS jessie_base_development
 # install development packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y --no-install-recommends \
-        vim \
-        net-tools \
+        git \
+        htop \
         iputils-ping \
+        net-tools \
+        vim \
     && rm -rf /var/lib/apt/lists/*
 
 ### result
@@ -112,24 +111,25 @@ FROM jessie_trytond_testing AS jessie_trytond_development
 FROM jessie_trytond_${ENVIRONMENT} AS jessie_trytond
 
 
-#--- base -> python -> FILEPROCESSING -----------------------------------------
+#--- base -> python -> WORKER -------------------------------------------------
 
 ### production
-FROM jessie_python AS jessie_fileprocessing_production
+FROM jessie_python AS jessie_worker_production
 RUN apt-get update && apt-get install -y --no-install-recommends \
         cron \
         libav-tools \
+        libtag1-vanilla \
     && rm -rf /var/lib/apt/lists/*
 RUN ln -s /usr/bin/avconv /usr/local/bin/ffmpeg
 
 ### testing
-FROM jessie_fileprocessing_production AS jessie_fileprocessing_testing
+FROM jessie_worker_production AS jessie_worker_testing
 
 ### development
-FROM jessie_fileprocessing_testing AS jessie_fileprocessing_development
+FROM jessie_worker_testing AS jessie_worker_development
 
 ### result
-FROM jessie_fileprocessing_${ENVIRONMENT} AS jessie_fileprocessing
+FROM jessie_worker_${ENVIRONMENT} AS jessie_worker
 
 
 #--- base -> python -> COMPILE ------------------------------------------------
@@ -171,7 +171,12 @@ RUN pip install \
 ### testing
 FROM jessie_python_production_compiled AS jessie_python_testing_compiled
 RUN pip install \
-    click==4.0
+    coverage==4.5.1 \
+    click==4.0 \
+    nose==1.3.7 \
+    nose2==0.9.1 \
+    pytest==4.6.5 \
+    tox==3.14.0
 
 ### development
 FROM jessie_python_testing_compiled AS jessie_python_development_compiled
@@ -254,8 +259,6 @@ RUN pip install \
 ### testing
 FROM jessie_pyramid_production_compiled AS jessie_pyramid_testing_compiled
 RUN pip install \
-    coverage==4.5.1 \
-    nose==1.3.7 \
     selenium==3.12.0 \
     WebTest==2.0.29
 
@@ -268,10 +271,10 @@ RUN pip install \
 FROM jessie_pyramid_${ENVIRONMENT}_compiled AS jessie_pyramid_compiled
 
 
-#--- [COMPILE] python -> FILEPROCESSING ---------------------------------------
+#--- [COMPILE] python -> WORKER -----------------------------------------------
 
 ### production
-FROM jessie_python_compiled AS jessie_fileprocessing_production_compiled
+FROM jessie_python_compiled AS jessie_worker_production_compiled
 # compile echoprint-codegen
 RUN git clone https://github.com/spotify/echoprint-codegen.git /opt/echoprint-codegen \
     && git -C /opt/echoprint-codegen checkout v4.12 \
@@ -286,13 +289,13 @@ RUN pip install  \
     requests==2.9.1
 
 ### testing
-FROM jessie_fileprocessing_production_compiled AS jessie_fileprocessing_testing_compiled
+FROM jessie_worker_production_compiled AS jessie_worker_testing_compiled
 
 ### development
-FROM jessie_fileprocessing_testing_compiled AS jessie_fileprocessing_development_compiled
+FROM jessie_worker_testing_compiled AS jessie_worker_development_compiled
 
 ### result
-FROM jessie_fileprocessing_${ENVIRONMENT}_compiled AS jessie_fileprocessing_compiled
+FROM jessie_worker_${ENVIRONMENT}_compiled AS jessie_worker_compiled
 
 
 #==============================================================================
@@ -320,9 +323,9 @@ FROM selenium/standalone-firefox AS browser
 
 #--- base -> python -> WORKER -------------------------------------------------
 
-FROM ${DEBIAN}_python AS worker
-COPY --from=jessie_fileprocessing_compiled /opt/echoprint-codegen/echoprint-codegen /usr/local/bin/echoprint-codegen
-COPY --from=jessie_fileprocessing_compiled /opt/venv /opt/venv
+FROM ${DEBIAN}_worker AS worker
+COPY --from=jessie_worker_compiled /opt/echoprint-codegen/echoprint-codegen /usr/local/bin/echoprint-codegen
+COPY --from=jessie_worker_compiled /opt/venv /opt/venv
 COPY worker.cron /etc/cron.d/worker
 
 

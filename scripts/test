@@ -43,7 +43,7 @@ docker-compose run --rm tryton execute create-test-db
 
 # run tests
 echo -e "\n== run tests"
-docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal execute run-tests
+docker-compose run --rm -e ENVIRONMENT=testing webgui execute run-tests
 EXITCODE=$?
 
 # remove docker containers

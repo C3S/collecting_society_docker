@@ -101,7 +101,7 @@ copy_files = [
     },
     {
         'source':
-            dirs['src'] + '/collecting_society_worker/config.ini.EXAMPLE',
+            dirs['src'] + '/collecting_society_worker/config.ini.example',
         'target': dirs['src'] + '/collecting_society_worker/config.ini'
     },
 ]

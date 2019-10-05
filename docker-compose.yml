@@ -16,7 +16,6 @@ services:
       args: &buildargs
         ENVIRONMENT: ${ENVIRONMENT}
         APT_CACHERURL: ${APT_CACHERURL}
-        APT_REFRESH: ${APT_REFRESH}
         WORKDIR: ${WORKDIR}
         DEBIAN: ${DEBIAN}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}

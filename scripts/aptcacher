@@ -7,9 +7,9 @@
 # Usage: sudo ./aptcacher
 #
 # To use the apt-cacher:
-# 1. set APTCACHER_URL=http://172.17.0.1:3142 in build args
-# 2. start this script
-# 3. run docker-compose build
+# 1. set "APT_CACHERURL=http://172.17.0.1:3142" in build args
+# 2. start this script via "./aptcacher"
+# 3. run "docker-compose build"
 
 # get directories
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
