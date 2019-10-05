@@ -21,7 +21,7 @@ docker-compose stop
 
 # delete database
 echo -e "\n== delete database"
-docker-compose run --rm tryton execute db-rebuild
+docker-compose run --rm erpserver execute db-rebuild
 echo "exitcode: $?"
 
 # start docker containers
