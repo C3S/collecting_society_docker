@@ -5,7 +5,10 @@
 # Usage: ./test [--update]
 #
 # Options:
-#     --update: updates the repositories (e.g. for continous integration)
+#     --ci: continous integration mode
+#           - updates repositories (overrides config files!)
+#           - builds containers
+#           - recreates the test db template
 
 echo "====================================================================="
 echo "====================================================================="
@@ -19,27 +22,29 @@ ROOT_DIR="$( dirname $SCRIPT_DIR )"
 cd $ROOT_DIR
 
 # get options
-UPDATE=false
-if [ $1 = "--update" ]; then UPDATE=true; fi
+CI=false
+for i in "$@"; do
+    if [ i = "--ci" ]; then CI=true; fi
+done
 
 # stop docker containers
 echo -e "\n== stop docker containers"
 docker-compose stop
 
-# update repositories
-if $UPDATE; then
+if $CI; then
+    # update repositories
     echo -e "\n== update repositories"
     git pull                    # update the main repository
     $SCRIPT_DIR/update --reset  # update all other repos
+
+    # build docker containers
+    echo -e "\n== build docker containers"
+    docker-compose build
+
+    # recreate test database
+    echo -e "\n== recreate test database"
+    docker-compose run --rm tryton execute create-test-db
 fi
-
-# build docker containers
-echo -e "\n== build docker containers"
-docker-compose build
-
-# recreate test database
-echo -e "\n== recreate test database"
-docker-compose run --rm tryton execute create-test-db
 
 # run tests
 echo -e "\n== run tests"
