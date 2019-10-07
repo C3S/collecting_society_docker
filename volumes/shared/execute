@@ -671,8 +671,13 @@ def _db_exist(dbname):
     """
     from trytond.config import config
     from trytond import backend
-    config.update_etc(os.path.join(
-        SHARED_PATH, 'config', 'trytond', ENVIRONMENT + '.conf'))
+    _trytond_conf = os.path.join(
+        SHARED_PATH, 'config', 'trytond', ENVIRONMENT + '.conf')
+    os.environ['TRYTONPASSFILE'] = 'config/trytond/passfile'
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        SHARED_PATH, 'config', 'trytond', _trytond_conf
+    )
+    config.update_etc()
     Database = backend.get('Database')
     database = Database().connect()
     cursor = database.cursor()
