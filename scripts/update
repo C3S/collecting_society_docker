@@ -259,6 +259,21 @@ def update():
     update_self()
 
     # create folders
+    print("\nCreating symlink to docker-compose.override.yml ... ", end='')
+    override = 'development'
+    if config.env['ENVIRONMENT'] == 'production':
+        override = 'production'
+    symlink_source = os.path.join(
+        config.dirs['root'], 'docker-compose.' + override + '.yml')
+    symlink_target = os.path.join(
+        config.dirs['root'], 'docker-compose.override.yml')
+    if os.path.islink(symlink_target):
+        print("already present.")
+    else:
+        os.symlink(symlink_source, symlink_target)
+        print("created.")
+
+    # create folders
     print("\nCreating folders ...\n")
     for folder in config.create_folders:
         create_folder(folder)

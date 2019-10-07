@@ -1,0 +1,33 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
+version: '2.4'
+
+services:
+
+  database:
+    volumes:
+      - ./volumes/postgresql-data:/var/lib/postgresql/data
+
+  erpserver:
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
+    ports:
+      - "8069:8069"  # xmlrpc (proteus)
+
+  webapi:
+    ports:
+      - "6543"  # pyramid pserve
+      - "51001:51001"  # debugger
+
+  webgui:
+    ports:
+      - "6543"  # pyramid pserve
+      - "51001:51001"  # debugger
+    depends_on:
+      - webapi
+      - browser
+  
+  worker:
+    cpu_percent: 50
+    mem_limit: 500m

@@ -75,6 +75,7 @@ target/
 /volumes/shared/mail
 
 # Configuration files for docker container
+/docker-compose.override.yml
 /.env
 /services/*.env
 !/services/build
