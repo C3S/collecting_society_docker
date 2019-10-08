@@ -17,6 +17,10 @@ services:
     volumes:
       - trytond-files:/var/lib/trytond
 
-  worker:
-    cpu_percent: 50
-    mem_limit: 500m
+  webapi:
+    volumes:
+      - trytond-files:/var/lib/trytond
+
+  webgui:
+    volumes:
+      - trytond-files:/var/lib/trytond

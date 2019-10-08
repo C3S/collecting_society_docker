@@ -97,7 +97,6 @@ def db_create(context, dbname):
     The execution is skipped if the database already exists.
     """
     print('Create database "%s" ... ' % dbname, end='')
-    context.invoke(pip_install, container='erpserver')
 
     # check database
     if _db_exist(dbname):
@@ -132,27 +131,27 @@ def db_delete(context, dbname):
     print('Delete database "%s" ... ' % dbname, end='')
     max_tries = 60
     tries = 0
-    result = 1
 
-    # retry
-    while ((tries < max_tries) and (result == 1)):
-        tries += 1
-
-        # delete database
-        result = subprocess.call(
-            [
-                'dropdb',
-                '-h', POSTGRES_HOSTNAME,
-                '-p', POSTGRES_PORT,
-                '-U', 'postgres',
-                dbname
-            ]
-        )
-
-    if result is 0:
+    # retry to delete the database
+    while tries < max_tries:
+        try:
+            result = subprocess.check_output(
+                [
+                    'dropdb',
+                    '-h', POSTGRES_HOSTNAME,
+                    '-p', POSTGRES_PORT,
+                    '-U', 'postgres',
+                    dbname
+                ], stderr=subprocess.STDOUT
+            )
+        except subprocess.CalledProcessError as e:
+            tries += 1
+            if tries == max_tries:
+                print("error: \n\033[91m{}\033[0m".format(e.output.rstrip()))
+                return
+            continue
         print("ok")
-    else:
-        print("error: {}".format(result))
+        return
 
 
 @execute.command('db-copy')
@@ -642,6 +641,9 @@ def _update(modules, dbname, trytondconf=False):
         trytondconf (Optional[str]): Name of tryton config file.
     """
     print('Update services ...')
+    if ENVIRONMENT == "testing" and not trytondconf:
+        print("update omitted (testing environment)")
+        return
     if modules:
         modules = modules.split(',')
     _trytond_conf = trytondconf or ENVIRONMENT + '.conf'
@@ -671,12 +673,6 @@ def _db_exist(dbname):
     """
     from trytond.config import config
     from trytond import backend
-    _trytond_conf = os.path.join(
-        SHARED_PATH, 'config', 'trytond', ENVIRONMENT + '.conf')
-    os.environ['TRYTONPASSFILE'] = 'config/trytond/passfile'
-    os.environ['TRYTOND_CONFIG'] = os.path.join(
-        SHARED_PATH, 'config', 'trytond', _trytond_conf
-    )
     config.update_etc()
     Database = backend.get('Database')
     database = Database().connect()

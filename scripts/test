@@ -2,13 +2,18 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./test [--update]
+# Usage: ./test [--down] [--build] [--keep] [--ci] [OTHER PARARAMS]
 #
 # Options:
+#     --down: immediately stop and remove the container and exit
+#     --build: build images
+#     --keep: keep container running
 #     --ci: continous integration mode
-#           - updates repositories (overrides config files!)
-#           - builds containers
-#           - recreates the test db template
+#           - update repositories (overrides config files!)
+#           - build images
+#           - recreate the test database template
+#           - stop and remove the container
+#     OTHER PARAMS: are passed to run-tests within the container
 
 echo "====================================================================="
 echo "====================================================================="
@@ -22,38 +27,64 @@ ROOT_DIR="$( dirname $SCRIPT_DIR )"
 cd $ROOT_DIR
 
 # get options
+BUILD=false
+RM=true
 CI=false
+DOWN=false
+TESTPARAMS=""
 for i in "$@"; do
-    if [ i = "--ci" ]; then CI=true; fi
+    if [ $i = "--down" ]; then DOWN=true; continue; fi
+    if [ $i = "--build" ]; then BUILD=true; continue; fi
+    if [ $i = "--keep" ]; then RM=false; continue; fi
+    if [ $i = "--ci" ]; then CI=true; continue; fi
+    TESTPARAMS="$TESTPARAMS $i"
 done
 
-# stop docker containers
-echo -e "\n== stop docker containers"
-docker-compose stop
+# use testing compose file
+TESTING="-f docker-compose.testing.yml"
 
+# immediately stop and remove the container and exit
+if $DOWN; then
+    echo -e "\n== immediately stop and remove the container and exit"
+    docker-compose $TESTING down
+    exit $?
+fi
+
+# update repositories
 if $CI; then
-    # update repositories
     echo -e "\n== update repositories"
-    git pull                    # update the main repository
-    $SCRIPT_DIR/update --reset  # update all other repos
+    $SCRIPT_DIR/update --reset
+fi
 
-    # build docker containers
-    echo -e "\n== build docker containers"
-    docker-compose build
+# build docker images
+if $CI || $BUILD; then
+    echo -e "\n== build images"
+    docker-compose $TESTING build
+fi
 
-    # recreate test database
-    echo -e "\n== recreate test database"
-    docker-compose run --rm tryton execute create-test-db
+# create and start docker container
+echo -e "\n== create and start docker container"
+docker-compose $TESTING up -d
+if [ $? -ne 0 ]; then
+    echo -e "\n... if the images are missing, use './test --build'"
+fi
+
+# recreate test database template
+if $CI; then
+    echo -e "\n== recreate test database template"
+    docker-compose $TESTING exec test_web execute create-test-db
 fi
 
 # run tests
 echo -e "\n== run tests"
-docker-compose run --rm -e ENVIRONMENT=testing webgui execute run-tests
+docker-compose $TESTING exec test_web execute run-tests $TESTPARAMS
 EXITCODE=$?
 
-# remove docker containers
-echo -e "\n== remove docker containers"
-docker-compose rm -fs
+# remove docker container
+if $CI || $RM; then
+    echo -e "\n== remove docker container"
+    docker-compose $TESTING rm -fs
+fi
 
 echo `date +%Y-%m-%d:%H:%M:%S`
 echo "====================================================================="

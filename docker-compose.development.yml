@@ -10,24 +10,21 @@ services:
       - ./volumes/postgresql-data:/var/lib/postgresql/data
 
   erpserver:
-    volumes:
-      - ./volumes/trytond-files:/var/lib/trytond
     ports:
       - "8069:8069"  # xmlrpc (proteus)
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
 
   webapi:
     ports:
-      - "6543"  # pyramid pserve
+      - "6544:6543"  # pyramid pserve
       - "51001:51001"  # debugger
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
 
   webgui:
     ports:
-      - "6543"  # pyramid pserve
+      - "6543:6543"  # pyramid pserve
       - "51001:51001"  # debugger
-    depends_on:
-      - webapi
-      - browser
-  
-  worker:
-    cpu_percent: 50
-    mem_limit: 500m
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond

@@ -1,0 +1,68 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
+version: '2.4'
+
+networks:
+  frontend:
+  backend:
+
+services:
+
+  test_database:
+    build:
+      context: ./services/build
+      target: database
+      args: &buildargs
+        ENVIRONMENT: ${ENVIRONMENT}
+        APT_CACHERURL: ${APT_CACHERURL}
+        WORKDIR: ${WORKDIR}
+        DEBIAN: ${DEBIAN}
+        DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
+        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+    networks:
+      - backend
+
+  test_web:
+    build:
+      context: ./services/build
+      target: webgui
+      args: *buildargs
+    command: tail -f /dev/null
+    networks:
+      - frontend
+      - backend
+    volumes:
+      - ./volumes/shared:/shared
+    depends_on:
+      - test_database
+    env_file:
+      - .env
+      - services/webapi.env
+      - services/webgui.env
+    environment:
+      ENVIRONMENT: testing
+      POSTGRES_HOSTNAME: test_database
+      API_C3SUPLOAD_URL: http://test_web:6545/repertoire
+      API_C3SUPLOAD_CORS_ORIGINS: http://test_web:6544
+      API_DATATABLES_URL: http://test_web:6545/datatables
+      API_DATATABLES_CORS_ORIGINS: http://test_web:6544
+      API_C3SMEMBERSHIP_URL: http://test_web:6545/c3smembership
+
+  test_browser:
+    build:
+      context: ./services/build
+      target: browser
+      args:
+        ENVIRONMENT: ${ENVIRONMENT}
+        APT_CACHERURL: ${APT_CACHERURL}
+        WORKDIR: ${WORKDIR}
+        DEBIAN: ${DEBIAN}
+        DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
+        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - frontend
+    depends_on:
+      - test_web
