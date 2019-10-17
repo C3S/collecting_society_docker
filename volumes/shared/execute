@@ -27,10 +27,6 @@ import glob
 import fcntl
 from urlparse import urlparse
 
-try:
-    from pip import main as pipmain
-except:  # noqa: E722
-    from pip._internal import main as pipmain
 import click
 
 PROJECT = str(os.environ.get('PROJECT'))
@@ -69,15 +65,10 @@ def pip_install(context, container):
     if not os.path.exists(flagfile):
 
         # install packages
-        pipmain(
-            [
-                'install',
-                '-qr',
+        subprocess.check_call(
+            [sys.executable, '-m', 'pip', 'install', '-qr',
                 os.path.join(
-                    SHARED_PATH, 'config', 'pip', '%s.pip' % container
-                )
-            ]
-        )
+                    SHARED_PATH, 'config', 'pip', '%s.pip' % container)])
 
         # create flagfile
         open(flagfile, 'w').close()
