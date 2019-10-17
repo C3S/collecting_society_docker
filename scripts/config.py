@@ -71,11 +71,16 @@ if env['ENVIRONMENT'] in ["development", "testing"]:
 # folders to create
 create_folders = [
     dirs['code'],
-    dirs['volumes'] + '/postgresql-data',
-    dirs['volumes'] + '/trytond-files',
     dirs['tmp'],
     dirs['logs'],
 ]
+if env['ENVIRONMENT'] in ["development", "testing"]:
+    create_folders += [
+        dirs['volumes'] + '/postgresql-data',
+        dirs['volumes'] + '/trytond-files',
+        dirs['volumes'] + '/nginx-certs',
+        dirs['volumes'] + '/nginx-dhparam',
+    ]
 
 # files to copy
 copy_files = [

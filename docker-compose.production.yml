@@ -4,23 +4,30 @@
 version: '2.4'
 
 volumes:
-  postgresql-data:
-  trytond-files:
+  collecting_society_postgresql_data:
+  collecting_society_trytond_files:
+  collecting_society_nginx_certs:
+  collecting_society_nginx_dhparam:
 
 services:
 
+  webserver:
+    volumes:
+      - collecting_society_nginx_certs:/etc/nginx/certs
+      - collecting_society_nginx_dhparam:/etc/nginx/dhparam
+
   database:
     volumes:
-      - postgresql-data:/var/lib/postgresql/data
+      - collecting_society_postgresql_data:/var/lib/postgresql/data
 
   erpserver:
     volumes:
-      - trytond-files:/var/lib/trytond
+      - collecting_society_trytond_files:/var/lib/trytond
 
   webapi:
     volumes:
-      - trytond-files:/var/lib/trytond
+      - collecting_society_trytond_files:/var/lib/trytond
 
   webgui:
     volumes:
-      - trytond-files:/var/lib/trytond
+      - collecting_society_trytond_files:/var/lib/trytond

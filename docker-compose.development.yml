@@ -15,6 +15,11 @@ services:
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
+  webserver:
+    volumes:
+      - ./volumes/nginx-certs:/etc/nginx/certs
+      - ./volumes/nginx-dhparam:/etc/nginx/dhparam
+
   webapi:
     ports:
       - "6544:6543"  # pyramid pserve

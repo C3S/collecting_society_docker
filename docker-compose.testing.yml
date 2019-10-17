@@ -7,6 +7,10 @@ networks:
   frontend:
   backend:
 
+volumes:
+  collecting_society_test_postgresql_data:
+  collecting_society_test_trytond_files:
+
 services:
 
   test_database:
@@ -22,6 +26,8 @@ services:
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
     networks:
       - backend
+    volumes:
+      - collecting_society_test_postgresql_data:/var/lib/postgresql/data
 
   test_web:
     build:
@@ -34,6 +40,7 @@ services:
       - backend
     volumes:
       - ./volumes/shared:/shared
+      - collecting_society_test_trytond_files:/var/lib/trytond
     depends_on:
       - test_database
     env_file:
