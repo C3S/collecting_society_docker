@@ -265,9 +265,8 @@ def db_setup(context, dbname, master, demo, force):
 
         # Setup master data
         if master:
-            print(
-                "\nSetup scenario master data -> /shared/tmp/db-master.log\n")
-            logfile = open("/shared/tmp/db-master.log", "w")
+            print("\nSetup master data -> /shared/tmp/logs/db-master.log\n")
+            logfile = open("/shared/tmp/logs/db-master.log", "w")
             subprocess.call(
                 [
                     'python',
@@ -283,9 +282,8 @@ def db_setup(context, dbname, master, demo, force):
         # Setup demo data
         if ENVIRONMENT == 'development':
             if demo:
-                print(
-                    '\nSetup scenario demo data -> /shared/tmp/db-demo.log\n')
-                logfile = open("/shared/tmp/db-demo.log", "w")
+                print('\nSetup demo data -> /shared/tmp/logs/db-demo.log\n')
+                logfile = open("/shared/tmp/logs/db-demo.log", "w")
                 subprocess.call(
                     [
                         'python',
