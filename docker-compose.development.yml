@@ -23,7 +23,7 @@ services:
   webapi:
     ports:
       - "6544:6543"  # pyramid pserve
-      - "51001:51001"  # debugger
+      - "51000:51000"  # debugger
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
