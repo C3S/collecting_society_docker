@@ -20,6 +20,11 @@ services:
         DEBIAN: ${DEBIAN}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - backend
 
@@ -36,7 +41,8 @@ services:
     volumes:
       - ./volumes/shared:/shared
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     env_file:
       - .env
 
@@ -66,8 +72,10 @@ services:
     volumes:
       - ./volumes/shared:/shared
     depends_on:
-      - database
-      - webserver
+      database:
+        condition: service_healthy
+      webserver:
+        condition: service_started
     env_file:
       - .env
       - services/webapi.env
@@ -84,7 +92,8 @@ services:
     volumes:
       - ./volumes/shared:/shared
     depends_on:
-      - webapi
+      webapi:
+        condition: service_started
     env_file:
       - .env
       - services/webgui.env
@@ -103,7 +112,8 @@ services:
     volumes:
       - ./volumes/shared:/shared
     depends_on:
-      - erpserver
+      erpserver:
+        condition: service_started
     env_file:
       - .env
       - services/worker.env

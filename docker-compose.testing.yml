@@ -26,6 +26,11 @@ services:
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
     networks:
       - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - collecting_society_test_postgresql_data:/var/lib/postgresql/data
 
@@ -42,7 +47,8 @@ services:
       - ./volumes/shared:/shared
       - collecting_society_test_trytond_files:/var/lib/trytond
     depends_on:
-      - test_database
+      test_database:
+        condition: service_healthy
     env_file:
       - .env
       - services/webapi.env
@@ -72,4 +78,5 @@ services:
     networks:
       - frontend
     depends_on:
-      - test_web
+      test_web:
+        condition: service_started
