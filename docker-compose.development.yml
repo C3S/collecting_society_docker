@@ -33,3 +33,7 @@ services:
       - "51000:51000"  # debugger
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
+
+  worker:
+    ports:
+      - "51002:51002"  # debugger
