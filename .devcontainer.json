@@ -4,15 +4,15 @@
 // See https://aka.ms/vscode-remote/containers for the
 // documentation about the devcontainer.json format
 {
-	"name": "collecting society container",
-	"context": "..",
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "api",
+	"name": "collecting_society",
+	"dockerComposeFile": [ "docker-compose.yml", "docker-compose.override.yml" ],
+	"runArgs": ["--projectname", "collecting_society"],
+	"service": "webgui",
 	"workspaceFolder": "/shared",
-	"cwd": "/shared",
 	"shutdownAction": "none",
 	"extensions": [
 		"ms-python.python",
-		"visualstudioexptteam.vscodeintellicode"
+		"visualstudioexptteam.vscodeintellicode",
+		"vscode.flake8"
 	]
 }

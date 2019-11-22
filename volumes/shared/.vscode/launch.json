@@ -7,28 +7,25 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Portal Attach",
+            "name": "Webgui Attach",
             "type": "python",
             "request": "attach",
             "port": 51000,
-            "host": "localhost",
-            "console": "integratedTerminal"
+            "host": "localhost"
         },
         {
-            "name": "API Attach",
+            "name": "WebAPI Attach",
             "type": "python",
             "request": "attach",
             "port": 51001,
-            "host": "127.0.0.1",
-            "console": "integratedTerminal"
+            "host": "localhost"
         },
         {
             "name": "Processing Attach",
             "type": "python",
             "request": "attach",
             "port": 51002,
-            "host": "localhost",
-            "console": "integratedTerminal"
+            "host": "localhost"
         },
         // e.g. tests; insert:  import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51003), redirect_output=True); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
         {
@@ -36,8 +33,7 @@
             "type": "python",
             "request": "attach",
             "port": 51003,
-            "host": "localhost",
-            "console": "integratedTerminal"
+            "host": "localhost"
         }
     ]
 }
