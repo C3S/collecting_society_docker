@@ -63,10 +63,12 @@ def update_self():
 
     # check for updates
     try:
+        print("update_self: trying git fetch...")
         subprocess.check_output(
             ('git', 'fetch'),
             cwd=base_path, stderr=subprocess.STDOUT
             ).rstrip().decode('utf-8')
+        print("update_self: trying git diff --quiet remotes/origin/HEAD ..")
         subprocess.check_output(
             ('git', 'diff', '--quiet', 'remotes/origin/HEAD'),
             cwd=base_path, stderr=subprocess.STDOUT
