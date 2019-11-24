@@ -44,8 +44,10 @@ htmlcov/
 .coverage
 .cache
 nosetests.xml
+nosetests_*.xml
 coverage.xml
 /volumes/shared/cover
+/volumes/shared/cover_*
 
 # Translations
 #*.mo   unless we integrate the translation tools into the build process, 

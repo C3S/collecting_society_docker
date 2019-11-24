@@ -2,9 +2,10 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./test [--down] [--build] [--keep] [--ci] [OTHER PARARAMS]
+# Usage: ./test [service] [--down] [--build] [--keep] [--ci] [OTHER PARARAMS]
 #
 # Options:
+#     service: web|worker|all (default: all)
 #     --down: immediately stop and remove the container and exit
 #     --build: build images
 #     --keep: keep container running
@@ -27,18 +28,26 @@ ROOT_DIR="$( dirname $SCRIPT_DIR )"
 cd $ROOT_DIR
 
 # get options
+SERVICE="all"
 BUILD=false
 RM=true
 CI=false
 DOWN=false
 TESTPARAMS=""
 for i in "$@"; do
+    if [ $i = $1 ] && ([ $i = "web" ] || [ $i = "worker" ]); then SERVICE=$i; continue; fi
     if [ $i = "--down" ]; then DOWN=true; continue; fi
     if [ $i = "--build" ]; then BUILD=true; continue; fi
     if [ $i = "--keep" ]; then RM=false; continue; fi
     if [ $i = "--ci" ]; then CI=true; continue; fi
     TESTPARAMS="$TESTPARAMS $i"
 done
+
+# sanity checks
+if [ $SERVICE != "all" ] && [ $SERVICE != "web" ] && [ $SERVICE != "worker" ]; then
+    echo "Service unknown. Please specify 'web' or 'worker'"
+    exit -1
+fi
 
 # use testing compose file
 TESTING="-f docker-compose.testing.yml"
@@ -77,8 +86,19 @@ fi
 
 # run tests
 echo -e "\n== run tests"
-docker-compose $TESTING exec test_web execute run-tests $TESTPARAMS
-EXITCODE=$?
+if [ $SERVICE = "all" ]; then
+    docker-compose $TESTING exec test_web execute run-tests web $TESTPARAMS
+    EXITCODE1=$?
+    docker-compose $TESTING exec test_worker execute run-tests worker $TESTPARAMS
+    EXITCODE2=$?
+    EXITCODE=0
+    if [ "$EXITCODE1" -ne "0" ] || [ "$EXITCODE2" -ne "0" ]; then
+        EXITCODE=-1
+    fi
+else
+    docker-compose $TESTING exec test_$SERVICE execute run-tests $SERVICE $TESTPARAMS
+    EXITCODE=$?
+fi
 
 # remove docker container
 if $CI || $RM; then
@@ -86,6 +106,13 @@ if $CI || $RM; then
     docker-compose $TESTING rm -fs
 fi
 
+if [ "$EXITCODE" -ne "0" ]; then
+    echo -e "\n\n\033[91;5m"
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    echo -e " WARNING: ERRORS OCCURED WHILE TESTS WERE RUNNING. PLEASE FIX.\n"
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    echo -e "\033[0m"
+fi
 echo `date +%Y-%m-%d:%H:%M:%S`
 echo "====================================================================="
 echo "====================================================================="

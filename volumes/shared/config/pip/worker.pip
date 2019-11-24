@@ -1,0 +1,3 @@
+--no-index
+
+-e src/collecting_society_worker

@@ -124,6 +124,12 @@ RUN ln -s /usr/bin/avconv /usr/local/bin/ffmpeg
 
 ### testing
 FROM jessie_worker_production AS jessie_worker_testing
+# install database packages
+RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        postgresql-client-9.4  \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/share/man/*
 
 ### development
 FROM jessie_worker_testing AS jessie_worker_development

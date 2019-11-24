@@ -404,7 +404,7 @@ def create_test_db(context, dbtype, dbname):
 
 
 @execute.command('run-tests', context_settings=dict(
-    ignore_unknown_options=True))
+                 ignore_unknown_options=True))
 @click.option('--dbtype', default='postgres',
               help='Type of database (default: postgres)')
 @click.option('--dbname', default=PROJECT + '_test',
@@ -413,11 +413,12 @@ def create_test_db(context, dbtype, dbname):
               help='Reset the database (default: yes)')
 @click.option('--path', default=False,
               help='Searchpath for tests (see nosetest)')
+@click.argument('service')
 @click.argument('nargs', nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
-def run_tests(context, dbtype, dbname, reset, path, nargs):
+def run_tests(context, service, dbtype, dbname, reset, path, nargs):
     """
-    Runs all tests for portal_web and plugins.
+    Runs all tests for a service (web, worker).
 
     Starts nosetests and prints output to stdout.
 
@@ -445,6 +446,9 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
 
     Additional NARGS will be passed to nosetests.
     """
+    if service not in ['web', 'worker']:
+        print("Service unknown.")
+        exit(-1)
     _db_type = dbtype
     _db_name = dbname
     _db_tpl = _db_name + "_template"
@@ -465,7 +469,10 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
 
     # Setup containers
     print("\nPREPARE TESTS ...\n")
-    context.invoke(pip_install, container='webgui')
+    if service == "web":
+        context.invoke(pip_install, container='webgui')
+    if service == "worker":
+        context.invoke(pip_install, container='worker')
 
     if reset:
 
@@ -497,10 +504,14 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
                 )
 
     # Prepare paths
-    # 2DO: Reuse code in portal_web config.py; use plugins.pattern in .ini
-    basepaths = glob.glob(
-        os.path.join(SHARED_PATH, 'src', '*_web')
-    )
+    if service == "web":
+        basepaths = glob.glob(
+            os.path.join(SHARED_PATH, 'src', '*_web')
+        )
+    elif service == "worker":
+        basepaths = [
+            os.path.join(SHARED_PATH, 'src', 'collecting_society_worker')
+        ]
     modules = []
     testpaths = []
     for basepath in basepaths:
@@ -524,6 +535,9 @@ def run_tests(context, dbtype, dbname, reset, path, nargs):
             '--all-modules',
             '--with-coverage',
             '--cover-html',
+            '--cover-html-dir=cover_' + service,
+            '--cover-xml',
+            '--cover-xml-file=nosetests_' + service +'.xml',
             '--with-xunit',
             '--cover-erase',
             '--cover-inclusive',
@@ -545,12 +559,15 @@ def deploy_erpserver(context):
     erpserver service (trytond).
     """
     context.invoke(pip_install, container='erpserver')
+    _trytond_conf = ENVIRONMENT + '.conf'
+    if ENVIRONMENT == "testing":
+        _trytond_conf = ENVIRONMENT + '_postgres.conf'
     subprocess.call(
         [
             'trytond',
             '--dev',
             '-c', os.path.join(
-                SHARED_PATH, 'config', 'trytond', ENVIRONMENT + '.conf')
+                SHARED_PATH, 'config', 'trytond', _trytond_conf)
         ]
     )
 
