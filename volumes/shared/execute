@@ -120,11 +120,13 @@ def db_delete(context, dbname):
     On error the deletion is retried 60 times.
     """
     print('Delete database "%s" ... ' % dbname, end='')
-    max_tries = 60
+    max_tries = 1
     tries = 0
 
     # retry to delete the database
     while tries < max_tries:
+        if tries > 0:
+            print('.', end='')
         try:
             result = subprocess.check_output(
                 [
