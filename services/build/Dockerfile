@@ -310,7 +310,7 @@ FROM jessie_worker_${ENVIRONMENT}_compiled AS jessie_worker_compiled
 
 #--- DATABASE -----------------------------------------------------------------
 
-FROM postgres:9.4 AS database
+FROM postgres:12.1 AS database
 
 
 #--- WEBSERVER ----------------------------------------------------------------
