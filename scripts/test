@@ -87,8 +87,10 @@ fi
 # run tests
 echo -e "\n== run tests"
 if [ $SERVICE = "all" ]; then
+    # test web service
     docker-compose $TESTING exec test_web execute run-tests web $TESTPARAMS
     EXITCODE1=$?
+    # test worker service
     docker-compose $TESTING exec test_worker execute run-tests worker $TESTPARAMS
     EXITCODE2=$?
     EXITCODE=0
@@ -96,13 +98,9 @@ if [ $SERVICE = "all" ]; then
         EXITCODE=-1
     fi
 else
+    # test certain service
     docker-compose $TESTING exec test_$SERVICE execute run-tests $SERVICE $TESTPARAMS
     EXITCODE=$?
-fi
-
-# kill database connection
-if ! $RM; then
-    docker-compose $TESTING exec test_web execute kill-dbconnections 
 fi
 
 # remove docker container

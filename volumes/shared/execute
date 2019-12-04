@@ -123,6 +123,9 @@ def db_delete(context, dbname):
     max_tries = 2
     tries = 0
 
+    # kill connections (bug? see collecting_society_worker:repro.py:connect_db)
+    context.invoke(kill_dbconnections, dbname=dbname)
+
     # retry to delete the database
     while tries < max_tries:
         if tries > 0:
@@ -633,8 +636,6 @@ def kill_dbconnections(context, dbname):
     """
     Cut off all database connections to allow delete
     """
-    if ENVIRONMENT == "testing":
-        dbname = dbname + "_test"
     try:
         _db_execute_sql(
             "SELECT pg_terminate_backend(pg_stat_activity.pid) "
