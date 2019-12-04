@@ -9,6 +9,7 @@ networks:
 
 volumes:
   collecting_society_test_postgresql_data:
+  collecting_society_test_echoprint_data:
   collecting_society_test_trytond_files:
 
 services:
@@ -103,6 +104,8 @@ services:
     depends_on:
       test_erpserver:
         condition: service_healthy
+      test_fingerprint:
+          condition: service_started
     env_file:
       - .env
       - services/worker.env
@@ -110,6 +113,7 @@ services:
       ENVIRONMENT: testing
       TRYTON_HOSTNAME: test_erpserver
       POSTGRES_HOSTNAME: test_database
+      ECHOPRINT_HOSTNAME: test_fingerprint
       DEBUGGER_WINPDB: 0
       DEBUGGER_PTVSD: 0
 
@@ -131,3 +135,18 @@ services:
     depends_on:
       test_web:
         condition: service_started
+  
+  test_fingerprint:
+    build:
+      context: ./services/build
+      target: fingerprint
+      args: *buildargs
+    command: /bin/fingerprint
+    volumes:
+      - collecting_society_test_echoprint_data:/opt/echoprint-data
+    networks:
+      - backend
+    env_file:
+      - .env
+    environment:
+      ENVIRONMENT: testing

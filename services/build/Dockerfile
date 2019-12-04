@@ -111,6 +111,31 @@ FROM jessie_trytond_testing AS jessie_trytond_development
 FROM jessie_trytond_${ENVIRONMENT} AS jessie_trytond
 
 
+#--- base -> python -> ECHOPRINT ----------------------------------------------
+
+### production
+FROM jessie_python AS jessie_echoprint_production
+RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        default-jre \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/share/man/*
+RUN git clone git://github.com/echonest/echoprint-server.git /opt/echoprint-server \
+    && git -C /opt/echoprint-server checkout 8936d6f6538bb886fb6b8f6e193e0bf8106ceed7
+RUN mkdir /opt/echoprint-data
+COPY fingerprint.sh /bin/fingerprint
+RUN chmod u+x /bin/fingerprint
+
+### testing
+FROM jessie_echoprint_production AS jessie_echoprint_testing
+
+### development
+FROM jessie_echoprint_testing AS jessie_echoprint_development
+
+### result
+FROM jessie_echoprint_${ENVIRONMENT} AS jessie_echoprint
+
+
 #--- base -> python -> WORKER -------------------------------------------------
 
 ### production
@@ -143,7 +168,6 @@ FROM jessie_worker_${ENVIRONMENT} AS jessie_worker
 FROM jessie_python AS jessie_compile
 # install libs
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    && apt-get install -y --no-install-recommends \
         build-essential \
         git \
         python-dev \
@@ -160,6 +184,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         # echoprint-codegen \
             libboost-dev \
             zlib1g-dev \
+        # echoprint-server
+            libbz2-dev \
+            wget \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -200,6 +227,36 @@ RUN if [ ${DEBUGGER_WINPDB} ]; then pip install \
 ### result
 FROM jessie_python_${ENVIRONMENT}_compiled AS jessie_python_compiled
 
+#--- [COMPILE] python -> ECHOPRINT --------------------------------------------
+
+### production
+FROM jessie_python_compiled AS jessie_echoprint_production_compiled
+
+# install tokyo cabinet (from https://github.com/jon-eckstein/docker-echoprint-server)
+RUN wget https://fallabs.com/tokyocabinet/tokyocabinet-1.4.48.tar.gz
+RUN tar xvf tokyocabinet-1.4.48.tar.gz
+RUN mkdir /opt/tokyocabinet/
+RUN cd tokyocabinet-1.4.48 && ./configure --prefix=/opt/tokyocabinet/ && make && make install
+
+# install tokyo tyrant
+RUN wget https://fallabs.com/tokyotyrant/tokyotyrant-1.1.41.tar.gz
+RUN tar xvf tokyotyrant-1.1.41.tar.gz
+RUN mkdir /opt/tokyotyrant
+RUN cd tokyotyrant-1.1.41 && ./configure --prefix=/opt/tokyotyrant/ --with-tc=/opt/tokyocabinet && make && make install
+
+# install python packages
+RUN pip install \
+    web.py==0.40 \
+    pyechonest==9.0.0
+
+### testing
+FROM jessie_echoprint_production_compiled AS jessie_echoprint_testing_compiled
+
+### development
+FROM jessie_echoprint_testing_compiled AS jessie_echoprint_development_compiled
+
+### result
+FROM jessie_echoprint_${ENVIRONMENT}_compiled AS jessie_echoprint_compiled
 
 #--- [COMPILE] python -> TRYTOND ----------------------------------------------
 
@@ -325,6 +382,17 @@ RUN { \
 #--- BROWSER ------------------------------------------------------------------
 
 FROM selenium/standalone-firefox AS browser
+
+
+#--- base -> python -> FINGERPRINTING -----------------------------------------
+
+FROM ${DEBIAN}_echoprint AS fingerprint
+COPY --from=jessie_echoprint_compiled /opt/tokyocabinet/bin/* /bin/
+COPY --from=jessie_echoprint_compiled /opt/tokyocabinet/lib/libtokyocabinet.* /lib/
+COPY --from=jessie_echoprint_compiled /opt/tokyotyrant/bin/* /bin/
+COPY --from=jessie_echoprint_compiled /opt/tokyotyrant/lib/libtokyotyrant.* /lib/
+COPY --from=jessie_echoprint_compiled /opt/tokyotyrant/lib/ttskel* /lib/
+COPY --from=jessie_echoprint_compiled /opt/venv /opt/venv
 
 
 #--- base -> python -> WORKER -------------------------------------------------

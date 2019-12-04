@@ -57,6 +57,7 @@ echo -e "\nRemove databases ..."
 remove_quietly \
     "$ROOT_DIR/volumes/aptcacher" \
     "$ROOT_DIR/volumes/postgresql-data" \
+    "$ROOT_DIR/volumes/echoprint-data" \
     "$ROOT_DIR/volumes/trytond-files"
 
 echo -e "\n\nDone."

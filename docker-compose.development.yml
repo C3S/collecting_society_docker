@@ -37,3 +37,9 @@ services:
   worker:
     ports:
       - "51002:51002"  # debugger
+
+  fingerprint:
+    ports:
+      - "8080:8080"  # http
+    volumes:
+      - ./volumes/echoprint-data:/opt/echoprint-data

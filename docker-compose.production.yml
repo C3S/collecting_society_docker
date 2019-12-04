@@ -5,6 +5,7 @@ version: '2.4'
 
 volumes:
   collecting_society_postgresql_data:
+  collecting_society_echoprint_data:
   collecting_society_trytond_files:
   collecting_society_nginx_certs:
   collecting_society_nginx_dhparam:
@@ -31,3 +32,7 @@ services:
   webgui:
     volumes:
       - collecting_society_trytond_files:/var/lib/trytond
+
+  fingerprint:
+    volumes:
+      - collecting_society_echoprint_data:/opt/echoprint-data

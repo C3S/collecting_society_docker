@@ -119,6 +119,21 @@ services:
     depends_on:
       erpserver:
         condition: service_healthy
+      fingerprint:
+        condition: service_started
     env_file:
       - .env
       - services/worker.env
+
+  fingerprint:
+    build:
+      context: ./services/build
+      target: fingerprint
+      args: *buildargs
+    command: /bin/fingerprint
+    networks:
+      - backend
+    volumes:
+      - ./volumes/shared:/shared
+    env_file:
+      - .env
