@@ -125,6 +125,7 @@ RUN git clone git://github.com/echonest/echoprint-server.git /opt/echoprint-serv
 RUN mkdir /opt/echoprint-data
 COPY fingerprint.sh /bin/fingerprint
 RUN chmod u+x /bin/fingerprint
+COPY fingerprint-data.json /root/fingerprint-data.json
 
 ### testing
 FROM jessie_echoprint_production AS jessie_echoprint_testing
