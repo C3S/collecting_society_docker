@@ -219,6 +219,13 @@ clone_sources = [
     },
     # custom: worker
     {
+        'url': 'https://github.com/C3S/echoprint-server.git',
+        'ssh': 'git@github.com:C3S/echoprint-server.git',
+        'option': '--branch=master',
+        'path': 'echoprint-server',
+        'symlink': True
+    },
+    {
         'url': 'https://github.com/C3S/collecting_society_worker.git',
         'ssh': 'git@github.com:C3S/collecting_society_worker.git',
         'option': '--branch=master',
