@@ -120,8 +120,6 @@ RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
         default-jre \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/man/*
-RUN git clone git://github.com/echonest/echoprint-server.git /opt/echoprint-server \
-    && git -C /opt/echoprint-server checkout 8936d6f6538bb886fb6b8f6e193e0bf8106ceed7
 RUN mkdir /opt/echoprint-data
 COPY fingerprint.sh /bin/fingerprint
 RUN chmod u+x /bin/fingerprint
@@ -216,10 +214,9 @@ RUN pip install \
 FROM jessie_python_testing_compiled AS jessie_python_development_compiled
 RUN pip install \
     pdbpp==0.9.2 \
-    ptvsd==4.2.10 \
     sphinx==1.8.5
 RUN if [ ${DEBUGGER_PTVSD} ]; then pip install \
-        ptvsd==4.2.10; \
+        ptvsd==4.3.2; \
     fi
 RUN if [ ${DEBUGGER_WINPDB} ]; then pip install \
         winpdb==1.4.8; \
@@ -249,6 +246,12 @@ RUN cd tokyotyrant-1.1.41 && ./configure --prefix=/opt/tokyotyrant/ --with-tc=/o
 RUN pip install \
     web.py==0.40 \
     pyechonest==9.0.0
+RUN if [ ${DEBUGGER_PTVSD} ]; then pip install \
+        ptvsd==4.3.2; \
+    fi
+RUN if [ ${DEBUGGER_WINPDB} ]; then pip install \
+        winpdb==1.4.8; \
+    fi
 
 ### testing
 FROM jessie_echoprint_production_compiled AS jessie_echoprint_testing_compiled

@@ -144,6 +144,7 @@ services:
     command: /bin/fingerprint
     volumes:
       - collecting_society_test_echoprint_data:/opt/echoprint-data
+      - ./volumes/shared:/shared
     networks:
       - backend
     env_file:
