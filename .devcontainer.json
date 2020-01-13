@@ -7,7 +7,7 @@
 	"name": "collecting_society",
 	"dockerComposeFile": [ "docker-compose.yml", "docker-compose.override.yml" ],
 	"runArgs": ["--projectname", "collecting_society"],
-	"service": "fingerprint",
+	"service": "webgui",
 	"workspaceFolder": "/shared",
 	"shutdownAction": "none",
 	"extensions": [
