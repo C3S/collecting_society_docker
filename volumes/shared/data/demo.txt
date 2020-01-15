@@ -367,9 +367,15 @@ Web Users
     ...         password="%s" % number,
     ...         opt_in_state='opted-in'
     ...     )
-    ...     roles = WebUserRole.find([('code', '=', 'licenser')])
+    ...     roles = WebUserRole.find([
+    ...         'OR',
+    ...         ('code', '=', 'licenser'),
+    ...         ('code', '=', 'licensee')])
     ...     web_user.roles.extend(roles)
-    ...     web_user.default_role = 'licenser'
+    ...     if number % 2:
+    ...         web_user.default_role = 'licenser'
+    ...     else:
+    ...         web_user.default_role = 'licensee'
     ...     web_user.save()
     ...     web_user.party.firstname = firstname
     ...     web_user.party.lastname = lastname
