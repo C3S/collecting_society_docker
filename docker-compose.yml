@@ -39,7 +39,7 @@ services:
     ports:
       - "8000:8000"  # jsonrpc (tryton client)
     healthcheck:
-      test: ["CMD-SHELL", "if curl -v --silent localhost:8069 2>&1 | grep 'Connection refused'; then exit 1; fi"]
+      test: ["CMD-SHELL", "if curl -v -k -X POST -H 'Content-Type: text/html' -d '<xml></xml>' --silent https://localhost:8069 2>&1 | grep 'Connection refused'; then exit 1; fi"]
       interval: 10s
       timeout: 5s
       retries: 5      
