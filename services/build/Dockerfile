@@ -215,9 +215,11 @@ FROM jessie_python_testing_compiled AS jessie_python_development_compiled
 RUN pip install \
     pdbpp==0.9.2 \
     sphinx==1.8.5
+ARG DEBUGGER_PTVSD
 RUN if [ ${DEBUGGER_PTVSD} ]; then pip install \
         ptvsd==4.3.2; \
     fi
+ARG DEBUGGER_WINPDB
 RUN if [ ${DEBUGGER_WINPDB} ]; then pip install \
         winpdb==1.4.8; \
     fi
@@ -246,12 +248,6 @@ RUN cd tokyotyrant-1.1.41 && ./configure --prefix=/opt/tokyotyrant/ --with-tc=/o
 RUN pip install \
     web.py==0.40 \
     pyechonest==9.0.0
-RUN if [ ${DEBUGGER_PTVSD} ]; then pip install \
-        ptvsd==4.3.2; \
-    fi
-RUN if [ ${DEBUGGER_WINPDB} ]; then pip install \
-        winpdb==1.4.8; \
-    fi
 
 ### testing
 FROM jessie_echoprint_production_compiled AS jessie_echoprint_testing_compiled
