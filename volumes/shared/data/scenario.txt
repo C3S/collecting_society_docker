@@ -44,7 +44,7 @@ Used Model Index
     >>> Bank = Model.get('bank')
     >>> BankAccount = Model.get('bank.account')
     >>> BankAccountNumber = Model.get('bank.account.number')
-    >>> Client = Model.get('client')
+    >>> Device = Model.get('device')
 
 
 Web-User Scenario

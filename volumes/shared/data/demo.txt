@@ -117,7 +117,7 @@ New::
     >>> Publisher = Model.get('publisher')
 
     >>> Utilisation = Model.get('creation.utilisation')
-    >>> Client = Model.get('client')
+    >>> Device = Model.get('device')
     >>> Identifier = Model.get('creation.identification.identifier')
     >>> Identification = Model.get('creation.identification')
     >>> Fingerprintlog = Model.get('content.fingerprintlog')
@@ -171,7 +171,7 @@ Content
 
     >>> test_genres = '/shared/data/csv/genres.csv'
     >>> test_styles = '/shared/data/csv/styles.csv'
-    >>> test_labels = '/shared/data/csv/labels_samples.csv'
+    >>> test_labels = '/shared/data/csv/labels.csv'
     >>> test_licenses = '/shared/data/csv/licenses.csv'
     >>> test_tariff_categories = '/shared/data/csv/tariff_categories.csv'
     >>> test_creation_roles = '/shared/data/csv/creation_roles.csv'

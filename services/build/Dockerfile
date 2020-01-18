@@ -216,12 +216,12 @@ RUN pip install \
     pdbpp==0.9.2 \
     sphinx==1.8.5
 ARG DEBUGGER_PTVSD
-RUN if [ ${DEBUGGER_PTVSD} ]; then pip install \
+RUN if [ ${DEBUGGER_PTVSD} -ne 0 ]; then pip install \
         ptvsd==4.3.2; \
     fi
 ARG DEBUGGER_WINPDB
-RUN if [ ${DEBUGGER_WINPDB} ]; then pip install \
-        winpdb==1.4.8; \
+RUN if [ ${DEBUGGER_WINPDB} -ne 0 ]; then pip install \
+        winpdb==1.3.6; \
     fi
 
 ### result

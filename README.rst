@@ -195,48 +195,48 @@ container start::
 Database
 --------
 
-Update all modules in an existing database with name DATABASE_NAME::
+Update all modules in an existing database::
 
-    $ docker-compose run tryton execute update DATABASE_NAME
+    $ docker-compose run erpserver execute update
 
 Update specific modules in an existing database::
 
-    $ docker-compose run tryton execute update  \
-        -m MODULE_NAME1[,MODULE_NAME2,…] DATABASE_NAME
+    $ docker-compose run erpserver execute update  \
+        -m MODULE_NAME1[,MODULE_NAME2,…]
 
 E.g.::
 
-    $ docker-compose run tryton execute update  \
-        -m party,account,collecting_society c3s
+    $ docker-compose run erpserver execute update  \
+        -m party,account,collecting_society
 
 Examine and edit a database, use::
 
-    $ docker-compose run tryton execute db-psql DATABASE_NAME
+    $ docker-compose run erpserver execute db-psql
 
 Backup a database::
 
-    $ docker-compose run tryton execute db-backup DATABASE_NAME  \
+    $ docker-compose run erpserver execute db-backup  \
         > `date +%F.%T`_DATABASE_NAME.backup
 
 Delete a database::
 
-    $ docker-compose run tryton execute db-delete DATABASE_NAME
+    $ docker-compose run erpserver execute db-delete
 
 Create a new database::
 
-    $ docker-compose run tryton execute db-create DATABASE_NAME
+    $ docker-compose run erpserver execute db-create
 
 Setup test data::
 
-    $ docker-compose run tryton execute db-test-setup DATABASE_NAME
+    $ docker-compose run erpserver execute db-test-setup
 
 Setup demo data::
 
-    $ docker-compose run tryton execute db-demo-setup DATABASE_NAME
+    $ docker-compose run erpserver execute db-demo-setup
 
 Rebuild a database::
 
-    $ docker-compose run tryton execute db-rebuild DATABASE_NAME
+    $ docker-compose run erpserver execute db-rebuild
 
 Service Scaling
 ---------------
