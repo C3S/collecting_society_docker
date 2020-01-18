@@ -209,6 +209,13 @@ E.g.::
     $ docker-compose run erpserver execute update  \
         -m party,account,collecting_society
 
+Note: When developing and changing the db model, you probably want to try 
+the above first, because this is the quickest way to adapt db changes. 
+If you run into errors, it is a good idea to stop your containers and do a 
+    $ docker-compose run erpserver execute db-delete.
+If a db build seems to hang, look for a 'running_db_creation.delete_me' 
+locking file in the base folder.
+
 Examine and edit a database, use::
 
     $ docker-compose run erpserver execute db-psql
