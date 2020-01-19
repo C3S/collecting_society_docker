@@ -222,4 +222,5 @@ Set Admin user to german language::
     >>> User = Model.get('res.user')
     >>> admin_user, = User.find([('login', '=', 'admin')])
     >>> admin_user.language = german_language
+    >>> admin_user.company = company
     >>> admin_user.save()
