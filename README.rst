@@ -75,7 +75,7 @@ a development setup are given:
     * ``./portal.env``
     * ``./processing.env``
     * ``./selenium.env``
-    * ``./tryton.env``
+    * ``./erpserver.env``
 
 Change the password for the *admin* user in
 ``./volumes/shared/config/trytond/passfile``
@@ -155,13 +155,13 @@ use e.g::
 
     $ docker-compose run --service-ports portal execute deploy-portal
     $ docker-compose run --service-ports api execute deploy-api
-    $ docker-compose run --service-ports portal execute deploy-tryton
+    $ docker-compose run --service-ports erpserver execute deploy-erpserver
 
 
 The portal service is started with ``execute`` inside a portal container.
 The tryton service can be started with::
 
-    $ docker-compose run --service-ports tryton execute deploy-tryton
+    $ docker-compose run --service-ports erpserver execute deploy-erpserver
 
 The flag ``service-ports`` runs the container and all its dependecies
 with the service's ports enabled and mapped to the host.
@@ -251,11 +251,11 @@ Service Scaling
 To scale increasing load it is possible to start more service containers on
 demand::
 
-    $ docker-compose scale portal=2 tryton=3 db=1
+    $ docker-compose scale portal=2 erpserver=3 db=1
 
 To scale decreasing load it is possible to stop service containers on demand::
 
-    $ docker-compose scale tryton=2
+    $ docker-compose scale erpserver=2
 
 Lookup all host ports in use::
 
@@ -581,7 +581,7 @@ Show running container (docker-compose level), e.g. ::
     --------------------------------------------------------------------
     c3s_db_1      /docker-entrypoint.sh postgres   Up     5432/tcp
     c3s_portal_1  execute deploy-portal            Up     6543->6543/tcp
-    c3s_tryton_1  execute deploy-tryton c3s        Up     8000->8000/tcp
+    c3s_tryton_1  execute deploy-erpserver c3s     Up     8000->8000/tcp
 
 Use docker help::
 
