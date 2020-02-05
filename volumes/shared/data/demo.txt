@@ -118,7 +118,6 @@ New::
 
     >>> Utilisation = Model.get('creation.utilisation')
     >>> Device = Model.get('device')
-    >>> Identifier = Model.get('creation.identification.identifier')
     >>> Identification = Model.get('creation.identification')
     >>> Fingerprintlog = Model.get('content.fingerprintlog')
 
@@ -528,8 +527,6 @@ Releases
     ...             warning='WARNING: This is testdata!',
     ...             copyright_date=release_date - datetime.timedelta(10),
     ...             production_date=release_date - datetime.timedelta(30),
-    ...             ean_upc_code=str(random.randint(1,999999999999)).zfill(12),
-    ...             isrc_code=isrc,
     ...             release_date=release_date,
     ...             online_release_date=release_date,
     ...             distribution_territory=random.choice(countries).code,
@@ -834,8 +831,6 @@ Sampler Releases
     ...         styles=random.sample(styles, min(
     ...             styles_per_release, len(styles))),
     ...         warning='WARNING: This is testdata!',
-    ...         ean_upc_code=str(random.randint(1,999999999999)).zfill(12),
-    ...         isrc_code=isrc,
     ...         distribution_territory=random.choice(countries).code,
     ...         label=random.choice(labels),
     ...         label_catalog_number=str(random.randint(10000, 99999)),
@@ -898,8 +893,6 @@ Split Releases
     ...         styles=random.sample(styles, min(
     ...             styles_per_release, len(styles))),
     ...         warning='WARNING: This is testdata!',
-    ...         ean_upc_code='012345678901',
-    ...         isrc_code='DEA123456789',
     ...         distribution_territory='Germany',
     ...         label=random.choice(labels),
     ...         label_catalog_number='12345',
