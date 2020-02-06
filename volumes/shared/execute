@@ -285,6 +285,14 @@ def db_setup(context, dbname, master, demo, force):
                 ], stdout=logfile
             )
             logfile.close()
+            print("_____ Test results for master data _____")
+            print(subprocess.check_output(
+                [
+                    'tail',
+                    '-n', '5',
+                    "/shared/tmp/logs/db-master.log"
+                ]
+            ))
 
         # Setup demo data
         if ENVIRONMENT == 'development':
@@ -301,6 +309,14 @@ def db_setup(context, dbname, master, demo, force):
                     ], stdout=logfile
                 )
                 logfile.close()
+                print("_____ Test results for demo data _____")
+                print(subprocess.check_output(
+                    [
+                        'tail',
+                        '-n', '5',
+                        "/shared/tmp/logs/db-master.log"
+                    ]
+                ))
 
     else:
         print('Setup demo data, but database "%s" exists: Skip!' % dbname)
