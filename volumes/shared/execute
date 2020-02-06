@@ -314,7 +314,7 @@ def db_setup(context, dbname, master, demo, force):
                     [
                         'tail',
                         '-n', '5',
-                        "/shared/tmp/logs/db-master.log"
+                        "/shared/tmp/logs/db-demo.log"
                     ]
                 ))
 
