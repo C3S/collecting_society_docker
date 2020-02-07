@@ -81,17 +81,17 @@ fi
 # recreate test database template
 if $CI; then
     echo -e "\n== recreate test database template"
-    docker-compose $TESTING exec test_web execute create-test-db
+    docker-compose $TESTING exec -T test_web execute create-test-db
 fi
 
 # run tests
 echo -e "\n== run tests"
 if [ $SERVICE = "all" ]; then
     # test web service
-    docker-compose $TESTING exec test_web execute run-tests web $TESTPARAMS
+    docker-compose $TESTING exec -T test_web execute run-tests web $TESTPARAMS
     EXITCODE1=$?
     # test worker service
-    docker-compose $TESTING exec test_worker execute run-tests worker $TESTPARAMS
+    docker-compose $TESTING exec -T test_worker execute run-tests worker $TESTPARAMS
     EXITCODE2=$?
     EXITCODE=0
     if [ "$EXITCODE1" -ne "0" ] || [ "$EXITCODE2" -ne "0" ]; then
@@ -99,7 +99,7 @@ if [ $SERVICE = "all" ]; then
     fi
 else
     # test certain service
-    docker-compose $TESTING exec test_$SERVICE execute run-tests $SERVICE $TESTPARAMS
+    docker-compose $TESTING exec -T test_$SERVICE execute run-tests $SERVICE $TESTPARAMS
     EXITCODE=$?
 fi
 
