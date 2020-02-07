@@ -419,3 +419,10 @@ COPY --from=jessie_pyramid_compiled /opt/venv /opt/venv
 
 FROM webapi AS webgui
 
+
+#--- base -> python -> DOCUMENTATION ------------------------------------------
+
+FROM ${DEBIAN}_compile AS documentation
+COPY --from=jessie_trytond_compiled /opt/venv /opt/venv
+COPY --from=jessie_pyramid_compiled /opt/venv /opt/venv
+COPY --from=jessie_worker_compiled /opt/venv /opt/venv
