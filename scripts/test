@@ -81,7 +81,7 @@ fi
 # recreate test database template
 if $CI; then
     echo -e "\n== recreate test database template"
-    docker-compose $TESTING exec -T test_web execute create-test-db
+    docker-compose $TESTING exec -T test_erpserver execute create-test-db
 fi
 
 # run tests
