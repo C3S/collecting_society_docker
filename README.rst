@@ -399,31 +399,22 @@ Tryton
 
 To run tests in the tryton container use::
 
-    $ docker-compose run erpserver sh -c \
+    $ docker-compose run --rm erpserver sh -c \
           'execute pip-install erpserver \
           && export DB_NAME=:memory: \
           && python /shared/src/trytond/trytond/tests/run-tests.py'
 
-To run the demo-setup again, use::
+To run the master setup again, use::
 
-    $ docker-compose run erpserver sh -c \
+    $ docker-compose run --rm erpserver sh -c \
           'execute pip-install erpserver \
-          && python -m doctest -v etc/scenario_master_data.txt'
+          && python -m doctest -v data/master.txt'
 
-To run the test-setup again, use::
+To run the demo setup again, use::
 
-    $ docker-compose run erpserver sh -c \
+    $ docker-compose run --rm erpserver sh -c \
           'execute pip-install erpserver \
-          && python -m doctest -v etc/scenario_test_data.txt'
-
-To develop the doctests, it's faster, to use a snapshot of the master-setup::
-
-    $ docker-compose run erpserver bash
-    $ execute pip-install erpserver
-    $ execute db-delete c3s_template && execute db-create c3s_template \
-        && execute db-setup --master --force c3s_template
-    $ execute db-delete c3s && execute db-copy c3s_template c3s \
-        && execute db-setup c3s --test --force
+          && python -m doctest -v data/demo.txt'
 
 
 Portal
