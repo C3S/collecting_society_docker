@@ -516,6 +516,26 @@ The processing container can be setup for debugging the same way.
 Make sure to only enable either of the both containers for debugging, not both 
 the same time.
 
+Sphinx Documentaion
+-------------------
+
+Sphinx doesn't just parse the code but rather wants to start the modules.
+This is why there exists a special documentation container you can build with
+
+    $ docker-compose -f docker-compose.documentation.yml build
+
+Once built, start it like this:
+
+    $ docker-compose -f docker-compose.documentation.yml run --rm documentation /bin/bash
+
+In the container:
+
+    $ cd docs
+    $ ./build.sh
+
+The docs now have been generated and can be viewed (from outside the container) like this:
+ 
+    $ firefox volumes/shared/docs/build/html/index.html
 
 Problems
 ========
