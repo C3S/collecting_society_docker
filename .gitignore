@@ -89,3 +89,6 @@ target/
 
 # VS Code remnants
 /.vscode/*
+
+# Sphinx Documentation
+/volumes/shared/docs/source/generated
