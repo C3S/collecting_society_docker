@@ -81,6 +81,7 @@ target/
 !/docker-compose.production.yml
 !/docker-compose.development.yml
 !/docker-compose.testing.yml
+!/docker-compose.documentation.yml
 /.env
 /services/*.env
 !/services/build
@@ -88,3 +89,6 @@ target/
 
 # VS Code remnants
 /.vscode/*
+
+# Sphinx Documentation
+/volumes/shared/docs/source/generated

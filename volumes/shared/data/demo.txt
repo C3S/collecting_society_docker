@@ -116,9 +116,7 @@ New::
     >>> Label = Model.get('label')
     >>> Publisher = Model.get('publisher')
 
-    >>> Utilisation = Model.get('creation.utilisation')
-    >>> Device = Model.get('device')
-    >>> Identification = Model.get('creation.identification')
+    >>> Utilisation = Model.get('utilisation')
     >>> Fingerprintlog = Model.get('content.fingerprintlog')
 
     >>> Storehouse = Model.get('storehouse')

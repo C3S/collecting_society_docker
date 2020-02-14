@@ -405,13 +405,13 @@ To run tests (for e.g. module collecting_society) in the tryton container use::
           && export DB_NAME=:memory: \
           && python /shared/src/trytond/trytond/tests/run-tests.py -vvvm collecting_society'
 
-To run the demo-setup again, use::
+To run the master setup again, use::
 
     $ docker-compose run --rm erpserver sh -c \
           'execute pip-install erpserver \
-          && python -m doctest -v etc/scenario_master_data.txt'
+          && python -m doctest -v data/master.txt'
 
-To run the test-setup again, use::
+To run the demo setup again, use::
 
     $ docker-compose run --rm erpserver sh -c \
           'execute pip-install erpserver \
@@ -526,6 +526,26 @@ The processing container can be setup for debugging the same way.
 Make sure to only enable either of the both containers for debugging, not both 
 the same time.
 
+Sphinx Documentaion
+-------------------
+
+Sphinx doesn't just parse the code but rather wants to start the modules.
+This is why there exists a special documentation container you can build with
+
+    $ docker-compose -f docker-compose.documentation.yml build
+
+Once built, start it like this:
+
+    $ docker-compose -f docker-compose.documentation.yml run --rm documentation /bin/bash
+
+In the container:
+
+    $ cd docs
+    $ ./build.sh
+
+The docs now have been generated and can be viewed (from outside the container) like this:
+ 
+    $ firefox volumes/shared/docs/build/html/index.html
 
 Problems
 ========
