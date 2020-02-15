@@ -153,27 +153,28 @@ running code.
 To start only the necessary services for developing a service
 use e.g::
 
-    $ docker-compose run --service-ports portal execute deploy-portal
-    $ docker-compose run --service-ports api execute deploy-api
-    $ docker-compose run --service-ports erpserver execute deploy-erpserver
+    $ docker-compose run --rm --service-ports portal execute deploy-portal
+    $ docker-compose run --rm --service-ports api execute deploy-api
+    $ docker-compose run --rm --service-ports erpserver execute deploy-erpserver
 
 
 The portal service is started with ``execute`` inside a portal container.
+The --rm parameter for run avoids docker from collecting an increasing amount of volumes.
 The tryton service can be started with::
 
-    $ docker-compose run --service-ports erpserver execute deploy-erpserver
+    $ docker-compose run --rm --service-ports erpserver execute deploy-erpserver
 
 The flag ``service-ports`` runs the container and all its dependecies
 with the service's ports enabled and mapped to the host.
 For development is the benefit of starting a service with
-``docker-compose run --service-ports <service>`` vs ``docker-compose up``
+``docker-compose run --rm --service-ports <service>`` vs ``docker-compose up``
 the possibility to communicate with a debugger like pdb.
 
 A similar topic is to start a shell in a container.
 To manually examine the operating system of a container, just run a shell in
 the container::
 
-    $ docker-compose run portal /bin/bash
+    $ docker-compose run --rm portal /bin/bash
 
 .. warning:: Manual changes are not persisted when closing a container.
     All changes are reset.
@@ -189,24 +190,24 @@ To start the ``execute`` command from inside a container the
 Get acquainted with ``execute`` a command driven tool which performs tasks on
 container start::
 
-    $ docker-compose run portal execute --help
-    $ docker-compose run portal execute <COMMAND> --help
+    $ docker-compose run --rm portal execute --help
+    $ docker-compose run --rm portal execute <COMMAND> --help
 
 Database
 --------
 
 Update all modules in an existing database::
 
-    $ docker-compose run erpserver execute update
+    $ docker-compose run --rm erpserver execute update
 
 Update specific modules in an existing database::
 
-    $ docker-compose run erpserver execute update  \
+    $ docker-compose run --rm erpserver execute update  \
         -m MODULE_NAME1[,MODULE_NAME2,…]
 
 E.g.::
 
-    $ docker-compose run erpserver execute update  \
+    $ docker-compose run --rm erpserver execute update  \
         -m party,account,collecting_society
 
 Note: When developing and changing the db model, you probably want to try 
@@ -218,32 +219,32 @@ locking file in the base folder.
 
 Examine and edit a database, use::
 
-    $ docker-compose run erpserver execute db-psql
+    $ docker-compose run --rm erpserver execute db-psql
 
 Backup a database::
 
-    $ docker-compose run erpserver execute db-backup  \
+    $ docker-compose run --rm erpserver execute db-backup  \
         > `date +%F.%T`_DATABASE_NAME.backup
 
 Delete a database::
 
-    $ docker-compose run erpserver execute db-delete
+    $ docker-compose run --rm erpserver execute db-delete
 
 Create a new database::
 
-    $ docker-compose run erpserver execute db-create
+    $ docker-compose run --rm erpserver execute db-create
 
 Setup test data::
 
-    $ docker-compose run erpserver execute db-test-setup
+    $ docker-compose run --rm erpserver execute db-test-setup
 
 Setup demo data::
 
-    $ docker-compose run erpserver execute db-demo-setup
+    $ docker-compose run --rm erpserver execute db-demo-setup
 
 Rebuild a database::
 
-    $ docker-compose run erpserver execute db-rebuild
+    $ docker-compose run --rm erpserver execute db-rebuild
 
 Service Scaling
 ---------------
@@ -397,12 +398,12 @@ Testing
 Tryton
 ------
 
-To run tests in the tryton container use::
+To run tests (for e.g. module collecting_society) in the tryton container use::
 
     $ docker-compose run --rm erpserver sh -c \
           'execute pip-install erpserver \
           && export DB_NAME=:memory: \
-          && python /shared/src/trytond/trytond/tests/run-tests.py'
+          && python /shared/src/trytond/trytond/tests/run-tests.py -vvvm collecting_society'
 
 To run the master setup again, use::
 
@@ -414,7 +415,16 @@ To run the demo setup again, use::
 
     $ docker-compose run --rm erpserver sh -c \
           'execute pip-install erpserver \
-          && python -m doctest -v data/demo.txt'
+          && python -m doctest -v etc/scenario_test_data.txt'
+
+To develop the doctests, it's faster, to use a snapshot of the master-setup::
+
+    $ docker-compose run --rm erpserver bash
+    $ execute pip-install erpserver
+    $ execute db-delete c3s_template && execute db-create c3s_template \
+        && execute db-setup --master --force c3s_template
+    $ execute db-delete c3s && execute db-copy c3s_template c3s \
+        && execute db-setup c3s --test --force
 
 
 Portal
@@ -422,44 +432,44 @@ Portal
 
 Create a database template, which will be copied and used for tests::
 
-    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
         execute create-test-db
 
 Run all tests in PATH (optional) with nosetests PARAMETER (optional)::
 
-    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
         execute run-tests [--path=PATH] [PARAMETER]
 
 Run all tests for portal_web + plugins::
 
-    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
         execute run-tests
 
 Run all tests for portal_web + plugins quiet, drop into pdb on errors::
 
-    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
         execute run-tests --quiet --pdb
 
 Run only tests for portal_web::
 
-    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
         execute run-tests --path src/portal_web
 
 Run only unittests of portal::
 
-    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
         execute run-tests --path src/portal_web/portal_web/tests/unit
 
 Run a specific unittest for a model of portal::
 
-    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal \
+    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
         execute run-tests --path \
         src/portal_web/portal_web/tests/unit/models.py:TESTCLASS.TESTMETHOD
 
 For repeated testing without recreating the container every time, start the
 container once and run the tests from within::
 
-    $ docker-compose run --use-aliases -e ENVIRONMENT=testing portal bash
+    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal bash
     $ execute run-tests [--path=PATH] [PARAMETER...]
 
 Debugging with ptvsd
