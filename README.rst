@@ -405,6 +405,7 @@ To run tests (for e.g. module collecting_society) in the tryton container use::
           && export DB_NAME=:memory: \
           && python /shared/src/trytond/trytond/tests/run-tests.py -vvvm collecting_society'
 
+(If the container already runs, use "exec" instead of "run --rm") 
 To run the master setup again, use::
 
     $ docker-compose run --rm erpserver sh -c \
