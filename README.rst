@@ -418,15 +418,6 @@ To run the demo setup again, use::
           'execute pip-install erpserver \
           && python -m doctest -v etc/scenario_test_data.txt'
 
-To develop the doctests, it's faster, to use a snapshot of the master-setup::
-
-    $ docker-compose run --rm erpserver bash
-    $ execute pip-install erpserver
-    $ execute db-delete c3s_template && execute db-create c3s_template \
-        && execute db-setup --master --force c3s_template
-    $ execute db-delete c3s && execute db-copy c3s_template c3s \
-        && execute db-setup c3s --test --force
-
 
 Portal
 ------
