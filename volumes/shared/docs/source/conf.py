@@ -180,3 +180,26 @@ texinfo_documents = [
 # }
 
 autodata_content = 'both'
+
+# -- Options for HTML output ----------------------------------------------
+
+# The theme to use for HTML and HTML Help pages.  See the documentation for
+# a list of builtin themes.
+
+# we're not built by rtd => add rtd-theme
+import sphinx_rtd_theme
+html_theme = 'sphinx_rtd_theme'
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_style = 'css/restic.css'
+
+# TODO: html_logo = 'logo/logo.png'
+
+# TODO: html_favicon = '_static/favicon.ico'
+
+html_show_version = False
+
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
+html_static_path = ['_static']
+

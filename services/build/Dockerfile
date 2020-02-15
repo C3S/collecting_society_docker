@@ -53,6 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         iputils-ping \
         net-tools \
         vim \
+        nano \
     && rm -rf /var/lib/apt/lists/*
 
 ### result
@@ -77,6 +78,8 @@ RUN pip install virtualenv
 RUN python -m virtualenv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV=/opt/venv
+# downgrade pip due to bug: https://github.com/pypa/pip/issues/6164
+RUN pip install 'pip<19'
 
 ### testing
 FROM jessie_python_production AS jessie_python_testing
@@ -214,7 +217,10 @@ RUN pip install \
 FROM jessie_python_testing_compiled AS jessie_python_development_compiled
 RUN pip install \
     pdbpp==0.9.2 \
-    sphinx==1.8.5
+    sphinx==1.8.5 \
+    autoapi==2.0.0 \
+    sphinx_rtd_theme==0.4.3
+
 ARG DEBUGGER_PTVSD
 RUN if [ ${DEBUGGER_PTVSD} -ne 0 ]; then pip install \
         ptvsd==4.3.2; \
@@ -367,7 +373,7 @@ FROM jessie_worker_${ENVIRONMENT}_compiled AS jessie_worker_compiled
 
 #--- DATABASE -----------------------------------------------------------------
 
-FROM postgres:9 AS database
+FROM postgres:9.6.16 AS database
 
 
 #--- WEBSERVER ----------------------------------------------------------------
