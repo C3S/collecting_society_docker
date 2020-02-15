@@ -28,23 +28,23 @@ Configuration
 
     >>> debug = False
 
-    >>> publisher = debug or 20
-    >>> label = debug or 20
+    >>> publisher = debug or 10
+    >>> label = debug or 10
     >>> tariff_systems = debug or 3
     
-    >>> group_artists = debug or 5
-    >>> new_solo_artists_per_group = debug or 3
-    >>> add_solo_artists_per_group = debug or 2
-    >>> foreign_artists_per_group = debug or 2
-    >>> releases_per_artist = debug or 2
-    >>> creations_per_release = debug or 5
-    >>> genres_per_release = debug or 3
-    >>> styles_per_release = debug or 3
+    >>> group_artists = debug or 3
+    >>> new_solo_artists_per_group = debug or 2
+    >>> add_solo_artists_per_group = debug or 1
+    >>> foreign_artists_per_group = debug or 1
+    >>> releases_per_artist = debug or 1
+    >>> creations_per_release = debug or 3
+    >>> genres_per_release = debug or 2
+    >>> styles_per_release = debug or 2
     >>> release_cancellation_chance = debug and 1 or 0.3
     >>> originals_per_creation = debug or 2
     >>> foreign_originals_per_creation = debug and 1 or 1
-    >>> max_composers_per_creation = debug or 4
-    >>> max_recorders_per_creation = debug or 4
+    >>> max_composers_per_creation = debug or 3
+    >>> max_recorders_per_creation = debug or 3
     >>> max_texters_per_creation = debug or 2
     >>> max_producers_per_creation = debug or 2
     >>> max_masters_per_creation = debug or 2
@@ -54,9 +54,9 @@ Configuration
     >>> lyric_content_chance_per_creation = debug and 1 or 0.6
     >>> sheet_content_chance_per_creation = debug and 1 or 0.1
 
-    >>> sampler_releases = debug or 2
-    >>> creations_per_sampler = debug or 20    
-    >>> split_releases = debug or 2
+    >>> sampler_releases = debug or 1
+    >>> creations_per_sampler = debug or 5
+    >>> split_releases = debug or 1
     >>> artists_per_split_release = debug or 2
     >>> creations_per_split_artist = debug or 2
     
