@@ -405,6 +405,7 @@ To run tests (for e.g. module collecting_society) in the tryton container use::
           && export DB_NAME=:memory: \
           && python /shared/src/trytond/trytond/tests/run-tests.py -vvvm collecting_society'
 
+(If the container already runs, use "exec" instead of "run --rm") 
 To run the master setup again, use::
 
     $ docker-compose run --rm erpserver sh -c \
@@ -416,15 +417,6 @@ To run the demo setup again, use::
     $ docker-compose run --rm erpserver sh -c \
           'execute pip-install erpserver \
           && python -m doctest -v etc/scenario_test_data.txt'
-
-To develop the doctests, it's faster, to use a snapshot of the master-setup::
-
-    $ docker-compose run --rm erpserver bash
-    $ execute pip-install erpserver
-    $ execute db-delete c3s_template && execute db-create c3s_template \
-        && execute db-setup --master --force c3s_template
-    $ execute db-delete c3s && execute db-copy c3s_template c3s \
-        && execute db-setup c3s --test --force
 
 
 Portal
