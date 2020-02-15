@@ -663,6 +663,23 @@ def kill_dbconnections(context, dbname):
         print(e)
 
 
+@execute.command('build-docs')
+@click.pass_context
+def build_docs(context):
+    """
+    Builds the Sphinx documentation.
+
+    Installs pip packages of all modules so they can be found by Sphinx.
+    autoapi and Sphinx are started with docs/build.sh.
+    """
+    context.invoke(pip_install, container='documentation')
+    wd = os.getcwd()
+    os.chdir(os.path.join(SHARED_PATH, 'docs'))
+    subprocess.Popen("ls")
+    subprocess.call(['./build.sh'])
+    os.chdir(wd)
+
+
 @execute.command()
 @click.option(
     '--modules', '-m',

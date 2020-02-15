@@ -1,0 +1,79 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Usage: ./docs [--down] [--build] [--keep] 
+#
+# Options:
+#     service: web|worker|all (default: all)
+#     --down: immediately stop and remove the container and exit
+#     --build: build images
+#     --keep: keep container running
+
+echo "====================================================================="
+echo "====================================================================="
+echo "=                   this script builds the docs                     ="
+echo "====================================================================="
+echo `date +%Y-%m-%d:%H:%M:%S`
+
+# get directories
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT_DIR="$( dirname $SCRIPT_DIR )"
+cd $ROOT_DIR
+
+# get options
+RM=true
+DOWN=false
+BUILD=false
+for i in "$@"; do
+    if [ $i = "--down" ]; then DOWN=true; continue; fi
+    if [ $i = "--keep" ]; then RM=false; continue; fi
+    if [ $i = "--build" ]; then BUILD=true; continue; fi
+done
+
+# use documentation compose file
+DOCUMENTATION="-f docker-compose.documentation.yml"
+
+# immediately stop and remove the container and exit
+if $DOWN; then
+    echo -e "\n== immediately stop and remove the container and exit"
+    docker-compose $DOCUMENTATION down
+    exit $?
+fi
+
+# build docker images
+if $BUILD; then
+    echo -e "\n== build images"
+    docker-compose $DOCUMENTATION build
+fi
+
+# create and start docker container
+echo -e "\n== create and start docker container"
+docker-compose $DOCUMENTATION up -d
+if [ $? -ne 0 ]; then
+    echo -e "\n... if the images are missing, use 'scripts/docs --build'"
+fi
+
+echo -e "\n== build docs"
+# build docs
+docker-compose $DOCUMENTATION exec documentation execute build-docs
+EXITCODE=$?
+
+# remove docker container
+if $RM; then
+    echo -e "\n== remove docker container"
+    docker-compose $DOCUMENTATION rm -fs
+fi
+
+if [ "$EXITCODE" -ne "0" ]; then
+    echo -e "\n\n\033[91;5m"
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    echo -e "   WARNING: ERRORS OCCURED WHILE BUILDING THE DOCUMENTATION.\n"
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    echo -e "\033[0m"
+fi
+echo `date +%Y-%m-%d:%H:%M:%S`
+echo "====================================================================="
+echo "====================================================================="
+
+exit $EXITCODE
