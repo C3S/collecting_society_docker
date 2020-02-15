@@ -1,14 +1,17 @@
-Welcome to collecting_society's documentation!
-==============================================
+.. title:: Collecting Society Project Documentation
+==========================================================
+Welcome to the Collecting Society Project's documentation!
+==========================================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   generated/collecting_society
-   generated/collecting_society_worker
-   generated/collecting_society_web   
-   generated/portal_web
+   generated/collecting_society_docker_README
+   collecting_society/README
+   generated/collecting_society_web_README
+   generated/portal_web_README
+   reference
 
 .. automodule:: generated/collecting_society
    :members:

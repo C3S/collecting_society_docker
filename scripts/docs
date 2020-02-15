@@ -25,10 +25,12 @@ cd $ROOT_DIR
 RM=true
 DOWN=false
 BUILD=false
+NOAUTOAPI=false
 for i in "$@"; do
     if [ $i = "--down" ]; then DOWN=true; continue; fi
     if [ $i = "--keep" ]; then RM=false; continue; fi
     if [ $i = "--build" ]; then BUILD=true; continue; fi
+    if [ $i = "--no-autoapi" ]; then NOAUTOAPI=true; continue; fi
 done
 
 # use documentation compose file
@@ -54,9 +56,16 @@ if [ $? -ne 0 ]; then
     echo -e "\n... if the images are missing, use 'scripts/docs --build'"
 fi
 
+# copy outer README.rst for inclusion in inner docs/build.sh
+cp README.rst volumes/shared/ref
+
 echo -e "\n== build docs"
 # build docs
-docker-compose $DOCUMENTATION exec documentation execute build-docs
+if $NOAUTOAPI; then
+    docker-compose $DOCUMENTATION exec documentation execute build-docs-noautoapi
+else
+    docker-compose $DOCUMENTATION exec documentation execute build-docs
+fi
 EXITCODE=$?
 
 # remove docker container

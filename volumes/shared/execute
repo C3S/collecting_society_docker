@@ -680,6 +680,23 @@ def build_docs(context):
     os.chdir(wd)
 
 
+@execute.command('build-docs-noautoapi')
+@click.pass_context
+def build_docs(context):
+    """
+    Builds the Sphinx documentation without autoapi run.
+
+    Installs pip packages of all modules so they can be found by Sphinx.
+    Sphinx are started with 'make html'.
+    """
+    context.invoke(pip_install, container='documentation')
+    wd = os.getcwd()
+    os.chdir(os.path.join(SHARED_PATH, 'docs'))
+    subprocess.Popen("ls")
+    subprocess.call(['make', 'html'])
+    os.chdir(wd)
+
+
 @execute.command()
 @click.option(
     '--modules', '-m',

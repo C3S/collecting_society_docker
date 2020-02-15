@@ -55,7 +55,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'collecting_society'
+project = u'Collecting Society Project'
 copyright = u'2020, C3S Dev Team'
 author = u'C3S Dev Team'
 
@@ -190,7 +190,7 @@ autodata_content = 'both'
 import sphinx_rtd_theme
 html_theme = 'sphinx_rtd_theme'
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-html_style = 'css/restic.css'
+# html_style = 'css/restic.css'
 
 # TODO: html_logo = 'logo/logo.png'
 
@@ -202,4 +202,3 @@ html_show_version = False
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-
