@@ -40,7 +40,16 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
+#    'sphinxcontrib.trydoc',
     ]
+
+# TODO: check https://pythonhosted.org/trydoc and 
+#       https://sphinxcontrib-tryton.readthedocs.io/en/latest/
+#       to access the tryton models like this: .. model:: party.party
+# import proteus
+# proteus.config.set_xmlrpc(
+#     "https://admin:admin@erpserver:8069/collecting_society")
+# TODO: fill in envs like ${PROJECT}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
