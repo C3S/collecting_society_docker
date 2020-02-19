@@ -487,7 +487,7 @@ attaching the container can be adjusted in the file
 */shared/.vscode/launch.settings*.) Press the play button left to the debug 
 config drop-down box and a debug toolbar should appear.
 
-**Important note**: If you wish to debug other containers besides the default 
+.. note:: If you wish to debug other containers besides the default 
 *portal*, e.g. *api* or *processing*, change the *service* entry in 
 .devcontainer.json accordingly, otherwise you will experience 'connection 
 refused' errors. The *service* entry in .devcontainer.json will determine which 
@@ -539,21 +539,21 @@ If you have work to do inside the container, start it like this::
 
     $ docker-compose -f docker-compose.documentation.yml run --rm documentation /bin/bash
 
-or enter it using::
+or enter it using ::
 
     $ docker-compose -f docker-compose.documentation.yml exec documentation /bin/bash
 
 if you have left the container running before by ommiting ``--rm`` or by
-starting it with::
+starting it with ::
 
     $ scrips/docs --keep
 
-In the container, as alternative to scripts/docs from the outside, enter::
+In the container, as alternative to scripts/docs from the outside, enter ::
 
     $ cd docs
     $ ./build.sh
 
-or just::
+or just ::
 
     $ cd docs
     $ make html
@@ -561,7 +561,7 @@ or just::
 to skip the autoapi step, if you haven't done changes to the python source
 code (nor the modules .rst files).
 
-To shut down the container enter::
+To shut down the container enter ::
 
     $ scrips/docs --down
 
@@ -646,7 +646,7 @@ Docker is memory intensive. To Stop and remove all containers use::
     $ docker stop $(docker ps -a -q)
     $ docker rm $(docker ps -a -q)
 
-Remove images ::
+Remove images with ::
 
     $ docker rmi $(docker images -f "dangling=true" -q)
 

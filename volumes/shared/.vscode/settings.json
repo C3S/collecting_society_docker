@@ -3,5 +3,6 @@
 {
     "python.pythonPath": "/usr/bin/python",
     "python.linting.flake8Enabled": true,
+    "editor.rulers": [ 79, 119 ],
     "python.linting.enabled": true
 }
