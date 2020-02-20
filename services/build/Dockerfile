@@ -101,6 +101,7 @@ RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
         postgresql-client-9.4  \
         sqlite3 \
         libxslt1.1 \
+        graphviz \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/man/*
 
