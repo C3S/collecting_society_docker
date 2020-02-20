@@ -469,9 +469,24 @@ def run_tests(context, service, dbtype, dbname, reset, path, nargs):
 
     Additional NARGS will be passed to nosetests.
     """
-    if service not in ['web', 'worker']:
+    if service not in ['erpserver', 'web', 'worker']:
         print("Service unknown.")
         exit(-1)
+
+    if service == 'erpserver':
+        os.environ['DB_NAME'] = ":memory:"
+        # Start tests
+        exitcode = subprocess.call(
+            [
+                'python',
+                '/shared/src/trytond/trytond/tests/run-tests.py',
+                '-vvvm',
+                'collecting_society',
+            ]
+        )
+        # Return exitcode
+        sys.exit(exitcode)
+
     _db_type = dbtype
     _db_name = dbname
     _db_tpl = _db_name + "_template"
@@ -481,6 +496,7 @@ def run_tests(context, service, dbtype, dbname, reset, path, nargs):
     os.environ['TRYTOND_CONFIG'] = os.path.join(
         SHARED_PATH, 'config', 'trytond', _trytond_conf
     )
+
     print("\nCONFIGURE TESTS ...\n")
     print("- testpath: %s" % (path or 'all'))
     print("- parameter: %s" % list(nargs))
@@ -496,6 +512,8 @@ def run_tests(context, service, dbtype, dbname, reset, path, nargs):
         context.invoke(pip_install, container='webgui')
     if service == "worker":
         context.invoke(pip_install, container='worker')
+    if service == "erpserver":
+        context.invoke(pip_install, container='erpserver')
 
     if reset:
 

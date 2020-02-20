@@ -7,7 +7,7 @@
 # Options:
 #     service: web|worker|all (default: all)
 #     --down: immediately stop and remove the container and exit
-#     --build: build images
+#     --build: build images and recreate the test database template
 #     --keep: keep container running
 #     --ci: continous integration mode
 #           - update repositories (overrides config files!)
@@ -35,7 +35,8 @@ CI=false
 DOWN=false
 TESTPARAMS=""
 for i in "$@"; do
-    if [ $i = $1 ] && ([ $i = "web" ] || [ $i = "worker" ]); then SERVICE=$i; continue; fi
+    if [ $i = $1 ] && ([ $i = "erpserver" ] || [ $i = "web" ] || [ $i = "worker" ]);
+        then SERVICE=$i; continue; fi
     if [ $i = "--down" ]; then DOWN=true; continue; fi
     if [ $i = "--build" ]; then BUILD=true; continue; fi
     if [ $i = "--keep" ]; then RM=false; continue; fi
@@ -44,7 +45,7 @@ for i in "$@"; do
 done
 
 # sanity checks
-if [ $SERVICE != "all" ] && [ $SERVICE != "web" ] && [ $SERVICE != "worker" ]; then
+if [ $SERVICE != "all" ] && [ $SERVICE != "erpserver" ] && [ $SERVICE != "web" ] && [ $SERVICE != "worker" ]; then
     echo "Service unknown. Please specify 'web' or 'worker'"
     exit -1
 fi
@@ -75,11 +76,11 @@ fi
 echo -e "\n== create and start docker container"
 docker-compose $TESTING up -d
 if [ $? -ne 0 ]; then
-    echo -e "\n... if the images are missing, use './test --build'"
+    echo -e "\n... if the images are missing or need to be updated, use './test --build'"
 fi
 
 # recreate test database template
-if $CI; then
+if $CI || $BUILD; then
     echo -e "\n== recreate test database template"
     docker-compose $TESTING exec -T test_erpserver execute create-test-db
 fi
@@ -88,13 +89,20 @@ fi
 echo -e "\n== run tests"
 if [ $SERVICE = "all" ]; then
     # test web service
-    docker-compose $TESTING exec -T test_web execute run-tests web $TESTPARAMS
+    echo -e "\n... run erpserver tests"
+    docker-compose $TESTING exec -T test_erpserver execute run-tests erpserver $TESTPARAMS
     EXITCODE1=$?
-    # test worker service
-    docker-compose $TESTING exec -T test_worker execute run-tests worker $TESTPARAMS
+    # test web service
+    echo -e "\n... run web tests"
+    docker-compose $TESTING exec -T test_web execute run-tests web $TESTPARAMS
     EXITCODE2=$?
+    # test worker service
+    echo -e "\n... run worker tests"
+    docker-compose $TESTING exec -T test_worker execute run-tests worker $TESTPARAMS
+    EXITCODE3=$?
+    # choose exit code
     EXITCODE=0
-    if [ "$EXITCODE1" -ne "0" ] || [ "$EXITCODE2" -ne "0" ]; then
+    if [ "$EXITCODE1" -ne "0" ] || [ "$EXITCODE2" -ne "0" ] || [ "$EXITCODE3" -ne "0" ]; then
         EXITCODE=-1
     fi
 else
