@@ -243,7 +243,6 @@ def db_setup(context, dbname, master, demo, force):
     execution from different docker containers.
     """
     context.invoke(pip_install, container='erpserver')
-    print(dbname)
 
     # Check lockfile, if locked, wait till not locked any more
     while True:
