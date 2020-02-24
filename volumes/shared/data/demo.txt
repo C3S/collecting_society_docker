@@ -26,7 +26,7 @@ Configuration
 -------------
 ::
 
-    >>> debug = os.environ.get('TRYTON_DEMODATA_DEBUG', False)
+    >>> debug = int(os.environ.get('TRYTON_DEMODATA_DEBUG', 0))
 
     >>> publisher = debug or 10
     >>> label = debug or 10
