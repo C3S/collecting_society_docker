@@ -14,5 +14,8 @@
 		"ms-python.python",
 		"visualstudioexptteam.vscodeintellicode",
 		"vscode.flake8"
-	]
+	],
+	"settings": {
+		"editor.rulers": [ 79, 119 ],
+  },	
 }
