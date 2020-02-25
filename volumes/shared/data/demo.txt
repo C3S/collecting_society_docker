@@ -90,7 +90,7 @@ Extended::
 New::
 
     >>> PartyIdentifier = Model.get('party.identifier')
-    >>> PartyIdentifierName = Model.get('party.identifier.name')
+    >>> PartyIdentifierSpace = Model.get('party.identifier.space')
 
     >>> CollectingSociety = Model.get('collecting_society')
 
@@ -121,7 +121,7 @@ New::
     >>> ArtistRelease = Model.get('artist-release')
     >>> ArtistPayeeAcceptance = Model.get('artist.payee.acceptance')
     >>> ArtistIdentifier = Model.get('artist.identifier')
-    >>> ArtistIdentifierName = Model.get('artist.identifier.name')
+    >>> ArtistIdentifierSpace = Model.get('artist.identifier.space')
     >>> ArtistPlaylist = Model.get('artist.playlist')
     >>> ArtistPlaylistItem = Model.get('artist.playlist.item')
 
@@ -141,7 +141,7 @@ New::
     >>> ReleaseGenre = Model.get('release-genre')
     >>> ReleaseStyle = Model.get('release-style')
     >>> ReleaseIdentifier = Model.get('release.identifier')
-    >>> ReleaseIdentifierName = Model.get('release.identifier.name')
+    >>> ReleaseIdentifierSpace = Model.get('release.identifier.space')
     >>> ReleaseRightsholder = Model.get('release.rightsholder')
     >>> ReleaseRightsholderReleaseRightsholder = Model.get('release.rightsholder-release.rightsholder')
 
