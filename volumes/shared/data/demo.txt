@@ -31,6 +31,7 @@ Configuration
     >>> publisher = debug or 10
     >>> label = debug or 10
     >>> tariff_systems = debug or 3
+    >>> distribution_plans = debug or 3
     
     >>> group_artists = debug or 3
     >>> new_solo_artists_per_group = debug or 2
@@ -59,6 +60,10 @@ Configuration
     >>> split_releases = debug or 1
     >>> artists_per_split_release = debug or 2
     >>> creations_per_split_artist = debug or 2
+
+    >>> licensee = debug or 3
+
+    >>> all_webuser_roles = debug or 2
     
     >>> storehouses = debug or 2
     >>> harddisklabels_per_storehouse = debug or 2
@@ -89,35 +94,98 @@ Extended::
 
 New::
 
+    >>> PartyIdentifier = Model.get('party.identifier')
+    >>> PartyIdentifierSpace = Model.get('party.identifier.space')
+
     >>> CollectingSociety = Model.get('collecting_society')
+
     >>> TariffSystem = Model.get('tariff_system')
     >>> TariffCategory = Model.get('tariff_system.category')
+    >>> TariffAdjustmentCategory = Model.get('tariff_system.tariff.adjustment.category')
+    >>> TariffAdjustment = Model.get('tariff_system.tariff.adjustment')
+    >>> TariffRelevanceCategory = Model.get('tariff_system.tariff.relevance.category')
+    >>> TariffRelevance = Model.get('tariff_system.tariff.relevance')
     >>> Tariff = Model.get('tariff_system.tariff')
+
     >>> Allocation = Model.get('distribution.allocation')
     >>> Distribution = Model.get('distribution')
+    >>> DistributionPlan = Model.get('distribution.plan')
+
+    >>> EventIndicators = Model.get('event.indicators')
+    >>> LocationIndicators = Model.get('location.indicators')
+    >>> LocationIndicatorsPeriod = Model.get('location.indicators.period')
+    >>> LocationSpaceIndicators = Model.get('location.space.indicators')
+    >>> WebsiteResourceIndicators = Model.get('website.resource.indicators')
+    >>> ReleaseIndicators = Model.get('release.indicators')
+    >>> UtilisationIndicators = Model.get('utilisation.indicators')
     
     >>> License = Model.get('license')
+
     >>> Artist = Model.get('artist')
     >>> ArtistArtist = Model.get('artist-artist')
     >>> ArtistRelease = Model.get('artist-release')
     >>> ArtistPayeeAcceptance = Model.get('artist.payee.acceptance')
+    >>> ArtistIdentifier = Model.get('artist.identifier')
+    >>> ArtistIdentifierSpace = Model.get('artist.identifier.space')
+    >>> ArtistPlaylist = Model.get('artist.playlist')
+    >>> ArtistPlaylistItem = Model.get('artist.playlist.item')
+
     >>> Creation = Model.get('creation')
     >>> CreationDerivative = Model.get('creation.original.derivative')
     >>> CreationContribution = Model.get('creation.contribution')
     >>> CreationContributionRole = Model.get('creation.contribution-creation.role')
     >>> CreationRole = Model.get('creation.role')
     >>> CreationTariffCategory = Model.get('creation-tariff_category')
+    >>> CreationIdentifier = Model.get('creation.identifier')
+    >>> CreationIdentifierSpace = Model.get('creation.identifier.space')
+    >>> CreationRightsholder = Model.get('creation.rightsholder')
+    >>> CreationRightsholderCreationRightsholder = Model.get('creation.rightsholder-creation.rightsholder')
+
     >>> Release = Model.get('release')
     >>> ReleaseTrack = Model.get('release.track')
     >>> ReleaseGenre = Model.get('release-genre')
     >>> ReleaseStyle = Model.get('release-style')
+    >>> ReleaseIdentifier = Model.get('release.identifier')
+    >>> ReleaseIdentifierSpace = Model.get('release.identifier.space')
+    >>> ReleaseRightsholder = Model.get('release.rightsholder')
+    >>> ReleaseRightsholderReleaseRightsholder = Model.get('release.rightsholder-release.rightsholder')
+
     >>> Genre = Model.get('genre')
     >>> Style = Model.get('style')
     >>> Label = Model.get('label')
     >>> Publisher = Model.get('publisher')
 
+    >>> Event = Model.get('event')
+    >>> EventPerformance = Model.get('event.performance')
+
+    >>> Location = Model.get('location')
+    >>> LocationCategory = Model.get('location.category')
+    >>> LocationSpace = Model.get('location.space')
+    >>> LocationSpaceCategory = Model.get('location.space.category')
+
+    >>> Website = Model.get('website')
+    >>> WebsiteCategory = Model.get('website.category')
+    >>> WebsiteResource = Model.get('website.resource')
+    >>> WebsiteResourceCreation = Model.get('website.resource-creation')
+    >>> WebsiteResourceCategory = Model.get('website.resource.category')
+    >>> WebsiteCategoryWebsiteResourceCategory = Model.get('website.category-website.resource.category')
+
+    >>> Device = Model.get('device')
+    >>> DeviceAssignment = Model.get('device.assignment')
+    >>> DeviceMessage = Model.get('device.message')
+    >>> DeviceMessageDeviceMessage = Model.get('device.message-device.message')
+    >>> DeviceMessageFingerprint = Model.get('device.message.fingerprint')
+    >>> DeviceMessageFingerprintCreationlist = Model.get('device.message.fingerprint.creationlist')
+    >>> DeviceMessageFingerprintCreationlistItem = Model.get('device.message.fingerprint.creationlist.item')
+    >>> DeviceMessageUsagereport = Model.get('device.message.usagereport')
+
+    >>> Declaration = Model.get('declaration')
+    >>> DeclarationGroup = Model.get('declaration.group')
+    >>> DeclarationCollection = Model.get('declaration.collection')
+
     >>> Utilisation = Model.get('utilisation')
-    >>> Fingerprintlog = Model.get('content.fingerprintlog')
+    >>> UtilisationCreationlist = Model.get('utilisation.creationlist')
+    >>> UtilisationCreationlistItem = Model.get('utilisation.creationlist.item')
 
     >>> Storehouse = Model.get('storehouse')
     >>> Harddisk = Model.get('harddisk')
@@ -126,6 +194,7 @@ New::
     >>> Filesystem = Model.get('harddisk.filesystem')
     >>> FilesystemLabel = Model.get('harddisk.filesystem.label')
     >>> Content = Model.get('content')
+    >>> Fingerprintlog = Model.get('content.fingerprintlog')
     >>> Checksum = Model.get('checksum')
     
     >>> AccessControlEntry = Model.get('ace')
@@ -172,6 +241,13 @@ Content
     >>> test_licenses = '/shared/data/csv/licenses.csv'
     >>> test_tariff_categories = '/shared/data/csv/tariff_categories.csv'
     >>> test_creation_roles = '/shared/data/csv/creation_roles.csv'
+    >>> test_location_categories = '/shared/data/csv/location_categories.csv'
+    >>> test_location_space_categories = '/shared/data/csv/location_space_categories.csv'
+    >>> test_website_categories = '/shared/data/csv/website_categories.csv'
+    >>> test_website_resource_categories = '/shared/data/csv/website_resource_categories.csv'
+    >>> test_website_categories_website_resource_categories = '/shared/data/csv/website_categories-website_resource_categories.csv'
+    >>> test_tariff_adjustment_categories = '/shared/data/csv/tariff_adjustment_categories.csv'
+    >>> test_tariff_relevance_categories = '/shared/data/csv/tariff_relevance_categories.csv'
 
     >>> test_text = '''Lorem ipsum dolor sit amet, consetetur diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren.\n\nLorem ipsum.\n\nSea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'''
 
@@ -320,6 +396,50 @@ Tariff Categories
     ...             description=category['description']
     ...         ).save()
 
+Tariff Adjustment Categories
+----------------------------
+::
+    >>> with open(test_tariff_adjustment_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         tcs = []
+    ...         for tc in category['tariff_categories'].split(","):
+    ...             tcs += TariffCategory.find(['code', '=', tc])
+    ...         TariffAdjustmentCategory(
+    ...             name=category['name'],
+    ...             value_min=float(category['value_min']),
+    ...             value_max=float(category['value_max']),
+    ...             value_default=float(category['value_default']),
+    ...             priority=int(category['priority']),
+    ...             operation=category['operation'],
+    ...             tariff_categories=tcs
+    ...         ).save()
+
+Tariff Relevance Categories
+---------------------------
+::
+    >>> with open(test_tariff_relevance_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         tcs = []
+    ...         for tc in category['tariff_categories'].split(","):
+    ...             tcs += TariffCategory.find(['code', '=', tc])
+    ...         TariffRelevanceCategory(
+    ...             name=category['name'],
+    ...             value_min=float(category['value_min']),
+    ...             value_max=float(category['value_max']),
+    ...             value_default=float(category['value_default']),
+    ...             tariff_categories=tcs
+    ...         ).save()
+
 Tariffs
 -------
 ::
@@ -332,6 +452,18 @@ Tariffs
     ...             system=system,
     ...             category=category
     ...         ).save()
+
+
+Distribution Plans
+------------------
+::
+    >>> for i in range(1, distribution_plans + 1):
+    ...     number = i
+    ...     DistributionPlan(
+    ...         version="%s.0" % number,
+    ...         valid_from=today
+    ...     ).save()
+
 
 Publisher
 ---------
@@ -349,19 +481,78 @@ Publisher
 
 Web Users
 ---------
-::
+
+Role: Licenser::
+
     >>> for i in range(1, group_artists * new_solo_artists_per_group + 1):
     ...     number = i
+    ...     total = i
     ...     birthdate = datetime.date(
     ...         random.randint(1950, 2000),
     ...         random.randint(1, 12),
     ...         random.randint(1, 28))
     ...     firstname = "Registered Name"
-    ...     lastname = "%s" % str(number).zfill(3)
+    ...     lastname = "%s" % str(total).zfill(3)
     ...     web_user = WebUser(
-    ...         email='%s@rep.test' % number,
+    ...         email='licenser%s@collecting_society.test' % number,
     ...         nickname=firstname + ' ' + lastname,
-    ...         password="%s" % number,
+    ...         password="password",
+    ...         opt_in_state='opted-in'
+    ...     )
+    ...     roles = WebUserRole.find([('code', '=', 'licenser')])
+    ...     web_user.roles.extend(roles)
+    ...     web_user.default_role = 'licenser'
+    ...     web_user.save()
+    ...     web_user.party.firstname = firstname
+    ...     web_user.party.lastname = lastname
+    ...     web_user.party.name = firstname + ' ' + lastname
+    ...     web_user.party.repertoire_terms_accepted = True
+    ...     web_user.party.birthdate = birthdate
+    ...     web_user.party.save()
+
+Role: Licensee::
+
+    >>> for j in range(1, group_artists * new_solo_artists_per_group + 1):
+    ...     number = j
+    ...     total = i + j
+    ...     birthdate = datetime.date(
+    ...         random.randint(1950, 2000),
+    ...         random.randint(1, 12),
+    ...         random.randint(1, 28))
+    ...     firstname = "Registered Name"
+    ...     lastname = "%s" % str(total).zfill(3)
+    ...     web_user = WebUser(
+    ...         email='licensee%s@collecting_society.test' % number,
+    ...         nickname=firstname + ' ' + lastname,
+    ...         password="password",
+    ...         opt_in_state='opted-in'
+    ...     )
+    ...     roles = WebUserRole.find([('code', '=', 'licenser')])
+    ...     web_user.roles.extend(roles)
+    ...     web_user.default_role = 'licensee'
+    ...     web_user.save()
+    ...     web_user.party.firstname = firstname
+    ...     web_user.party.lastname = lastname
+    ...     web_user.party.name = firstname + ' ' + lastname
+    ...     web_user.party.repertoire_terms_accepted = True
+    ...     web_user.party.birthdate = birthdate
+    ...     web_user.party.save()
+
+Role: All::
+
+    >>> for k in range(1, licensee + 1):
+    ...     number = k
+    ...     total = i + j + k
+    ...     birthdate = datetime.date(
+    ...         random.randint(1950, 2000),
+    ...         random.randint(1, 12),
+    ...         random.randint(1, 28))
+    ...     firstname = "Registered Name"
+    ...     lastname = "%s" % str(total).zfill(3)
+    ...     web_user = WebUser(
+    ...         email='allroles%s@collecting_society.test' % number,
+    ...         nickname=firstname + ' ' + lastname,
+    ...         password="password",
     ...         opt_in_state='opted-in'
     ...     )
     ...     roles = WebUserRole.find([
@@ -369,10 +560,7 @@ Web Users
     ...         ('code', '=', 'licenser'),
     ...         ('code', '=', 'licensee')])
     ...     web_user.roles.extend(roles)
-    ...     if number % 2:
-    ...         web_user.default_role = 'licenser'
-    ...     else:
-    ...         web_user.default_role = 'licensee'
+    ...     web_user.default_role = roles[k - 1 % len(roles)].code
     ...     web_user.save()
     ...     web_user.party.firstname = firstname
     ...     web_user.party.lastname = lastname
@@ -1072,3 +1260,200 @@ Sheet Pdfs::
     ...     c.mediation = False
     ...     c.save()
     ...     sheet_number += 1
+
+Location Categories
+-------------------
+::
+    >>> with open(test_location_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         LocationCategory(
+    ...             name=category['name'],
+    ...             code=category['code'],
+    ...             description=category['description']
+    ...         ).save()
+
+Location Space Categories
+-------------------------
+::
+    >>> with open(test_location_space_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         LocationSpaceCategory(
+    ...             name=category['name'],
+    ...             code=category['code'],
+    ...             description=category['description']
+    ...         ).save()
+
+Website Categories
+------------------
+::
+    >>> with open(test_website_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         WebsiteCategory(
+    ...             name=category['name'],
+    ...             code=category['code'],
+    ...             description=category['description']
+    ...         ).save()
+
+Website Resource Categories
+---------------------------
+::
+    >>> with open(test_website_resource_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         wcs = []
+    ...         for wc in category['website_categories'].split(","):
+    ...             wcs += WebsiteCategory.find(['code', '=', wc])
+    ...         WebsiteResourceCategory(
+    ...             name=category['name'],
+    ...             code=category['code'],
+    ...             description=category['description'],
+    ...             website_categories=wcs
+    ...         ).save()
+
+Identifiers
+-----------
+
+Party Identifiers::
+
+    >>> parties = Party.find([])
+    >>> space_ipi, = PartyIdentifierSpace.find(
+    ...     ['name', '=', 'IPI'])
+    >>> space_isni, = PartyIdentifierSpace.find(
+    ...     ['name', '=', 'ISNI'])
+    >>> space_ddexpi, = PartyIdentifierSpace.find(
+    ...     ['name', '=', 'DDEX Party Identifier'])
+
+    >>> for i in range(1, len(parties) + 1):
+    ...     number = i
+    ...     party = parties[i - 1]
+    ...     # ipi
+    ...     identifier = PartyIdentifier(
+    ...         party = party,
+    ...         space = space_ipi,
+    ...         id_code = "%s" % str(number).zfill(11)
+    ...     ).save()
+    ...     # isni
+    ...     identifier = PartyIdentifier(
+    ...         party = party,
+    ...         space = space_isni,
+    ...         id_code = "%s" % str(number).zfill(16)
+    ...     ).save()
+    ...     # ddexpi
+    ...     identifier = PartyIdentifier(
+    ...         party = party,
+    ...         space = space_ddexpi,
+    ...         id_code = "%s-%s-%s-%s" % (
+    ...             'PA', 'DPIDA', str(number).zfill(10), 'G'
+    ...         )
+    ...     ).save()
+
+Artist Identifiers::
+
+    >>> artists = Artist.find([])
+    >>> space_ipn, = ArtistIdentifierSpace.find(
+    ...     ['name', '=', 'IPN'])
+
+    >>> for i in range(1, len(artists) + 1):
+    ...     number = i
+    ...     artist = artists[i - 1]
+    ...     # ipn
+    ...     identifier = ArtistIdentifier(
+    ...         artist = artist,
+    ...         space = space_ipn,
+    ...         id_code = "%s" % str(number).zfill(11)
+    ...     ).save()
+
+Release Identifiers::
+
+    >>> releases = Release.find([])
+    >>> space_grid, = ReleaseIdentifierSpace.find(
+    ...     ['name', '=', 'GRid'])
+    >>> space_eanupc, = ReleaseIdentifierSpace.find(
+    ...     ['name', '=', 'EAN/UPC'])
+
+    >>> for i in range(1, len(releases) + 1):
+    ...     number = i
+    ...     release = releases[i - 1]
+    ...     # grid
+    ...     identifier = ReleaseIdentifier(
+    ...         release = release,
+    ...         space = space_grid,
+    ...         id_code = "%s-%s-%s-%s" % (
+    ...             'A1', 'ABCDE', str(number).zfill(10), 'M'
+    ...         )
+    ...     ).save()
+    ...     # eanupc
+    ...     identifier = ReleaseIdentifier(
+    ...         release = release,
+    ...         space = space_eanupc,
+    ...         id_code = "%s" % str(number).zfill(13)
+    ...     ).save()
+
+Creation Identifiers::
+
+    >>> creations = Creation.find([])
+    >>> space_hfa, = CreationIdentifierSpace.find(
+    ...     ['name', '=', 'HFA Song Code'])
+    >>> space_isrc, = CreationIdentifierSpace.find(
+    ...     ['name', '=', 'ISRC'])
+    >>> space_iswc, = CreationIdentifierSpace.find(
+    ...     ['name', '=', 'ISWC'])
+    >>> space_cwr, = CreationIdentifierSpace.find(
+    ...     ['name', '=', 'CWR'])
+
+    >>> for i in range(1, len(creations) + 1):
+    ...     number = i
+    ...     creation = creations[i - 1]
+    ...     # hfa
+    ...     identifier = CreationIdentifier(
+    ...         creation = creation,
+    ...         space = space_hfa,
+    ...         id_code = "%s" % str(number).zfill(6)
+    ...     ).save()
+    ...     # isrc
+    ...     identifier = CreationIdentifier(
+    ...         creation = creation,
+    ...         space = space_isrc,
+    ...         id_code = "%s-%s-%s-%s" % (
+    ...             'DE', 'A00', '20', str(number).zfill(5)
+    ...         )
+    ...     ).save()
+    ...     # iswc
+    ...     identifier = CreationIdentifier(
+    ...         creation = creation,
+    ...         space = space_iswc,
+    ...         id_code = "%s-%s.%s.%s-%s" % (
+    ...             'T',
+    ...             str(number / 1000000).zfill(3),
+    ...             str(number / 1000).zfill(3),
+    ...             str(number % 1000).zfill(3),
+    ...             'C'
+    ...         )
+    ...     ).save()
+    ...     # cwr
+    ...     identifier = CreationIdentifier(
+    ...         creation = creation,
+    ...         space = space_cwr,
+    ...         id_code = "%s%s%s%s_%s.V%s" % (
+    ...             'CW', 20, str(number).zfill(4), 'SSS', 'RRR', 21
+    ...         )
+    ...     ).save()
