@@ -89,35 +89,98 @@ Extended::
 
 New::
 
+    >>> PartyIdentifier = Model.get('party.identifier')
+    >>> PartyIdentifierName = Model.get('party.identifier.name')
+
     >>> CollectingSociety = Model.get('collecting_society')
+
     >>> TariffSystem = Model.get('tariff_system')
     >>> TariffCategory = Model.get('tariff_system.category')
+    >>> TariffAdjustmentCategory = Model.get('tariff_system.tariff.adjustment.category')
+    >>> TariffAdjustment = Model.get('tariff_system.tariff.adjustment')
+    >>> TariffRelevanceCategory = Model.get('tariff_system.tariff.relevance.category')
+    >>> TariffRelevance = Model.get('tariff_system.tariff.relevance')
     >>> Tariff = Model.get('tariff_system.tariff')
+
     >>> Allocation = Model.get('distribution.allocation')
     >>> Distribution = Model.get('distribution')
+    >>> DistributionPlan = Model.get('distribution.plan')
+
+    >>> EventIndicators = Model.get('event.indicators')
+    >>> LocationIndicators = Model.get('location.indicators')
+    >>> LocationIndicatorsPeriod = Model.get('location.indicators.period')
+    >>> LocationSpaceIndicators = Model.get('location.space.indicators')
+    >>> WebsiteResourceIndicators = Model.get('website.resource.indicators')
+    >>> ReleaseIndicators = Model.get('release.indicators')
+    >>> UtilisationIndicators = Model.get('utilisation.indicators')
     
     >>> License = Model.get('license')
+
     >>> Artist = Model.get('artist')
     >>> ArtistArtist = Model.get('artist-artist')
     >>> ArtistRelease = Model.get('artist-release')
     >>> ArtistPayeeAcceptance = Model.get('artist.payee.acceptance')
+    >>> ArtistIdentifier = Model.get('artist.identifier')
+    >>> ArtistIdentifierName = Model.get('artist.identifier.name')
+    >>> ArtistPlaylist = Model.get('artist.playlist')
+    >>> ArtistPlaylistItem = Model.get('artist.playlist.item')
+
     >>> Creation = Model.get('creation')
     >>> CreationDerivative = Model.get('creation.original.derivative')
     >>> CreationContribution = Model.get('creation.contribution')
     >>> CreationContributionRole = Model.get('creation.contribution-creation.role')
     >>> CreationRole = Model.get('creation.role')
     >>> CreationTariffCategory = Model.get('creation-tariff_category')
+    >>> CreationIdentifier = Model.get('creation.identifier')
+    >>> CreationIdentifierSpace = Model.get('creation.identifier.space')
+    >>> CreationRightsholder = Model.get('creation.rightsholder')
+    >>> CreationRightsholderCreationRightsholder = Model.get('creation.rightsholder-creation.rightsholder')
+
     >>> Release = Model.get('release')
     >>> ReleaseTrack = Model.get('release.track')
     >>> ReleaseGenre = Model.get('release-genre')
     >>> ReleaseStyle = Model.get('release-style')
+    >>> ReleaseIdentifier = Model.get('release.identifier')
+    >>> ReleaseIdentifierName = Model.get('release.identifier.name')
+    >>> ReleaseRightsholder = Model.get('release.rightsholder')
+    >>> ReleaseRightsholderReleaseRightsholder = Model.get('release.rightsholder-release.rightsholder')
+
     >>> Genre = Model.get('genre')
     >>> Style = Model.get('style')
     >>> Label = Model.get('label')
     >>> Publisher = Model.get('publisher')
 
+    >>> Event = Model.get('event')
+    >>> EventPerformance = Model.get('event.performance')
+
+    >>> Location = Model.get('location')
+    >>> LocationCategory = Model.get('location.category')
+    >>> LocationSpace = Model.get('location.space')
+    >>> LocationSpaceCategory = Model.get('location.space.category')
+
+    >>> Website = Model.get('website')
+    >>> WebsiteCategory = Model.get('website.category')
+    >>> WebsiteResource = Model.get('website.resource')
+    >>> WebsiteResourceCreation = Model.get('website.resource-creation')
+    >>> WebsiteResourceCategory = Model.get('website.resource.category')
+    >>> WebsiteCategoryWebsiteResourceCategory = Model.get('website.category-website.resource.category')
+
+    >>> Device = Model.get('device')
+    >>> DeviceAssignment = Model.get('device.assignment')
+    >>> DeviceMessage = Model.get('device.message')
+    >>> DeviceMessageDeviceMessage = Model.get('device.message-device.message')
+    >>> DeviceMessageFingerprint = Model.get('device.message.fingerprint')
+    >>> DeviceMessageFingerprintCreationlist = Model.get('device.message.fingerprint.creationlist')
+    >>> DeviceMessageFingerprintCreationlistItem = Model.get('device.message.fingerprint.creationlist.item')
+    >>> DeviceMessageUsagereport = Model.get('device.message.usagereport')
+
+    >>> Declaration = Model.get('declaration')
+    >>> DeclarationGroup = Model.get('declaration.group')
+    >>> DeclarationCollection = Model.get('declaration.collection')
+
     >>> Utilisation = Model.get('utilisation')
-    >>> Fingerprintlog = Model.get('content.fingerprintlog')
+    >>> UtilisationCreationlist = Model.get('utilisation.creationlist')
+    >>> UtilisationCreationlistItem = Model.get('utilisation.creationlist.item')
 
     >>> Storehouse = Model.get('storehouse')
     >>> Harddisk = Model.get('harddisk')
@@ -126,6 +189,7 @@ New::
     >>> Filesystem = Model.get('harddisk.filesystem')
     >>> FilesystemLabel = Model.get('harddisk.filesystem.label')
     >>> Content = Model.get('content')
+    >>> Fingerprintlog = Model.get('content.fingerprintlog')
     >>> Checksum = Model.get('checksum')
     
     >>> AccessControlEntry = Model.get('ace')
@@ -172,6 +236,13 @@ Content
     >>> test_licenses = '/shared/data/csv/licenses.csv'
     >>> test_tariff_categories = '/shared/data/csv/tariff_categories.csv'
     >>> test_creation_roles = '/shared/data/csv/creation_roles.csv'
+    >>> test_location_categories = '/shared/data/csv/location_categories.csv'
+    >>> test_location_space_categories = '/shared/data/csv/location_space_categories.csv'
+    >>> test_website_categories = '/shared/data/csv/website_categories.csv'
+    >>> test_website_resource_categories = '/shared/data/csv/website_resource_categories.csv'
+    >>> test_website_categories_website_resource_categories = '/shared/data/csv/website_categories-website_resource_categories.csv'
+    >>> test_tariff_adjustment_categories = '/shared/data/csv/tariff_adjustment_categories.csv'
+    >>> test_tariff_relevance_categories = '/shared/data/csv/tariff_relevance_categories.csv'
 
     >>> test_text = '''Lorem ipsum dolor sit amet, consetetur diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren.\n\nLorem ipsum.\n\nSea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'''
 
@@ -318,6 +389,50 @@ Tariff Categories
     ...             name=category['name'],
     ...             code=category['code'],
     ...             description=category['description']
+    ...         ).save()
+
+Tariff Adjustment Categories
+----------------------------
+::
+    >>> with open(test_tariff_adjustment_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         tcs = []
+    ...         for tc in category['tariff_categories'].split(","):
+    ...             tcs += TariffCategory.find(['code', '=', tc])
+    ...         TariffAdjustmentCategory(
+    ...             name=category['name'],
+    ...             value_min=float(category['value_min']),
+    ...             value_max=float(category['value_max']),
+    ...             value_default=float(category['value_default']),
+    ...             priority=int(category['priority']),
+    ...             operation=category['operation'],
+    ...             tariff_categories=tcs
+    ...         ).save()
+
+Tariff Relevance Categories
+---------------------------
+::
+    >>> with open(test_tariff_relevance_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         tcs = []
+    ...         for tc in category['tariff_categories'].split(","):
+    ...             tcs += TariffCategory.find(['code', '=', tc])
+    ...         TariffRelevanceCategory(
+    ...             name=category['name'],
+    ...             value_min=float(category['value_min']),
+    ...             value_max=float(category['value_max']),
+    ...             value_default=float(category['value_default']),
+    ...             tariff_categories=tcs
     ...         ).save()
 
 Tariffs
@@ -1072,3 +1187,71 @@ Sheet Pdfs::
     ...     c.mediation = False
     ...     c.save()
     ...     sheet_number += 1
+
+Location Categories
+-------------------
+::
+    >>> with open(test_location_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         LocationCategory(
+    ...             name=category['name'],
+    ...             code=category['code'],
+    ...             description=category['description']
+    ...         ).save()
+
+Location Space Categories
+-------------------------
+::
+    >>> with open(test_location_space_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         LocationSpaceCategory(
+    ...             name=category['name'],
+    ...             code=category['code'],
+    ...             description=category['description']
+    ...         ).save()
+
+Website Categories
+------------------
+::
+    >>> with open(test_website_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         WebsiteCategory(
+    ...             name=category['name'],
+    ...             code=category['code'],
+    ...             description=category['description']
+    ...         ).save()
+
+Website Resource Categories
+---------------------------
+::
+    >>> with open(test_website_resource_categories, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for category in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         wcs = []
+    ...         for wc in category['website_categories'].split(","):
+    ...             wcs += WebsiteCategory.find(['code', '=', wc])
+    ...         WebsiteResourceCategory(
+    ...             name=category['name'],
+    ...             code=category['code'],
+    ...             description=category['description'],
+    ...             website_categories=wcs
+    ...         ).save()
