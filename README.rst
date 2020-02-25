@@ -59,7 +59,7 @@ Choose the environment to build:
 
 Update the environment, clone/pull development repositories::
 
-    $ ./update
+    $ ./scripts/update
 
 Build docker containers::
 
@@ -276,7 +276,7 @@ Some changes in the container setup require a rebuild of the whole system.
 Update the environment as usual::
 
     $ cd collecting_society_docker
-    $ ./update
+    $ ./scripts/update
 
 Build containers, this time without a cache::
 
@@ -361,7 +361,7 @@ stored in ``config.py`` in variable ``repositories``::
         relative path to create or clone.
     ),
 
-These packages are cloned or updated with the ``./update`` command and must
+These packages are cloned or updated with the ``./scripts/update`` command and must
 be pip installable.
 To install a source repository package in a container, it is be declared in
 *one* of the ``shared/etc/requirements*.txt`` files.
