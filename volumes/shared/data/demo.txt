@@ -62,22 +62,22 @@ Configuration
     >>> artists_per_split_release = debug or 2
     >>> creations_per_split_artist = debug or 2
 
+    >>> webuser_all_roles = debug or 2
     >>> webuser_licensee = debug or 3
+
     >>> licensee_playing_bars = debug or 1
-    >>> licensee_live_performances = debug or 3
-    >>> licensee_reproduction_releases = debug or 3
-    >>> licensee_online_webradios = debug or 1
-    >>> licensee_online_podcasts = debug or 1
-    >>> licensee_online_dsps = debug or 1
-
-    >>> channels_per_webradio = debug or 3
-    >>> episodes_per_podcast = debug or 3
-
     >>> fingerprint_messages_per_device = debug or 10
     >>> usagereport_messages_per_device = debug or 10
+    >>> licensee_live_events = debug or 3
+    >>> performances_per_event = debug or 3
+    >>> items_per_performance_playlist = debug or 5
+    >>> licensee_reproduction_releases = debug or 3
+    >>> licensee_online_webradios = debug or 1
+    >>> channels_per_webradio = debug or 3
+    >>> licensee_online_podcasts = debug or 1
+    >>> episodes_per_podcast = debug or 3
+    >>> licensee_online_dsps = debug or 1
 
-    >>> webuser_all_roles = debug or 2
-    
     >>> storehouses = debug or 2
     >>> harddisklabels_per_storehouse = debug or 2
     >>> harddisks_per_harddisklabel = debug or 2
@@ -1296,8 +1296,6 @@ Location Categories
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
     ...     i = 1
     ...     for category in reader:
-    ...         if debug and i > debug:
-    ...             break
     ...         i += 1
     ...         LocationCategory(
     ...             name=category['name'],
@@ -1312,8 +1310,6 @@ Location Space Categories
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
     ...     i = 1
     ...     for category in reader:
-    ...         if debug and i > debug:
-    ...             break
     ...         i += 1
     ...         LocationSpaceCategory(
     ...             name=category['name'],
@@ -1328,8 +1324,6 @@ Website Categories
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
     ...     i = 1
     ...     for category in reader:
-    ...         if debug and i > debug:
-    ...             break
     ...         i += 1
     ...         WebsiteCategory(
     ...             name=category['name'],
@@ -1344,8 +1338,6 @@ Website Resource Categories
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
     ...     i = 1
     ...     for category in reader:
-    ...         if debug and i > debug:
-    ...             break
     ...         i += 1
     ...         wcs = []
     ...         for wc in category['website_categories'].split(","):
@@ -1364,11 +1356,11 @@ Party Identifiers::
 
     >>> parties = Party.find([])
     >>> space_ipi, = PartyIdentifierSpace.find(
-    ...     ['name', '=', 'IPI'])
+    ...     [('name', '=', 'IPI')])
     >>> space_isni, = PartyIdentifierSpace.find(
-    ...     ['name', '=', 'ISNI'])
+    ...     [('name', '=', 'ISNI')])
     >>> space_ddexpi, = PartyIdentifierSpace.find(
-    ...     ['name', '=', 'DDEX Party Identifier'])
+    ...     [('name', '=', 'DDEX Party Identifier')])
 
     >>> for i in range(1, len(parties) + 1):
     ...     number = i
@@ -1398,7 +1390,7 @@ Artist Identifiers::
 
     >>> artists = Artist.find([])
     >>> space_ipn, = ArtistIdentifierSpace.find(
-    ...     ['name', '=', 'IPN'])
+    ...     [('name', '=', 'IPN')])
 
     >>> for i in range(1, len(artists) + 1):
     ...     number = i
@@ -1414,9 +1406,9 @@ Release Identifiers::
 
     >>> releases = Release.find([])
     >>> space_grid, = ReleaseIdentifierSpace.find(
-    ...     ['name', '=', 'GRid'])
+    ...     [('name', '=', 'GRid')])
     >>> space_eanupc, = ReleaseIdentifierSpace.find(
-    ...     ['name', '=', 'EAN/UPC'])
+    ...     [('name', '=', 'EAN/UPC')])
 
     >>> for i in range(1, len(releases) + 1):
     ...     number = i
@@ -1440,13 +1432,13 @@ Creation Identifiers::
 
     >>> creations = Creation.find([])
     >>> space_hfa, = CreationIdentifierSpace.find(
-    ...     ['name', '=', 'HFA Song Code'])
+    ...     [('name', '=', 'HFA Song Code')])
     >>> space_isrc, = CreationIdentifierSpace.find(
-    ...     ['name', '=', 'ISRC'])
+    ...     [('name', '=', 'ISRC')])
     >>> space_iswc, = CreationIdentifierSpace.find(
-    ...     ['name', '=', 'ISWC'])
+    ...     [('name', '=', 'ISWC')])
     >>> space_cwr, = CreationIdentifierSpace.find(
-    ...     ['name', '=', 'CWR'])
+    ...     [('name', '=', 'CWR')])
 
     >>> for i in range(1, len(creations) + 1):
     ...     number = i
@@ -1490,110 +1482,244 @@ Licensee Usecase: Playing / Bar
 -------------------------------
 ::
     >>> licensees = WebUser.find(['roles.code', '=', 'licensee'])
-    >>> location_category_bar, = LocationCategory.find(['code', '=', 'B'])
+    >>> location_categories = LocationCategory.find(
+    ...     [('code', 'in', ['B', 'N'])])
     >>> location_space_categories = LocationSpaceCategory.find([])
-    >>> tariff_playing = Tariff.find(['category.name', '=', 'Playing'])[-1]
+    >>> tariff_playing = Tariff.find(
+    ...     [('category.name', '=', 'Playing')])[-1]
     >>> creations = Creation.find([])
     >>> chars_fingerprint = string.digits + string.letters
 
-    >>> for i in range(1, len(licensees) + 1):
-    ...
+    >>> for i in range(0, len(licensees)):
     ...     licensee = licensees[i - 1]
-    ...     number = i
+    ...
+    ...     for j in range(1, licensee_playing_bars + 1):
+    ...         number = i * licensee_playing_bars + j
+    ...
+    ...         # location
+    ...         location = Location(
+    ...             name="Location Bar %s" % str(number).zfill(3),
+    ...             category=random.choice(location_categories),
+    ...             party=licensee.party,
+    ...             public=True,
+    ...             latitude=random.random()*180-90,
+    ...             longitude=random.random()*360-180,
+    ...             estimated_turnover_gastronomy=decimal.Decimal(
+    ...                 random.randint(1000, 100000)
+    ...             )
+    ...         )
+    ...         location.save()
+    ...         
+    ...         # opening hours
+    ...         for d in range(0, len(weekdays)):
+    ...             if random.random() < 0.5:
+    ...                 continue
+    ...             LocationIndicatorsPeriod(
+    ...                 location_indicators=location.estimated_indicators,
+    ...                 start_weekday=weekdays[d],
+    ...                 start_time=datetime.time(
+    ...                     hour=random.choice(range(0,17)),
+    ...                     minute=random.choice([0,30])
+    ...                 ),
+    ...                 end_weekday=weekdays[d],
+    ...                 end_time=datetime.time(
+    ...                     hour=random.choice(range(17,24)),
+    ...                     minute=random.choice([0,30])
+    ...                 )
+    ...             ).save()
+    ...         
+    ...         # location spaces
+    ...         for lsc in range(0, len(location_space_categories)):
+    ...             category = location_space_categories[lsc]
+    ...             if lsc and random.random() > 0.5:
+    ...                 continue
+    ...             LocationSpace(
+    ...                 location=location,
+    ...                 category=category,
+    ...                 estimated_size=random.randint(10,100)
+    ...             ).save()
+    ...         
+    ...         # declaration
+    ...         Declaration(
+    ...             licensee=licensee.party,
+    ...             state='created',
+    ...             creation_time=now,
+    ...             template=False,
+    ...             period=random.choice(declaration_periods),
+    ...             tariff=tariff_playing,
+    ...             context=location
+    ...         ).save()
+    ...         
+    ...         # device
+    ...         device = Device(
+    ...             web_user=licensee,
+    ...             blocked=False,
+    ...             name='Raspberry PI',
+    ...             os_name='Raspbian',
+    ...             os_version='10',
+    ...             software_name='Tracker',
+    ...             software_version='1.0.0',
+    ...             software_vendor='C3S'
+    ...         )
+    ...         device.save()
+    ...         
+    ...         # device assignment
+    ...         DeviceAssignment(
+    ...             device=device,
+    ...             assignment=location.spaces[0],
+    ...             start=now
+    ...         ).save()
+    ...         
+    ...         # device messages
+    ...         timestamp = now - datetime.timedelta(days=1)
+    ...         creation = random.choice(creations)
+    ...         for i in range(0, fingerprint_messages_per_device):
+    ...
+    ...             # device message
+    ...             message = DeviceMessage(
+    ...                 device=device,
+    ...                 timestamp=now,
+    ...                 direction='incoming',
+    ...                 category='fingerprint',
+    ...                 context=location.spaces[0]
+    ...             )
+    ...             message.save()
+    ...
+    ...             # device message fingerprint
+    ...             if not i % 4:
+    ...                 creation = random.choice(creations)
+    ...             timestamp = timestamp + datetime.timedelta(minutes=1)
+    ...             DeviceMessageFingerprint(
+    ...                 message=[message],
+    ...                 state='matched',
+    ...                 matched_creation=creation,
+    ...                 timestamp=timestamp,
+    ...                 fingerprint=''.join(random.sample(
+    ...                     chars_fingerprint, len(chars_fingerprint))),
+    ...                 algorithm='echoprint',
+    ...                 version='1.0.0'
+    ...             ).save()
+
+Licensee Usecase: Life / Perfomances
+------------------------------------
+::
+    >>> licensees = WebUser.find(['roles.code', '=', 'licensee'])
+    >>> location_categories = LocationCategory.find(
+    ...     [('code', 'in', ['B', 'N', 'O', 'M'])])
+    >>> location_space_category_concert, = LocationSpaceCategory.find(
+    ...     [('code', '=', 'C')])
+    >>> tariff_live = Tariff.find(['category.name', '=', 'Live'])[-1]
+    >>> artists = Artist.find([])
+
+    >>> location_number = 1
+    >>> event_number = 1
+
+    >>> for licensee in licensees:
     ...
     ...     # location
     ...     location = Location(
-    ...         name="Location Bar %s" % str(number).zfill(3),
-    ...         category=location_category_bar,
+    ...         name="Location Performance %s" % str(location_number).zfill(3),
+    ...         category=random.choice(location_categories),
     ...         party=licensee.party,
     ...         public=True,
     ...         latitude=random.random()*180-90,
-    ...         longitude=random.random()*360-180,
-    ...         estimated_turnover_gastronomy=decimal.Decimal(
-    ...             random.randint(1000, 100000)
-    ...         )
+    ...         longitude=random.random()*360-180
     ...     )
     ...     location.save()
-    ...
-    ...     # opening hours
-    ...     for d in range(0, len(weekdays)):
-    ...         if random.random() < 0.5:
-    ...             continue
-    ...         LocationIndicatorsPeriod(
-    ...             location_indicators=location.estimated_indicators,
-    ...             start_weekday=weekdays[d],
-    ...             start_time=datetime.time(
-    ...                 hour=random.choice(range(0,17)),
-    ...                 minute=random.choice([0,30])
-    ...             ),
-    ...             end_weekday=weekdays[d],
-    ...             end_time=datetime.time(
-    ...                 hour=random.choice(range(17,24)),
-    ...                 minute=random.choice([0,30])
-    ...             )
-    ...         ).save()
-    ...
-    ...     # location spaces
-    ...     for category in location_space_categories:
-    ...         LocationSpace(
-    ...             location=location,
-    ...             category=category,
-    ...             estimated_size=random.randint(10,100)
-    ...         ).save()
-    ...
-    ...     # declaration
-    ...     Declaration(
-    ...         licensee=licensee.party,
-    ...         state='created',
-    ...         creation_time=now,
-    ...         template=False,
-    ...         period=random.choice(declaration_periods),
-    ...         tariff=tariff_playing,
-    ...         context=location
-    ...     ).save()
-    ...
-    ...     # device
-    ...     device = Device(
-    ...         web_user=licensee,
-    ...         blocked=False,
-    ...         name='Raspberry PI',
-    ...         os_name='Raspbian',
-    ...         os_version='10',
-    ...         software_name='Tracker',
-    ...         software_version='1.0.0',
-    ...         software_vendor='C3S'
-    ...     )
-    ...     device.save()
+    ...     location_number += 1
     ...     
-    ...     # device assignment
-    ...     DeviceAssignment(
-    ...         device=device,
-    ...         assignment=location.spaces[0],
-    ...         start=now
+    ...     # location spaces
+    ...     LocationSpace(
+    ...         location=location,
+    ...         category=location_space_category_concert,
+    ...         estimated_size=random.randint(10,100)
     ...     ).save()
+    ...     
+    ...     # event
+    ...     for i in range(0, licensee_live_events):
     ...
-    ...     # device messages
-    ...     timestamp = now - datetime.timedelta(days=1)
-    ...     creation = random.choice(creations)
-    ...     for i in range(0, fingerprint_messages_per_device):
-    ...         message = DeviceMessage(
-    ...             device=device,
-    ...             timestamp=now,
-    ...             direction='incoming',
-    ...             category='fingerprint',
-    ...             context=location.spaces[0]
+    ...         date = now - datetime.timedelta(days=random.randint(-30,30))
+    ...         attendants = random.choice(
+    ...             [10, 100, 500, 1000, 5000, 10000]
     ...         )
-    ...         message.save()
-    ...         if not i % 4:
-    ...             creation = random.choice(creations)
-    ...         timestamp = timestamp + datetime.timedelta(minutes=1)
-    ...         DeviceMessageFingerprint(
-    ...             message=[message],
-    ...             state='matched',
-    ...             matched_creation=creation,
-    ...             timestamp=timestamp,
-    ...             fingerprint=''.join(random.sample(
-    ...                 chars_fingerprint, len(chars_fingerprint))),
-    ...             algorithm='echoprint',
-    ...             version='1.0.0'
+    ...         event = Event(
+    ...             name='Event %s' % str(event_number).zfill(3),
+    ...             description='The %s. event' % str(event_number).zfill(3),
+    ...             location=location,
+    ...             estimated_start=date,
+    ...             estimated_end=date + datetime.timedelta(
+    ...                 hours=performances_per_event
+    ...             ),
+    ...             estimated_attendants=attendants,
+    ...             estimated_turnover_tickets=decimal.Decimal(
+    ...                 attendants * random.randint(0, 20)
+    ...             ),
+    ...             estimated_turnover_benefit=decimal.Decimal(
+    ...                 attendants * random.randint(1, 5)
+    ...             ),
+    ...             estimated_expenses_musicians=decimal.Decimal(
+    ...                 performances_per_event * random.choice(
+    ...                     [0, 50, 100, 1000]
+    ...                 )
+    ...             ),
+    ...             estimated_expenses_production=decimal.Decimal(
+    ...                 performances_per_event * random.randint(100, 1000)
+    ...             )
+    ...         )
+    ...         event.save()
+    ...         event_number += 1
+    ...
+    ...         # performances
+    ...         for j in range(0, performances_per_event):
+    ...             artist = random.choice(artists)
+    ...
+    ...             # performance
+    ...             performance = EventPerformance(
+    ...                 event=event,
+    ...                 start=event.estimated_start + datetime.timedelta(
+    ...                     hours=j
+    ...                 ),
+    ...                 end=event.estimated_start + datetime.timedelta(
+    ...                     hours=j + 1
+    ...                 ),
+    ...                 artist=artist
+    ...             )
+    ...             performance.save()
+    ...
+    ...             # playlist
+    ...             playlist = ArtistPlaylist(
+    ...                 artist=artist,
+    ...                 public=False,
+    ...                 template=False,
+    ...                 performance=[performance],
+    ...                 entity_origin='indirect',
+    ...                 entity_creator=licensee.party
+    ...             )
+    ...             playlist.save()
+    ...
+    ...             # playlist items
+    ...             if artist.creations and random.random() > 0.1:
+    ...                 creation = random.choice(artist.creations)
+    ...             else:
+    ...                 creation = random.choice(creations)
+    ...             for k in range(1, items_per_performance_playlist + 1):
+    ...                 ArtistPlaylistItem(
+    ...                     playlist=playlist,
+    ...                     creation=creation,
+    ...                     position=k,
+    ...                     entity_origin='indirect',
+    ...                     entity_creator=licensee.party
+    ...                 ).save()
+    ... 
+    ...         # declaration
+    ...         Declaration(
+    ...             licensee=licensee.party,
+    ...             state='created',
+    ...             creation_time=date - datetime.timedelta(
+    ...                 days=random.randint(10,30)
+    ...             ),
+    ...             template=False,
+    ...             period='onetime',
+    ...             tariff=tariff_live,
+    ...             context=event
     ...         ).save()
