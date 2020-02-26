@@ -226,10 +226,12 @@ def db_backup(context, dbname):
               help='Execute master data (default: no)')
 @click.option('--demo/--no-demo', default=False,
               help='Execute demo data (default: no)')
+@click.option('--develop/--no-develop', default=False,
+              help='Execute develop data (default: no)')
 @click.option('--force/--no-force', default=False,
               help='Force execution (default: no)')
 @click.pass_context
-def db_setup(context, dbname, master, demo, force):
+def db_setup(context, dbname, master, demo, develop, force):
     """
     Creates and sets up the postgres database DBNAME.
 
@@ -293,8 +295,10 @@ def db_setup(context, dbname, master, demo, force):
                 ]
             ))
 
-        # Setup demo data
+        # Setup development data
         if ENVIRONMENT == 'development':
+
+            # Demo data
             if demo:
                 print('\nSetup demo data -> /shared/tmp/logs/db-demo.log\n')
                 logfile = open("/shared/tmp/logs/db-demo.log", "w")
@@ -316,6 +320,18 @@ def db_setup(context, dbname, master, demo, force):
                         "/shared/tmp/logs/db-demo.log"
                     ]
                 ))
+
+            # Develop data (to test/develop the doctest files)
+            if develop:
+                subprocess.call(
+                    [
+                        'python',
+                        '-m', 'doctest',
+                        '-v', os.path.join(
+                            SHARED_PATH, 'data', 'develop.txt'
+                        )
+                    ]
+                )
 
     else:
         print('Setup demo data, but database "%s" exists: Skip!' % dbname)

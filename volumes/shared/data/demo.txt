@@ -18,6 +18,7 @@ Imports
     >>> import datetime
     >>> import random
     >>> import string
+    >>> import decimal
     >>> import uuid
     >>> from proteus import config, Model, Wizard
     >>> # import interlude; interlude.interact(locals())
@@ -61,9 +62,21 @@ Configuration
     >>> artists_per_split_release = debug or 2
     >>> creations_per_split_artist = debug or 2
 
-    >>> licensee = debug or 3
+    >>> webuser_licensee = debug or 3
+    >>> licensee_playing_bars = debug or 1
+    >>> licensee_live_performances = debug or 3
+    >>> licensee_reproduction_releases = debug or 3
+    >>> licensee_online_webradios = debug or 1
+    >>> licensee_online_podcasts = debug or 1
+    >>> licensee_online_dsps = debug or 1
 
-    >>> all_webuser_roles = debug or 2
+    >>> channels_per_webradio = debug or 3
+    >>> episodes_per_podcast = debug or 3
+
+    >>> fingerprint_messages_per_device = debug or 10
+    >>> usagereport_messages_per_device = debug or 10
+
+    >>> webuser_all_roles = debug or 2
     
     >>> storehouses = debug or 2
     >>> harddisklabels_per_storehouse = debug or 2
@@ -235,6 +248,22 @@ Content
     ...     'remix',
     ... ]
 
+    >>> weekdays = [
+    ...     'monday',
+    ...     'tuesday',
+    ...     'wednesday',
+    ...     'thursday',
+    ...     'friday',
+    ...     'saturday',
+    ...     'sunday',
+    ... ]
+
+    >>> declaration_periods = [
+    ...     'monthly',
+    ...     'quarterly',
+    ...     'yearly',
+    ... ]
+
     >>> test_genres = '/shared/data/csv/genres.csv'
     >>> test_styles = '/shared/data/csv/styles.csv'
     >>> test_labels = '/shared/data/csv/labels.csv'
@@ -387,8 +416,6 @@ Tariff Categories
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
     ...     i = 1
     ...     for category in reader:
-    ...         if debug and i > debug:
-    ...             break
     ...         i += 1
     ...         TariffCategory(
     ...             name=category['name'],
@@ -403,8 +430,6 @@ Tariff Adjustment Categories
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
     ...     i = 1
     ...     for category in reader:
-    ...         if debug and i > debug:
-    ...             break
     ...         i += 1
     ...         tcs = []
     ...         for tc in category['tariff_categories'].split(","):
@@ -426,8 +451,6 @@ Tariff Relevance Categories
     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
     ...     i = 1
     ...     for category in reader:
-    ...         if debug and i > debug:
-    ...             break
     ...         i += 1
     ...         tcs = []
     ...         for tc in category['tariff_categories'].split(","):
@@ -512,7 +535,7 @@ Role: Licenser::
 
 Role: Licensee::
 
-    >>> for j in range(1, group_artists * new_solo_artists_per_group + 1):
+    >>> for j in range(1, webuser_licensee + 1):
     ...     number = j
     ...     total = i + j
     ...     birthdate = datetime.date(
@@ -527,7 +550,7 @@ Role: Licensee::
     ...         password="password",
     ...         opt_in_state='opted-in'
     ...     )
-    ...     roles = WebUserRole.find([('code', '=', 'licenser')])
+    ...     roles = WebUserRole.find([('code', '=', 'licensee')])
     ...     web_user.roles.extend(roles)
     ...     web_user.default_role = 'licensee'
     ...     web_user.save()
@@ -540,7 +563,7 @@ Role: Licensee::
 
 Role: All::
 
-    >>> for k in range(1, licensee + 1):
+    >>> for k in range(1, webuser_all_roles + 1):
     ...     number = k
     ...     total = i + j + k
     ...     birthdate = datetime.date(
@@ -727,6 +750,11 @@ Releases
     ...         owner_artist, = Artist.find([('id', '=', owner.id)])
     ...         release.artists.append(owner_artist)
     ...         release.save()
+
+ReleaseRightsholders
+--------------------
+::
+    >>> releases = Release.find([])
 
 Creations
 ---------
@@ -1457,3 +1485,115 @@ Creation Identifiers::
     ...             'CW', 20, str(number).zfill(4), 'SSS', 'RRR', 21
     ...         )
     ...     ).save()
+
+Licensee Usecase: Playing / Bar
+-------------------------------
+::
+    >>> licensees = WebUser.find(['roles.code', '=', 'licensee'])
+    >>> location_category_bar, = LocationCategory.find(['code', '=', 'B'])
+    >>> location_space_categories = LocationSpaceCategory.find([])
+    >>> tariff_playing = Tariff.find(['category.name', '=', 'Playing'])[-1]
+    >>> creations = Creation.find([])
+    >>> chars_fingerprint = string.digits + string.letters
+
+    >>> for i in range(1, len(licensees) + 1):
+    ...
+    ...     licensee = licensees[i - 1]
+    ...     number = i
+    ...
+    ...     # location
+    ...     location = Location(
+    ...         name="Location Bar %s" % str(number).zfill(3),
+    ...         category=location_category_bar,
+    ...         party=licensee.party,
+    ...         public=True,
+    ...         latitude=random.random()*180-90,
+    ...         longitude=random.random()*360-180,
+    ...         estimated_turnover_gastronomy=decimal.Decimal(
+    ...             random.randint(1000, 100000)
+    ...         )
+    ...     )
+    ...     location.save()
+    ...
+    ...     # opening hours
+    ...     for d in range(0, len(weekdays)):
+    ...         if random.random() < 0.5:
+    ...             continue
+    ...         LocationIndicatorsPeriod(
+    ...             location_indicators=location.estimated_indicators,
+    ...             start_weekday=weekdays[d],
+    ...             start_time=datetime.time(
+    ...                 hour=random.choice(range(0,17)),
+    ...                 minute=random.choice([0,30])
+    ...             ),
+    ...             end_weekday=weekdays[d],
+    ...             end_time=datetime.time(
+    ...                 hour=random.choice(range(17,24)),
+    ...                 minute=random.choice([0,30])
+    ...             )
+    ...         ).save()
+    ...
+    ...     # location spaces
+    ...     for category in location_space_categories:
+    ...         LocationSpace(
+    ...             location=location,
+    ...             category=category,
+    ...             estimated_size=random.randint(10,100)
+    ...         ).save()
+    ...
+    ...     # declaration
+    ...     Declaration(
+    ...         licensee=licensee.party,
+    ...         state='created',
+    ...         creation_time=now,
+    ...         template=False,
+    ...         period=random.choice(declaration_periods),
+    ...         tariff=tariff_playing,
+    ...         context=location
+    ...     ).save()
+    ...
+    ...     # device
+    ...     device = Device(
+    ...         web_user=licensee,
+    ...         blocked=False,
+    ...         name='Raspberry PI',
+    ...         os_name='Raspbian',
+    ...         os_version='10',
+    ...         software_name='Tracker',
+    ...         software_version='1.0.0',
+    ...         software_vendor='C3S'
+    ...     )
+    ...     device.save()
+    ...     
+    ...     # device assignment
+    ...     DeviceAssignment(
+    ...         device=device,
+    ...         assignment=location.spaces[0],
+    ...         start=now
+    ...     ).save()
+    ...
+    ...     # device messages
+    ...     timestamp = now - datetime.timedelta(days=1)
+    ...     creation = random.choice(creations)
+    ...     for i in range(0, fingerprint_messages_per_device):
+    ...         message = DeviceMessage(
+    ...             device=device,
+    ...             timestamp=now,
+    ...             direction='incoming',
+    ...             category='fingerprint',
+    ...             context=location.spaces[0]
+    ...         )
+    ...         message.save()
+    ...         if not i % 4:
+    ...             creation = random.choice(creations)
+    ...         timestamp = timestamp + datetime.timedelta(minutes=1)
+    ...         DeviceMessageFingerprint(
+    ...             message=[message],
+    ...             state='matched',
+    ...             matched_creation=creation,
+    ...             timestamp=timestamp,
+    ...             fingerprint=''.join(random.sample(
+    ...                 chars_fingerprint, len(chars_fingerprint))),
+    ...             algorithm='echoprint',
+    ...             version='1.0.0'
+    ...         ).save()
