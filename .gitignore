@@ -87,8 +87,9 @@ target/
 !/services/build
 /volumes/shared/config/trytond/passfile
 
-# VS Code remnants
+# VS Code
 /.vscode/*
+.devcontainer.json
 
 # Sphinx Documentation
 /volumes/shared/docs/source/generated
