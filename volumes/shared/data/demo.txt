@@ -718,7 +718,7 @@ Releases
     ...         genres = Genre.find([])
     ...         styles = Style.find([])
     ...         release_date = datetime.date(
-    ...             random.randint(1800, 2017),
+    ...             random.randint(1800, 2019),
     ...             random.randint(1, 12),
     ...             random.randint(1, 28))
     ...         isrc = ''.join(random.sample(string.ascii_uppercase, 3)) + \
@@ -750,11 +750,6 @@ Releases
     ...         owner_artist, = Artist.find([('id', '=', owner.id)])
     ...         release.artists.append(owner_artist)
     ...         release.save()
-
-ReleaseRightsholders
---------------------
-::
-    >>> releases = Release.find([])
 
 Creations
 ---------
@@ -1481,7 +1476,8 @@ Creation Identifiers::
 Licensee Usecase: Playing / Bar
 -------------------------------
 ::
-    >>> licensees = WebUser.find(['roles.code', '=', 'licensee'])
+    >>> licensees = WebUser.find(
+    ...     [('roles.code', '=', 'licensee')])
     >>> location_categories = LocationCategory.find(
     ...     [('code', 'in', ['B', 'N'])])
     >>> location_space_categories = LocationSpaceCategory.find([])
@@ -1608,7 +1604,8 @@ Licensee Usecase: Life / Perfomances
     ...     [('code', 'in', ['B', 'N', 'O', 'M'])])
     >>> location_space_category_concert, = LocationSpaceCategory.find(
     ...     [('code', '=', 'C')])
-    >>> tariff_live = Tariff.find(['category.name', '=', 'Live'])[-1]
+    >>> tariff_live = Tariff.find(
+    ...     [('category.name', '=', 'Live')])[-1]
     >>> artists = Artist.find([])
 
     >>> location_number = 1
@@ -1723,3 +1720,68 @@ Licensee Usecase: Life / Perfomances
     ...             tariff=tariff_live,
     ...             context=event
     ...         ).save()
+
+Licensee Usecase: Reproduction / Release
+----------------------------------------
+::
+    >>> licensees = WebUser.find(['roles.code', '=', 'licensee'])
+    >>> tariff_reproduction = Tariff.find(
+    ...     [('category.name', '=', 'Reproduction')])[-1]
+
+    >>> release_number = 1
+
+    >>> for licensee in licensees:
+    ...
+    ...     # release
+    ...     artist = random.choice(artists)
+    ...     production_date = now + datetime.timedelta(
+    ...         days=random.randint(30, 90)
+    ...     )
+    ...     release_date = production_date + datetime.timedelta(
+    ...         days=random.randint(30, 120)
+    ...     )
+    ...     artists = Artist.find([])
+    ...     labels = Label.find([])
+    ...     genres = Genre.find([])
+    ...     styles = Style.find([])
+    ...     release = Release(
+    ...         type="artist",
+    ...         artists=[artist],
+    ...         entity_creator=licensee.party,
+    ...         commit_state='uncommited',
+    ...         claim_state='unclaimed',
+    ...         title="Reproduction Release %s" % str(release_number).zfill(3),
+    ...         genres=random.sample(genres, min(
+    ...             genres_per_release, len(genres))),
+    ...         styles=random.sample(styles, min(
+    ...             styles_per_release, len(styles))),
+    ...         warning='WARNING: This is testdata!',
+    ...         copyright_date=datetime.date(
+    ...             random.randint(1800, 2019),
+    ...             random.randint(1, 12),
+    ...             random.randint(1, 28)
+    ...         ),
+    ...         production_date=production_date,
+    ...         release_date=release_date,
+    ...         online_release_date=release_date,
+    ...         distribution_territory=random.choice(countries).code,
+    ...         label=random.choice(labels),
+    ...         label_catalog_number=str(random.randint(10000, 99999)),
+    ...         publisher=random.choice(publishers),
+    ...         confirmed_copies=random.choice([100, 1000, 10000, 100000])
+    ...     )
+    ...     release.save()
+    ...     release_number += 1
+    ... 
+    ...     # declaration
+    ...     Declaration(
+    ...         licensee=licensee.party,
+    ...         state='created',
+    ...         creation_time=now - datetime.timedelta(
+    ...             days=random.randint(10,30)
+    ...         ),
+    ...         template=False,
+    ...         period='onetime',
+    ...         tariff=tariff_reproduction,
+    ...         context=release
+    ...     ).save()
