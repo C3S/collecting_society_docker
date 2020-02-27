@@ -1958,10 +1958,8 @@ Licensee Usecase: Online / Podcast
     ...     device = Device(
     ...         web_user=licensee,
     ...         blocked=False,
-    ...         name='Raspberry PI',
-    ...         os_name='Raspbian',
-    ...         os_version='10',
-    ...         software_name='Tracker',
+    ...         name='Podcast Reporter',
+    ...         software_name='Reporter',
     ...         software_version='1.0.0',
     ...         software_vendor='C3S'
     ...     )
@@ -2008,3 +2006,101 @@ Licensee Usecase: Online / Podcast
     ...                 )
     ...             ).save()
 
+Licensee Usecase: Online / DSP
+------------------------------
+::
+    >>> licensees = WebUser.find(['roles.code', '=', 'licensee'])
+    >>> creations = Creation.find([])
+    >>> tariff_online = Tariff.find(
+    ...     [('category.name', '=', 'Online')])[-1]
+    >>> website_category_dsp, = WebsiteCategory.find(
+    ...     [('name', '=', 'DSP')])
+    >>> website_resource_category_ugc, = WebsiteResourceCategory.find(
+    ...     [('name', '=', 'User Generated Content')])
+
+    >>> dsp_number = 1
+    >>> ugc_number = 1
+
+    >>> for licensee in licensees:
+    ...
+    ...     # website
+    ...     website = Website(
+    ...         name='DSP %s' % str(dsp_number).zfill(3),
+    ...         category=website_category_dsp,
+    ...         party=licensee.party,
+    ...         url='https://dsp%s.test' % str(dsp_number).zfill(3)
+    ...     )
+    ...     website.save()
+    ...     dsp_number += 1
+    ...
+    ...     # website resource
+    ...     website_resource = WebsiteResource(
+    ...         website=website,
+    ...         name='UGC %s' % str(ugc_number).zfill(3),
+    ...         category=website_resource_category_ugc
+    ...     )
+    ...     website_resource.save()
+    ...     ugc_number += 1
+    ... 
+    ...     # declaration
+    ...     Declaration(
+    ...         licensee=licensee.party,
+    ...         state='created',
+    ...         creation_time=now,
+    ...         template=False,
+    ...         period=random.choice(declaration_periods),
+    ...         tariff=tariff_online,
+    ...         context=website
+    ...     ).save()
+    ...
+    ...     # device
+    ...     device = Device(
+    ...         web_user=licensee,
+    ...         blocked=False,
+    ...         name='UGC Reporter',
+    ...         software_name='Reporter',
+    ...         software_version='1.0.0',
+    ...         software_vendor='C3S'
+    ...     )
+    ...     device.save()
+    ...
+    ...     # device assignment
+    ...     DeviceAssignment(
+    ...         device=device,
+    ...         assignment=website,
+    ...         start=now
+    ...     ).save()
+    ...
+    ...     # device messages
+    ...     timestamp = now - datetime.timedelta(
+    ...         days=7*usagereport_messages_per_device)
+    ...     for i in range(0, usagereport_messages_per_device):
+    ...
+    ...         # device message
+    ...         message = DeviceMessage(
+    ...             device=device,
+    ...             timestamp=now,
+    ...             direction='incoming',
+    ...             category='usagereport',
+    ...             context=website_resource
+    ...         )
+    ...         message.save()
+    ...
+    ...         # device message usagereport
+    ...         timestamp = timestamp + datetime.timedelta(days=7)
+    ...         streams = random.randint(10, 1000000)
+    ...         downloads = int(streams / 100)
+    ...         DeviceMessageUsagereport(
+    ...             message=[message],
+    ...             state='created',
+    ...             timestamp=timestamp,
+    ...             creation=random.choice(creations),
+    ...             reported_streams=streams,
+    ...             reported_downloads=downloads,
+    ...             reported_turnover_ads=decimal.Decimal(
+    ...                 streams / random.randint(100,10000)
+    ...             ),
+    ...             reported_turnover_sale=decimal.Decimal(
+    ...                 downloads / random.randint(1,100)
+    ...             )
+    ...         ).save()
