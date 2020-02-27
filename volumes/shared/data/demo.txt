@@ -76,6 +76,7 @@ Configuration
     >>> channels_per_webradio = debug or 3
     >>> licensee_online_podcasts = debug or 1
     >>> episodes_per_podcast = debug or 3
+    >>> originals_per_episode = debug or 5
     >>> licensee_online_dsps = debug or 1
 
     >>> storehouses = debug or 2
@@ -1810,7 +1811,7 @@ Licensee Usecase: Online / Webradio
     ...
     ...     # website
     ...     website = Website(
-    ...         name='Website %s' % str(webradio_number).zfill(3),
+    ...         name='Webradio %s' % str(webradio_number).zfill(3),
     ...         category=website_category_webradio,
     ...         party=licensee.party,
     ...         url='https://webradio%s.test' % str(webradio_number).zfill(3)
@@ -1896,5 +1897,114 @@ Licensee Usecase: Online / Webradio
     ...                     chars_fingerprint, len(chars_fingerprint))),
     ...                 algorithm='echoprint',
     ...                 version='1.0.0'
+    ...             ).save()
+
+Licensee Usecase: Online / Podcast
+----------------------------------
+::
+    >>> licensees = WebUser.find(['roles.code', '=', 'licensee'])
+    >>> tariff_online = Tariff.find(
+    ...     [('category.name', '=', 'Online')])[-1]
+    >>> website_category_podcast, = WebsiteCategory.find(
+    ...     [('name', '=', 'Podcast')])
+    >>> website_resource_category_episode, = WebsiteResourceCategory.find(
+    ...     [('name', '=', 'Episode')])
+
+    >>> podcast_number = 1
+    >>> episode_number = 1
+
+    >>> for licensee in licensees:
+    ...
+    ...     # website
+    ...     website = Website(
+    ...         name='Podcast %s' % str(podcast_number).zfill(3),
+    ...         category=website_category_podcast,
+    ...         party=licensee.party,
+    ...         url='https://podcast%s.test' % str(podcast_number).zfill(3)
+    ...     )
+    ...     website.save()
+    ...     podcast_number += 1
+    ...
+    ...     # website resources
+    ...     for i in range(0, episodes_per_podcast):
+    ...     
+    ...         # website resource
+    ...         website_resource = WebsiteResource(
+    ...             website=website,
+    ...             name='Episode %s' % str(episode_number).zfill(3),
+    ...             category=website_resource_category_episode,
+    ...             url='https://podcast%s.test/episode%s' % (
+    ...                 str(podcast_number).zfill(3),
+    ...                 str(episode_number).zfill(3)
+    ...             ),
+    ...             originals=random.sample(
+    ...                 Creation.find([]), originals_per_episode)
+    ...         )
+    ...         website_resource.save()
+    ...         episode_number += 1
+    ... 
+    ...     # declaration
+    ...     Declaration(
+    ...         licensee=licensee.party,
+    ...         state='created',
+    ...         creation_time=now,
+    ...         template=False,
+    ...         period=random.choice(declaration_periods),
+    ...         tariff=tariff_online,
+    ...         context=website
+    ...     ).save()
+    ...
+    ...     # device
+    ...     device = Device(
+    ...         web_user=licensee,
+    ...         blocked=False,
+    ...         name='Raspberry PI',
+    ...         os_name='Raspbian',
+    ...         os_version='10',
+    ...         software_name='Tracker',
+    ...         software_version='1.0.0',
+    ...         software_vendor='C3S'
+    ...     )
+    ...     device.save()
+    ...
+    ...     # device assignment
+    ...     DeviceAssignment(
+    ...         device=device,
+    ...         assignment=website,
+    ...         start=now
+    ...     ).save()
+    ...
+    ...     # device messages
+    ...     for episode in website.resources:
+    ...         timestamp = now - datetime.timedelta(
+    ...             days=7*usagereport_messages_per_device)
+    ...         for i in range(0, usagereport_messages_per_device):
+    ...
+    ...             # device message
+    ...             message = DeviceMessage(
+    ...                 device=device,
+    ...                 timestamp=now,
+    ...                 direction='incoming',
+    ...                 category='usagereport',
+    ...                 context=episode
+    ...             )
+    ...             message.save()
+    ...
+    ...             # device message usagereport
+    ...             timestamp = timestamp + datetime.timedelta(days=7)
+    ...             streams = random.randint(10, 1000000)
+    ...             downloads = int(streams / 100)
+    ...             DeviceMessageUsagereport(
+    ...                 message=[message],
+    ...                 state='created',
+    ...                 timestamp=timestamp,
+    ...                 reported_streams=streams,
+    ...                 reported_downloads=downloads,
+    ...                 reported_turnover_ads=decimal.Decimal(
+    ...                     streams / random.randint(100,10000)
+    ...                 ),
+    ...                 reported_turnover_sale=decimal.Decimal(
+    ...                     downloads / random.randint(1,100)
+    ...                 )
     ...             ).save()
 
