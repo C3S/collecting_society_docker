@@ -737,16 +737,18 @@ Releases
     ...             copyright_date=release_date - datetime.timedelta(10),
     ...             production_date=release_date - datetime.timedelta(30),
     ...             release_date=release_date,
-    ...             online_release_date=release_date,
     ...             distribution_territory=random.choice(countries).code,
     ...             label=random.choice(labels),
     ...             label_catalog_number=str(random.randint(10000, 99999)),
     ...             publisher=random.choice(publishers)
     ...         )
+    ...         if release.release_date.year >= 2000:
+    ...             release.online_release_date = release_date
     ...         if random.random() < release_cancellation_chance:
     ...             cancellation_date = release_date + datetime.timedelta(300)
     ...             release.release_cancellation_date = cancellation_date
-    ...             release.online_cancellation_date = cancellation_date
+    ...             if release.online_release_date:
+    ...                 release.online_cancellation_date = cancellation_date
     ...         owner_artist, = Artist.find([('id', '=', owner.id)])
     ...         release.artists.append(owner_artist)
     ...         release.save()
@@ -1732,56 +1734,167 @@ Licensee Usecase: Reproduction / Release
 
     >>> for licensee in licensees:
     ...
-    ...     # release
-    ...     artist = random.choice(artists)
-    ...     production_date = now + datetime.timedelta(
-    ...         days=random.randint(30, 90)
+    ...     for i in range(0, licensee_reproduction_releases):
+    ...
+    ...         # release
+    ...         artist = random.choice(artists)
+    ...         production_date = now + datetime.timedelta(
+    ...             days=random.randint(30, 90)
+    ...         )
+    ...         release_date = production_date + datetime.timedelta(
+    ...             days=random.randint(30, 120)
+    ...         )
+    ...         artists = Artist.find([])
+    ...         labels = Label.find([])
+    ...         genres = Genre.find([])
+    ...         styles = Style.find([])
+    ...         release = Release(
+    ...             type="artist",
+    ...             artists=[artist],
+    ...             entity_creator=licensee.party,
+    ...             commit_state='uncommited',
+    ...             claim_state='unclaimed',
+    ...             title="Reproduction Release %s" % str(
+    ...                 release_number).zfill(3),
+    ...             genres=random.sample(genres, min(
+    ...                 genres_per_release, len(genres))),
+    ...             styles=random.sample(styles, min(
+    ...                 styles_per_release, len(styles))),
+    ...             warning='WARNING: This is testdata!',
+    ...             copyright_date=datetime.date(
+    ...                 random.randint(1800, 2019),
+    ...                 random.randint(1, 12),
+    ...                 random.randint(1, 28)
+    ...             ),
+    ...             production_date=production_date,
+    ...             release_date=release_date,
+    ...             online_release_date=release_date,
+    ...             distribution_territory=random.choice(countries).code,
+    ...             label=random.choice(labels),
+    ...             label_catalog_number=str(random.randint(10000, 99999)),
+    ...             publisher=random.choice(publishers),
+    ...             confirmed_copies=random.choice([100, 1000, 10000, 100000])
+    ...         )
+    ...         release.save()
+    ...         release_number += 1
+    ...         
+    ...         # declaration
+    ...         Declaration(
+    ...             licensee=licensee.party,
+    ...             state='created',
+    ...             creation_time=now - datetime.timedelta(
+    ...                 days=random.randint(10,30)
+    ...             ),
+    ...             template=False,
+    ...             period='onetime',
+    ...             tariff=tariff_reproduction,
+    ...             context=release
+    ...         ).save()
+
+Licensee Usecase: Online / Webradio
+-----------------------------------
+::
+    >>> licensees = WebUser.find(['roles.code', '=', 'licensee'])
+    >>> creations = Creation.find([])
+    >>> tariff_online = Tariff.find(
+    ...     [('category.name', '=', 'Online')])[-1]
+    >>> website_category_webradio, = WebsiteCategory.find(
+    ...     [('name', '=', 'Webradio')])
+    >>> website_resource_category_channel, = WebsiteResourceCategory.find(
+    ...     [('name', '=', 'Channel')])
+
+    >>> webradio_number = 1
+    >>> channel_number = 1
+
+    >>> for licensee in licensees:
+    ...
+    ...     # website
+    ...     website = Website(
+    ...         name='Website %s' % str(webradio_number).zfill(3),
+    ...         category=website_category_webradio,
+    ...         party=licensee.party,
+    ...         url='https://webradio%s.test' % str(webradio_number).zfill(3)
     ...     )
-    ...     release_date = production_date + datetime.timedelta(
-    ...         days=random.randint(30, 120)
-    ...     )
-    ...     artists = Artist.find([])
-    ...     labels = Label.find([])
-    ...     genres = Genre.find([])
-    ...     styles = Style.find([])
-    ...     release = Release(
-    ...         type="artist",
-    ...         artists=[artist],
-    ...         entity_creator=licensee.party,
-    ...         commit_state='uncommited',
-    ...         claim_state='unclaimed',
-    ...         title="Reproduction Release %s" % str(release_number).zfill(3),
-    ...         genres=random.sample(genres, min(
-    ...             genres_per_release, len(genres))),
-    ...         styles=random.sample(styles, min(
-    ...             styles_per_release, len(styles))),
-    ...         warning='WARNING: This is testdata!',
-    ...         copyright_date=datetime.date(
-    ...             random.randint(1800, 2019),
-    ...             random.randint(1, 12),
-    ...             random.randint(1, 28)
-    ...         ),
-    ...         production_date=production_date,
-    ...         release_date=release_date,
-    ...         online_release_date=release_date,
-    ...         distribution_territory=random.choice(countries).code,
-    ...         label=random.choice(labels),
-    ...         label_catalog_number=str(random.randint(10000, 99999)),
-    ...         publisher=random.choice(publishers),
-    ...         confirmed_copies=random.choice([100, 1000, 10000, 100000])
-    ...     )
-    ...     release.save()
-    ...     release_number += 1
+    ...     website.save()
+    ...     webradio_number += 1
+    ...
+    ...     # website resources
+    ...     for i in range(0, channels_per_webradio):
+    ...     
+    ...         # website resource
+    ...         website_resource = WebsiteResource(
+    ...             website=website,
+    ...             name='Channel %s' % str(channel_number).zfill(3),
+    ...             category=website_resource_category_channel,
+    ...             url='https://channel%s.webradio%s.test' % (
+    ...                 str(channel_number).zfill(3),
+    ...                 str(webradio_number).zfill(3)
+    ...             )
+    ...         )
+    ...         website_resource.save()
+    ...         channel_number += 1
     ... 
     ...     # declaration
     ...     Declaration(
     ...         licensee=licensee.party,
     ...         state='created',
-    ...         creation_time=now - datetime.timedelta(
-    ...             days=random.randint(10,30)
-    ...         ),
+    ...         creation_time=now,
     ...         template=False,
-    ...         period='onetime',
-    ...         tariff=tariff_reproduction,
-    ...         context=release
+    ...         period=random.choice(declaration_periods),
+    ...         tariff=tariff_online,
+    ...         context=website
     ...     ).save()
+    ...
+    ...     # device
+    ...     device = Device(
+    ...         web_user=licensee,
+    ...         blocked=False,
+    ...         name='Raspberry PI',
+    ...         os_name='Raspbian',
+    ...         os_version='10',
+    ...         software_name='Tracker',
+    ...         software_version='1.0.0',
+    ...         software_vendor='C3S'
+    ...     )
+    ...     device.save()
+    ...
+    ...     # device assignment
+    ...     DeviceAssignment(
+    ...         device=device,
+    ...         assignment=website,
+    ...         start=now
+    ...     ).save()
+    ...
+    ...     # device messages
+    ...     for channel in website.resources:
+    ...
+    ...         timestamp = now - datetime.timedelta(days=1)
+    ...         creation = random.choice(creations)
+    ...
+    ...         for i in range(0, fingerprint_messages_per_device):
+    ...
+    ...             # device message
+    ...             message = DeviceMessage(
+    ...                 device=device,
+    ...                 timestamp=now,
+    ...                 direction='incoming',
+    ...                 category='fingerprint',
+    ...                 context=channel
+    ...             )
+    ...             message.save()
+    ...
+    ...             # device message fingerprint
+    ...             if not i % 4:
+    ...                 creation = random.choice(creations)
+    ...             timestamp = timestamp + datetime.timedelta(minutes=1)
+    ...             DeviceMessageFingerprint(
+    ...                 message=[message],
+    ...                 state='matched',
+    ...                 matched_creation=creation,
+    ...                 timestamp=timestamp,
+    ...                 fingerprint=''.join(random.sample(
+    ...                     chars_fingerprint, len(chars_fingerprint))),
+    ...                 algorithm='echoprint',
+    ...                 version='1.0.0'
+    ...             ).save()
+
