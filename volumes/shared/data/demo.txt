@@ -72,6 +72,7 @@ Configuration
     >>> performances_per_event = debug or 3
     >>> items_per_performance_playlist = debug or 5
     >>> licensee_reproduction_releases = debug or 3
+    >>> creations_per_reproduction_release = debug or 10
     >>> licensee_online_webradios = debug or 1
     >>> channels_per_webradio = debug or 3
     >>> licensee_online_podcasts = debug or 1
@@ -1778,6 +1779,22 @@ Licensee Usecase: Reproduction / Release
     ...         )
     ...         release.save()
     ...         release_number += 1
+    ...
+    ...         # release tracks
+    ...         creations = Creation.find([])
+    ...         tracks = random.sample(
+    ...             creations,
+    ...             min(creations_per_reproduction_release, len(creations))
+    ...         )
+    ...         for i, track in enumerate(tracks):
+    ...             rc = ReleaseTrack()
+    ...             rc.creation=track
+    ...             rc.release=release
+    ...             rc.title=creation.title
+    ...             rc.medium_number=1
+    ...             rc.track_number=i + 1
+    ...             rc.license=random.choice(License.find([]))
+    ...             rc.save()
     ...         
     ...         # declaration
     ...         Declaration(
