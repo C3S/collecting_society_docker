@@ -48,6 +48,8 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      fingerprint:
+        condition: service_started
     env_file:
       - .env
 

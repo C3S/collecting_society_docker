@@ -53,6 +53,8 @@ services:
     depends_on:
       test_database:
         condition: service_healthy
+      test_fingerprint:
+        condition: service_started
     env_file:
       - .env
     environment:
