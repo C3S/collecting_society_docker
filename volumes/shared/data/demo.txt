@@ -1641,7 +1641,7 @@ Licensee Usecase: Playing / Bar
     ...                 state='matched',
     ...                 matched_creation=creation,
     ...                 timestamp=timestamp,
-    ...                 fingerprint=''.join(random.sample(
+    ...                 data=''.join(random.sample(
     ...                     chars_fingerprint, len(chars_fingerprint))),
     ...                 algorithm='echoprint',
     ...                 version='1.0.0'
@@ -1957,7 +1957,7 @@ Licensee Usecase: Online / Webradio
     ...                 state='matched',
     ...                 matched_creation=creation,
     ...                 timestamp=timestamp,
-    ...                 fingerprint=''.join(random.sample(
+    ...                 data=''.join(random.sample(
     ...                     chars_fingerprint, len(chars_fingerprint))),
     ...                 algorithm='echoprint',
     ...                 version='1.0.0'
