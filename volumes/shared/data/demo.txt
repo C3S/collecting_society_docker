@@ -523,7 +523,7 @@ Role: Licenser::
     ...     firstname = "Registered Name"
     ...     lastname = "%s" % str(total).zfill(3)
     ...     web_user = WebUser(
-    ...         email='licenser%s@collecting_society.test' % number,
+    ...         email='licenser%s@collecting-society.test' % number,
     ...         nickname=firstname + ' ' + lastname,
     ...         password="password",
     ...         opt_in_state='opted-in'
@@ -551,7 +551,7 @@ Role: Licensee::
     ...     firstname = "Registered Name"
     ...     lastname = "%s" % str(total).zfill(3)
     ...     web_user = WebUser(
-    ...         email='licensee%s@collecting_society.test' % number,
+    ...         email='licensee%s@collecting-society.test' % number,
     ...         nickname=firstname + ' ' + lastname,
     ...         password="password",
     ...         opt_in_state='opted-in'
@@ -579,7 +579,7 @@ Role: All::
     ...     firstname = "Registered Name"
     ...     lastname = "%s" % str(total).zfill(3)
     ...     web_user = WebUser(
-    ...         email='allroles%s@collecting_society.test' % number,
+    ...         email='allroles%s@collecting-society.test' % number,
     ...         nickname=firstname + ' ' + lastname,
     ...         password="password",
     ...         opt_in_state='opted-in'
