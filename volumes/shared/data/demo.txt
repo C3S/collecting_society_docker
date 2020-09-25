@@ -1543,17 +1543,28 @@ Licensee Usecase: Playing / Bar
     ...     for j in range(1, licensee_playing_bars + 1):
     ...         number = i * licensee_playing_bars + j
     ...
+    ...         party = Party(name="Location Bar %s" % str(number).zfill(3))
+    ...         _ = party.addresses.pop()
+    ...         party_address = party.addresses.new(
+    ...             street='Teststreet %s' % str(number),
+    ...             zip=str(10000+number).zfill(5),
+    ...             city='Testcity',
+    ...             country=germany
+    ...         )
+    ...         party.save()
+    ...   
     ...         # location
     ...         location = Location(
     ...             name="Location Bar %s" % str(number).zfill(3),
     ...             category=random.choice(location_categories),
-    ...             party=licensee.party,
+    ...             party=party,
     ...             public=True,
     ...             latitude=random.random()*180-90,
     ...             longitude=random.random()*360-180,
     ...             estimated_turnover_gastronomy=decimal.Decimal(
     ...                 random.randint(1000, 100000)
-    ...             )
+    ...             ),
+    ...             entity_creator=licensee.party
     ...         )
     ...         location.save()
     ...         
@@ -1664,14 +1675,26 @@ Licensee Usecase: Life / Perfomances
 
     >>> for licensee in licensees:
     ...
+    ...     party = Party(name="Location Performance %s" %
+    ...                   str(location_number).zfill(3))
+    ...     _ = party.addresses.pop()
+    ...     party_address = party.addresses.new(
+    ...         street='Teststreet %s' % str(location_number),
+    ...         zip=str(10000+location_number).zfill(5),
+    ...         city='Testcity',
+    ...         country=germany
+    ...     )
+    ...     party.save()
+    ...
     ...     # location
     ...     location = Location(
     ...         name="Location Performance %s" % str(location_number).zfill(3),
     ...         category=random.choice(location_categories),
-    ...         party=licensee.party,
+    ...         party=party,
     ...         public=True,
     ...         latitude=random.random()*180-90,
-    ...         longitude=random.random()*360-180
+    ...         longitude=random.random()*360-180,
+    ...         entity_creator=licensee.party
     ...     )
     ...     location.save()
     ...     location_number += 1
