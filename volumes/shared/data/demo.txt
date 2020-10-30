@@ -70,7 +70,7 @@ Configuration
     >>> webuser_licensee = debug or 3
 
     >>> licensee_playing_bars = debug or 1
-    >>> fingerprint_messages_per_device = debug or 10
+    >>> fingerprint_messages_per_device = debug or 20
     >>> usagereport_messages_per_device = debug or 10
     >>> licensee_live_events = debug or 3
     >>> performances_per_event = debug or 3
@@ -1620,6 +1620,9 @@ Licensee Usecase: Playing / Bar
     ...         # device messages
     ...         timestamp = now - datetime.timedelta(days=1)
     ...         creation = random.choice(creations)
+    ...         keep_creation = 0
+    ...         unknown_creation = False
+    ...
     ...         for i in range(0, fingerprint_messages_per_device):
     ...
     ...             # device message
@@ -1633,12 +1636,19 @@ Licensee Usecase: Playing / Bar
     ...             message.save()
     ...
     ...             # device message fingerprint
-    ...             if not i % 4:
-    ...                 creation = random.choice(creations)
+    ...             if not keep_creation:
+    ...                 if unknown_creation:
+    ...                     creation = None
+    ...                 else:
+    ...                     creation = random.choice(creations)
+    ...                 keep_creation = random.randrange(0,8)
+    ...                 unknown_creation = random.random() > 0.9
+    ...             keep_creation -= 1
     ...             timestamp = timestamp + datetime.timedelta(minutes=1)
     ...             DeviceMessageFingerprint(
     ...                 message=[message],
     ...                 state='matched',
+    ...                 matched_state=creation and 'success' or 'fail_score',
     ...                 matched_creation=creation,
     ...                 timestamp=timestamp,
     ...                 data=''.join(random.sample(
@@ -1935,6 +1945,8 @@ Licensee Usecase: Online / Webradio
     ...
     ...         timestamp = now - datetime.timedelta(days=1)
     ...         creation = random.choice(creations)
+    ...         keep_creation = 0
+    ...         unknown_creation = False
     ...
     ...         for i in range(0, fingerprint_messages_per_device):
     ...
@@ -1949,12 +1961,19 @@ Licensee Usecase: Online / Webradio
     ...             message.save()
     ...
     ...             # device message fingerprint
-    ...             if not i % 4:
-    ...                 creation = random.choice(creations)
+    ...             if not keep_creation:
+    ...                 if unknown_creation:
+    ...                     creation = None
+    ...                 else:
+    ...                     creation = random.choice(creations)
+    ...                 keep_creation = random.randrange(0,8)
+    ...                 unknown_creation = random.random() > 0.9
+    ...             keep_creation -= 1
     ...             timestamp = timestamp + datetime.timedelta(minutes=1)
     ...             DeviceMessageFingerprint(
     ...                 message=[message],
     ...                 state='matched',
+    ...                 matched_state=creation and 'success' or 'fail_score',
     ...                 matched_creation=creation,
     ...                 timestamp=timestamp,
     ...                 data=''.join(random.sample(
