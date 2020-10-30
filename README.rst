@@ -106,16 +106,22 @@ reverse proxy and load-balancer to the *portal* services host on *port 81*.
     to find the port of a particular service.
 
 Prior to the connection via browser, your /etc/hosts should contain
-repertoire.test and api.repertoire.test pointing to 0.0.0.0
+collecting_society and api.collecting_society pointing to 0.0.0.0
 
 Connecting the portal, point your browser to::
-    http://repertoire.test:81
+    http://collecting_society:81
 
 Connecting the api, point your browser to::
-    http://api.repertoire.test:81
+    http://api.collecting_society:81
 
 Connecting a specific instance of the portal service, point your browser to::
     http://localhost:<random external port on host system>/login
+
+To login as a demo user use user emails like allroles1@collecting-society.test, 
+licenser2@collecting-society.test, or licensee1@collecting-society.test with 
+'password' as password.
+
+.. seealso:: :file:`volumes/shared/data/demo.txt`
 
 Tryton
 ------
@@ -524,7 +530,7 @@ Sphinx Documentation
 Sphinx doesn't just parse the code but rather wants to start the modules.
 This is why there exists a special documentation container you can build with::
 
-    $ scrips/docs --build
+    $ scripts/docs --build
 
 Once built, you may ommit the ``--build`` option to rebuild the docs from
 the modules .rst files (e.g. README.rst) and the common .rst files in
@@ -568,6 +574,9 @@ To shut down the container enter ::
 Once built, the docs can be viewed (from outside the container) like this::
  
     $ firefox volumes/shared/docs/build/html/index.html
+
+To enrich the docs, stick to the Sphinx .rst markup as documented here:
+https://www.sphinx-doc.org/en/1.5/markup/inline.html
 
 Problems
 ========

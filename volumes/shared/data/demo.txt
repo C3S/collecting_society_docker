@@ -47,6 +47,8 @@ Configuration
     >>> foreign_originals_per_creation = debug and 1 or 1
     >>> max_composers_per_creation = debug or 3
     >>> max_recorders_per_creation = debug or 3
+    >>> max_interprets_per_creation = debug or 3
+    >>> max_instruments_per_interpret = debug or 3
     >>> max_texters_per_creation = debug or 2
     >>> max_producers_per_creation = debug or 2
     >>> max_masters_per_creation = debug or 2
@@ -55,6 +57,8 @@ Configuration
     >>> audio_content_chance_per_creation = debug and 1 or 0.8
     >>> lyric_content_chance_per_creation = debug and 1 or 0.6
     >>> sheet_content_chance_per_creation = debug and 1 or 0.1
+    >>> collecting_society_per_creationrightsholder = 0.3
+    >>> successor_chance_per_rightsholder = 0.1
 
     >>> sampler_releases = debug or 1
     >>> creations_per_sampler = debug or 5
@@ -140,6 +144,8 @@ New::
 
     >>> License = Model.get('license')
 
+    >>> Instrument = Model.get('instrument')
+
     >>> Artist = Model.get('artist')
     >>> ArtistArtist = Model.get('artist-artist')
     >>> ArtistRelease = Model.get('artist-release')
@@ -153,12 +159,14 @@ New::
     >>> CreationDerivative = Model.get('creation.original.derivative')
     >>> CreationContribution = Model.get('creation.contribution')
     >>> CreationContributionRole = Model.get('creation.contribution-creation.role')
+    >>> CreationContributionRole = Model.get('creation.contribution-creation.role')
     >>> CreationRole = Model.get('creation.role')
     >>> CreationTariffCategory = Model.get('creation-tariff_category')
     >>> CreationIdentifier = Model.get('creation.identifier')
     >>> CreationIdentifierSpace = Model.get('creation.identifier.space')
     >>> CreationRightsholder = Model.get('creation.rightsholder')
     >>> CreationRightsholderCreationRightsholder = Model.get('creation.rightsholder-creation.rightsholder')
+    >>> CreationRightsholderInstrument = Model.get('creation.rightsholder-instrument')
 
     >>> Release = Model.get('release')
     >>> ReleaseTrack = Model.get('release.track')
@@ -523,7 +531,7 @@ Role: Licenser::
     ...     firstname = "Registered Name"
     ...     lastname = "%s" % str(total).zfill(3)
     ...     web_user = WebUser(
-    ...         email='licenser%s@collecting_society.test' % number,
+    ...         email='licenser%s@collecting-society.test' % number,
     ...         nickname=firstname + ' ' + lastname,
     ...         password="password",
     ...         opt_in_state='opted-in'
@@ -551,7 +559,7 @@ Role: Licensee::
     ...     firstname = "Registered Name"
     ...     lastname = "%s" % str(total).zfill(3)
     ...     web_user = WebUser(
-    ...         email='licensee%s@collecting_society.test' % number,
+    ...         email='licensee%s@collecting-society.test' % number,
     ...         nickname=firstname + ' ' + lastname,
     ...         password="password",
     ...         opt_in_state='opted-in'
@@ -579,7 +587,7 @@ Role: All::
     ...     firstname = "Registered Name"
     ...     lastname = "%s" % str(total).zfill(3)
     ...     web_user = WebUser(
-    ...         email='allroles%s@collecting_society.test' % number,
+    ...         email='allroles%s@collecting-society.test' % number,
     ...         nickname=firstname + ' ' + lastname,
     ...         password="password",
     ...         opt_in_state='opted-in'
@@ -700,6 +708,22 @@ CreationRoles
     ...             ('group', '!=', True)])
     ...         CreationRole(
     ...             entity_creator=random.choice(artists).party,
+    ...             name=role['name'],
+    ...             description=role['description']
+    ...         ).save()
+
+
+Instruments
+-------------
+::
+    >>> with open(test_creation_roles, 'r') as f:
+    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+    ...     i = 1
+    ...     for role in reader:
+    ...         if debug and i > debug:
+    ...             break
+    ...         i += 1
+    ...         Instrument(
     ...             name=role['name'],
     ...             description=role['description']
     ...         ).save()
@@ -1015,6 +1039,157 @@ Foreign contributions::
     ...         cr.contribution = cc
     ...         cr.role = random.choice(roles)
     ...         cr.save()
+
+Rightsholder
+-------------
+
+    >>> creations = Creation.find([('claim_state', '!=', 'unclaimed')])
+    >>> all_artists = Artist.find([])
+    >>> all_artists_number = len(all_artists)
+    >>> crss = CollectingSociety.find([(
+    ...     'represents_copyright', '=', True)])
+    >>> nrss = CollectingSociety.find([(
+    ...     'represents_ancillary_copyright', '=', True)])
+    >>> total_number_of_instruments = len(Instrument.find([]))
+    ...
+    >>> def make_successor(pre):
+    ...     if random.random() < successor_chance_per_rightsholder:
+    ...         suc = CreationRightsholder()
+    ...         suc.rightsholder_subject = random.choice(all_artists)
+    ...         suc.rightsholder_object = pre.rightsholder_object
+    ...         suc.contribution = pre.contribution
+    ...         suc.right = pre.right
+    ...         suc.valid_from = pre.valid_from
+    ...         suc.country = germany
+    ...         suc.predecessor = pre
+    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...             suc.collecting_society = crss[random.randint(0, len(crss)-1)]
+    ...         suc.save()
+    ...         pre.successor = suc
+    ...         pre.valid_from = suc.valid_from - datetime.timedelta(days=
+    ...                     random.randint(0, 36500))
+    ...         pre.valid_to = suc.valid_from
+    ...         pre.save()
+
+Existing solo or member artists::
+
+    >>> for i in range(0, len(creations)):
+    ...     creation = creations[i]
+    ...     artist = creation.artist
+    ...     rightsholders = [artist]
+    ...     if artist.group:
+    ...         rightsholders = artist.solo_artists
+    ...     roles = CreationRole.find([])
+    ...     creation_date = today - datetime.timedelta(days=
+    ...                     random.randint(0, 36500))
+    ...
+    ...     # composer
+    ...     num_composers = random.randint(0, min(
+    ...         max_composers_per_creation, len(rightsholders)))
+    ...     for composer in random.sample(rightsholders, num_composers):
+    ...         # composition
+    ...         cr = CreationRightsholder()
+    ...         cr.rightsholder_subject = composer
+    ...         cr.rightsholder_object = creation
+    ...         cr.contribution = 'composition'
+    ...         cr.right = 'copyright'
+    ...         cr.valid_from = creation_date
+    ...         cr.country = germany
+    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...             cr.collecting_society = crss[random.randint(0, len(crss)-1)]
+    ...         cr.save()
+    ...         make_successor(cr)
+    ...
+    ...     # texters
+    ...     num_texters = random.randint(0, min(
+    ...         max_texters_per_creation, len(rightsholders)))
+    ...     for texter in random.sample(rightsholders, num_texters):
+    ...         cr = CreationRightsholder()
+    ...         cr.rightsholder_subject=texter
+    ...         cr.rightsholder_object=creation
+    ...         cr.contribution='lyrics'
+    ...         cr.right = 'copyright'
+    ...         cr.valid_from = creation_date
+    ...         cr.country = germany
+    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...             cr.collecting_society = crss[random.randint(0, 
+    ...                 len(crss)-1)]
+    ...         cr.save()
+    ...         make_successor(cr)
+    ...     
+    ...     # interprets
+    ...     num_interprets = random.randint(0, min(
+    ...         max_interprets_per_creation, len(rightsholders)))
+    ...     num_instruments = random.randint(1, min(
+    ...         max_instruments_per_interpret, total_number_of_instruments))    
+    ...     for interpret in random.sample(rightsholders, num_interprets):
+    ...         cr = CreationRightsholder()
+    ...         cr.rightsholder_subject = interpret
+    ...         cr.rightsholder_object = creation
+    ...         cr.contribution = 'instrument'
+    ...         cr.right = 'ancillary'
+    ...         cr.valid_from = creation_date
+    ...         cr.country = germany
+    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...             cr.collecting_society = crss[random.randint(0, 
+    ...                 len(nrss)-1)]
+    ...         instruments = Instrument.find([])
+    ...         cr.instruments.extend(random.sample(instruments, num_instruments))
+    ...         cr.save()
+    ...         make_successor(cr)
+    ...
+    ...     # producer
+    ...     num_producers = random.randint(0, min(
+    ...         max_producers_per_creation, len(rightsholders)))
+    ...     for producer in random.sample(rightsholders, num_producers):
+    ...         cr = CreationRightsholder()
+    ...         cr.rightsholder_subject=producer
+    ...         cr.rightsholder_object=creation
+    ...         cr.contribution='production'
+    ...         cr.right = 'ancillary'
+    ...         cr.valid_from = creation_date
+    ...         cr.country = germany
+    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...             cr.collecting_society = crss[random.randint(0, 
+    ...                 len(crss)-1)]
+    ...         cr.save()
+    ...         make_successor(cr)
+    ...
+    ...     # master
+    ...     num_masters = random.randint(0, min(
+    ...         max_masters_per_creation, len(rightsholders)))
+    ...     for master in random.sample(rightsholders, num_masters):
+    ...         cr = CreationRightsholder()
+    ...         cr.rightsholder_subject=master
+    ...         cr.rightsholder_object=creation
+    ...         cr.contribution='mastering'
+    ...         cr.right = 'ancillary'
+    ...         cr.valid_from = creation_date
+    ...         cr.country = germany
+    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...             cr.collecting_society = crss[random.randint(0, 
+    ...                 len(crss)-1)]
+    ...         cr.save()
+    ...         make_successor(cr)
+    ...
+    ...     # mixer
+    ...     num_mixers = random.randint(0, min(
+    ...         max_mixers_per_creation, len(rightsholders)))
+    ...     for mixer in random.sample(rightsholders, num_mixers):
+    ...         cr = CreationRightsholder()
+    ...         cr.rightsholder_subject=mixer
+    ...         cr.rightsholder_object=creation
+    ...         cr.contribution='mixing'
+    ...         cr.right = 'ancillary'
+    ...         cr.valid_from = creation_date
+    ...         cr.country = germany
+    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...             cr.collecting_society = crss[random.randint(0, 
+    ...                 len(crss)-1)]
+    ...         cr.save()
+    ...         make_successor(cr)
+
+TODO: Foreign Rightshoders
 
 Sampler Releases
 ----------------
@@ -1543,17 +1718,28 @@ Licensee Usecase: Playing / Bar
     ...     for j in range(1, licensee_playing_bars + 1):
     ...         number = i * licensee_playing_bars + j
     ...
+    ...         party = Party(name="Location Bar %s" % str(number).zfill(3))
+    ...         _ = party.addresses.pop()
+    ...         party_address = party.addresses.new(
+    ...             street='Teststreet %s' % str(number),
+    ...             zip=str(10000+number).zfill(5),
+    ...             city='Testcity',
+    ...             country=germany
+    ...         )
+    ...         party.save()
+    ...   
     ...         # location
     ...         location = Location(
     ...             name="Location Bar %s" % str(number).zfill(3),
     ...             category=random.choice(location_categories),
-    ...             party=licensee.party,
+    ...             party=party,
     ...             public=True,
     ...             latitude=random.random()*180-90,
     ...             longitude=random.random()*360-180,
     ...             estimated_turnover_gastronomy=decimal.Decimal(
     ...                 random.randint(1000, 100000)
-    ...             )
+    ...             ),
+    ...             entity_creator=licensee.party
     ...         )
     ...         location.save()
     ...
@@ -1674,14 +1860,26 @@ Licensee Usecase: Life / Perfomances
 
     >>> for licensee in licensees:
     ...
+    ...     party = Party(name="Location Performance %s" %
+    ...                   str(location_number).zfill(3))
+    ...     _ = party.addresses.pop()
+    ...     party_address = party.addresses.new(
+    ...         street='Teststreet %s' % str(location_number),
+    ...         zip=str(10000+location_number).zfill(5),
+    ...         city='Testcity',
+    ...         country=germany
+    ...     )
+    ...     party.save()
+    ...
     ...     # location
     ...     location = Location(
     ...         name="Location Performance %s" % str(location_number).zfill(3),
     ...         category=random.choice(location_categories),
-    ...         party=licensee.party,
+    ...         party=party,
     ...         public=True,
     ...         latitude=random.random()*180-90,
-    ...         longitude=random.random()*360-180
+    ...         longitude=random.random()*360-180,
+    ...         entity_creator=licensee.party
     ...     )
     ...     location.save()
     ...     location_number += 1
