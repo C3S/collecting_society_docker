@@ -5,7 +5,7 @@
 # Usage: ./test [service] [--down] [--build] [--keep] [--ci] [OTHER PARARAMS]
 #
 # Options:
-#     service: web|worker|all (default: all)
+#     service: web|worker|erpserver|all (default: all)
 #     --down: immediately stop and remove the container and exit
 #     --build: build images and recreate the test database template
 #     --keep: keep container running

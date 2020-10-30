@@ -33,7 +33,7 @@ Configuration
     >>> label = debug or 10
     >>> tariff_systems = debug or 3
     >>> distribution_plans = debug or 3
-    
+
     >>> group_artists = debug or 3
     >>> new_solo_artists_per_group = debug or 2
     >>> add_solo_artists_per_group = debug or 1
@@ -74,7 +74,7 @@ Configuration
     >>> webuser_licensee = debug or 3
 
     >>> licensee_playing_bars = debug or 1
-    >>> fingerprint_messages_per_device = debug or 10
+    >>> fingerprint_messages_per_device = debug or 20
     >>> usagereport_messages_per_device = debug or 10
     >>> licensee_live_events = debug or 3
     >>> performances_per_event = debug or 3
@@ -108,7 +108,7 @@ Upstream::
     >>> Company = Model.get('company.company')
     >>> User = Model.get('res.user')
     >>> Country = Model.get('country.country')
-    
+
 Extended::
 
     >>> Party = Model.get('party.party')
@@ -141,7 +141,7 @@ New::
     >>> WebsiteResourceIndicators = Model.get('website.resource.indicators')
     >>> ReleaseIndicators = Model.get('release.indicators')
     >>> UtilisationIndicators = Model.get('utilisation.indicators')
-    
+
     >>> License = Model.get('license')
 
     >>> Instrument = Model.get('instrument')
@@ -223,7 +223,7 @@ New::
     >>> Content = Model.get('content')
     >>> Fingerprintlog = Model.get('content.fingerprintlog')
     >>> Checksum = Model.get('checksum')
-    
+
     >>> AccessControlEntry = Model.get('ace')
     >>> AccessControlEntryRole = Model.get('ace-ace.role')
     >>> AccessRole = Model.get('ace.role')
@@ -248,7 +248,7 @@ Content
     ...     'performance',
     ...     'text',
     ... ]
-    
+
     >>> performance_types = [
     ...     'recording',
     ...     'producing',
@@ -327,8 +327,8 @@ Gema::
     ...     represents_copyright=True,
     ...     represents_ancillary_copyright=False
     ... ).save()
-    
-GVL:: 
+
+GVL::
 
     >>> party = Party(name='GVL')
     >>> _ = party.addresses.pop()
@@ -904,7 +904,7 @@ Existing solo or member artists::
     ...     if artist.group:
     ...         contributors = artist.solo_artists
     ...     roles = CreationRole.find([])
-    ...     
+    ...
     ...     # composer
     ...     num_composers = random.randint(0, min(
     ...         max_composers_per_creation, len(contributors)))
@@ -919,7 +919,7 @@ Existing solo or member artists::
     ...         cr.contribution = cc
     ...         cr.role = random.choice(roles)
     ...         cr.save()
-    ...     
+    ...
     ...     # recorder
     ...     num_recorders = random.randint(0, min(
     ...         max_recorders_per_creation, len(contributors)))
@@ -989,7 +989,7 @@ Existing solo or member artists::
     ...         ).save()
 
 Foreign contributions::
-    
+
     >>> number = 0
     >>> for i in range(0, len(creations)):
     ...     if random.random() > foreign_contribution_chance_per_creation:
@@ -999,7 +999,7 @@ Foreign contributions::
     ...     roles = CreationRole.find([])
     ...     nrss = CollectingSociety.find([(
     ...         'represents_ancillary_copyright', '=', True)])
-    ...     
+    ...
     ...     # foreign artist
     ...     name = "Foreign Contributor Solo Artist %s" % str(
     ...         number).zfill(3)
@@ -1021,7 +1021,7 @@ Foreign contributions::
     ...         claim_state='unclaimed'
     ...     )
     ...     foreign_solo_artist.save()
-    ...     
+    ...
     ...     # contribution
     ...     cc = CreationContribution()
     ...     cc.creation = creation
@@ -1032,7 +1032,7 @@ Foreign contributions::
     ...         if random.choice([False, True]):
     ...             cc.neighbouring_rights_society = random.choice(nrss)
     ...     cc.save()
-    ...     
+    ...
     ...     # contribution role
     ...     if cc.type == 'composition' or cc.performance == 'recording':
     ...         cr = CreationContributionRole()
@@ -1301,7 +1301,7 @@ Split Releases
     ...     # release creation
     ...     last_date = datetime.date(1,1,1)
     ...     for split in splits:
-    ...         tracks = random.sample(split.creations, 
+    ...         tracks = random.sample(split.creations,
     ...             min(creations_per_split_artist,len(split.creations)))
     ...         for i in range(0, len(tracks)):
     ...             track = tracks[i]
@@ -1326,7 +1326,7 @@ Split Releases
 
 Artist Playlists
 ----------------
-    
+
     >>> artists = Artist.find([('entity_origin', '=', 'direct')])
 
     >>> for artist in artists:
@@ -1337,7 +1337,7 @@ Artist Playlists
     ...         continue
     ...
     ...     for i in range(0, playlists_per_artist):
-    ...     
+    ...
     ...         # playlist
     ...         playlist = ArtistPlaylist(
     ...             artist=artist,
@@ -1374,7 +1374,7 @@ Archiving
     >>> for i in range(1, storehouses + 1):
     ...     number = i
     ...     host = uuid_host=str(uuid.uuid4())
-    ...     
+    ...
     ...     # admin
     ...     admin = User(
     ...         name="Storehouse Admin %s" % str(number).zfill(3),
@@ -1382,7 +1382,7 @@ Archiving
     ...         password="%s" % number
     ...     )
     ...     admin.save()
-    ...     
+    ...
     ...     # storehouse
     ...     storehouse = Storehouse(
     ...         code="%s" % str(number).zfill(3),
@@ -1395,7 +1395,7 @@ Archiving
     ...     for j in range(1, harddisklabels_per_storehouse + 1):
     ...         harddisk_label = HarddiskLabel()
     ...         harddisk_label.save()
-    ...     
+    ...
     ...         # harddisks
     ...         for k in range(1, harddisks_per_harddisklabel + 1):
     ...             harddisk = Harddisk(
@@ -1452,7 +1452,7 @@ Audio Files::
     ...     artist = creation.artist
     ...     if artist.group:
     ...         artist = artist.solo_artists[0]
-    ...     
+    ...
     ...     # audio
     ...     c = Content()
     ...     c.uuid = str(uuid.uuid4())
@@ -1746,7 +1746,7 @@ Licensee Usecase: Playing / Bar
     ...             entity_creator=licensee.party
     ...         )
     ...         location.save()
-    ...         
+    ...
     ...         # opening hours
     ...         for d in range(0, len(weekdays)):
     ...             if random.random() < 0.5:
@@ -1764,7 +1764,7 @@ Licensee Usecase: Playing / Bar
     ...                     minute=random.choice([0,30])
     ...                 )
     ...             ).save()
-    ...         
+    ...
     ...         # location spaces
     ...         for lsc in range(0, len(location_space_categories)):
     ...             category = location_space_categories[lsc]
@@ -1775,7 +1775,7 @@ Licensee Usecase: Playing / Bar
     ...                 category=category,
     ...                 estimated_size=random.randint(10,100)
     ...             ).save()
-    ...         
+    ...
     ...         # declaration
     ...         Declaration(
     ...             licensee=licensee.party,
@@ -1786,7 +1786,7 @@ Licensee Usecase: Playing / Bar
     ...             tariff=tariff_playing,
     ...             context=location
     ...         ).save()
-    ...         
+    ...
     ...         # device
     ...         device = Device(
     ...             web_user=licensee,
@@ -1799,17 +1799,20 @@ Licensee Usecase: Playing / Bar
     ...             software_vendor='C3S'
     ...         )
     ...         device.save()
-    ...         
+    ...
     ...         # device assignment
     ...         DeviceAssignment(
     ...             device=device,
     ...             assignment=location.spaces[0],
     ...             start=now
     ...         ).save()
-    ...         
+    ...
     ...         # device messages
     ...         timestamp = now - datetime.timedelta(days=1)
     ...         creation = random.choice(creations)
+    ...         keep_creation = 0
+    ...         unknown_creation = False
+    ...
     ...         for i in range(0, fingerprint_messages_per_device):
     ...
     ...             # device message
@@ -1823,12 +1826,19 @@ Licensee Usecase: Playing / Bar
     ...             message.save()
     ...
     ...             # device message fingerprint
-    ...             if not i % 4:
-    ...                 creation = random.choice(creations)
+    ...             if not keep_creation:
+    ...                 if unknown_creation:
+    ...                     creation = None
+    ...                 else:
+    ...                     creation = random.choice(creations)
+    ...                 keep_creation = random.randrange(0,8)
+    ...                 unknown_creation = random.random() > 0.9
+    ...             keep_creation -= 1
     ...             timestamp = timestamp + datetime.timedelta(minutes=1)
     ...             DeviceMessageFingerprint(
     ...                 message=[message],
     ...                 state='matched',
+    ...                 matched_state=creation and 'success' or 'fail_score',
     ...                 matched_creation=creation,
     ...                 timestamp=timestamp,
     ...                 data=''.join(random.sample(
@@ -1877,14 +1887,14 @@ Licensee Usecase: Life / Perfomances
     ...     )
     ...     location.save()
     ...     location_number += 1
-    ...     
+    ...
     ...     # location spaces
     ...     LocationSpace(
     ...         location=location,
     ...         category=location_space_category_concert,
     ...         estimated_size=random.randint(10,100)
     ...     ).save()
-    ...     
+    ...
     ...     # event
     ...     for i in range(0, licensee_live_events):
     ...
@@ -1960,7 +1970,7 @@ Licensee Usecase: Life / Perfomances
     ...                     entity_origin='indirect',
     ...                     entity_creator=licensee.party
     ...                 ).save()
-    ... 
+    ...
     ...         # declaration
     ...         Declaration(
     ...             licensee=licensee.party,
@@ -2044,7 +2054,7 @@ Licensee Usecase: Reproduction / Release
     ...             rc.track_number=i + 1
     ...             rc.license=random.choice(License.find([]))
     ...             rc.save()
-    ...         
+    ...
     ...         # declaration
     ...         Declaration(
     ...             licensee=licensee.party,
@@ -2087,7 +2097,7 @@ Licensee Usecase: Online / Webradio
     ...
     ...     # website resources
     ...     for i in range(0, channels_per_webradio):
-    ...     
+    ...
     ...         # website resource
     ...         website_resource = WebsiteResource(
     ...             website=website,
@@ -2100,7 +2110,7 @@ Licensee Usecase: Online / Webradio
     ...         )
     ...         website_resource.save()
     ...         channel_number += 1
-    ... 
+    ...
     ...     # declaration
     ...     Declaration(
     ...         licensee=licensee.party,
@@ -2137,6 +2147,8 @@ Licensee Usecase: Online / Webradio
     ...
     ...         timestamp = now - datetime.timedelta(days=1)
     ...         creation = random.choice(creations)
+    ...         keep_creation = 0
+    ...         unknown_creation = False
     ...
     ...         for i in range(0, fingerprint_messages_per_device):
     ...
@@ -2151,12 +2163,19 @@ Licensee Usecase: Online / Webradio
     ...             message.save()
     ...
     ...             # device message fingerprint
-    ...             if not i % 4:
-    ...                 creation = random.choice(creations)
+    ...             if not keep_creation:
+    ...                 if unknown_creation:
+    ...                     creation = None
+    ...                 else:
+    ...                     creation = random.choice(creations)
+    ...                 keep_creation = random.randrange(0,8)
+    ...                 unknown_creation = random.random() > 0.9
+    ...             keep_creation -= 1
     ...             timestamp = timestamp + datetime.timedelta(minutes=1)
     ...             DeviceMessageFingerprint(
     ...                 message=[message],
     ...                 state='matched',
+    ...                 matched_state=creation and 'success' or 'fail_score',
     ...                 matched_creation=creation,
     ...                 timestamp=timestamp,
     ...                 data=''.join(random.sample(
@@ -2193,7 +2212,7 @@ Licensee Usecase: Online / Podcast
     ...
     ...     # website resources
     ...     for i in range(0, episodes_per_podcast):
-    ...     
+    ...
     ...         # website resource
     ...         website_resource = WebsiteResource(
     ...             website=website,
@@ -2208,7 +2227,7 @@ Licensee Usecase: Online / Podcast
     ...         )
     ...         website_resource.save()
     ...         episode_number += 1
-    ... 
+    ...
     ...     # declaration
     ...     Declaration(
     ...         licensee=licensee.party,
@@ -2307,7 +2326,7 @@ Licensee Usecase: Online / DSP
     ...     )
     ...     website_resource.save()
     ...     ugc_number += 1
-    ... 
+    ...
     ...     # declaration
     ...     Declaration(
     ...         licensee=licensee.party,
