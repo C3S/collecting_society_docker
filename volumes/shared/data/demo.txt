@@ -1064,6 +1064,10 @@ Rightsholder
     ...         suc.predecessor = pre
     ...         if random.random() < collecting_society_per_creationrightsholder:
     ...             suc.collecting_society = crss[random.randint(0, len(crss)-1)]
+    ...         if pre.instruments:
+    ...             pre_inst_ids = [ inst.id for inst in pre.instruments ]
+    ...             pre_inst = Instrument.find([('id', 'in', pre_inst_ids)])
+    ...             suc.instruments.extend(pre_inst)
     ...         suc.save()
     ...         pre.successor = suc
     ...         pre.valid_from = suc.valid_from - datetime.timedelta(days=
