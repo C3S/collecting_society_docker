@@ -1116,16 +1116,16 @@ Existing solo or member artists::
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
     ...         if random.random() < collecting_society_per_creationrightsholder:
-    ...             cr.collecting_society = crss[random.randint(0, 
+    ...             cr.collecting_society = crss[random.randint(0,
     ...                 len(crss)-1)]
     ...         cr.save()
     ...         make_successor(cr)
-    ...     
+    ...
     ...     # interprets
     ...     num_interprets = random.randint(0, min(
     ...         max_interprets_per_creation, len(rightsholders)))
     ...     num_instruments = random.randint(1, min(
-    ...         max_instruments_per_interpret, total_number_of_instruments))    
+    ...         max_instruments_per_interpret, total_number_of_instruments)
     ...     for interpret in random.sample(rightsholders, num_interprets):
     ...         cr = CreationRightsholder()
     ...         cr.rightsholder_subject = interpret
@@ -1135,7 +1135,7 @@ Existing solo or member artists::
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
     ...         if random.random() < collecting_society_per_creationrightsholder:
-    ...             cr.collecting_society = crss[random.randint(0, 
+    ...             cr.collecting_society = crss[random.randint(0,
     ...                 len(nrss)-1)]
     ...         instruments = Instrument.find([])
     ...         cr.instruments.extend(random.sample(instruments, num_instruments))
@@ -1154,7 +1154,7 @@ Existing solo or member artists::
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
     ...         if random.random() < collecting_society_per_creationrightsholder:
-    ...             cr.collecting_society = crss[random.randint(0, 
+    ...             cr.collecting_society = crss[random.randint(0,
     ...                 len(crss)-1)]
     ...         cr.save()
     ...         make_successor(cr)
@@ -1171,7 +1171,7 @@ Existing solo or member artists::
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
     ...         if random.random() < collecting_society_per_creationrightsholder:
-    ...             cr.collecting_society = crss[random.randint(0, 
+    ...             cr.collecting_society = crss[random.randint(0,
     ...                 len(crss)-1)]
     ...         cr.save()
     ...         make_successor(cr)
@@ -1188,7 +1188,7 @@ Existing solo or member artists::
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
     ...         if random.random() < collecting_society_per_creationrightsholder:
-    ...             cr.collecting_society = crss[random.randint(0, 
+    ...             cr.collecting_society = crss[random.randint(0,
     ...                 len(crss)-1)]
     ...         cr.save()
     ...         make_successor(cr)
@@ -1731,7 +1731,7 @@ Licensee Usecase: Playing / Bar
     ...             country=germany
     ...         )
     ...         party.save()
-    ...   
+    ...
     ...         # location
     ...         location = Location(
     ...             name="Location Bar %s" % str(number).zfill(3),
