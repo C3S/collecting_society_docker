@@ -1125,7 +1125,7 @@ Existing solo or member artists::
     ...     num_interprets = random.randint(0, min(
     ...         max_interprets_per_creation, len(rightsholders)))
     ...     num_instruments = random.randint(1, min(
-    ...         max_instruments_per_interpret, total_number_of_instruments)
+    ...         max_instruments_per_interpret, total_number_of_instruments))
     ...     for interpret in random.sample(rightsholders, num_interprets):
     ...         cr = CreationRightsholder()
     ...         cr.rightsholder_subject = interpret
