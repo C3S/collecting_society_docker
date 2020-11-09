@@ -24,7 +24,7 @@ WORKDIR $WORKDIR
 ENV DEBIAN_FRONTEND noninteractive
 ARG APT_CACHERURL
 RUN if [ ${APT_CACHERURL} ]; then \
-        echo "Acquire::HTTP::Proxy ${APT_CACHERURL};" >> /etc/apt/apt.conf.d/01proxy \
+        echo 'Acquire::HTTP::Proxy "${APT_CACHERURL}";' >> /etc/apt/apt.conf.d/01proxy \
         && echo 'Acquire::HTTPS::Proxy "false";' >> /etc/apt/apt.conf.d/01proxy; \
     fi
 # install base packages
