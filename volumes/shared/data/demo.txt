@@ -1475,8 +1475,8 @@ Audio Files::
     ...     c.storage_hostname = 'archive_machine'
     ...     c.mediation = False
     ...     # low level audio metadata
-    ...     c.length = random.uniform(
-    ...         content_audio_length_min, content_audio_length_max)
+    ...     c.length = round(random.uniform(
+    ...         content_audio_length_min, content_audio_length_max), 6)
     ...     c.channels = 2
     ...     c.sample_rate = 48000
     ...     c.sample_width = 16
