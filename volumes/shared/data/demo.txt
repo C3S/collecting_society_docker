@@ -57,8 +57,8 @@ Configuration
     >>> audio_content_chance_per_creation = debug and 1 or 0.8
     >>> lyric_content_chance_per_creation = debug and 1 or 0.6
     >>> sheet_content_chance_per_creation = debug and 1 or 0.1
-    >>> collecting_society_per_creationrightsholder = 0.3
-    >>> successor_chance_per_rightsholder = 0.1
+    >>> collecting_society_per_creationrightsholder = debug and 1 or 0.3
+    >>> successor_chance_per_rightsholder = debug and 1 or 0.1
 
     >>> sampler_releases = debug or 1
     >>> creations_per_sampler = debug or 5
@@ -74,7 +74,7 @@ Configuration
     >>> webuser_licensee = debug or 3
 
     >>> licensee_playing_bars = debug or 1
-    >>> fingerprint_messages_per_device = debug or 20
+    >>> fingerprint_messages_per_device = debug or 60*3
     >>> usagereport_messages_per_device = debug or 10
     >>> licensee_live_events = debug or 3
     >>> performances_per_event = debug or 3
@@ -93,6 +93,9 @@ Configuration
     >>> harddisks_per_harddisklabel = debug or 2
     >>> filesystemlabels_per_harddisk = debug or 2
     >>> filesystems_per_filesystemlabel = debug or 2
+
+    >>> content_audio_length_min = debug and 60*3 or 30
+    >>> content_audio_length_max = debug and 60*3 or 60*10
 
     >>> delimiter = ','
     >>> quotechar = '"'
@@ -1472,7 +1475,8 @@ Audio Files::
     ...     c.storage_hostname = 'archive_machine'
     ...     c.mediation = False
     ...     # low level audio metadata
-    ...     c.length = 42.0
+    ...     c.length = random.uniform(
+    ...         content_audio_length_min, content_audio_length_max)
     ...     c.channels = 2
     ...     c.sample_rate = 48000
     ...     c.sample_width = 16
@@ -1832,7 +1836,7 @@ Licensee Usecase: Playing / Bar
     ...                 else:
     ...                     creation = random.choice(creations)
     ...                 keep_creation = random.randrange(0,8)
-    ...                 unknown_creation = random.random() > 0.9
+    ...                 unknown_creation = random.random() > 0.6
     ...             keep_creation -= 1
     ...             timestamp = timestamp + datetime.timedelta(minutes=1)
     ...             DeviceMessageFingerprint(
@@ -1847,8 +1851,21 @@ Licensee Usecase: Playing / Bar
     ...                 version='1.0.0'
     ...             ).save()
 
-Licensee Usecase: Life / Perfomances
-------------------------------------
+Merge Fingerprints::
+
+    >>> contexts = LocationSpace.find(
+    ...     ['messages.category', '=', 'fingerprint'])
+
+    >>> for context in contexts[:-1]:
+    ...     wizard = Wizard('device.message.fingerprint.merge')
+    ...     wizard.form.context = context
+    ...     wizard.form.start = context.fingerprints[0].timestamp
+    ...     wizard.form.end = context.fingerprints[-1].timestamp
+    ...     wizard.execute('select')
+    ...     wizard.execute('merge')
+
+Licensee Usecase: Life / Performances
+-------------------------------------
 ::
     >>> licensees = WebUser.find(['roles.code', '=', 'licensee'])
     >>> location_categories = LocationCategory.find(
@@ -2169,7 +2186,7 @@ Licensee Usecase: Online / Webradio
     ...                 else:
     ...                     creation = random.choice(creations)
     ...                 keep_creation = random.randrange(0,8)
-    ...                 unknown_creation = random.random() > 0.9
+    ...                 unknown_creation = random.random() > 0.6
     ...             keep_creation -= 1
     ...             timestamp = timestamp + datetime.timedelta(minutes=1)
     ...             DeviceMessageFingerprint(
@@ -2183,6 +2200,19 @@ Licensee Usecase: Online / Webradio
     ...                 algorithm='echoprint',
     ...                 version='1.0.0'
     ...             ).save()
+
+Merge Fingerprints::
+
+    >>> contexts = WebsiteResource.find(
+    ...     ['messages.category', '=', 'fingerprint'])
+
+    >>> for context in contexts[:-1]:
+    ...     wizard = Wizard('device.message.fingerprint.merge')
+    ...     wizard.form.context = context
+    ...     wizard.form.start = context.fingerprints[0].timestamp
+    ...     wizard.form.end = context.fingerprints[-1].timestamp
+    ...     wizard.execute('select')
+    ...     wizard.execute('merge')
 
 Licensee Usecase: Online / Podcast
 ----------------------------------
