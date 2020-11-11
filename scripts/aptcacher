@@ -10,6 +10,10 @@
 # 1. set "APT_CACHERURL=http://172.17.0.1:3142" in build args
 # 2. start this script via "./aptcacher"
 # 3. run "docker-compose build"
+#
+# To monitor the apt-cacher:
+# http://localhost:3142/acng-report.html
+# $docker exec -it collecting_society_aptcache tail -f /var/log/apt-cacher-ng/apt-cacher.log
 
 # get directories
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -21,6 +25,7 @@ mkdir -p $VOLUME
 docker run \
   --rm \
   --init \
+  --name collecting_society_aptcache \
   --publish 3142:3142 \
   --volume $VOLUME:/var/cache/apt-cacher-ng \
   sameersbn/apt-cacher-ng
