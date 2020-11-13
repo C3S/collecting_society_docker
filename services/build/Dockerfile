@@ -22,11 +22,11 @@ RUN mkdir -p $WORKDIR
 WORKDIR $WORKDIR
 # configure apt
 ENV DEBIAN_FRONTEND noninteractive
-ARG APT_CACHERURL
-RUN if [ ${APT_CACHERURL} ]; then \
-        echo 'Acquire::HTTP::Proxy "http://172.17.0.1:3142";' >> /etc/apt/apt.conf.d/01proxy \
-        && echo 'Acquire::HTTPS::Proxy "false";' >> /etc/apt/apt.conf.d/01proxy; \
-    fi
+# ARG APT_CACHERURL
+# RUN if [ ${APT_CACHERURL} ]; then \
+#         echo 'Acquire::HTTP::Proxy "http://172.17.0.1:3142";' >> /etc/apt/apt.conf.d/01proxy \
+#         && echo 'Acquire::HTTPS::Proxy "false";' >> /etc/apt/apt.conf.d/01proxy; \
+#     fi
 # install base packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
         locales \
