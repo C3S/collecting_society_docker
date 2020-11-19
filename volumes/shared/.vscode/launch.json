@@ -27,14 +27,26 @@
             "port": 51002,
             "host": "localhost"
         },
-        // e.g. tests; insert:  import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51004), redirect_output=True); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
-        // don't forget to open the resp. port in the docker-compose.yml!
         {
             "name": "Casual Debugging Attach",
             "type": "python",
             "request": "attach",
             "port": 51004,
             "host": "localhost"
+        },
+        // e.g. tests; insert:  import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51004), redirect_output=True); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
+        // don't forget to open the resp. port in the docker-compose.yml!        
+        {
+            "name": "JavaScript attach",
+            "type": "firefox",
+            "request": "attach",
+            "url": "http://collecting_society.test/repertoire/creations/C0000000019/edit",
+            "pathMappings": [
+                {
+                    "url": "http://collecting_society.test/static/portal",
+                    "path": "${workspaceFolder}/src/portal_web/portal_web/static"
+                }
+            ]
         }
     ]
 }
