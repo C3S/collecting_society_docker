@@ -22,11 +22,11 @@ RUN mkdir -p $WORKDIR
 WORKDIR $WORKDIR
 # configure apt
 ENV DEBIAN_FRONTEND noninteractive
-ARG APT_CACHERURL
-RUN if [ ${APT_CACHERURL} ]; then \
-        echo "Acquire::HTTP::Proxy ${APT_CACHERURL};" >> /etc/apt/apt.conf.d/01proxy \
-        && echo 'Acquire::HTTPS::Proxy "false";' >> /etc/apt/apt.conf.d/01proxy; \
-    fi
+# ARG APT_CACHERURL
+# RUN if [ ${APT_CACHERURL} ]; then \
+#         echo 'Acquire::HTTP::Proxy "http://172.17.0.1:3142";' >> /etc/apt/apt.conf.d/01proxy \
+#         && echo 'Acquire::HTTPS::Proxy "false";' >> /etc/apt/apt.conf.d/01proxy; \
+#     fi
 # install base packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
         locales \
@@ -78,8 +78,6 @@ RUN pip install virtualenv
 RUN python -m virtualenv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV=/opt/venv
-# downgrade pip due to bug: https://github.com/pypa/pip/issues/6164
-RUN pip install 'pip<19'
 
 ### testing
 FROM jessie_python_production AS jessie_python_testing
@@ -121,7 +119,7 @@ FROM jessie_trytond_${ENVIRONMENT} AS jessie_trytond
 FROM jessie_python AS jessie_echoprint_production
 RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && apt-get update && apt-get install -y --no-install-recommends \
-        default-jre \
+        default-jre-headless \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/man/*
 RUN mkdir /opt/echoprint-data
@@ -208,7 +206,6 @@ RUN pip install \
 FROM jessie_python_production_compiled AS jessie_python_testing_compiled
 RUN pip install \
     coverage==4.5.1 \
-    click==4.0 \
     nose==1.3.7 \
     nose2==0.9.1 \
     pytest==4.6.5 \
@@ -253,7 +250,7 @@ RUN cd tokyotyrant-1.1.41 && ./configure --prefix=/opt/tokyotyrant/ --with-tc=/o
 
 # install python packages
 RUN pip install \
-    web.py==0.40 \
+    web.py==0.51 \
     pyechonest==9.0.0
 
 ### testing
