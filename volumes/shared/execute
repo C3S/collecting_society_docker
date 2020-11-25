@@ -26,8 +26,9 @@ import subprocess
 import glob
 import fcntl
 from urlparse import urlparse
-
 import click
+
+import data
 
 PROJECT = str(os.environ.get('PROJECT'))
 ENVIRONMENT = str(os.environ.get('ENVIRONMENT'))
@@ -120,6 +121,9 @@ def db_delete(context, dbname):
     On error the deletion is retried several times.
     """
     print('Delete database "%s" ...' % dbname, end='')
+    if not _db_exist(dbname):
+        print(' database does not exist')
+        return
     max_tries = 2
     tries = 0
 
@@ -148,7 +152,7 @@ def db_delete(context, dbname):
                 print("error: \n\033[91m{}\033[0m".format(e.output.rstrip()))
                 return
             continue
-        print("ok")
+        print(" ok")
         return
 
 
@@ -161,6 +165,9 @@ def db_copy(context, dbname_src, dbname_dst):
     Creates the postrges database DBNAME_DST from template DBNAME_SRC.
     """
     print('Copy database "%s" to "%s" ... ' % (dbname_src, dbname_dst), end='')
+
+    # kill connections (bug? see collecting_society_worker:repro.py:connect_db)
+    context.invoke(kill_dbconnections, dbname=dbname_src)
 
     # copy database
     subprocess.call(
@@ -222,16 +229,21 @@ def db_backup(context, dbname):
 
 @execute.command('db-setup')
 @click.argument('dbname', default=PROJECT)
-@click.option('--master/--no-master', default=False,
-              help='Execute master data (default: no)')
-@click.option('--demo/--no-demo', default=False,
-              help='Execute demo data (default: no)')
-@click.option('--develop/--no-develop', default=False,
-              help='Execute develop data (default: no)')
+@click.option('--debug', '-d', type=int, default=-1,
+              help='Maximum numbers of objects (default: 0 = all)')
+@click.option('--dataset', '-s', type=str, default=[], multiple=True,
+              help='dataset in ./data/datasets/ to generate (default: all)\n'
+                   'can be used multiple times')
+@click.option('--template/--no-template', default=True,
+              help='Use template db for dataset deps (default: yes)')
+@click.option('--cache/--no-cache', default=False,
+              help='Regenerate template db for dataset deps (default: no)')
 @click.option('--force/--no-force', default=False,
               help='Force execution (default: no)')
+@click.option('--pdb/--no-pdb', default=False,
+              help='Start pdb on error (default: no)')
 @click.pass_context
-def db_setup(context, dbname, master, demo, develop, force):
+def db_setup(context, dbname, debug, dataset, template, cache, force, pdb):
     """
     Creates and sets up the postgres database DBNAME.
 
@@ -246,6 +258,10 @@ def db_setup(context, dbname, master, demo, develop, force):
     """
     context.invoke(pip_install, container='erpserver')
 
+    # Set envvars
+    if debug != -1:
+        os.environ['TRYTON_DEMODATA_DEBUG'] = str(debug)
+
     # Check lockfile, if locked, wait till not locked any more
     while True:
         try:
@@ -256,14 +272,17 @@ def db_setup(context, dbname, master, demo, develop, force):
         except IOError:
             time.sleep(3)
             print("Waiting for the other process to finish db creation...")
+        except KeyboardInterrupt as e:
+            fcntl.flock(lockfile, fcntl.LOCK_UN)
+            lockfile.close()
+            try:
+                os.remove(TMP_FILE)
+            except OSError:
+                pass
+            sys.exit()
 
     # Check database
     if not _db_exist(dbname) or force:
-
-        # Create database
-        if not _db_exist(dbname):
-            context.invoke(db_create, dbname=dbname)
-            _update(None, dbname)
 
         # Cofigure trytond
         os.environ['DB_NAME'] = dbname
@@ -271,70 +290,45 @@ def db_setup(context, dbname, master, demo, develop, force):
             SHARED_PATH, 'config', 'trytond', ENVIRONMENT + '.conf'
         )
 
-        # Setup master data
-        if master:
-            print("\nSetup master data -> /shared/tmp/logs/db-master.log\n")
-            logfile = open("/shared/tmp/logs/db-master.log", "w")
-            subprocess.call(
-                [
-                    'python',
-                    '-m', 'doctest',
-                    '-v', os.path.join(
-                        SHARED_PATH, 'data', 'master.txt'
-                    ),
-                    ''
-                ], stdout=logfile
-            )
-            logfile.close()
-            print("_____ Test results for master data _____")
-            print(subprocess.check_output(
-                [
-                    'tail',
-                    '-n', '5',
-                    "/shared/tmp/logs/db-master.log"
-                ]
-            ))
+        # With template
+        if template:
+            print("Setup database with template database.")
+            template_dbname = dbname + "_template"
+            # Delete template database
+            if not cache:
+                context.invoke(db_delete, dbname=template_dbname)
+            # Create template
+            if not _db_exist(template_dbname):
+                os.environ['DB_NAME'] = template_dbname
+                # Create template database
+                context.invoke(db_create, dbname=template_dbname)
+                # Update template database
+                _update(None, template_dbname)
+                # Generate dependent datasets
+                data.generate(
+                    dataset, dependencies=True, leaves=False, pdb=pdb)
+            # Copy template
+            context.invoke(
+                db_copy, dbname_src=template_dbname, dbname_dst=dbname)
+            # Generate leave datasets
+            if dataset:
+                os.environ['DB_NAME'] = dbname
+                data.generate(
+                    dataset, dependencies=False, leaves=True, pdb=pdb)
 
-        # Setup development data
-        if ENVIRONMENT == 'development':
-
-            # Demo data
-            if demo:
-                print('\nSetup demo data -> /shared/tmp/logs/db-demo.log\n')
-                logfile = open("/shared/tmp/logs/db-demo.log", "w")
-                subprocess.call(
-                    [
-                        'python',
-                        '-m', 'doctest',
-                        '-v', os.path.join(
-                            SHARED_PATH, 'data', 'demo.txt'
-                        )
-                    ], stdout=logfile
-                )
-                logfile.close()
-                print("_____ Test results for demo data _____")
-                print(subprocess.check_output(
-                    [
-                        'tail',
-                        '-n', '5',
-                        "/shared/tmp/logs/db-demo.log"
-                    ]
-                ))
-
-            # Develop data (to test/develop the doctest files)
-            if develop:
-                subprocess.call(
-                    [
-                        'python',
-                        '-m', 'doctest',
-                        '-v', os.path.join(
-                            SHARED_PATH, 'data', 'develop.txt'
-                        )
-                    ]
-                )
+        # Without template
+        else:
+            print("Setup database without template database.")
+            # Create database
+            if not _db_exist(dbname):
+                context.invoke(db_create, dbname=dbname)
+                _update(None, dbname)
+            # Generate datasets
+            data.generate(
+                dataset, dependencies=True, leaves=True, pdb=pdb)
 
     else:
-        print('Setup demo data, but database "%s" exists: Skip!' % dbname)
+        print('Setup database, but database "%s" exists: Skip!' % dbname)
 
     if lockfile:
         # unlock file
@@ -343,7 +337,7 @@ def db_setup(context, dbname, master, demo, develop, force):
         try:
             os.remove(TMP_FILE)
         except OSError:
-            print("Couldn't remove lock file, something has gone wrong here")
+            print("Couldn't remove lock file, something has gone wrong")
 
 
 @execute.command('db-demo-setup')
@@ -357,19 +351,31 @@ def db_demo_setup(context, dbname):
 
 @execute.command('db-rebuild')
 @click.argument('dbname', default=PROJECT)
+@click.option('--debug', '-d', type=int, default=-1,
+              help='Maximum numbers of objects (default: all)')
+@click.option('--dataset', '-s', type=str, default=[], multiple=True,
+              help='dataset in ./data/datasets/ to generate (default: all)\n'
+                   'can be used multiple times')
+@click.option('--template/--no-template', default=True,
+              help='Use template db for dataset deps (default: yes)')
+@click.option('--cache/--no-cache', default=False,
+              help='Use/Recreate template db for dataset deps (default: no)')
+@click.option('--pdb/--no-pdb', default=False,
+              help='Start pdb on error (default: no)')
 @click.pass_context
-def db_rebuild(context, dbname):
+def db_rebuild(context, dbname, debug, dataset, template, cache, pdb):
     """
     Deletes DBNAME and executes db setup
     """
-
-    # delete database
+    print("-" * 100)
+    print("  Rebuild database")
+    print("-" * 100)
+    # Delete database
     context.invoke(db_delete, dbname=dbname)
-
-    # setup database
+    # Setup database
     context.invoke(
-        db_setup, dbname=dbname,
-        master=True, demo=True, force=False)
+        db_setup, dbname=dbname, debug=debug, dataset=dataset,
+        template=template, cache=cache, force=False, pdb=pdb)
 
 
 @execute.command('create-test-db')
