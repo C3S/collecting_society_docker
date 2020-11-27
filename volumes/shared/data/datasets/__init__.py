@@ -101,6 +101,7 @@ class Datasets(list):
 
 
 # register available datasets
+# TODO: Security checks or static imports
 register = {}
 for filename in os.listdir(os.path.dirname(os.path.realpath(__file__))):
     # filter filenames
