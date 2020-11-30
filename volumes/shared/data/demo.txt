@@ -57,8 +57,8 @@ Configuration
     >>> audio_content_chance_per_creation = debug and 1 or 0.8
     >>> lyric_content_chance_per_creation = debug and 1 or 0.6
     >>> sheet_content_chance_per_creation = debug and 1 or 0.1
-    >>> collecting_society_per_creationrightsholder = debug and 1 or 0.3
-    >>> successor_chance_per_rightsholder = debug and 1 or 0.1
+    >>> collecting_society_per_creationright = debug and 1 or 0.3
+    >>> successor_chance_per_right = debug and 1 or 0.1
 
     >>> sampler_releases = debug or 1
     >>> creations_per_sampler = debug or 5
@@ -167,9 +167,9 @@ New::
     >>> CreationTariffCategory = Model.get('creation-tariff_category')
     >>> CreationIdentifier = Model.get('creation.identifier')
     >>> CreationIdentifierSpace = Model.get('creation.identifier.space')
-    >>> CreationRightsholder = Model.get('creation.rightsholder')
-    >>> CreationRightsholderCreationRightsholder = Model.get('creation.rightsholder-creation.rightsholder')
-    >>> CreationRightsholderInstrument = Model.get('creation.rightsholder-instrument')
+    >>> CreationRight = Model.get('creation.right')
+    >>> CreationRightCreationRight = Model.get('creation.right-creation.right')
+    >>> CreationRightInstrument = Model.get('creation.right-instrument')
 
     >>> Release = Model.get('release')
     >>> ReleaseTrack = Model.get('release.track')
@@ -177,8 +177,8 @@ New::
     >>> ReleaseStyle = Model.get('release-style')
     >>> ReleaseIdentifier = Model.get('release.identifier')
     >>> ReleaseIdentifierSpace = Model.get('release.identifier.space')
-    >>> ReleaseRightsholder = Model.get('release.rightsholder')
-    >>> ReleaseRightsholderReleaseRightsholder = Model.get('release.rightsholder-release.rightsholder')
+    >>> ReleaseRightsholder = Model.get('release.right')
+    >>> ReleaseRightsholderReleaseRightsholder = Model.get('release.right-release.right')
 
     >>> Genre = Model.get('genre')
     >>> Style = Model.get('style')
@@ -1056,16 +1056,16 @@ Rightsholder
     >>> total_number_of_instruments = len(Instrument.find([]))
     ...
     >>> def make_successor(pre):
-    ...     if random.random() < successor_chance_per_rightsholder:
-    ...         suc = CreationRightsholder()
-    ...         suc.rightsholder_subject = random.choice(all_artists)
-    ...         suc.rightsholder_object = pre.rightsholder_object
+    ...     if random.random() < successor_chance_per_right:
+    ...         suc = CreationRight()
+    ...         suc.rightsholder = random.choice(all_artists)
+    ...         suc.rightsobject = pre.rightsobject
     ...         suc.contribution = pre.contribution
-    ...         suc.right = pre.right
+    ...         suc.type_of_right = pre.type_of_right
     ...         suc.valid_from = pre.valid_from
     ...         suc.country = germany
     ...         suc.predecessor = pre
-    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...         if random.random() < collecting_society_per_creationright:
     ...             suc.collecting_society = crss[random.randint(0, len(crss)-1)]
     ...         if pre.instruments:
     ...             pre_inst_ids = [ inst.id for inst in pre.instruments ]
@@ -1095,14 +1095,14 @@ Existing solo or member artists::
     ...         max_composers_per_creation, len(rightsholders)))
     ...     for composer in random.sample(rightsholders, num_composers):
     ...         # composition
-    ...         cr = CreationRightsholder()
-    ...         cr.rightsholder_subject = composer
-    ...         cr.rightsholder_object = creation
+    ...         cr = CreationRight()
+    ...         cr.rightsholder = composer
+    ...         cr.rightsobject = creation
     ...         cr.contribution = 'composition'
-    ...         cr.right = 'copyright'
+    ...         cr.type_of_right = 'copyright'
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
-    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...         if random.random() < collecting_society_per_creationright:
     ...             cr.collecting_society = crss[random.randint(0, len(crss)-1)]
     ...         cr.save()
     ...         make_successor(cr)
@@ -1111,14 +1111,14 @@ Existing solo or member artists::
     ...     num_texters = random.randint(0, min(
     ...         max_texters_per_creation, len(rightsholders)))
     ...     for texter in random.sample(rightsholders, num_texters):
-    ...         cr = CreationRightsholder()
-    ...         cr.rightsholder_subject=texter
-    ...         cr.rightsholder_object=creation
-    ...         cr.contribution='lyrics'
-    ...         cr.right = 'copyright'
+    ...         cr = CreationRight()
+    ...         cr.rightsholder = texter
+    ...         cr.rightsobject = creation
+    ...         cr.contribution = 'lyrics'
+    ...         cr.type_of_right = 'copyright'
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
-    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...         if random.random() < collecting_society_per_creationright:
     ...             cr.collecting_society = crss[random.randint(0,
     ...                 len(crss)-1)]
     ...         cr.save()
@@ -1130,14 +1130,14 @@ Existing solo or member artists::
     ...     num_instruments = random.randint(1, min(
     ...         max_instruments_per_interpret, total_number_of_instruments))
     ...     for interpret in random.sample(rightsholders, num_interprets):
-    ...         cr = CreationRightsholder()
-    ...         cr.rightsholder_subject = interpret
-    ...         cr.rightsholder_object = creation
+    ...         cr = CreationRight()
+    ...         cr.rightsholder = interpret
+    ...         cr.rightsobject = creation
     ...         cr.contribution = 'instrument'
-    ...         cr.right = 'ancillary'
+    ...         cr.type_of_right = 'ancillary'
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
-    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...         if random.random() < collecting_society_per_creationright:
     ...             cr.collecting_society = crss[random.randint(0,
     ...                 len(nrss)-1)]
     ...         instruments = Instrument.find([])
@@ -1149,14 +1149,14 @@ Existing solo or member artists::
     ...     num_producers = random.randint(0, min(
     ...         max_producers_per_creation, len(rightsholders)))
     ...     for producer in random.sample(rightsholders, num_producers):
-    ...         cr = CreationRightsholder()
-    ...         cr.rightsholder_subject=producer
-    ...         cr.rightsholder_object=creation
-    ...         cr.contribution='production'
-    ...         cr.right = 'ancillary'
+    ...         cr = CreationRight()
+    ...         cr.rightsholder = producer
+    ...         cr.rightsobject = creation
+    ...         cr.contribution = 'production'
+    ...         cr.type_of_right = 'ancillary'
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
-    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...         if random.random() < collecting_society_per_creationright:
     ...             cr.collecting_society = crss[random.randint(0,
     ...                 len(crss)-1)]
     ...         cr.save()
@@ -1166,14 +1166,14 @@ Existing solo or member artists::
     ...     num_masters = random.randint(0, min(
     ...         max_masters_per_creation, len(rightsholders)))
     ...     for master in random.sample(rightsholders, num_masters):
-    ...         cr = CreationRightsholder()
-    ...         cr.rightsholder_subject=master
-    ...         cr.rightsholder_object=creation
-    ...         cr.contribution='mastering'
-    ...         cr.right = 'ancillary'
+    ...         cr = CreationRight()
+    ...         cr.rightsholder = master
+    ...         cr.rightsobject = creation
+    ...         cr.contribution = 'mastering'
+    ...         cr.type_of_right = 'ancillary'
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
-    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...         if random.random() < collecting_society_per_creationright:
     ...             cr.collecting_society = crss[random.randint(0,
     ...                 len(crss)-1)]
     ...         cr.save()
@@ -1183,14 +1183,14 @@ Existing solo or member artists::
     ...     num_mixers = random.randint(0, min(
     ...         max_mixers_per_creation, len(rightsholders)))
     ...     for mixer in random.sample(rightsholders, num_mixers):
-    ...         cr = CreationRightsholder()
-    ...         cr.rightsholder_subject=mixer
-    ...         cr.rightsholder_object=creation
-    ...         cr.contribution='mixing'
-    ...         cr.right = 'ancillary'
+    ...         cr = CreationRight()
+    ...         cr.rightsholder = mixer
+    ...         cr.rightsobject = creation
+    ...         cr.contribution = 'mixing'
+    ...         cr.type_of_right = 'ancillary'
     ...         cr.valid_from = creation_date
     ...         cr.country = germany
-    ...         if random.random() < collecting_society_per_creationrightsholder:
+    ...         if random.random() < collecting_society_per_creationright:
     ...             cr.collecting_society = crss[random.randint(0,
     ...                 len(crss)-1)]
     ...         cr.save()
