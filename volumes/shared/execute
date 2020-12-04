@@ -340,15 +340,6 @@ def db_setup(context, dbname, debug, dataset, template, cache, force, pdb):
             print("Couldn't remove lock file, something has gone wrong")
 
 
-@execute.command('db-demo-setup')
-@click.argument('dbname', default=PROJECT)
-@click.pass_context
-def db_demo_setup(context, dbname):
-    context.invoke(
-        db_setup, dbname=dbname,
-        master=True, demo=True, force=False)
-
-
 @execute.command('db-rebuild')
 @click.argument('dbname', default=PROJECT)
 @click.option('--debug', '-d', type=int, default=-1,
@@ -646,7 +637,7 @@ def deploy_webgui(context):
     """
     context.invoke(pip_install, container='webgui')
     if str(os.environ.get('ENVIRONMENT')) != "testing":
-        context.invoke(db_demo_setup)
+        context.invoke(db_setup)
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
     subprocess.call(
         [
@@ -671,7 +662,7 @@ def deploy_webapi(context):
     """
     context.invoke(pip_install, container='webapi')
     if str(os.environ.get('ENVIRONMENT')) != "testing":
-        context.invoke(db_demo_setup)
+        context.invoke(db_setup)
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
     subprocess.call(
         [
