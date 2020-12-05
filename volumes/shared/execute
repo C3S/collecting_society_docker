@@ -59,24 +59,28 @@ def pip_install(context, container):
     After installation a flag file is created within the container to avoid
     multiple execution during its lifespan.
     """
-    print('Install packages for ' + container + ' ... ', end='')
     flagfile = "/tmp/pip_install_" + container
 
     # check flagfile
     if not os.path.exists(flagfile):
 
         # install packages
+        print('Install packages for ' + container + ' ... ', end='')
         subprocess.check_call(
             [sys.executable, '-m', 'pip', 'install', '-qr',
                 os.path.join(
                     SHARED_PATH, 'config', 'pip', '%s.pip' % container)])
+        print('ok')
 
         # create flagfile
         open(flagfile, 'w').close()
 
+        # restart process with new modules installed
+        subprocess.check_call(sys.argv)
+        sys.exit()
+
     import site
     reload(site)
-    print('ok')
 
 
 @execute.command('db-create')
@@ -358,6 +362,7 @@ def db_rebuild(context, dbname, debug, dataset, template, cache, pdb):
     """
     Deletes DBNAME and executes db setup
     """
+    context.invoke(pip_install, container='erpserver')
     print("-" * 100)
     print("  Rebuild database")
     print("-" * 100)
@@ -383,6 +388,7 @@ def create_test_db(context, dbtype, dbname):
 
     DBTYPE 'sqlite' throws errors on setup, so postgres is recommended.
     """
+    context.invoke(pip_install, container='erpserver')
     _db_type = dbtype
     _db_name = dbname
     _trytond_conf = 'testing_' + _db_type + '.conf'
@@ -481,6 +487,7 @@ def run_tests(context, service, dbtype, dbname, reset, path, nargs):
 
     Additional NARGS will be passed to nosetests.
     """
+    context.invoke(pip_install, container='erpserver')
     if service not in ['erpserver', 'web', 'worker']:
         print("Service unknown.")
         exit(-1)
