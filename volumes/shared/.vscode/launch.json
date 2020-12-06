@@ -34,8 +34,16 @@
             "port": 51004,
             "host": "localhost"
         },
-        // e.g. tests; insert:  import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51004), redirect_output=True); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
-        // don't forget to open the resp. port in the docker-compose.yml!        
+        // the followint entry is for other cases, e.g.tests; insert this line:
+        // import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51004), redirect_output=True); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
+        // don't forget to open the resp. port in the docker-compose.yml!
+        {
+            "name": "Demo Data Import Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51005,
+            "host": "localhost"
+        },
         {
             "name": "JavaScript attach",
             "type": "firefox",

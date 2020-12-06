@@ -13,12 +13,15 @@ import os
 import sys
 import pdb as pdbpp
 import traceback
+import logging
 from StringIO import StringIO
 from time import time
 from proteus import config, Model
 
 from datasets import Datasets
 
+
+log = logging.getLogger(__name__)
 
 def color(text, status):
     """Colored output wrapper for stdout text."""
@@ -100,6 +103,28 @@ def generate(datasets=[], dependencies=True, leaves=True, pdb=False):
     except Exception:
         pass
 
+    # setup ptvsd debugging
+    vs_debug = config.set_trytond(config_file=os.environ.get('DEBUGGER_PTVSD'))
+    if vs_debug:
+        try:
+            import ptvsd  # unconditional import breaks test coverage
+            ptvsd.enable_attach(address=("0.0.0.0", 51005),
+                                redirect_output=True)
+            # uncomment these three lines, and set the debugging_port
+            # accordingly, if you need to debug initialization code:
+            # ptvsd.wait_for_attach()
+            # ptvsd.break_into_debugger()
+        except Exception as ex:
+            if hasattr(ex, 'message'):
+                log.debug(ex.message)
+            else:
+                log.debug('ptvsd debugging not possible: ' + ex.message)
+
+    # get debug level to reduce number of demodata records to be generated per
+    # object, so db build time is reduced drastically
+    debug_number_of_records = config.set_trytond(
+        config_file=os.environ.get('TRYTON_DEMODATA_DEBUG'))
+
     # configure output width
     width = 100
 
@@ -152,7 +177,10 @@ def generate(datasets=[], dependencies=True, leaves=True, pdb=False):
         output = []
         try:
             with Capturing() as output:
-                dataset.generate()
+                try:
+                    dataset.generate(debug_number_of_records)
+                except TypeError:  # dataset needs no debug environment var?
+                    dataset.generate()  # call without parameter
         except Exception:
             error = "Error in dataset '%s':" % dataset
             if pdb:

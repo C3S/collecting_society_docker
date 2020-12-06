@@ -12,6 +12,7 @@ services:
   erpserver:
     ports:
       - "8069:8069"  # xmlrpc (proteus)
+      - "51005:51005"  # debugger
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
