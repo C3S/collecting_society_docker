@@ -77,14 +77,22 @@ class Capturing(list):
         sys.stdout = self.stdout
 
 
-def generate(datasets=[], dependencies=True, leaves=True, pdb=False):
+def generate(datasets=[], reclimit=0, dependencies=True, leaves=True,
+             pdb=False):
     """
     Generate datasets.
 
     Arguments:
+    - datasets (list of strings)
+    - reclimit (int): get debug level to reduce number of demodata records to
+                      be generated per object, so db build time is reduced
     - dependencies (bool): Generate dependencies of given datasets.
     - leaves (bool): Generate given datasets.
     """
+
+    if reclimit:
+        reclimit = int(reclimit)
+
     # prepare datasets
     try:
         _datasets = datasets
@@ -104,7 +112,7 @@ def generate(datasets=[], dependencies=True, leaves=True, pdb=False):
         pass
 
     # setup ptvsd debugging
-    vs_debug = config.set_trytond(config_file=os.environ.get('DEBUGGER_PTVSD'))
+    vs_debug = os.environ.get('DEBUGGER_PTVSD')
     if vs_debug:
         try:
             import ptvsd  # unconditional import breaks test coverage
@@ -119,11 +127,6 @@ def generate(datasets=[], dependencies=True, leaves=True, pdb=False):
                 log.debug(ex.message)
             else:
                 log.debug('ptvsd debugging not possible: ' + ex.message)
-
-    # get debug level to reduce number of demodata records to be generated per
-    # object, so db build time is reduced drastically
-    debug_number_of_records = config.set_trytond(
-        config_file=os.environ.get('TRYTON_DEMODATA_DEBUG'))
 
     # configure output width
     width = 100
@@ -178,9 +181,9 @@ def generate(datasets=[], dependencies=True, leaves=True, pdb=False):
         try:
             with Capturing() as output:
                 try:
-                    dataset.generate(debug_number_of_records)
-                except TypeError:  # dataset needs no debug environment var?
-                    dataset.generate()  # call without parameter
+                    dataset.generate(reclimit)  # TODO: streamline old datasets
+                except TypeError:               # so we don't needs to check
+                    dataset.generate()          # for call without parameter
         except Exception:
             error = "Error in dataset '%s':" % dataset
             if pdb:

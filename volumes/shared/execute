@@ -163,8 +163,10 @@ def db_delete(context, dbname):
 @execute.command('db-copy')
 @click.argument('dbname-src')
 @click.argument('dbname-dst')
+@click.option('--force/--no-force', default=False,
+              help='Force execution (default: no)')
 @click.pass_context
-def db_copy(context, dbname_src, dbname_dst):
+def db_copy(context, dbname_src, dbname_dst, force):
     """
     Creates the postrges database DBNAME_DST from template DBNAME_SRC.
     """
@@ -172,6 +174,10 @@ def db_copy(context, dbname_src, dbname_dst):
 
     # kill connections (bug? see collecting_society_worker:repro.py:connect_db)
     context.invoke(kill_dbconnections, dbname=dbname_src)
+
+    # --force option
+    if force:
+        context.invoke(db_delete, dbname=dbname_dst)
 
     # copy database
     subprocess.call(
@@ -233,7 +239,7 @@ def db_backup(context, dbname):
 
 @execute.command('db-setup')
 @click.argument('dbname', default=PROJECT)
-@click.option('--debug', '-d', type=int, default=-1,
+@click.option('--reclimit', '-d', type=int, default=-1,
               help='Maximum numbers of objects (default: 0 = all)')
 @click.option('--dataset', '-s', type=str, default=[], multiple=True,
               help='dataset in ./data/datasets/ to generate (default: all)\n'
@@ -247,7 +253,7 @@ def db_backup(context, dbname):
 @click.option('--pdb/--no-pdb', default=False,
               help='Start pdb on error (default: no)')
 @click.pass_context
-def db_setup(context, dbname, debug, dataset, template, cache, force, pdb):
+def db_setup(context, dbname, reclimit, dataset, template, cache, force, pdb):
     """
     Creates and sets up the postgres database DBNAME.
 
@@ -261,10 +267,6 @@ def db_setup(context, dbname, debug, dataset, template, cache, force, pdb):
     execution from different docker containers.
     """
     context.invoke(pip_install, container='erpserver')
-
-    # Set envvars
-    if debug != -1:
-        os.environ['TRYTON_DEMODATA_DEBUG'] = str(debug)
 
     # Check lockfile, if locked, wait till not locked any more
     while True:
@@ -310,7 +312,8 @@ def db_setup(context, dbname, debug, dataset, template, cache, force, pdb):
                 _update(None, template_dbname)
                 # Generate dependent datasets
                 data.generate(
-                    dataset, dependencies=True, leaves=False, pdb=pdb)
+                    dataset, reclimit=reclimit,
+                    dependencies=True, leaves=False, pdb=pdb)
             # Copy template
             context.invoke(
                 db_copy, dbname_src=template_dbname, dbname_dst=dbname)
@@ -318,7 +321,8 @@ def db_setup(context, dbname, debug, dataset, template, cache, force, pdb):
             if dataset:
                 os.environ['DB_NAME'] = dbname
                 data.generate(
-                    dataset, dependencies=False, leaves=True, pdb=pdb)
+                    dataset, reclimit=reclimit,
+                    dependencies=False, leaves=True, pdb=pdb)
 
         # Without template
         else:
@@ -329,7 +333,8 @@ def db_setup(context, dbname, debug, dataset, template, cache, force, pdb):
                 _update(None, dbname)
             # Generate datasets
             data.generate(
-                dataset, dependencies=True, leaves=True, pdb=pdb)
+                dataset, reclimit=reclimit,
+                    dependencies=True, leaves=True, pdb=pdb)
 
     else:
         print('Setup database, but database "%s" exists: Skip!' % dbname)
@@ -346,8 +351,8 @@ def db_setup(context, dbname, debug, dataset, template, cache, force, pdb):
 
 @execute.command('db-rebuild')
 @click.argument('dbname', default=PROJECT)
-@click.option('--debug', '-d', type=int, default=-1,
-              help='Maximum numbers of objects (default: all)')
+@click.option('--reclimit', '-l', type=int, default=-1,
+              help='Maximum numbers of objects (default: 0 = all)')
 @click.option('--dataset', '-s', type=str, default=[], multiple=True,
               help='dataset in ./data/datasets/ to generate (default: all)\n'
                    'can be used multiple times')
@@ -358,7 +363,7 @@ def db_setup(context, dbname, debug, dataset, template, cache, force, pdb):
 @click.option('--pdb/--no-pdb', default=False,
               help='Start pdb on error (default: no)')
 @click.pass_context
-def db_rebuild(context, dbname, debug, dataset, template, cache, pdb):
+def db_rebuild(context, dbname, reclimit, dataset, template, cache, pdb):
     """
     Deletes DBNAME and executes db setup
     """
@@ -370,7 +375,7 @@ def db_rebuild(context, dbname, debug, dataset, template, cache, pdb):
     context.invoke(db_delete, dbname=dbname)
     # Setup database
     context.invoke(
-        db_setup, dbname=dbname, debug=debug, dataset=dataset,
+        db_setup, dbname=dbname, reclimit=reclimit, dataset=dataset,
         template=template, cache=cache, force=False, pdb=pdb)
 
 
