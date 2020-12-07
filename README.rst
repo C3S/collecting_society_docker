@@ -60,6 +60,8 @@ Choose the environment to build:
 
     $ git checkout develop
 
+If you are unsure which one is the right repository for you, opt for the ``develop`` branch as it usually has the newest features included.
+
 Update the environment, clone/pull development repositories::
 
     $ ./update
