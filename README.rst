@@ -37,7 +37,7 @@ and `git <http://git-scm.com/downloads>`. Summary::
 Setup
 =====
 
-Clone this repository into your working space::
+Clone the develop branch of this repository into your working space::
 
     $ cd MY/WORKING/SPACE
     $ git clone https://github.com/C3S/collecting_society_docker.git
@@ -56,6 +56,8 @@ Choose the environment to build:
 2. For development environment switch to the ``develop`` branch::
 
     $ git checkout develop
+
+If you are unsure which one is the right repository for you, opt for the ``develop`` branch as it usually has the newest features included.
 
 Update the environment, clone/pull development repositories::
 
