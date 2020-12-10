@@ -490,19 +490,19 @@ Content
 #     ...     ).save()
 
 
-Publisher
----------
-::
-    >>> for i in range(1, publisher + 1):
-    ...     number = i
-    ...     name = "Publisher %s" % str(number).zfill(3)
-    ...     party = Party(name=name)
-    ...     party.save()
-    ...     Publisher(
-    ...         entity_creator=company.party,
-    ...         party=party,
-    ...         name=name,
-    ...     ).save()
+# Publisher
+# ---------
+# ::
+#     >>> for i in range(1, publisher + 1):
+#     ...     number = i
+#     ...     name = "Publisher %s" % str(number).zfill(3)
+#     ...     party = Party(name=name)
+#     ...     party.save()
+#     ...     Publisher(
+#     ...         entity_creator=company.party,
+#     ...         party=party,
+#     ...         name=name,
+#     ...     ).save()
 
 Web Users
 ---------
