@@ -9,7 +9,6 @@ Create distribution plans
 
 from proteus import  Model
 
-import csv
 import datetime
 
 DEPENDS = [
