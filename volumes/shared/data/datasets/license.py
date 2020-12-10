@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create labels
+Create licenses
 """
 
 from proteus import  Model
