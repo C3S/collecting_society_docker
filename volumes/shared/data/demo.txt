@@ -298,211 +298,196 @@ Content
     >>> test_text = '''Lorem ipsum dolor sit amet, consetetur diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren.\n\nLorem ipsum.\n\nSea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'''
 
 
-Data
-====
+# Data
+# ====
+#
+# Collecting Societies
+# --------------------
+#
+# C3S::
+#
+#     >>> CollectingSociety(
+#     ...     name=company.party.name,
+#     ...     party=company.party,
+#     ...     represents_copyright=True,
+#     ...     represents_ancillary_copyright=True
+#     ... ).save()
+#
+# Gema::
+#
+#     >>> party = Party(name='GEMA')
+#     >>> _ = party.addresses.pop()
+#     >>> party_address = party.addresses.new(
+#     ...     street='Bayreuther Straße 37',
+#     ...     zip='10787',
+#     ...     city='Berlin',
+#     ...     country=germany
+#     ... )
+#     >>> party.save()
+#     >>> CollectingSociety(
+#     ...     name=party.name,
+#     ...     party=party,
+#     ...     represents_copyright=True,
+#     ...     represents_ancillary_copyright=False
+#     ... ).save()
+#
+# GVL::
+#
+#     >>> party = Party(name='GVL')
+#     >>> _ = party.addresses.pop()
+#     >>> party_address = party.addresses.new(
+#     ...     street='Podbielskiallee 64',
+#     ...     zip='14195',
+#     ...     city='Berlin',
+#     ...     country=germany
+#     ... )
+#     >>> party.save()
+#     >>> CollectingSociety(
+#     ...     name=party.name,
+#     ...     party=party,
+#     ...     represents_copyright=False,
+#     ...     represents_ancillary_copyright=True
+#     ... ).save()
 
-Collecting Societies
---------------------
+# Genres
+# ------
+# ::
+#     >>> with open(test_genres, 'r') as f:
+#     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+#     ...     i = 1
+#     ...     for genre in reader:
+#     ...         if debug and i > debug:
+#     ...             break
+#     ...         if label and i > label:
+#     ...             break
+#     ...         i += 1
+#     ...         Genre(
+#     ...             name=genre['name'],
+#     ...             description=genre['description']
+#     ...         ).save()
+#
+# Styles
+# ------
+# ::
+#     >>> with open(test_styles, 'r') as f:
+#     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+#     ...     i = 1
+#     ...     for style in reader:
+#     ...         if debug and i > debug:
+#     ...             break
+#     ...         i += 1
+#     ...         Style(
+#     ...             name=style['name'],
+#     ...             description=style['description']
+#     ...         ).save()
 
-C3S::
+# Labels
+# ------
+# ::
+#     >>> with open(test_labels, 'r') as f:
+#     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+#     ...     i = 1
+#     ...     for label in reader:
+#     ...         if debug and i > debug:
+#     ...             break
+#     ...         i += 1
+#     ...         Label(
+#     ...             entity_creator=company.party,
+#     ...             name=label['name'],
+#     ...             gvl_code=label['gvl_code']
+#     ...         ).save()
 
-    >>> CollectingSociety(
-    ...     name=company.party.name,
-    ...     party=company.party,
-    ...     represents_copyright=True,
-    ...     represents_ancillary_copyright=True
-    ... ).save()
+# Licenses
+# --------
+# ::
+#     >>> with open(test_licenses, 'r') as f:
+#     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+#     ...     i = 1
+#     ...     for license in reader:
+#     ...         if debug and i > debug:
+#     ...             break
+#     ...         i += 1
+#     ...         License(
+#     ...             code=license['code'],
+#     ...             version=license['version'],
+#     ...             country=license['country'],
+#     ...             freedom_rank=int(license['freedom_rank']),
+#     ...             link=license['link'],
+#     ...             name=license['name']
+#     ...         ).save()
 
-Gema::
-
-    >>> party = Party(name='GEMA')
-    >>> _ = party.addresses.pop()
-    >>> party_address = party.addresses.new(
-    ...     street='Bayreuther Straße 37',
-    ...     zip='10787',
-    ...     city='Berlin',
-    ...     country=germany
-    ... )
-    >>> party.save()
-    >>> CollectingSociety(
-    ...     name=party.name,
-    ...     party=party,
-    ...     represents_copyright=True,
-    ...     represents_ancillary_copyright=False
-    ... ).save()
-
-GVL::
-
-    >>> party = Party(name='GVL')
-    >>> _ = party.addresses.pop()
-    >>> party_address = party.addresses.new(
-    ...     street='Podbielskiallee 64',
-    ...     zip='14195',
-    ...     city='Berlin',
-    ...     country=germany
-    ... )
-    >>> party.save()
-    >>> CollectingSociety(
-    ...     name=party.name,
-    ...     party=party,
-    ...     represents_copyright=False,
-    ...     represents_ancillary_copyright=True
-    ... ).save()
-
-Genres
-------
-::
-    >>> with open(test_genres, 'r') as f:
-    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-    ...     i = 1
-    ...     for genre in reader:
-    ...         if debug and i > debug:
-    ...             break
-    ...         if label and i > label:
-    ...             break
-    ...         i += 1
-    ...         Genre(
-    ...             name=genre['name'],
-    ...             description=genre['description']
-    ...         ).save()
-
-Styles
-------
-::
-    >>> with open(test_styles, 'r') as f:
-    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-    ...     i = 1
-    ...     for style in reader:
-    ...         if debug and i > debug:
-    ...             break
-    ...         i += 1
-    ...         Style(
-    ...             name=style['name'],
-    ...             description=style['description']
-    ...         ).save()
-
-Labels
-------
-::
-    >>> with open(test_labels, 'r') as f:
-    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-    ...     i = 1
-    ...     for label in reader:
-    ...         if debug and i > debug:
-    ...             break
-    ...         i += 1
-    ...         Label(
-    ...             entity_creator=company.party,
-    ...             name=label['name'],
-    ...             gvl_code=label['gvl_code']
-    ...         ).save()
-
-Licenses
---------
-::
-    >>> with open(test_licenses, 'r') as f:
-    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-    ...     i = 1
-    ...     for license in reader:
-    ...         if debug and i > debug:
-    ...             break
-    ...         i += 1
-    ...         License(
-    ...             code=license['code'],
-    ...             version=license['version'],
-    ...             country=license['country'],
-    ...             freedom_rank=int(license['freedom_rank']),
-    ...             link=license['link'],
-    ...             name=license['name']
-    ...         ).save()
-
-Tariff Systems
---------------
-::
-    >>> for i in range(1, tariff_systems + 1):
-    ...     number = i
-    ...     TariffSystem(
-    ...         version="%s.0" % number,
-    ...         valid_from=today
-    ...     ).save()
-
-Tariff Categories
------------------
-::
-    >>> with open(test_tariff_categories, 'r') as f:
-    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-    ...     i = 1
-    ...     for category in reader:
-    ...         i += 1
-    ...         TariffCategory(
-    ...             name=category['name'],
-    ...             code=category['code'],
-    ...             description=category['description']
-    ...         ).save()
-
-Tariff Adjustment Categories
-----------------------------
-::
-    >>> with open(test_tariff_adjustment_categories, 'r') as f:
-    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-    ...     i = 1
-    ...     for category in reader:
-    ...         i += 1
-    ...         tcs = []
-    ...         for tc in category['tariff_categories'].split(","):
-    ...             tcs += TariffCategory.find(['code', '=', tc])
-    ...         TariffAdjustmentCategory(
-    ...             name=category['name'],
-    ...             value_min=float(category['value_min']),
-    ...             value_max=float(category['value_max']),
-    ...             value_default=float(category['value_default']),
-    ...             priority=int(category['priority']),
-    ...             operation=category['operation'],
-    ...             tariff_categories=tcs
-    ...         ).save()
-
-Tariff Relevance Categories
----------------------------
-::
-    >>> with open(test_tariff_relevance_categories, 'r') as f:
-    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-    ...     i = 1
-    ...     for category in reader:
-    ...         i += 1
-    ...         tcs = []
-    ...         for tc in category['tariff_categories'].split(","):
-    ...             tcs += TariffCategory.find(['code', '=', tc])
-    ...         TariffRelevanceCategory(
-    ...             name=category['name'],
-    ...             value_min=float(category['value_min']),
-    ...             value_max=float(category['value_max']),
-    ...             value_default=float(category['value_default']),
-    ...             tariff_categories=tcs
-    ...         ).save()
-
-Tariffs
--------
-::
-    >>> tariff_systems = TariffSystem.find([])
-    >>> tariff_categories = TariffCategory.find([])
-
-    >>> for system in tariff_systems:
-    ...     for category in tariff_categories:
-    ...         Tariff(
-    ...             system=system,
-    ...             category=category
-    ...         ).save()
+# # Tariff Systems
+# for i in range(1, tariff_systems + 1):
+#     number = i
+#     TariffSystem(
+#         version="%s.0" % number,
+#         valid_from=today
+#     ).save()
+# # Tariff Categories
+# with open(test_tariff_categories, 'r') as f:
+#     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+#     i = 1
+#     for category in reader:
+#         i += 1
+#         TariffCategory(
+#             name=category['name'],
+#             code=category['code'],
+#             description=category['description']
+#         ).save()
+# # Tariff Adjustment Categories
+# with open(test_tariff_adjustment_categories, 'r') as f:
+#     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+#     i = 1
+#     for category in reader:
+#         i += 1
+#         tcs = []
+#         for tc in category['tariff_categories'].split(","):
+#             tcs += TariffCategory.find(['code', '=', tc])
+#         TariffAdjustmentCategory(
+#             name=category['name'],
+#             value_min=float(category['value_min']),
+#             value_max=float(category['value_max']),
+#             value_default=float(category['value_default']),
+#             priority=int(category['priority']),
+#             operation=category['operation'],
+#             tariff_categories=tcs
+#         ).save()
+# # Tariff Relevance Categories
+# with open(test_tariff_relevance_categories, 'r') as f:
+#     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+#     i = 1
+#     for category in reader:
+#         i += 1
+#         tcs = []
+#         for tc in category['tariff_categories'].split(","):
+#             tcs += TariffCategory.find(['code', '=', tc])
+#         TariffRelevanceCategory(
+#             name=category['name'],
+#             value_min=float(category['value_min']),
+#             value_max=float(category['value_max']),
+#             value_default=float(category['value_default']),
+#             tariff_categories=tcs
+#         ).save()
+# #Tariffs
+# tariff_systems = TariffSystem.find([])
+# tariff_categories = TariffCategory.find([])
+# for system in tariff_systems:
+#     for category in tariff_categories:
+#         Tariff(
+#             system=system,
+#             category=category
+#         ).save()
 
 
-Distribution Plans
-------------------
-::
-    >>> for i in range(1, distribution_plans + 1):
-    ...     number = i
-    ...     DistributionPlan(
-    ...         version="%s.0" % number,
-    ...         valid_from=today
-    ...     ).save()
+# Distribution Plans
+# ------------------
+# ::
+#     >>> for i in range(1, distribution_plans + 1):
+#     ...     number = i
+#     ...     DistributionPlan(
+#     ...         version="%s.0" % number,
+#     ...         valid_from=today
+#     ...     ).save()
 
 
 Publisher
@@ -696,40 +681,40 @@ Add existing solo artists to group artists::
     ...         group.solo_artists.extend([solo])
     ...         group.save()
 
-CreationRoles
--------------
-::
-    >>> with open(test_creation_roles, 'r') as f:
-    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-    ...     i = 1
-    ...     for role in reader:
-    ...         if debug and i > debug:
-    ...             break
-    ...         i += 1
-    ...         artists = Artist.find([
-    ...             ('claim_state', '!=', 'unclaimed'),
-    ...             ('group', '!=', True)])
-    ...         CreationRole(
-    ...             entity_creator=random.choice(artists).party,
-    ...             name=role['name'],
-    ...             description=role['description']
-    ...         ).save()
-
-
-Instruments
--------------
-::
-    >>> with open(test_creation_roles, 'r') as f:
-    ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-    ...     i = 1
-    ...     for role in reader:
-    ...         if debug and i > debug:
-    ...             break
-    ...         i += 1
-    ...         Instrument(
-    ...             name=role['name'],
-    ...             description=role['description']
-    ...         ).save()
+# CreationRoles
+# -------------
+# ::
+#     >>> with open(test_creation_roles, 'r') as f:
+#     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+#     ...     i = 1
+#     ...     for role in reader:
+#     ...         if debug and i > debug:
+#     ...             break
+#     ...         i += 1
+#     ...         artists = Artist.find([
+#     ...             ('claim_state', '!=', 'unclaimed'),
+#     ...             ('group', '!=', True)])
+#     ...         CreationRole(
+#     ...             entity_creator=random.choice(artists).party,
+#     ...             name=role['name'],
+#     ...             description=role['description']
+#     ...         ).save()
+#
+#
+# Instruments
+# -------------
+# ::
+#     >>> with open(test_creation_roles, 'r') as f:
+#     ...     reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
+#     ...     i = 1
+#     ...     for role in reader:
+#     ...         if debug and i > debug:
+#     ...             break
+#     ...         i += 1
+#     ...         Instrument(
+#     ...             name=role['name'],
+#     ...             description=role['description']
+#     ...         ).save()
 
 Releases
 --------
