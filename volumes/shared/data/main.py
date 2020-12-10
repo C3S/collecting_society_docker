@@ -180,10 +180,7 @@ def generate(datasets=[], reclimit=0, dependencies=True, leaves=True,
         output = []
         try:
             with Capturing() as output:
-                try:
-                    dataset.generate(reclimit)  # TODO: streamline old datasets
-                except TypeError:               # so we don't needs to check
-                    dataset.generate()          # for call without parameter
+                dataset.generate(reclimit)
         except Exception:
             error = "Error in dataset '%s':" % dataset
             if pdb:

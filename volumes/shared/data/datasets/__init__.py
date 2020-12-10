@@ -49,8 +49,11 @@ class Dataset():
     def DEPENDS(self):
         return self.module.DEPENDS
 
-    def generate(self):
-        self.module.generate()
+    def generate(self, reclimit):
+        try:
+            self.module.generate(reclimit)  # TODO: streamline old datasets
+        except TypeError:                   # so we don't needs to check
+            self.module.generate()          # for call without parameter
 
 
 class Datasets(list):
