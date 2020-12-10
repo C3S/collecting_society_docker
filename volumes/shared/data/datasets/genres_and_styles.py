@@ -9,7 +9,6 @@ Create genres and styles
 
 from proteus import  Model
 
-import random
 import csv
 
 DEPENDS = [
