@@ -9,9 +9,7 @@ Create derivatives
 
 from proteus import  Model
 
-import datetime
 import random
-import string
 
 DEPENDS = [
     'creation'
