@@ -30,8 +30,6 @@ def generate(reclimit):
         for genre in reader:
             if reclimit and i > reclimit:
                 break
-            # if label and i > label:  # TODO: check if necessary
-            #     break
             i += 1
             Genre(
                 name=genre['name'],
