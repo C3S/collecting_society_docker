@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create location
+Create website
 """
 
 from proteus import Model
@@ -19,35 +19,39 @@ DEPENDS = [
 def generate(reclimit):
 
     #constants
-    test_location_categories = '/shared/data/csv/location_categories.csv'
-    test_location_space_categories = '/shared/data/csv/location_space_categories.csv'
+    test_website_categories = '/shared/data/csv/website_categories.csv'
+    test_website_resource_categories = '/shared/data/csv/website_resource_categories.csv'
     delimiter = ','
     quotechar = '"'
 
     # models
-    LocationCategory = Model.get('location.category')
-    LocationSpaceCategory = Model.get('location.space.category')
+    WebsiteCategory = Model.get('website.category')
+    WebsiteResourceCategory = Model.get('website.resource.category')
 
-    # location categories
-    with open(test_location_categories, 'r') as f:
+    # website categories
+    with open(test_website_categories, 'r') as f:
         reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
         i = 1
         for category in reader:
             i += 1
-            LocationCategory(
+            WebsiteCategory(
                 name=category['name'],
                 code=category['code'],
                 description=category['description']
             ).save()
 
-    # location space categories
-    with open(test_location_space_categories, 'r') as f:
+    # website resource categories
+    with open(test_website_resource_categories, 'r') as f:
         reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
         i = 1
         for category in reader:
             i += 1
-            LocationSpaceCategory(
+            wcs = []
+            for wc in category['website_categories'].split(","):
+                wcs += WebsiteCategory.find(['code', '=', wc])
+            WebsiteResourceCategory(
                 name=category['name'],
                 code=category['code'],
-                description=category['description']
+                description=category['description'],
+                website_categories=wcs
             ).save()
