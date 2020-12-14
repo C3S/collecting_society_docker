@@ -18,7 +18,7 @@ DEPENDS = [
 
 def generate(reclimit):
 
-    #constants
+    # constants
     test_location_categories = '/shared/data/csv/location_categories.csv'
     test_location_space_categories = '/shared/data/csv/location_space_categories.csv'
     delimiter = ','

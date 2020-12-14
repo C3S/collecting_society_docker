@@ -22,11 +22,11 @@ DEPENDS = [
     'web_user'
 ]
 
+
 def generate(reclimit):
 
     # constants
     releases_per_artist = reclimit or 1
-    creations_per_release = reclimit or 3
     genres_per_release = reclimit or 2
     styles_per_release = reclimit or 2
     release_cancellation_chance = reclimit and 1 or 0.3

@@ -26,14 +26,14 @@ def generate(reclimit):
     delimiter = ','
     quotechar = '"'
     tariff_systems = reclimit or 3
+    if tariff_systems < 2:
+        tariff_systems = 2  # or licensee usecases would break
 
     # models
     TariffSystem = Model.get('tariff_system')
     TariffCategory = Model.get('tariff_system.category')
     TariffAdjustmentCategory = Model.get('tariff_system.tariff.adjustment.category')
-    TariffAdjustment = Model.get('tariff_system.tariff.adjustment')
     TariffRelevanceCategory = Model.get('tariff_system.tariff.relevance.category')
-    TariffRelevance = Model.get('tariff_system.tariff.relevance')
     Tariff = Model.get('tariff_system.tariff')
 
     # Tariff Systems
