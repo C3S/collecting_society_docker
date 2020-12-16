@@ -63,6 +63,14 @@ Update the environment, clone/pull development repositories::
 
     $ ./scripts/update
 
+Make sure, the docker service is running::
+
+    $ service docker status
+
+If not, start it::
+
+    $ sudo service docker start
+
 Build docker containers::
 
     $ docker-compose build
