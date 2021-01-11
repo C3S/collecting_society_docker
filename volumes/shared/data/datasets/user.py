@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Configure admin user (German language, company)
+Configure the admin user (German language, company)
 """
 
 from proteus import Model
@@ -15,18 +15,19 @@ DEPENDS = [
 ]
 
 
-def generate():
-    # get language
-    Language = Model.get('ir.lang')
-    german_language, = Language.find([('code', '=', 'de_DE')])
+def generate(reclimit=0):
 
-    # get company
+    # models
+    Language = Model.get('ir.lang')
     Company = Model.get('company.company')
+    User = Model.get('res.user')
+
+    # entries
+    german_language, = Language.find([('code', '=', 'de_DE')])
     company = Company(1)
+    user, = User.find([('login', '=', 'admin')])
 
     # configure user
-    User = Model.get('res.user')
-    user, = User.find([('login', '=', 'admin')])
     user.language = german_language
     user.company = company
     user.save()

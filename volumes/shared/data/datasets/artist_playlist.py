@@ -4,64 +4,41 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create artist playlist
+Create the artist playlists
 """
 
 from proteus import Model
 
-import random
-
 DEPENDS = [
-    'artist'
+    'artist',
 ]
 
 
-def generate(reclimit):
+def generate(reclimit=0):
 
     # constants
     playlists_per_artist = reclimit or 3
-    artist_creations_per_playlist = reclimit or 8
-    foreign_creations_per_playlist = reclimit or 2
 
     # models
     Artist = Model.get('artist')
     ArtistPlaylist = Model.get('artist.playlist')
-    ArtistPlaylistItem = Model.get('artist.playlist.item')
-    Creation = Model.get('creation')
 
+    # entries
     artists = Artist.find([('entity_origin', '=', 'direct')])
+
+    # create artist playlists
     for artist in artists:
-        party = artist.party
+        creator = artist.party
         if artist.group:
-            party = artist.solo_artists[0].party
-        if not party:
+            creator = artist.solo_artists[0].party
+        if not creator:
             continue
-        for i in range(0, playlists_per_artist):
-            # playlist
+        for i in range(playlists_per_artist):
             playlist = ArtistPlaylist(
                 artist=artist,
                 public=True,
                 template=True,
                 entity_origin='direct',
-                entity_creator=party
+                entity_creator=creator
             )
             playlist.save()
-            # playlist items
-            creations = Creation.find([('artist.id', '=', artist.id)])
-            artist_items = random.sample(
-                creations,
-                min(artist_creations_per_playlist, len(creations))
-            )
-            creations = Creation.find([('artist.id', '!=', artist.id)])
-            foreign_items = random.sample(
-                creations,
-                min(foreign_creations_per_playlist, len(creations))
-            )
-            for i, item in enumerate(artist_items + foreign_items):
-                ArtistPlaylistItem(
-                    playlist=playlist,
-                    creation=item,
-                    position=i + 1,
-                    entity_origin='direct',
-                    entity_creator=party
-                ).save()

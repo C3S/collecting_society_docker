@@ -1,7 +1,0 @@
-"name","value_min","value_max","value_default","priority","operation","tariff_categories"
-"Electronic Submission","0.05","0.05","0.05","100","percentage","L,C,P,O,R,T,M,A,X"
-"Small","0.3","0.5","0.3","200","percentage","L,C,P,O,R,T,M,A,X"
-"Benefit","0.10","0.10","0.10","300","percentage","L,P,O,R,T,M,A,X"
-"Social, Cultural, Religious","0.15","0.15","0.15","400","percentage","L,C,P,O,R,T,M,A,X"
-"Promotion of Young Artists","0.15","0.15","0.15","500","percentage","L,C,P,O,R,T,M,A,X"
-"Missing Playlist Fee","-0.10","-0.10","-0.10","600","percentage","L,P,O,R,T,M,X"

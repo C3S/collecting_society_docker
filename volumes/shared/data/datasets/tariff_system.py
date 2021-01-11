@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the distribution plans
+Create the tariff systems
 """
 
 import datetime
@@ -19,18 +19,17 @@ DEPENDS = [
 def generate(reclimit=0):
 
     # constants
-    distribution_plans = reclimit or 3
+    tariff_systems = 3
 
     # models
-    DistributionPlan = Model.get('distribution.plan')
+    TariffSystem = Model.get('tariff_system')
 
     # content
     today = datetime.date.today()
 
-    # create distribution plans
-    for i in range(1, distribution_plans + 1):
-        number = i
-        DistributionPlan(
-            version="%s.0" % number,
+    # create tariff systems
+    for i in range(1, tariff_systems + 1):
+        TariffSystem(
+            version="%s.0" % i,
             valid_from=today
         ).save()

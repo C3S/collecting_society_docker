@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Install module 'collecting_society'
+Install the module 'collecting_society'
 """
 
 from proteus import Model
@@ -12,8 +12,14 @@ from proteus import Model
 DEPENDS = []
 
 
-def generate():
+def generate(reclimit=0):
+
+    # models
     Module = Model.get('ir.module.module')
+
+    # entries
     collecting_society_module, = Module.find(
         [('name', '=', 'collecting_society')])
+
+    # install
     collecting_society_module.click('install')

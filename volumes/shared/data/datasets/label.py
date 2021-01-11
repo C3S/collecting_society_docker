@@ -4,39 +4,49 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create label
+Create the labels
 """
 
-from proteus import  Model
-
+import os
 import csv
 
+from proteus import Model
+
+from . import csv_delimiter, csv_quotechar, csv_devlimit
+
 DEPENDS = [
-    'collecting_societies'  # misuses C3S for party, TODO: real label parties
+    'master',
 ]
 
 
-def generate(reclimit):
-    test_labels = '/shared/data/csv/labels.csv'
-    delimiter = ','
-    quotechar = '"'
+def generate(reclimit=0):
 
-    # get labels
-    Label = Model.get('label')
+    # constants
+    environment = os.environ.get('ENVIRONMENT')
+    if environment == "development":
+        reclimit = reclimit and min(reclimit, csv_devlimit) or csv_devlimit
+
+    # models
+    Party = Model.get('party.party')
     Company = Model.get('company.company')
-    company, = Company.find([(
-        'party.name', '=',
-        'C3S SCE'
-    )])
-    with open(test_labels, 'r') as f:
-        reader = csv.DictReader(f, delimiter=delimiter, quotechar=quotechar)
-        i = 1
-        for label in reader:
-            if reclimit and i > reclimit:
+    Label = Model.get('label')
+
+    # entries
+    company = Company(1)
+
+    # create labels
+    path = os.path.join('data', 'csv', 'label.csv')
+    with open(path, 'r') as f:
+        reader = csv.DictReader(
+            f, delimiter=csv_delimiter, quotechar=csv_quotechar)
+        for i, row in enumerate(reader):
+            if reclimit and i == reclimit:
                 break
-            i += 1
+            party = Party(name=row['name'])
+            party.save()
             Label(
                 entity_creator=company.party,
-                name=label['name'],
-                gvl_code=label['gvl_code']
+                name=row['name'],
+                party=party,
+                gvl_code=row['gvl_code']
             ).save()

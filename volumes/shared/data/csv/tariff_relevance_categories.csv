@@ -1,5 +1,0 @@
-"name","value_min","value_max","value_default","tariff_categories"
-"Existential","1","0.9","1","L,C,P,O,R,X"
-"Important","0.9","0.6","0.75","L,P,O,R,T,M,A,X"
-"Neutral","0.6","0.4","0.5","P,O,R,T,M,A,X"
-"Background","0.4","0","0.25","P,O,R,T,M,A,X"

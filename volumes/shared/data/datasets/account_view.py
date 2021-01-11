@@ -10,17 +10,18 @@ Create a transitory account view
 from proteus import Model
 
 DEPENDS = [
-    'account_chart'
+    'account_chart',
 ]
 
 
-def generate():
-    # get company
-    Company = Model.get('company.company')
-    company = Company(1)
+def generate(reclimit=0):
 
-    # get root account
+    # models
+    Company = Model.get('company.company')
     Account = Model.get('account.account')
+
+    # entries
+    company = Company(1)
     root_account, = Account.find([('name', '=', 'Minimal Account Chart')])
 
     # create view

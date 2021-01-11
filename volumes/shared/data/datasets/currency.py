@@ -8,15 +8,22 @@ Set the number of decimals for EUR
 """
 
 from decimal import Decimal
+
 from proteus import Model
 
 DEPENDS = [
-    'upgrade'
+    'upgrade',
 ]
 
 
-def generate():
+def generate(reclimit=0):
+
+    # models
     Currency = Model.get('currency.currency')
+
+    # entries
     euro, = Currency.find([('code', '=', 'EUR')])
+
+    # configure currency
     euro.rounding = Decimal('0.000001')
     euro.save()

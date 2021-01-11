@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the licenses
+Create the website resource categories
 """
 
 import os
@@ -15,7 +15,7 @@ from proteus import Model
 from . import csv_delimiter, csv_quotechar, csv_devlimit
 
 DEPENDS = [
-    'master',
+    'website_category',
 ]
 
 
@@ -27,21 +27,23 @@ def generate(reclimit=0):
         reclimit = reclimit and min(reclimit, csv_devlimit) or csv_devlimit
 
     # models
-    License = Model.get('license')
+    WebsiteCategory = Model.get('website.category')
+    WebsiteResourceCategory = Model.get('website.resource.category')
 
-    # create licenses
-    path = os.path.join('data', 'csv', 'license.csv')
+    # create website resource categories
+    path = os.path.join('data', 'csv', 'website_resource_category.csv')
     with open(path, 'r') as f:
         reader = csv.DictReader(
             f, delimiter=csv_delimiter, quotechar=csv_quotechar)
         for i, row in enumerate(reader):
             if reclimit and i == reclimit:
                 break
-            License(
+            wcs = []
+            for wc in row['website_categories'].split(","):
+                wcs += WebsiteCategory.find(['code', '=', wc])
+            WebsiteResourceCategory(
+                name=row['name'],
                 code=row['code'],
-                version=row['version'],
-                country=row['country'],
-                freedom_rank=int(row['freedom_rank']),
-                link=row['link'],
-                name=row['name']
+                description=row['description'],
+                website_categories=wcs
             ).save()

@@ -4,31 +4,32 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create licensee usecases
+Create the licensee usecases
 """
-
-from proteus import Model, Wizard
 
 import string
 import random
 import datetime
 import decimal
 
+from proteus import Model, Wizard
+
 DEPENDS = [
     'artist',
     'label',
-    'genres_and_styles',
+    'genre',
+    'style',
     'license',
     'publisher',
     'location',
     'website',
     'web_user',
     'tariff',
-    'creation'
+    'creation',
 ]
 
 
-def generate(reclimit):
+def generate(reclimit=0):
 
     # constants
     licensee_playing_bars = reclimit or 1

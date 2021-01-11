@@ -14,8 +14,14 @@ DEPENDS = [
 ]
 
 
-def generate():
+def generate(reclimit=0):
+
+    # models
     Language = Model.get('ir.lang')
+
+    # entries
     german_language, = Language.find([('code', '=', 'de_DE')])
+
+    # configure language
     german_language.translatable = True
     german_language.save()

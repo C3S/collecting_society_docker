@@ -25,9 +25,15 @@ DEPENDS = [
 ]
 
 
-def generate():
+def generate(reclimit=0):
+
+    # models
     Item = Model.get('ir.module.module.config_wizard.item')
+
+    # entries
     items = Item.find()
+
+    # configuration
     for item in items:
         item.state = 'done'
         item.save()

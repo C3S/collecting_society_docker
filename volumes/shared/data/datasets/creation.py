@@ -4,51 +4,45 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create creations
+Create the creations
 """
 
-from proteus import  Model
+from proteus import Model
 
-import datetime
-import random
-import string
+from . import test_text
 
 DEPENDS = [
-    'artist',
     'release',
-    'collecting_societies',
-    'tariff',
-    'license'
 ]
 
 
-def generate(reclimit):
+def generate(reclimit=0):
 
     # constants
-    releases_per_artist = reclimit or 1
     creations_per_release = reclimit or 3
-    test_text = '''Lorem ipsum dolor sit amet, consetetur diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren.\n\nLorem ipsum.\n\nSea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'''
 
     # models
     Artist = Model.get('artist')
     Creation = Model.get('creation')
     Release = Model.get('release')
-    License = Model.get('license')
-    CreationTariffCategory = Model.get('creation-tariff_category')
-    TariffCategory = Model.get('tariff_system.category')
-    CollectingSociety = Model.get('collecting_society')
 
-    artists = Artist.find([('claim_state', '!=', 'unclaimed')])
-    releases = Release.find([('claim_state', '!=', 'unclaimed')])
-    for i in range(1, len(releases) + 1):
+    # entries
+    artist_releases = Release.find([
+        ('claim_state', '!=', 'unclaimed'),
+        ('type', '=', 'artist')
+    ])
+    foreign_artists = Artist.find([
+        ('name', 'like', 'Foreign Original Artist%')])
+
+    # create creations
+    for i, release in enumerate(artist_releases):
         for j in range(1, creations_per_release + 1):
-            number = (i - 1) * creations_per_release + j
-            artist_number = divmod(i-1, releases_per_artist)[0]
-            artist = artists[artist_number]
+            number = i * creations_per_release + j
+            artist = release.artists[0]
             creator = artist
             if creator.group:
                 creator = creator.solo_artists[0]
-            # creation
+
             creation = Creation(
                 title="Title of Song %s" % str(number).zfill(3),
                 commit_state='commited',
@@ -59,27 +53,13 @@ def generate(reclimit):
             )
             creation.save()
 
-            # tariff categories
-            css = CollectingSociety.find([(
-                'represents_copyright', '=', True)])
-            tariffcs = TariffCategory.find([])
-            categories = random.sample(
-                tariffcs, random.randint(1, len(tariffcs)))
-            for category in categories:
-                CreationTariffCategory(
-                    creation=creation,
-                    category=category,
-                    collecting_society=random.choice(css)
-                ).save()
-
-            # release creation
-            licenses = License.find([])
-            cr = creation.releases.new()
-            cr.creation=creation
-            cr.release=releases[i-1]
-            cr.title="Release Title of Song %s" % str(number).zfill(3)
-            cr.medium_number=1
-            cr.track_number=j
-            cr.license=random.choice(licenses)
-            cr.save()
-            creation.save()
+    # create foreign creations for originals
+    for i, artist in enumerate(foreign_artists):
+        Creation(
+            title="Foreign Original Song %s" % str(i).zfill(3),
+            artist=artist,
+            entity_creator=artist.entity_creator,
+            entity_origin='indirect',
+            commit_state='uncommited',
+            claim_state='unclaimed'
+        ).save()

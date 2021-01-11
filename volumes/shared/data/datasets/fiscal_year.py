@@ -9,33 +9,36 @@ Create the fiscal year, sequences and period
 
 import datetime
 from dateutil.relativedelta import relativedelta
+
 from proteus import config, Model
 
 DEPENDS = [
-    'company'
+    'company',
 ]
 
 
-def generate():
-    today = datetime.date.today()
+def generate(reclimit=0):
 
-    # get company
+    # models
     Company = Model.get('company.company')
-    company = Company(1)
+    FiscalYear = Model.get('account.fiscalyear')
+    Sequence = Model.get('ir.sequence')
+    SequenceStrict = Model.get('ir.sequence.strict')
 
-    # get context
+    # entries
+    company = Company(1)
     context = config.get_config()._context
 
+    # content
+    today = datetime.date.today()
+
     # create fiscal year
-    FiscalYear = Model.get('account.fiscalyear')
     fiscal_year = FiscalYear(name='%s' % today.year)
     fiscal_year.start_date = today + relativedelta(month=1, day=1)
     fiscal_year.end_date = today + relativedelta(month=12, day=31)
     fiscal_year.company = company
 
     # create sequence
-    Sequence = Model.get('ir.sequence')
-    SequenceStrict = Model.get('ir.sequence.strict')
     post_move_sequence = Sequence(
         name='%s' % today.year, code='account.move', company=company)
     post_move_sequence.save()

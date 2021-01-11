@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the licenses
+Create the location space categories
 """
 
 import os
@@ -27,21 +27,18 @@ def generate(reclimit=0):
         reclimit = reclimit and min(reclimit, csv_devlimit) or csv_devlimit
 
     # models
-    License = Model.get('license')
+    LocationSpaceCategory = Model.get('location.space.category')
 
-    # create licenses
-    path = os.path.join('data', 'csv', 'license.csv')
+    # create location space categories
+    path = os.path.join('data', 'csv', 'location_space_category.csv')
     with open(path, 'r') as f:
         reader = csv.DictReader(
             f, delimiter=csv_delimiter, quotechar=csv_quotechar)
         for i, row in enumerate(reader):
             if reclimit and i == reclimit:
                 break
-            License(
+            LocationSpaceCategory(
+                name=row['name'],
                 code=row['code'],
-                version=row['version'],
-                country=row['country'],
-                freedom_rank=int(row['freedom_rank']),
-                link=row['link'],
-                name=row['name']
+                description=row['description']
             ).save()

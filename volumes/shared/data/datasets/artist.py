@@ -4,32 +4,38 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create solo and group artists
+Create the solo and group artists
 """
-
-from proteus import  Model
 
 import random
 
+from proteus import Model
+
+from . import test_text
+
 DEPENDS = [
-    'web_user'
+    'web_user',
 ]
 
 
-def generate(reclimit):
+def generate(reclimit=0):
 
     # constants
-    test_text = '''Lorem ipsum dolor sit amet, consetetur diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren.\n\nLorem ipsum.\n\nSea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'''
     group_artists = reclimit or 3
     new_solo_artists_per_group = reclimit or 2
     add_solo_artists_per_group = reclimit or 1
     foreign_artists_per_group = reclimit or 1
+    foreign_artists_for_originals = reclimit or 10
 
     # models
     WebUser = Model.get('web.user')
     Artist = Model.get('artist')
     Party = Model.get('party.party')
 
+    # entries
+    web_users = WebUser.find([('roles.code', '=', 'licensee')])
+
+    # create artists
     for i in range(1, group_artists + 1):
         number = i
         web_user_number = (number - 1) * new_solo_artists_per_group + 1
@@ -77,7 +83,7 @@ def generate(reclimit):
             foreign_solo_artist_party = Party(
                 name=name
             )
-            email = foreign_solo_artist_party.contact_mechanisms.new(
+            _ = foreign_solo_artist_party.contact_mechanisms.new(
                 type='email',
                 value="foreign_member_%s@rep.test" % number
             )
@@ -93,7 +99,8 @@ def generate(reclimit):
             )
             foreign_solo_artist.save()
             group_artist.save()
-    # Add existing solo artists to group artists::
+
+    # add existing solo artists to group artists
     groups = Artist.find([
         ('claim_state', '!=', 'unclaimed'),
         ('group', '=', True)])
@@ -109,3 +116,15 @@ def generate(reclimit):
                 solo = random.choice(solos)
             group.solo_artists.extend([solo])
             group.save()
+
+    # create foreign artists for originals
+    for i in range(1, foreign_artists_for_originals + 1):
+        web_user = random.choice(web_users)
+        Artist(
+            name="Foreign Original Artist %s" % str(i).zfill(3),
+            group=False,
+            entity_creator=web_user.party,
+            entity_origin='indirect',
+            commit_state='uncommited',
+            claim_state='unclaimed'
+        ).save()

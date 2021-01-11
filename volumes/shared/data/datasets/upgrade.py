@@ -4,15 +4,20 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Execute upgrade wizard
+Execute the upgrade wizard
 """
 
 from proteus import Wizard
 
 DEPENDS = [
-    'install'
+    'install',
 ]
 
 
-def generate():
-    Wizard('ir.module.module.install_upgrade').execute('upgrade')
+def generate(reclimit=0):
+
+    # wizards
+    install_upgrade = Wizard('ir.module.module.install_upgrade')
+
+    # upgrade
+    install_upgrade.execute('upgrade')

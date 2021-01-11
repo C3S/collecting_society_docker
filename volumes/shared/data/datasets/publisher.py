@@ -4,26 +4,36 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create publisher
+Create the publishers
 """
 
-from proteus import  Model
+from proteus import Model
 
 DEPENDS = [
-    'master'
+    'master',
 ]
 
 
-def generate(reclimit):
+def generate(reclimit=0):
+
+    # constants
     publisher = reclimit or 10
+
+    # models
     Publisher = Model.get('publisher')
     Party = Model.get('party.party')
     Company = Model.get('company.company')
+
+    # entries
     company, = Company.find([(
         'party.name', '=',
         'C3S SCE'
     )])
+
+    # create publishers
     for i in range(1, publisher + 1):
+        if reclimit and i > reclimit:
+            break
         number = i
         name = "Publisher %s" % str(number).zfill(3)
         party = Party(name=name)
