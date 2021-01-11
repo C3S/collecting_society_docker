@@ -16,7 +16,7 @@ import traceback
 import logging
 from StringIO import StringIO
 from time import time
-from proteus import config, Model
+from proteus import config, Model, Wizard, ModelList
 
 from datasets import Datasets
 
@@ -26,57 +26,83 @@ log = logging.getLogger(__name__)
 
 class ProteusStats():
     """Object manipulation statistics for proteus."""
+    stats = {}
 
     @classmethod
     def start(cls):
-        Model.stats = {}
+        cls.reset()
         Model._original_save = Model.save
         Model._original_delete = Model.delete
         Model._original_duplicate = Model.duplicate
-        Model.track = cls.track
+        ModelList._original_new = ModelList.new
+        Wizard._original_execute = Wizard.execute
         Model.save = cls.save
         Model.delete = cls.delete
         Model.duplicate = cls.duplicate
+        ModelList.new = cls.new
+        Wizard.execute = cls.execute
 
     @classmethod
     def stop(cls):
-        del Model.stats
-        del Model.track
         Model.save = Model._original_save
         Model.delete = Model._original_delete
         Model.duplicate = Model._original_duplicate
+        ModelList.new = ModelList._original_new
+        Wizard.execute = Wizard._original_execute
+        del Model._original_save
+        del Model._original_delete
+        del Model._original_duplicate
+        del ModelList._original_new
+        del Wizard._original_execute
 
     @classmethod
     def reset(cls):
-        Model.stats = {}
+        cls.stats = {
+            'created': {},
+            'updated': {},
+            'deleted': {},
+            'duplicated': {},
+            'executed': {},
+        }
+
+    @classmethod
+    def track(cls, mode, model):
+        """Count statistics."""
+        if model not in cls.stats[mode]:
+            cls.stats[mode][model] = 0
+        cls.stats[mode][model] += 1
 
     @staticmethod
-    def track(self, mode, model):
-        """Count statistics."""
-        if mode not in self.stats:
-            self.stats[mode] = {}
-        if model not in self.stats[mode]:
-            self.stats[mode][model] = 0
-        self.stats[mode][model] += 1
+    def new(self, *args, **kwargs):
+        """Track entries created created by ModelList.new()."""
+        new_record = ModelList._original_new(self, *args, **kwargs)
+        ProteusStats.track('created', new_record.__class__.__name__)
+        return new_record
 
     @staticmethod
     def save(self):
-        """Track created/updated entries."""
-        self.track(self.id > 0 and 'updated' or 'created',
-                   self.__class__.__name__)
+        """Track entries created/updated by Model.save()."""
+        mode = self.id > 0 and 'updated' or 'created'
         Model._original_save(self)
+        ProteusStats.track(mode, self.__class__.__name__)
 
     @staticmethod
     def delete(self):
-        """Track deleted entries."""
-        self.track('deleted', self.__class__.__name__)
+        """Track entries deleted by Model.delete()."""
         Model._original_delete(self)
+        ProteusStats.track('deleted', self.__class__.__name__)
 
     @staticmethod
     def duplicate(self):
-        """Track duplicated entries."""
-        self.track('duplicated', self.__class__.__name__)
+        """Track entries duplicated by Model.duplicate()."""
         Model._original_duplicate(self)
+        ProteusStats.track('duplicated', self.__class__.__name__)
+
+    @staticmethod
+    def execute(self, state):
+        """Track wizards executed by Wizard.execute()."""
+        Wizard._original_execute(self, state)
+        ProteusStats.track('executed', '%s -> %s' % (self.name, state))
 
 
 def color(text, status):
@@ -264,8 +290,8 @@ def generate(datasets=[], excludes=[], reclimit=0,
             line = "." * (width - len(dur))
         print(color(line + dur, "dim"))
         if show_stats and not output.debugged:
-            for mode in Model.stats:
-                for model, num in Model.stats[mode].items():
+            for mode in ProteusStats.stats:
+                for model, num in ProteusStats.stats[mode].items():
                     print(color("  {0: >4} x ".format(num), "dim"), end="")
                     print(color("{0} ".format(model), "title"), end="")
                     print(color("{0}".format(mode), "dim"))
