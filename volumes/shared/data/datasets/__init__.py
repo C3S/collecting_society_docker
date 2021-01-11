@@ -6,6 +6,22 @@ import sys
 import os
 
 
+csv_delimiter = ','
+csv_quotechar = '"'
+csv_devlimit = 25
+test_text = (
+    "Lorem ipsum dolor sit amet, consetetur diam nonumy eirmod tempor "
+    "invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. "
+    "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita "
+    "kasd gubergren.\n\nLorem ipsum.\n\nSea takimata sanctus est Lorem "
+    "ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur "
+    "sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore "
+    "et dolore magna aliquyam erat, sed diam voluptua. At vero eos et "
+    "accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, "
+    "no sea takimata sanctus est Lorem ipsum dolor sit amet."
+)
+
+
 class Dataset():
     """Class wrapper for a dataset module."""
     def __init__(self, module):
@@ -20,26 +36,13 @@ class Dataset():
             sys.exit("Error: DEPENDS not in %s" % module.__name__)
         # assign module
         self.module = module
-
-    def __lt__(self, other):
-        """Comparison function for sorting according to dependancies."""
-        if str(self) in other.DEPENDS:
-            return True
-        try:
-            for dependency in other.DEPENDS:
-                if str(register[dependency]) in self.DEPENDS:
-                    return False
-                if self < register[dependency]:
-                    return True
-            for dependency in self.DEPENDS:
-                if register[dependency] < other:
-                    return True
-        except RuntimeError:
-            raise RuntimeError("Cirular dependancy: %s" % dependency)
+        self.name = self.module.__name__.split('.')[-1]
+        self.dependson = []
+        self.dependencyof = []
 
     def __str__(self):
         """String function returning the last part of the module name."""
-        return self.module.__name__.split('.')[-1]
+        return self.name
 
     @property
     def __doc__(self):
@@ -50,19 +53,27 @@ class Dataset():
         return self.module.DEPENDS
 
     def generate(self, reclimit):
-        try:
-            self.module.generate(reclimit)  # TODO: streamline old datasets
-        except TypeError:                   # so we don't needs to check
-            self.module.generate()          # for call without parameter
+        self.module.generate(reclimit)
+
+    def add_dependencies(self, module_name):
+        for dependency in register[module_name].DEPENDS:
+            if dependency not in self.dependson:
+                self.dependson.append(dependency)
+            if self.name not in register[dependency].dependencyof:
+                register[dependency].dependencyof.append(self.name)
+            self.add_dependencies(dependency)
 
 
 class Datasets(list):
     """Class for datasets."""
-    def __init__(self, datasets=[], dependencies=True, leaves=True):
+    def __init__(self, datasets=[], excludes=[],
+                 dependencies=True, leaves=True):
         """
         Initialized the datasets list with the given datasets.
 
         Arguments:
+        - datasets (list): List of datasets to add.
+        - excludes (list): List of datasets to exclude.
         - dependencies (bool): Add dependencies of given datasets.
         - leaves (bool): Add given datasets.
         """
@@ -88,11 +99,27 @@ class Datasets(list):
                     self.add_dependencies(register[name])
 
         # sort modules
-        self.sort()
+        self.sort_dependencies()
+
+        # exclude modules
+        if excludes:
+            excludes = list(set(excludes))
+            unknown = []
+            for name in excludes:
+                if name not in register:
+                    unknown.append(name)
+            if unknown:
+                raise(LookupError(
+                    "Dataset not found: %s" % ", ".join(unknown)))
+            # remove modules
+            for name in excludes:
+                if register[name] in self:
+                    self.remove(register[name])
+                self.remove_dependencies(register[name])
 
     def __str__(self):
         """Formats the list to use the dataset names."""
-        return "[%s]" % ", ".join([str(m) for m in self])
+        return "[%s]" % ", ".join([m.name for m in self])
 
     def add_dependencies(self, dataset):
         """Adds the dependent modules of dataset to the datasets list."""
@@ -101,6 +128,25 @@ class Datasets(list):
                 continue
             self.append(register[dependency])
             self.add_dependencies(register[dependency])
+
+    def remove_dependencies(self, dataset):
+        """Removes the dependent modules of dataset from the datasets list."""
+        for dependency in dataset.DEPENDS:
+            if register[dependency] in self:
+                self.remove(register[dependency])
+            self.remove_dependencies(register[dependency])
+
+    def sort_dependencies(self):
+        self.sort(key=lambda x: len(x.dependson), reverse=True)
+        datasets = []
+        while self:
+            dataset = self.pop()
+            index = 0
+            for i, other in enumerate(datasets):
+                if dataset.name in other.dependencyof:
+                    index = i + 1
+            datasets.insert(index, dataset)
+        self.extend(datasets)
 
 
 # register available datasets
@@ -115,3 +161,6 @@ for filename in os.listdir(os.path.dirname(os.path.realpath(__file__))):
     module = import_module('.' + module_name, package='data.datasets')
     # register dataset module
     register[module_name] = Dataset(module)
+# calculate dependencies
+for module_name, dataset in register.items():
+    dataset.add_dependencies(module_name)
