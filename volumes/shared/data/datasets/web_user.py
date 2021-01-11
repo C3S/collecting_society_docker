@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the web users
+Create the web users for licenser/licensee/all roles
 """
 
 import datetime

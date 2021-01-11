@@ -19,7 +19,7 @@ DEPENDS = [
 def generate(reclimit=0):
 
     # constants
-    tariff_systems = 3
+    tariff_systems = reclimit and reclimit or 3
 
     # models
     TariffSystem = Model.get('tariff_system')

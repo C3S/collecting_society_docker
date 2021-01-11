@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the storehouses
+Create the storehouses and storehouse admins
 """
 
 from proteus import Model

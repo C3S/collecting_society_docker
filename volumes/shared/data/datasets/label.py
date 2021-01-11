@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the labels
+Create the labels and label parties
 """
 
 import os

@@ -29,7 +29,6 @@ def generate(reclimit=0):
     # models
     Creation = Model.get('creation')
     Release = Model.get('release')
-    ReleaseTrack = Model.get('release.track')
     License = Model.get('license')
 
     # entries
@@ -40,7 +39,7 @@ def generate(reclimit=0):
     ])
     sampler_releases = Release.find([
         ('claim_state', '!=', 'unclaimed'),
-        ('type', '=', 'sampler')
+        ('type', '=', 'compilation')
     ])
     split_releases = Release.find([
         ('claim_state', '!=', 'unclaimed'),
@@ -54,14 +53,13 @@ def generate(reclimit=0):
         tracks = creations[start:start+creations_per_release]
         for j, creation in enumerate(tracks):
             licenses = License.find([])
-            rc = ReleaseTrack()
+            rc = release.tracks.new()
             rc.creation = creation
-            rc.release = release
             rc.title = "Release Title of Song %s" % creation.title[:-3]
             rc.medium_number = 1
             rc.track_number = j
             rc.license = random.choice(licenses)
-            rc.save()
+        release.save()
 
     # create sampler release tracks
     for release in sampler_releases:
@@ -71,14 +69,12 @@ def generate(reclimit=0):
             if creation.release.release_date > last_date:
                 last_date = creation.release.release_date
             licenses = License.find([])
-            rc = ReleaseTrack()
+            rc = release.tracks.new()
             rc.creation = creation
-            rc.release = release
             rc.title = "Renamed Song %s on a Compilation" % creation.title[:-3]
             rc.medium_number = 1
             rc.track_number = i
             rc.license = random.choice(licenses)
-            rc.save()
         release.production_date = last_date + datetime.timedelta(50)
         release.copyright_date = last_date + datetime.timedelta(80)
         release.release_date = last_date + datetime.timedelta(100)
@@ -97,14 +93,12 @@ def generate(reclimit=0):
             if creation.release.release_date > last_date:
                 last_date = creation.release.release_date
             licenses = License.find([])
-            rc = ReleaseTrack()
+            rc = release.tracks.new()
             rc.creation = creation
-            rc.release = release
             rc.title = "Renamed Song %s on a Split" % creation.title[:-3]
             rc.medium_number = 1
             rc.track_number = i
             rc.license = random.choice(licenses)
-            rc.save()
         release.production_date = last_date + datetime.timedelta(50)
         release.copyright_date = last_date + datetime.timedelta(80)
         release.release_date = last_date + datetime.timedelta(100)

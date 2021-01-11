@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the solo and group artists
+Create the solo/group/foreign artists
 """
 
 import random
@@ -54,7 +54,6 @@ def generate(reclimit=0):
             claim_state='claimed',
             description=test_text
         )
-        group_artist.save()
 
         # members
         for j in range(1, new_solo_artists_per_group + 1):
@@ -63,7 +62,7 @@ def generate(reclimit=0):
                 'nickname', '=', 'Registered Name %s' % str(
                     number).zfill(3)
             )])
-            solo_artist = group_artist.solo_artists.new(
+            group_artist.solo_artists.new(
                 name="Solo Artist %s" % str(number).zfill(3),
                 group=False,
                 party=web_user.party,
@@ -73,8 +72,6 @@ def generate(reclimit=0):
                 claim_state='claimed',
                 description=test_text
             )
-            solo_artist.save()
-            group_artist.save()
 
         # foreign members
         for k in range(1, foreign_artists_per_group + 1):
@@ -88,7 +85,7 @@ def generate(reclimit=0):
                 value="foreign_member_%s@rep.test" % number
             )
             foreign_solo_artist_party.save()
-            foreign_solo_artist = group_artist.solo_artists.new(
+            group_artist.solo_artists.new(
                 name=name,
                 group=False,
                 party=foreign_solo_artist_party,
@@ -97,8 +94,9 @@ def generate(reclimit=0):
                 commit_state='uncommited',
                 claim_state='unclaimed'
             )
-            foreign_solo_artist.save()
-            group_artist.save()
+
+        # save
+        group_artist.save()
 
     # add existing solo artists to group artists
     groups = Artist.find([

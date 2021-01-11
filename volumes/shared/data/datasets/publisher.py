@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the publishers
+Create the publishers and publisher parties
 """
 
 from proteus import Model
