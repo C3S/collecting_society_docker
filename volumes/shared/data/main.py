@@ -23,6 +23,62 @@ from datasets import Datasets
 
 log = logging.getLogger(__name__)
 
+
+class ProteusStats():
+    """Object manipulation statistics for proteus."""
+
+    @classmethod
+    def start(cls):
+        Model.stats = {}
+        Model._original_save = Model.save
+        Model._original_delete = Model.delete
+        Model._original_duplicate = Model.duplicate
+        Model.track = cls.track
+        Model.save = cls.save
+        Model.delete = cls.delete
+        Model.duplicate = cls.duplicate
+
+    @classmethod
+    def stop(cls):
+        del Model.stats
+        del Model.track
+        Model.save = Model._original_save
+        Model.delete = Model._original_delete
+        Model.duplicate = Model._original_duplicate
+
+    @classmethod
+    def reset(cls):
+        Model.stats = {}
+
+    @staticmethod
+    def track(self, mode, model):
+        """Count statistics."""
+        if mode not in self.stats:
+            self.stats[mode] = {}
+        if model not in self.stats[mode]:
+            self.stats[mode][model] = 0
+        self.stats[mode][model] += 1
+
+    @staticmethod
+    def save(self):
+        """Track created/updated entries."""
+        self.track(self.id > 0 and 'updated' or 'created',
+                   self.__class__.__name__)
+        Model._original_save(self)
+
+    @staticmethod
+    def delete(self):
+        """Track deleted entries."""
+        self.track('deleted', self.__class__.__name__)
+        Model._original_delete(self)
+
+    @staticmethod
+    def duplicate(self):
+        """Track duplicated entries."""
+        self.track('duplicated', self.__class__.__name__)
+        Model._original_duplicate(self)
+
+
 def color(text, status):
     """Colored output wrapper for stdout text."""
     text = str(text)
@@ -77,13 +133,14 @@ class Capturing(list):
         sys.stdout = self.stdout
 
 
-def generate(datasets=[], reclimit=0, dependencies=True, leaves=True,
-             pdb=False):
+def generate(datasets=[], excludes=[], reclimit=0,
+             dependencies=True, leaves=True, pdb=False):
     """
     Generate datasets.
 
     Arguments:
     - datasets (list of strings)
+    - excludes (list of strings)
     - reclimit (int): get debug level to reduce number of demodata records to
                       be generated per object, so db build time is reduced
     - dependencies (bool): Generate dependencies of given datasets.
@@ -91,12 +148,12 @@ def generate(datasets=[], reclimit=0, dependencies=True, leaves=True,
     """
 
     if reclimit:
-        reclimit = int(reclimit)
+        reclimit = max(0, int(reclimit))
 
     # prepare datasets
     try:
         _datasets = datasets
-        datasets = Datasets(datasets, dependencies, leaves)
+        datasets = Datasets(datasets, excludes, dependencies, leaves)
     except (LookupError, RuntimeError) as e:
         sys.exit(color(e, "error"))
 
@@ -128,8 +185,12 @@ def generate(datasets=[], reclimit=0, dependencies=True, leaves=True,
             else:
                 log.debug('ptvsd debugging not possible: ' + ex.message)
 
-    # configure output width
+    # configure output
     width = 100
+    show_stats = True
+
+    # start proteus tracking
+    ProteusStats.start()
 
     # print header
     modes = []
@@ -149,6 +210,7 @@ def generate(datasets=[], reclimit=0, dependencies=True, leaves=True,
     else:
         print(color(" all", "dim"))
     print(color("  - database: %s" % db_name, "dim"))
+    print(color("  - reclimit: %s" % reclimit, "dim"))
     print(color("-" * width, "title"))
 
     # generate datasets
@@ -157,6 +219,9 @@ def generate(datasets=[], reclimit=0, dependencies=True, leaves=True,
     if not datasets:
         print(color("Nothing to do.", "dim"))
     for dataset in datasets:
+
+        # reset proteus tracking
+        ProteusStats.reset()
 
         # print dataset title
         set_start = time()
@@ -198,6 +263,12 @@ def generate(datasets=[], reclimit=0, dependencies=True, leaves=True,
         if output.debugged:
             line = "." * (width - len(dur))
         print(color(line + dur, "dim"))
+        if show_stats and not output.debugged:
+            for mode in Model.stats:
+                for model, num in Model.stats[mode].items():
+                    print(color("  {0: >4} x ".format(num), "dim"), end="")
+                    print(color("{0} ".format(model), "title"), end="")
+                    print(color("{0}".format(mode), "dim"))
         if output:
             print("")
             for line in output:
@@ -218,3 +289,6 @@ def generate(datasets=[], reclimit=0, dependencies=True, leaves=True,
     line = " " * (width - len(msg) - len(total_dur))
     print(color("-" * width, "title"))
     print(color(msg + line + total_dur, 'success'))
+
+    # stop proteus tracking
+    ProteusStats.stop()
