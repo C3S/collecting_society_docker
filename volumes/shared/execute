@@ -323,12 +323,14 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
                 db_copy, dbname_src=template_dbname, dbname_dst=dbname)
             # Generate leave datasets
             os.environ['DB_NAME'] = dbname
-            dependencies = False
             if exclude:
-                dependencies = True
-            data.generate(
-                dataset, exclude, reclimit=reclimit,
-                dependencies=dependencies, leaves=True, pdb=pdb)
+                data.generate(
+                    dataset, exclude, reclimit=reclimit,
+                    dependencies=True, leaves=True, pdb=pdb)
+            elif dataset:
+                data.generate(
+                    dataset, exclude, reclimit=reclimit,
+                    dependencies=False, leaves=True, pdb=pdb)
 
         # Without template
         else:
