@@ -239,10 +239,13 @@ def db_backup(context, dbname):
 
 @execute.command('db-setup')
 @click.argument('dbname', default=PROJECT)
-@click.option('--reclimit', '-d', type=int, default=-1,
+@click.option('--reclimit', '-r', type=int, default=-1,
               help='Maximum numbers of objects (default: 0 = all)')
-@click.option('--dataset', '-s', type=str, default=[], multiple=True,
+@click.option('--dataset', '-d', type=str, default=[], multiple=True,
               help='dataset in ./data/datasets/ to generate (default: all)\n'
+                   'can be used multiple times')
+@click.option('--exclude', '-e', type=str, default=[], multiple=True,
+              help='datasets in ./data/datasets/ to exclude (default: none)\n'
                    'can be used multiple times')
 @click.option('--template/--no-template', default=True,
               help='Use template db for dataset deps (default: yes)')
@@ -253,7 +256,8 @@ def db_backup(context, dbname):
 @click.option('--pdb/--no-pdb', default=False,
               help='Start pdb on error (default: no)')
 @click.pass_context
-def db_setup(context, dbname, reclimit, dataset, template, cache, force, pdb):
+def db_setup(context, dbname, reclimit, dataset, exclude,
+             template, cache, force, pdb):
     """
     Creates and sets up the postgres database DBNAME.
 
@@ -301,7 +305,7 @@ def db_setup(context, dbname, reclimit, dataset, template, cache, force, pdb):
             print("Setup database with template database.")
             template_dbname = dbname + "_template"
             # Delete template database
-            if not cache:
+            if not cache and not exclude:
                 context.invoke(db_delete, dbname=template_dbname)
             # Create template
             if not _db_exist(template_dbname):
@@ -312,17 +316,19 @@ def db_setup(context, dbname, reclimit, dataset, template, cache, force, pdb):
                 _update(None, template_dbname)
                 # Generate dependent datasets
                 data.generate(
-                    dataset, reclimit=reclimit,
+                    dataset, exclude, reclimit=reclimit,
                     dependencies=True, leaves=False, pdb=pdb)
             # Copy template
             context.invoke(
                 db_copy, dbname_src=template_dbname, dbname_dst=dbname)
             # Generate leave datasets
-            if dataset:
-                os.environ['DB_NAME'] = dbname
-                data.generate(
-                    dataset, reclimit=reclimit,
-                    dependencies=False, leaves=True, pdb=pdb)
+            os.environ['DB_NAME'] = dbname
+            dependencies = False
+            if exclude:
+                dependencies = True
+            data.generate(
+                dataset, exclude, reclimit=reclimit,
+                dependencies=dependencies, leaves=True, pdb=pdb)
 
         # Without template
         else:
@@ -333,8 +339,8 @@ def db_setup(context, dbname, reclimit, dataset, template, cache, force, pdb):
                 _update(None, dbname)
             # Generate datasets
             data.generate(
-                dataset, reclimit=reclimit,
-                    dependencies=True, leaves=True, pdb=pdb)
+                dataset, exclude, reclimit=reclimit,
+                dependencies=True, leaves=True, pdb=pdb)
 
     else:
         print('Setup database, but database "%s" exists: Skip!' % dbname)
@@ -351,10 +357,13 @@ def db_setup(context, dbname, reclimit, dataset, template, cache, force, pdb):
 
 @execute.command('db-rebuild')
 @click.argument('dbname', default=PROJECT)
-@click.option('--reclimit', '-l', type=int, default=-1,
+@click.option('--reclimit', '-r', type=int, default=-1,
               help='Maximum numbers of objects (default: 0 = all)')
-@click.option('--dataset', '-s', type=str, default=[], multiple=True,
+@click.option('--dataset', '-d', type=str, default=[], multiple=True,
               help='dataset in ./data/datasets/ to generate (default: all)\n'
+                   'can be used multiple times')
+@click.option('--exclude', '-e', type=str, default=[], multiple=True,
+              help='datasets in ./data/datasets/ to exclude (default: none)\n'
                    'can be used multiple times')
 @click.option('--template/--no-template', default=True,
               help='Use template db for dataset deps (default: yes)')
@@ -363,7 +372,8 @@ def db_setup(context, dbname, reclimit, dataset, template, cache, force, pdb):
 @click.option('--pdb/--no-pdb', default=False,
               help='Start pdb on error (default: no)')
 @click.pass_context
-def db_rebuild(context, dbname, reclimit, dataset, template, cache, pdb):
+def db_rebuild(context, dbname, reclimit, dataset, exclude,
+               template, cache, pdb):
     """
     Deletes DBNAME and executes db setup
     """
@@ -376,7 +386,7 @@ def db_rebuild(context, dbname, reclimit, dataset, template, cache, pdb):
     # Setup database
     context.invoke(
         db_setup, dbname=dbname, reclimit=reclimit, dataset=dataset,
-        template=template, cache=cache, force=False, pdb=pdb)
+        exclude=exclude, template=template, cache=cache, force=False, pdb=pdb)
 
 
 @execute.command('create-test-db')
