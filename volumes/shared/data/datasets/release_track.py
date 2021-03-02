@@ -75,10 +75,11 @@ def generate(reclimit=0):
             rc.medium_number = 1
             rc.track_number = i
             rc.license = random.choice(licenses)
-        release.production_date = last_date + datetime.timedelta(50)
+        if not release.confirmed_copies:
+            release.production_date = last_date + datetime.timedelta(50)
+            release.release_date = last_date + datetime.timedelta(100)
+            release.online_release_date = last_date + datetime.timedelta(100)
         release.copyright_date = last_date + datetime.timedelta(80)
-        release.release_date = last_date + datetime.timedelta(100)
-        release.online_release_date = last_date + datetime.timedelta(100)
         release.save()
 
     # create split release tracks

@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the artist/sampler/split releases
+Create the artist/sampler/split/reproduction releases
 """
 
 import datetime
@@ -31,8 +31,10 @@ def generate(reclimit=0):
     sampler_releases = reclimit or 1
     split_releases = reclimit or 1
     artists_per_split_release = reclimit or 2
+    reproduction_releases_per_licensee = reclimit or 2
 
     # models
+    WebUser = Model.get('web.user')
     Artist = Model.get('artist')
     Release = Model.get('release')
     Publisher = Model.get('publisher')
@@ -42,8 +44,12 @@ def generate(reclimit=0):
     Country = Model.get('country.country')
 
     # entries
-    artists = Artist.find([('claim_state', '!=', 'unclaimed')])
     countries = Country.find([])
+    artists = Artist.find([('claim_state', '!=', 'unclaimed')])
+    licensees = WebUser.find([('roles.code', '=', 'licensee')])
+
+    # content
+    now = datetime.datetime.now()
 
     # create artist releases
     for i in range(1, len(artists) + 1):
@@ -150,8 +156,55 @@ def generate(reclimit=0):
             warning='WARNING: This is testdata!',
             distribution_territory='Germany',
             label=random.choice(labels),
-            label_catalog_number='12345',
+            label_catalog_number=str(random.randint(10000, 99999)),
             publisher=random.choice(publishers)
         )
         release.artists.extend(splits)
         release.save()
+
+    # create reproduction releases
+    for i, licensee in enumerate(licensees):
+        for j in range(1, reproduction_releases_per_licensee + 1):
+            number = i * reproduction_releases_per_licensee + j
+            artists = Artist.find([('claim_state', '!=', 'unclaimed')])
+            labels = Label.find([])
+            genres = Genre.find([])
+            styles = Style.find([])
+            publishers = Publisher.find([])
+            splits = random.sample(artists, artists_per_split_release)
+            creator = splits[0]
+            if creator.group:
+                creator = creator.solo_artists[0]
+            production_date = now + datetime.timedelta(
+                days=random.randint(30, 90)
+            )
+            release_date = production_date + datetime.timedelta(
+                days=random.randint(30, 120)
+            )
+            release = Release(
+                type="compilation",
+                entity_creator=licensee.party,
+                commit_state='commited',
+                claim_state='claimed',
+                title="Reproduction Release %s" % str(number).zfill(3),
+                genres=random.sample(genres, min(
+                    genres_per_release, len(genres))),
+                styles=random.sample(styles, min(
+                    styles_per_release, len(styles))),
+                warning='WARNING: This is testdata!',
+                copyright_date=datetime.date(
+                    random.randint(1800, 2019),
+                    random.randint(1, 12),
+                    random.randint(1, 28)
+                ),
+                production_date=production_date,
+                release_date=release_date,
+                online_release_date=release_date,
+                distribution_territory=random.choice(countries).code,
+                label=random.choice(labels),
+                label_catalog_number=str(random.randint(10000, 99999)),
+                publisher=random.choice(publishers),
+                confirmed_copies=random.choice([100, 1000, 10000, 100000])
+            )
+            release.artists.extend(splits)
+            release.save()

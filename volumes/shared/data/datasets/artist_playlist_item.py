@@ -25,7 +25,6 @@ def generate(reclimit=0):
 
     # models
     ArtistPlaylist = Model.get('artist.playlist')
-    ArtistPlaylistItem = Model.get('artist.playlist.item')
     Creation = Model.get('creation')
 
     # entries
@@ -41,11 +40,14 @@ def generate(reclimit=0):
         foreign_items = random.sample(
             creations, min(foreign_creations_per_playlist, len(creations))
         )
-        for i, item in enumerate(artist_items + foreign_items, start=1):
-            ArtistPlaylistItem(
-                playlist=playlist,
-                creation=item,
-                position=i,
-                entity_origin='direct',
-                entity_creator=playlist.entity_creator
-            ).save()
+        entity_origin = 'direct'
+        if playlist.performance:
+            entity_origin = 'indirect'
+        for i, creation in enumerate(artist_items + foreign_items, start=1):
+            item = playlist.items.new()
+            item.playlist = playlist
+            item.creation = creation
+            item.position = i
+            item.entity_origin = entity_origin
+            item.entity_creator = playlist.entity_creator
+        playlist.save()

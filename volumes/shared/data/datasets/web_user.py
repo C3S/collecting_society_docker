@@ -22,8 +22,8 @@ def generate(reclimit=0):
     # constants
     group_artists = reclimit or 3
     new_solo_artists_per_group = reclimit or 2
-    webuser_licensee = reclimit or 3
-    webuser_all_roles = reclimit or 2
+    webuser_licensee = reclimit or 1
+    webuser_all_roles = reclimit or 1
 
     # models
     WebUser = Model.get('web.user')
