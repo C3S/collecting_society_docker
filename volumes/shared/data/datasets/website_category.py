@@ -12,7 +12,7 @@ import csv
 
 from proteus import Model
 
-from . import csv_delimiter, csv_quotechar, csv_devlimit
+from . import csv_delimiter, csv_quotechar
 
 DEPENDS = [
     'master',
@@ -20,11 +20,6 @@ DEPENDS = [
 
 
 def generate(reclimit=0):
-
-    # constants
-    environment = os.environ.get('ENVIRONMENT')
-    if environment == "development":
-        reclimit = reclimit and min(reclimit, csv_devlimit) or csv_devlimit
 
     # models
     WebsiteCategory = Model.get('website.category')
@@ -35,8 +30,6 @@ def generate(reclimit=0):
         reader = csv.DictReader(
             f, delimiter=csv_delimiter, quotechar=csv_quotechar)
         for i, row in enumerate(reader):
-            if reclimit and i == reclimit:
-                break
             WebsiteCategory(
                 name=row['name'],
                 code=row['code'],
