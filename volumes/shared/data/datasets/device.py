@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create and assign the devices for bars/webradios
+Create and assign the devices for bars/webradios/podcasts
 """
 
 import datetime
@@ -28,16 +28,17 @@ def generate(reclimit=0):
     # entries
     bar_locations = Location.find(['name', 'like', '%Bar%'])
     radio_websites = Website.find(['category.code', '=', 'R'])
+    podcast_websites = Website.find(['category.code', '=', 'P'])
 
     # content
     now = datetime.datetime.now()
 
-    # create devices for location spaces
-    for bar_location in bar_locations:
+    # create devices for location spaces (first space only)
+    for location in bar_locations:
 
         # create device
         device = Device(
-            web_user=bar_location.entity_creator.web_user,
+            web_user=location.entity_creator.web_user,
             blocked=False,
             name='Raspberry PI',
             os_name='Raspbian',
@@ -51,16 +52,16 @@ def generate(reclimit=0):
         # create device assignment
         DeviceAssignment(
             device=device,
-            assignment=bar_location.spaces[0],
+            assignment=location.spaces[0],
             start=now
         ).save()
 
-    # create devices for radio website channels
-    for radio_website in radio_websites:
+    # create devices for radio website channels (first channel only)
+    for website in radio_websites:
 
         # create device
         device = Device(
-            web_user=radio_website.party.web_user,
+            web_user=website.party.web_user,
             blocked=False,
             name='Raspberry PI',
             os_name='Raspbian',
@@ -74,6 +75,27 @@ def generate(reclimit=0):
         # create device assignment
         DeviceAssignment(
             device=device,
-            assignment=radio_website,
+            assignment=website,
+            start=now
+        ).save()
+
+    # create devices for podcast website channels
+    for website in podcast_websites:
+
+        # create device
+        device = Device(
+            web_user=website.party.web_user,
+            blocked=False,
+            name='Podcast Reporter',
+            software_name='Podcast Reporter',
+            software_version='1.0.0',
+            software_vendor='C3S'
+        )
+        device.save()
+
+        # create device assignment
+        DeviceAssignment(
+            device=device,
+            assignment=website,
             start=now
         ).save()

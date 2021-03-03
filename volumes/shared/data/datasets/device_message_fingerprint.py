@@ -29,21 +29,21 @@ def generate(reclimit=0):
 
     # entries
     creations = Creation.find([])
-    devices = Device.find(['software_name', 'like', '%Tracker%'])
+    devices = Device.find(['software_name', 'like', '%Tracker'])
 
     # content
     chars_fingerprint = string.digits + string.letters
 
     # create device message fingerprints
     for device in devices:
-        messages = DeviceMessage.find(['device', '=', device.id])
+        messages = DeviceMessage.find([
+            ('device', '=', device.id),
+            ('category', '=', 'fingerprint')])
         timestamp = messages[0].timestamp - datetime.timedelta(days=1)
         shuffled_creations = random.sample(creations, len(creations))
         keep_creation = 0
         unknown_creation = False
         for message in messages:
-            if message.category != 'fingerprint':
-                continue
             if not keep_creation:
                 if unknown_creation:
                     creation = None
