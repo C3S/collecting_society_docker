@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the declarations
+Create the playing/life/reproduction/online declarations
 """
 
 import datetime
@@ -17,6 +17,7 @@ DEPENDS = [
     'location',
     'event',
     'release',
+    'website',
 ]
 
 
@@ -28,14 +29,17 @@ def generate(reclimit=0):
     Declaration = Model.get('declaration')
     Event = Model.get('event')
     Release = Model.get('release')
+    Website = Model.get('website')
 
     # entries
     locations = Location.find([])
     tariff_playing = Tariff.find([('category.code', '=', 'P')])[-1]
     tariff_live = Tariff.find([('category.code', '=', 'L')])[-1]
     tariff_reproduction = Tariff.find([('category.code', '=', 'C')])[-1]
+    tariff_online = Tariff.find([('category.code', '=', 'O')])[-1]
     events = Event.find([])
     releases = Release.find(['confirmed_copies', '>', 0])
+    websites = Website.find([])
 
     # content
     now = datetime.datetime.now()
@@ -80,4 +84,16 @@ def generate(reclimit=0):
             period='onetime',
             tariff=tariff_reproduction,
             context=release
+        ).save()
+
+    # create declarations for tariff online
+    for website in websites:
+        Declaration(
+            licensee=website.party,
+            state='created',
+            creation_time=now,
+            template=False,
+            period=random.choice(periods),
+            tariff=tariff_online,
+            context=website
         ).save()

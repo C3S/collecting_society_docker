@@ -20,7 +20,7 @@ DEPENDS = [
 def generate(reclimit=0):
 
     # constants
-    location_spaces_per_location = reclimit and reclimit or 2
+    location_spaces_per_location = reclimit or 2
 
     # models
     LocationSpaceCategory = Model.get('location.space.category')
@@ -30,7 +30,7 @@ def generate(reclimit=0):
     # entries
     bar_categories = LocationSpaceCategory.find([])
     bar_locations = Location.find(['name', 'like', '%Bar%'])
-    performance_category = LocationSpaceCategory.find([('code', '=', 'C')])[0]
+    performance_category, = LocationSpaceCategory.find([('code', '=', 'C')])
     performance_locations = Location.find(['name', 'like', '%Performance%'])
 
     # create location spaces for bars

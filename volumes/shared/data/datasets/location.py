@@ -21,8 +21,8 @@ DEPENDS = [
 def generate(reclimit=0):
 
     # constants
-    licensee_playing_locations = reclimit or 1
-    licensee_live_locations = reclimit or 1
+    playing_locations_per_licensee = reclimit or 1
+    live_locations_per_licensee = reclimit or 1
 
     # models
     Country = Model.get('country.country')
@@ -41,8 +41,8 @@ def generate(reclimit=0):
 
     # create locations for playing / bar
     for i, licensee in enumerate(licensees):
-        for j in range(1, licensee_playing_locations + 1):
-            number = i * licensee_playing_locations + j
+        for j in range(1, playing_locations_per_licensee + 1):
+            number = i * playing_locations_per_licensee + j
 
             # create party
             party = Party(name="Location Bar %s" % str(number).zfill(3))
@@ -72,8 +72,8 @@ def generate(reclimit=0):
 
     # create locations for live / performance
     for i, licensee in enumerate(licensees):
-        for j in range(1, licensee_live_locations + 1):
-            number = i * licensee_live_locations + j
+        for j in range(1, live_locations_per_licensee + 1):
+            number = i * live_locations_per_licensee + j
 
             # create party
             party = Party(

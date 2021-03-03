@@ -18,15 +18,26 @@ def generate(reclimit=0):
 
     # models
     LocationSpace = Model.get('location.space')
+    WebsiteResource = Model.get('website.resource')
 
     # entries
     spaces = LocationSpace.find(['messages.category', '=', 'fingerprint'])
+    resources = WebsiteResource.find(['messages.category', '=', 'fingerprint'])
 
-    # merge fingerprints
+    # merge fingerprints for location spaces
     for space in spaces:
         wizard = Wizard('device.message.fingerprint.merge')
         wizard.form.context = space
         wizard.form.start = space.fingerprints[0].timestamp
         wizard.form.end = space.fingerprints[-1].timestamp
+        wizard.execute('select')
+        wizard.execute('merge')
+
+    # merge fingerprints for website resources
+    for resource in resources:
+        wizard = Wizard('device.message.fingerprint.merge')
+        wizard.form.context = resource
+        wizard.form.start = resource.fingerprints[0].timestamp
+        wizard.form.end = resource.fingerprints[-1].timestamp
         wizard.execute('select')
         wizard.execute('merge')
