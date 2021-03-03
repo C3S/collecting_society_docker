@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the websites for webradios/podcasts
+Create the websites for webradios/podcasts/dsps
 """
 
 from proteus import Model
@@ -29,6 +29,7 @@ def generate(reclimit=0):
     licensees = WebUser.find([('roles.code', '=', 'licensee')])
     category_webradio, = WebsiteCategory.find([('code', '=', 'R')])
     category_podcast, = WebsiteCategory.find([('code', '=', 'P')])
+    category_dsp, = WebsiteCategory.find([('code', '=', 'D')])
 
     # create websites for webradios
     for i, licensee in enumerate(licensees):
@@ -51,3 +52,13 @@ def generate(reclimit=0):
                 party=licensee.party,
                 url='https://podcast%s.test' % str(number).zfill(3)
             ).save()
+
+    # create websites for dsps
+    for i, licensee in enumerate(licensees):
+        number = i
+        Website(
+            name='DSP %s' % str(number).zfill(3),
+            category=category_dsp,
+            party=licensee.party,
+            url='https://dsp%s.test' % str(number).zfill(3)
+        ).save()

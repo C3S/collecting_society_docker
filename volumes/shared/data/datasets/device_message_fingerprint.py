@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the devices message fingerprints
+Create the devices message fingerprints for bars/webradios
 """
 
 import datetime
@@ -14,7 +14,6 @@ import string
 from proteus import Model
 
 DEPENDS = [
-    'creation',
     'device_message',
 ]
 

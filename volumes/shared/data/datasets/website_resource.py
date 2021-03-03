@@ -4,12 +4,15 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the websites resources
+Create the websites resources for webradios/podcasts/dsps
 """
+
+import random
 
 from proteus import Model
 
 DEPENDS = [
+    'creation',
     'website_resource_category',
     'website',
 ]
@@ -20,16 +23,20 @@ def generate(reclimit=0):
     # constants
     channels_per_radio_website = reclimit or 3
     episodes_per_podcast_website = reclimit or 3
+    creations_per_episode = reclimit or 5
 
     # models
+    Creation = Model.get('creation')
     Website = Model.get('website')
     WebsiteResourceCategory = Model.get('website.resource.category')
 
     # entries
     radio_websites = Website.find(['category.code', '=', 'R'])
     podcast_websites = Website.find(['category.code', '=', 'P'])
+    dsp_websites = Website.find(['category.code', '=', 'D'])
     category_channel, = WebsiteResourceCategory.find([('code', '=', 'C')])
     category_episode, = WebsiteResourceCategory.find([('code', '=', 'E')])
+    category_ugc, = WebsiteResourceCategory.find([('code', '=', 'U')])
 
     # create websites resources for webradios
     for i, website in enumerate(radio_websites):
@@ -61,4 +68,14 @@ def generate(reclimit=0):
                 website.name[-3:],
                 str(number).zfill(3)
             )
+            resource.originals.extend(
+                random.sample(Creation.find([]), creations_per_episode))
+        website.save()
+
+    # create websites resources for dsps
+    for i, website in enumerate(dsp_websites):
+        number = i
+        resource = website.resources.new()
+        resource.category = category_ugc
+        resource.name = 'UGC %s' % str(number).zfill(3)
         website.save()
