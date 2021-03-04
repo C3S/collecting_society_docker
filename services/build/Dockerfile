@@ -72,7 +72,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python \
     && rm -rf /var/lib/apt/lists/*
 # install pip
-RUN curl -s https://bootstrap.pypa.io/get-pip.py | python
+RUN curl -s https://bootstrap.pypa.io/2.7/get-pip.py | python
 # create virtual environment
 RUN pip install virtualenv
 RUN python -m virtualenv /opt/venv
