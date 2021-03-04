@@ -1,9 +1,9 @@
 // For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 // Repository: https://github.com/C3S/collecting_society_docker
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // IMPORTANT: If you get a "ECONNREFUSED" error when you debug one of the
+    // configurations, make sure that the selected configuration corresponds
+    // with the service set in .devcontainer.json, e.g. 'webgui' = 'Webgui Attach'
     "version": "0.2.0",
     "configurations": [
         {
