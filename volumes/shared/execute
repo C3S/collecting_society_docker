@@ -25,7 +25,6 @@ import time
 import subprocess
 import glob
 import fcntl
-from urlparse import urlparse
 import click
 
 import data
@@ -74,13 +73,15 @@ def pip_install(context, container):
 
         # create flagfile
         open(flagfile, 'w').close()
+        if container in ['webgui', 'webapi']:
+            open('/tmp/pip_install_erpserver', 'w').close()
 
         # restart process with new modules installed
         subprocess.check_call(sys.argv)
         sys.exit()
 
     import site
-    reload(site)
+    reload(site)  # noqa: F821
 
 
 @execute.command('db-create')
@@ -141,7 +142,7 @@ def db_delete(context, dbname):
         # if tries == max_tries - 1:
         #     kill db connection somehow...
         try:
-            result = subprocess.check_output(
+            subprocess.check_output(
                 [
                     'dropdb',
                     '-h', POSTGRES_HOSTNAME,
@@ -282,7 +283,7 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
         except IOError:
             time.sleep(3)
             print("Waiting for the other process to finish db creation...")
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             fcntl.flock(lockfile, fcntl.LOCK_UN)
             lockfile.close()
             try:
@@ -391,80 +392,8 @@ def db_rebuild(context, dbname, reclimit, dataset, exclude,
         exclude=exclude, template=template, cache=cache, force=False, pdb=pdb)
 
 
-@execute.command('create-test-db')
-@click.option('--dbtype', default='postgres',
-              help='Type of database (default: postgres)')
-@click.option('--dbname', default=PROJECT + '_test',
-              help='Name of database (default: PROJECT_test)')
-@click.pass_context
-def create_test_db(context, dbtype, dbname):
-    """
-    Recreates DBTYPE database DBNAME_template, sets it up and copies to DBNAME.
-
-    The old database template and database will be overwritten.
-
-    DBTYPE 'sqlite' throws errors on setup, so postgres is recommended.
-    """
-    context.invoke(pip_install, container='erpserver')
-    _db_type = dbtype
-    _db_name = dbname
-    _trytond_conf = 'testing_' + _db_type + '.conf'
-    os.environ['TRYTOND_CONFIG'] = os.path.join(
-        SHARED_PATH, 'config', 'trytond', _trytond_conf
-    )
-
-    # Rereate database template
-    if _db_type == 'sqlite':
-        _file_path = os.path.join(SHARED_PATH, 'tmp')
-        _db_src_path = os.path.join(_file_path, _db_name + '.sqlite')
-        os.environ['DB_NAME'] = _db_name
-        if os.path.isfile(_db_src_path):
-            os.unlink(_db_src_path)
-        open(_db_src_path, 'w').close()
-        os.chmod(_db_src_path, 0777)  # noqa: E999
-
-    if _db_type == 'postgres':
-        _db_tpl = _db_name + "_template"
-        os.environ['DB_NAME'] = _db_tpl
-        context.invoke(db_delete, dbname=_db_tpl)
-        context.invoke(db_create, dbname=_db_tpl)
-
-    # Setup trytond
-    if _db_type == 'sqlite':
-        _update(None, _db_name, _trytond_conf)
-
-    if _db_type == 'postgres':
-        _update(None, _db_tpl, _trytond_conf)
-
-    # Setup database template
-    subprocess.call(
-        [
-            'python',
-            '-m', 'doctest',
-            '-v', os.path.join(
-                SHARED_PATH, 'data', 'master.txt'
-            )
-        ]
-    )
-
-    # Copy database template
-    if _db_type == 'sqlite':
-        _db_dst_path = os.path.join(
-            SHARED_PATH, 'tmp', _db_name + '.sqlite')
-        if os.path.isfile(_db_dst_path):
-            os.unlink(_db_dst_path)
-        shutil.copyfile(_db_src_path, _db_dst_path)
-        os.chmod(_db_src_path, 0777)
-
-    if _db_type == 'postgres':
-        context.invoke(db_delete, dbname=_db_name)
-        context.invoke(db_copy, dbname_src=_db_tpl, dbname_dst=_db_name)
-
-
 @execute.command('run-tests', context_settings=dict(
                  ignore_unknown_options=True))
-@click.option('--dbtype', default='postgres',
-              help='Type of database (default: postgres)')
 @click.option('--dbname', default=PROJECT + '_test',
               help='Name of database (default: test)')
 @click.option('--reset/--no-reset', default=True,
@@ -474,7 +403,7 @@ def create_test_db(context, dbtype, dbname):
 @click.argument('service')
 @click.argument('nargs', nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
-def run_tests(context, service, dbtype, dbname, reset, path, nargs):
+def run_tests(context, service, dbname, reset, path, nargs):
     """
     Runs all tests for a service (web, worker).
 
@@ -504,12 +433,12 @@ def run_tests(context, service, dbtype, dbname, reset, path, nargs):
 
     Additional NARGS will be passed to nosetests.
     """
-    context.invoke(pip_install, container='erpserver')
     if service not in ['erpserver', 'web', 'worker']:
         print("Service unknown.")
         exit(-1)
 
     if service == 'erpserver':
+        context.invoke(pip_install, container='erpserver')
         os.environ['DB_NAME'] = ":memory:"
         # Start tests
         exitcode = subprocess.call(
@@ -523,34 +452,31 @@ def run_tests(context, service, dbtype, dbname, reset, path, nargs):
         # Return exitcode
         sys.exit(exitcode)
 
-    _db_type = dbtype
     _db_name = dbname
     _db_tpl = _db_name + "_template"
     _file_path = os.path.join(SHARED_PATH, 'tmp', 'files')
-    _trytond_conf = 'testing_' + _db_type + '.conf'
+    _trytond_conf = 'testing.conf'
     os.environ['DB_NAME'] = _db_name
     os.environ['TRYTOND_CONFIG'] = os.path.join(
         SHARED_PATH, 'config', 'trytond', _trytond_conf
     )
 
-    print("\nCONFIGURE TESTS ...\n")
-    print("- testpath: %s" % (path or 'all'))
-    print("- parameter: %s" % list(nargs))
-    print("- dbtype: %s" % _db_type)
-    print("- dbname: %s" % _db_name)
-    print("- reset: %s" % bool(reset))
-    print("- trytondconf: %s" % os.environ['TRYTOND_CONFIG'])
-    print("- filepath: %s" % _file_path)
-
-    # Setup containers
-    print("\nPREPARE TESTS ...\n")
+    # Install packages
     if service == "web":
         context.invoke(pip_install, container='webgui')
     if service == "worker":
         context.invoke(pip_install, container='worker')
-    if service == "erpserver":
-        context.invoke(pip_install, container='erpserver')
 
+    # Setup containers
+    print("\nCONFIGURE TESTS ...\n")
+    print("- service: %s" % service)
+    print("- testpath: %s" % (path or 'all'))
+    print("- parameter: %s" % list(nargs))
+    print("- dbname: %s" % _db_name)
+    print("- reset: %s" % bool(reset))
+    print("- trytondconf: %s" % os.environ['TRYTOND_CONFIG'])
+    print("- filepath: %s" % _file_path)
+    print("\nPREPARE TESTS ...\n")
     if reset:
 
         # Delete files
@@ -559,26 +485,13 @@ def run_tests(context, service, dbtype, dbname, reset, path, nargs):
         os.makedirs(_file_path)
 
         # Recreate database
-        if _db_type == 'postgres':
-            if _db_exist(_db_tpl):
-                context.invoke(db_delete, dbname=_db_name)
-                context.invoke(
-                    db_copy, dbname_src=_db_tpl, dbname_dst=_db_name
-                )
-            else:
-                context.invoke(
-                    create_test_db, dbtype=_db_type, dbname=_db_name
-                )
-        if _db_type == 'sqlite':
-            _db_src_path = os.path.join(SHARED_PATH, 'tmp', 'test.sqlite')
-            _db_dst_path = os.path.join(_file_path, _db_name + '.sqlite')
-            if os.path.isfile(_db_src_path):
-                shutil.copyfile(_db_src_path, _db_dst_path)
-                os.chmod(_db_src_path, 0777)
-            else:
-                context.invoke(
-                    create_test_db, dbtype=_db_type, dbname=_db_name
-                )
+        if not _db_exist(_db_tpl):
+            context.invoke(
+                db_setup, dbname=_db_tpl, dataset=['master'], template=False
+            )
+        context.invoke(
+            db_copy, dbname_src=_db_tpl, dbname_dst=_db_name, force=True
+        )
 
     # Prepare paths
     if service == "web":
@@ -638,8 +551,6 @@ def deploy_erpserver(context):
     """
     context.invoke(pip_install, container='erpserver')
     _trytond_conf = ENVIRONMENT + '.conf'
-    if ENVIRONMENT == "testing":
-        _trytond_conf = ENVIRONMENT + '_postgres.conf'
     subprocess.call(
         [
             'trytond',
@@ -736,7 +647,7 @@ def build_docs(context):
 
 @execute.command('build-docs-noautoapi')
 @click.pass_context
-def build_docs(context):
+def build_docs_noautoapi(context):
     """
     Builds the Sphinx documentation without autoapi run.
 
@@ -776,9 +687,6 @@ def _update(modules, dbname, trytondconf=False):
         trytondconf (Optional[str]): Name of tryton config file.
     """
     print('Update services ...')
-    if ENVIRONMENT == "testing" and not trytondconf:
-        print("update omitted (testing environment)")
-        return
     if modules:
         modules = modules.split(',')
     _trytond_conf = trytondconf or ENVIRONMENT + '.conf'

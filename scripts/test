@@ -76,7 +76,7 @@ fi
 echo -e "\n== create and start docker container"
 docker-compose $TESTING up -d
 if [ $? -ne 0 ]; then
-    echo -e "\n... if the images are missing or need to be updated, use './test --build'"
+    echo -e "\n... if the images are missing or need to be updated, use './scripts/test --build'"
 fi
 
 # recreate test database template
