@@ -36,8 +36,6 @@ services:
     command: execute deploy-erpserver
     networks:
       - backend
-    ports:
-      - "8000:8000"  # jsonrpc (tryton client)
     healthcheck:
       test: ["CMD-SHELL", "if curl -v -k -X POST -H 'Content-Type: text/html' -d '<xml></xml>' --silent https://localhost:8069 2>&1 | grep 'Connection refused'; then exit 1; fi"]
       interval: 10s
@@ -60,8 +58,6 @@ services:
       args: *buildargs
     networks:
       - frontend
-    ports:
-      - "80:80"  # http
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
     logging:

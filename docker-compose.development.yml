@@ -11,38 +11,41 @@ services:
 
   erpserver:
     ports:
-      - "8069:8069"  # xmlrpc (proteus)
-      - "51005:51005"  # debugger
+      - "127.0.0.1:8000:8000"  # jsonrpc (tryton client)
+      - "127.0.0.1:8069:8069"  # xmlrpc (proteus)
+      - "127.0.0.1:51005:51005"  # debugger
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
   webserver:
+    ports:
+      - "127.0.0.1:80:80"  # http
     volumes:
       - ./volumes/nginx-certs:/etc/nginx/certs
       - ./volumes/nginx-dhparam:/etc/nginx/dhparam
 
   webapi:
     ports:
-      - "6544:6543"  # pyramid pserve
-      - "51001:51001"  # debugger
+      - "127.0.0.1:6544:6543"  # pyramid pserve
+      - "127.0.0.1:51001:51001"  # debugger
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
   webgui:
     ports:
-      - "6543:6543"  # pyramid pserve
-      - "51000:51000"  # debugger
+      - "127.0.0.1:6543:6543"  # pyramid pserve
+      - "127.0.0.1:51000:51000"  # debugger
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
   worker:
     ports:
-      - "51002:51002"  # debugger
+      - "127.0.0.1:51002:51002"  # debugger
 
   fingerprint:
     ports:
-      - "8080:8080"  # http
-      - "51004:51004"  # debugger
+      - "127.0.0.1:8080:8080"  # http
+      - "127.0.0.1:51004:51004"  # debugger
     volumes:
       - ./volumes/shared:/shared
       - ./volumes/echoprint-data:/opt/echoprint-data
