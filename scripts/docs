@@ -2,7 +2,7 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./docs [--down] [--build] [--keep] 
+# Usage: ./docs [--down] [--build] [--keep]
 #
 # Options:
 #     service: web|worker|all (default: all)
@@ -56,11 +56,8 @@ if [ $? -ne 0 ]; then
     echo -e "\n... if the images are missing, use 'scripts/docs --build'"
 fi
 
-# copy outer README.rst for inclusion in inner docs/build.sh
-cp README.rst volumes/shared/ref
-
-echo -e "\n== build docs"
 # build docs
+echo -e "\n== build docs"
 if $NOAUTOAPI; then
     docker-compose $DOCUMENTATION exec documentation execute build-docs-noautoapi
 else
