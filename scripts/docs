@@ -5,10 +5,10 @@
 # Usage: ./docs [--down] [--build] [--keep]
 #
 # Options:
-#     service: web|worker|all (default: all)
 #     --down: immediately stop and remove the container and exit
 #     --build: build images
 #     --keep: keep container running
+#     --no-autoapi: don't parse the modules
 
 echo "====================================================================="
 echo "====================================================================="
