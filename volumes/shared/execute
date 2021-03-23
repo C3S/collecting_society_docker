@@ -10,10 +10,10 @@ The commands may be executed by `docker-compose` or within a container.
 Examples:
 
     Execution by `docker-compose`:
-    >>> docker-compose run portal execute --help
+    >>> docker-compose run --rm SERVICE execute --help
 
     Execution within a container:
-    >>> docker-compose run portal bash
+    >>> docker-compose run --rm SERVICE bash
     >>> execute --help
 """
 
