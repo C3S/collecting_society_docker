@@ -10,6 +10,7 @@
 -e src/account_product
 -e src/account_invoice
 -e src/account_invoice_line_standalone
+-e src/account_de_skr03
 -e src/bank
 -e src/web_user
 #-e src/archive

@@ -170,6 +170,11 @@ clone_sources = [
         'path': 'bank'
     },
     {
+        'url': 'https://github.com/tryton/account_de_skr03.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'account_de_skr03'
+    },
+    {
         'url': 'https://github.com/virtualthings/web_user.git',
         'option': '--branch=' + env['TRYTON_VERSION'],
         'path': 'web_user'

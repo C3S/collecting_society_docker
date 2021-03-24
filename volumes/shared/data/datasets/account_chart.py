@@ -26,7 +26,8 @@ def generate(reclimit=0):
 
     # entries
     company = Company(1)
-    account_template, = AccountTemplate.find([('parent', '=', None)])
+    account_template, = AccountTemplate.find([(
+        'name', '=', "Kontenplan SKR03 (Germany)")])
 
     # create chart
     create_chart.execute('account')

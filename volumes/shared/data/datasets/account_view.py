@@ -22,7 +22,7 @@ def generate(reclimit=0):
 
     # entries
     company = Company(1)
-    root_account, = Account.find([('name', '=', 'Minimal Account Chart')])
+    root_account, = Account.find([('name', '=', "Kontenplan SKR03 (Germany)")])
 
     # create view
     transitory_account_view = Account(

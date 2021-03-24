@@ -22,7 +22,12 @@ DEPENDS = [
 def generate(reclimit=0):
 
     # models
+    Product = Model.get('product.product')
     TariffCategory = Model.get('tariff_system.category')
+
+    # entries
+    administration_product, = Product.find(['code', '=', 'A'])
+    distribution_product, = Product.find(['code', '=', 'D'])
 
     # create tariff categories
     path = os.path.join('data', 'csv', 'tariff_category.csv')
@@ -33,5 +38,7 @@ def generate(reclimit=0):
             TariffCategory(
                 name=row['name'],
                 code=row['code'],
-                description=row['description']
+                description=row['description'],
+                administration_product=administration_product,
+                distribution_product=distribution_product
             ).save()

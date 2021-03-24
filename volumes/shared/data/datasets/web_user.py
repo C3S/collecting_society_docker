@@ -26,8 +26,21 @@ def generate(reclimit=0):
     webuser_all_roles = reclimit or 1
 
     # models
+    Company = Model.get('company.company')
+    Account = Model.get('account.account')
     WebUser = Model.get('web.user')
     WebUserRole = Model.get('web.user.role')
+
+    # entries
+    company = Company(1)
+    receivable, = Account.find([
+        ('kind', '=', 'receivable'),
+        ('company', '=', company.id),
+        ])
+    payable, = Account.find([
+        ('kind', '=', 'payable'),
+        ('company', '=', company.id),
+        ])
 
     # Role: Licenser
     for i in range(1, group_artists * new_solo_artists_per_group + 1):
@@ -55,6 +68,8 @@ def generate(reclimit=0):
         web_user.party.name = nickname
         web_user.party.repertoire_terms_accepted = True
         web_user.party.birthdate = birthdate
+        web_user.party.account_receivable = receivable
+        web_user.party.account_payable = payable
         web_user.party.save()
 
     # Role: Licensee
@@ -83,6 +98,8 @@ def generate(reclimit=0):
         web_user.party.name = nickname
         web_user.party.repertoire_terms_accepted = True
         web_user.party.birthdate = birthdate
+        web_user.party.account_receivable = receivable
+        web_user.party.account_payable = payable
         web_user.party.save()
 
     # Role: All
@@ -111,4 +128,6 @@ def generate(reclimit=0):
         web_user.party.name = nickname
         web_user.party.repertoire_terms_accepted = True
         web_user.party.birthdate = birthdate
+        web_user.party.account_receivable = receivable
+        web_user.party.account_payable = payable
         web_user.party.save()

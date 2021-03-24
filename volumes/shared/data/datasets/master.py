@@ -16,12 +16,13 @@ DEPENDS = [
     'currency',
     'payment_term',
     'company',
+    'company_employee',
     'user',
     'fiscal_year',
     'journal',
     'account_chart',
     'account_view',
-    'tax',
+    'product',
 ]
 
 
