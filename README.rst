@@ -4,353 +4,1218 @@ Collecting Society Docker Setup
 
 Docker development and deployment setup for collecting society services.
 
+The main resources can be found here:
+
+- Documentation_
+- Issues_
+- Wiki_
+
+.. _Documentation: https://files.c3s.cc/csdoku/html/index.html
+.. _Issues: https://redmine.c3s.cc/projects/collecting_society/issues
+.. _Wiki: https://redmine.c3s.cc/projects/collecting_society/wiki
+
 
 Overview
 ========
 
-The setup creates and maintains `Docker <http://docs.docker.com>`
-containers for development and production use.
-`Docker-compose <https://docs.docker.com/compose/>`, is used as a creator
-and configurator for the Docker containers:
+The setup creates and maintains the `docker`__ services for development,
+deployment, testing and documentation. The tool `docker-compose`__ is used as
+a creator and configurator for the docker services.
 
-* db: Postgres database
-* tryton: Tryton server
-* nginx: Web server
-* portal: Pyramid web portal
-* api: Pyramid web api
-* processing: File processing
-* selenium: Headless browser for integration tests
+__ https://docs.docker.com
+__ https://docs.docker.com/compose
 
-
-Requirements
-============
-
-A Linux or OS X system, `docker <https://docs.docker.com/engine/installation/>`,
-`docker-compose  <https://docs.docker.com/compose/install/>`
-and `git <http://git-scm.com/downloads>`. Summary::
-
-    $ sudo apt-get install git docker docker-compose
-    $ sudo usermod -aG docker $USER
-    $ newgrp docker
-
-
-Setup
-=====
-
-Clone this repository into your working space::
-
-    $ cd MY/WORKING/SPACE
-    $ git clone https://github.com/C3S/collecting_society_docker.git
-    
-All setup and maintenance tasks are done in the root path of the
-``collecting_society_docker/`` repository::
-
-    $ cd collecting_society_docker
-
-Choose the environment to build:
-
-1. For production environment switch to the ``master`` branch::
-
-    $ git checkout master
-
-2. For development environment switch to the ``develop`` branch::
-
-    $ git checkout develop
-
-Update the environment, clone/pull development repositories::
-
-    $ ./scripts/update
-
-Build docker containers::
-
-    $ docker-compose build
-
-The initial build of the containers will take some time.
-Later builds will take less time.
-
-Adjust environment files for containers, if neccessary. Sane defaults for
-a development setup are given:
-
-    * ``./api.env``
-    * ``./portal.env``
-    * ``./processing.env``
-    * ``./selenium.env``
-    * ``./erpserver.env``
-
-Change the password for the *admin* user in
-``./volumes/shared/config/trytond/passfile``
-
-Start containers::
-
-    $ docker-compose up
-
-This starts all service containers.
-
-
-Clients
-=======
-
-Web
----
-
-The number of *portal* services is implemented scalable.
-Because of this it is not possible to hard code the external port number of
-a service.
-So all services use *random external ports on the host system*.
-The tool `nginx-proxy<https://github.com/jwilder/nginx-proxy>` is used as a
-reverse proxy and load-balancer to the *portal* services host on *port 81*.
-
-.. note: To connect a client to a particular service, it is
-    needed to find out the hosta nd the port of the service.
-    Use the script ``./show_external_urls`` or ``docker-compose ps``
-    to find the port of a particular service.
-
-Prior to the connection via browser, your /etc/hosts should contain
-collecting_society and api.collecting_society pointing to 0.0.0.0
-
-Connecting the portal, point your browser to::
-    http://collecting_society:81
-
-Connecting the api, point your browser to::
-    http://api.collecting_society:81
-
-Connecting a specific instance of the portal service, point your browser to::
-    http://localhost:<random external port on host system>/login
-
-To login as a demo user use user emails like allroles1@collecting-society.test, 
-licenser2@collecting-society.test, or licensee1@collecting-society.test with 
-'password' as password.
-
-.. seealso:: :file:`volumes/shared/data/demo.txt`
-
-Tryton
+Schema
 ------
+::
 
-To connect to trytond you can use one of the several Tryton client
-applications or APIs.
-For back-office use of the application the Gtk2 based Tryton client is
-recommended.
+                                                           _
+                                            ------------    |
+           webbrowser           tryton      |  worker  |    | Clients
+               .                  .         ------------   _|
+               |                  |              |         _
+    -----------------------   --------------------------    |
+    |      webserver      |   |        erpserver       |    | Public
+    -----------------------   --------------------------   _|
+         |           |            |              |         _
+    ----------   ----------       |              |          |
+    | webgui |   | webapi |       |              |          |
+    ----------   ----------       |              |          |
+         |           |            |              |          | Internal
+    ----------------------------------   ---------------    |
+    |             database           |   | fingerprint |    |
+    ----------------------------------   ---------------   _|
 
-Install the client application with the name *tryton* or *tryton-client* in
-Version 3.4.x from your Linux distribution.
-You can also use the source, OS X, or Windows packages or binaries found here:
-`<http://www.tryton.org/download.html>`
-
-On the host system connect to::
-
-    server: localhost
-    port: 8000
-    database: c3s
-    user: admin
-    password: admin
-
-.. note:: Tryton server and the client are required to have the same version
-    branch (actual 3.4.x).
-
-
-Using containers
-================
+.. _Table of Services:
 
 Services
 --------
 
-For development purposes it is convenient to have the possibility to debug the
-running code.
-To start only the necessary services for developing a service
-use e.g::
++-------------+---------------------+----------------------------+-----------------+------------------+
+| Service     | Description         | Repositories               | Ports           | Volumes          |
++=============+=====================+============================+=================+==================+
+| database    | Postgres DB         |                            |                 | postgresql-data  |
++-------------+---------------------+----------------------------+-----------------+------------------+
+| erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc | | shared         |
+|             |                     |                            | | 8069: xmlrpc  | | trytond-files  |
+|             |                     |                            | | 51005: ptvsd  |                  |
++-------------+---------------------+----------------------------+-----------------+------------------+
+| webserver   | Nginx Server        |                            | 80: http        | | nginx-certs    |
+|             |                     |                            |                 | | nginx-dhparam  |
++-------------+---------------------+----------------------------+-----------------+------------------+
+| webgui      | | Pyramid Gui App   | | portal_web_              | | 6543: pserve  | | shared         |
+|             | | *+Trytond Server* | | collecting_society_web_  | | 51000: ptvsd  | | trytond-files  |
++-------------+---------------------+----------------------------+-----------------+------------------+
+| webapi      | | Pyramid Api App   | | portal_web_              | | 6544: pserve  | | shared         |
+|             | | *+Trytond Server* | | collecting_society_web_  | | 51001: ptvsd  | | trytond-files  |
++-------------+---------------------+----------------------------+-----------------+------------------+
+| worker      | | File Processing   | collecting_society_worker_ | 51002: ptvsd    | shared           |
+|             | | *+Proteus Client* |                            |                 |                  |
++-------------+---------------------+----------------------------+-----------------+------------------+
+| fingerprint | Echoprint Server    | echoprint-server_          | | 8080: http    | | shared         |
+|             |                     |                            | | 51004: ptvsd  | | echoprint-data |
++-------------+---------------------+----------------------------+-----------------+------------------+
 
-    $ docker-compose run --rm --service-ports portal execute deploy-portal
-    $ docker-compose run --rm --service-ports api execute deploy-api
-    $ docker-compose run --rm --service-ports erpserver execute deploy-erpserver
+.. _collecting_society: https://github.com/C3S/collecting_society
+.. _archiving: https://github.com/C3S/archiving
+.. _portal: https://github.com/C3S/portal
+.. _portal_web: https://github.com/C3S/portal_web
+.. _collecting_society_web: https://github.com/C3S/collecting_society_web
+.. _collecting_society_worker: https://github.com/C3S/collecting_society_worker
+.. _echoprint-server: https://github.com/C3S/echoprint-server
+
+Files
+-----
+
+.. note:: Some files and folders are created on the first run of the ``update``
+    or ``docs`` script.
+
+::
+
+    ├── code/                               # symlinks to service repositories
+    │   ├── collecting_society/             # (erpserver) tryton module
+    │   ├── portal_web/                     # (webgui/webapi) pyramid main app
+    │   ├── collecting_society_web/         # (webgui/webapi) pyramid plugin app
+    │   ├── collecting_society_worker/      # (worker) file processing
+    │   └── echoprint-server/               # (fingerprint) echoprint server
+    │
+    ├── documentation/                      # symlink to documentation build
+    │   └── index.html                      # main index file of the built documentation
+    │
+    ├── scripts/                            # scripts for common tasks
+    │   ├── docs                            # builds the documentation
+    │   ├── install                         # installs docker (use with caution)
+    │   ├── monitor                         # monitors containers
+    │   ├── ports                           # prints ports of services
+    │   ├── reset                           # resets the whole project (use with caution)
+    │   ├── reset-db                        # rebuilds the database
+    │   ├── start                           # starts the services in a tmux session
+    │   ├── test                            # runs the tests
+    │   ├── update                          # updates the files/folders/repos of the project
+    │   └── config.py                       # config file for the update script
+    │
+    ├── services/                           # config files for docker services
+    │   ├── build/                          # build environment for docker images
+    │   │   ├── Dockerfile                  # multistage Dockerfile for docker images
+    │   │   ├── fingerprint-data.json       # (fingerprint) echoprint demo data
+    │   │   ├── fingerprint.sh              # (fingerprint) echoprint start script
+    │   │   └── worker.cron                 # (worker) cronjob file for processing
+    │   ├── <SERVICE>.pip                   # symlink to pip runtime requirements for SERVICE
+    │   └── <SERVICE>.env                   # additional envvars file for SERVICE
+    │
+    ├── volumes/                            # volumes mounted into the containers
+    │   ├── shared/                         # (*) main volume mounted into all containers
+    │   │   ├── src/                        # repos of packages to include on runtime
+    │   │   ├── ref/                        # repos of packages in docker images for reference
+    │   │   │
+    │   │   ├── config/                     # runtime configuration files
+    │   │   │   ├── pip/                    # pip runtime requirements
+    │   │   │   │   └── <SERVICE>.pip       # pip runtime requirements for SERVICE
+    │   │   │   └── trytond/                # trytond configuration files
+    │   │   │       ├── <ENVIRONMENT>.conf  # trytond configuration file for ENVIRONMENT
+    │   │   │       └── passfile            # initial password for trytond admin user
+    │   │   │
+    │   │   ├── data/                       # demodata generation module
+    │   │   │   ├── csv/                    # csv files to import
+    │   │   │   │   ├── <MODEL>.csv         # csv file for tryton MODEL
+    │   │   │   │   └── <MODEL>.py          # script to generate the csv file for tryton MODEL
+    │   │   │   ├── datasets/               # datasets to generate
+    │   │   │   │   └── <MODEL>.py          # dataset for tryton MODEL
+    │   │   │   ├── main.py                 # main demodata generation script
+    │   │   │   └── scenario.txt            # scenario doctests for tryton models
+    │   │   │
+    │   │   ├── docs/                       # documentation sphinx build environment
+    │   │   │   ├── build/                  # build of the documentation
+    │   │   │   ├── source/                 # source of the documentation
+    │   │   │   ├── build.sh                # sphinx build script (run in container!)
+    │   │   │   └── Makefile                # sphinx Makefile
+    │   │   │
+    │   │   ├── tmp/                        # tmp data of services (development/testing)
+    │   │   │   ├── files/                  # trytond file storage (testing)
+    │   │   │   ├── logs/                   # log files for debugging (development)
+    │   │   │   ├── screenshots/            # screenshots of integration tests (testing)
+    │   │   │   └── upload/                 # file upload processing (development)
+    │   │   │       └── <STAGE>/            # processing / archiving STAGE of files
+    │   │   │
+    │   │   └── execute                     # main CLI script for common tasks (run in container!)
+    │   │
+    │   ├── echoprint-data/                 # (fingerprint) echoprint database data
+    │   ├── nginx-certs/                    # (webserver) certificates
+    │   ├── nginx-dhparam/                  # (webserver) dh parameters
+    │   ├── postgresql-data/                # (database) postgres database data
+    │   └── tryton-files/                   # (erpserver/webgui/webapi) trytond file storage
+    │
+    ├── .env                                # main environment variable file
+    │
+    ├── docker-compose.yml                  # main docker compose file
+    ├── docker-compose.override.yml         # symlink to environment docker override file
+    ├── docker-compose.development.yml      # -> docker override file for development
+    ├── docker-compose.production.yml       # -> docker override file for production
+    ├── docker-compose.testing.yml          # standalone docker compose file for testing
+    ├── docker-compose.documentation.yml    # standalone docker compose file for documentation
+    │
+    ├── .vscode/                            # settings for vs code
+    ├── .devcontainer.json*                 # settings for vs code remote containers
+    ├── .gitignore                          # ignore patterns for git
+    ├── .rgignore                           # ignore patterns for ripgrep
+    │
+    ├── CHANGELOG.rst                       # changelog
+    ├── COPYRIGHT.rst                       # copyright
+    ├── LICENSE-AGPLv3.txt                  # license
+    └── README.rst                          # this readme
+
+Docker
+''''''
+
+=================================== ==============================================================
+``.env``                            Main environment variable file for service configuration
+``docker-compose.yml``              Main docker compose file with the definition of the services
+``docker-compose.override.yml``     Environment specific values overriding those of the main file
+``services/build/Dockerfile``       Multistage Dockerfile for the docker images
+=================================== ==============================================================
+
+Development
+'''''''''''
+
+=================================== ==============================================================
+``scripts/update``                  Script to update the files/folders/repositories of the project
+``code/``                           Symlinks to the main repositories to develop
+``volumes/shared/src/``             Repos of the packages installed on runtime
+``volumes/shared/ref/``             Repos of the pinned packages in the images for reference
+``volumes/shared/execute``          Main CLI script for common tasks (run within the container!)
+=================================== ==============================================================
+
+Database
+''''''''
+
+=================================== ==============================================================
+``scripts/reset-db``                Script to rebuild the database and demodata
+``volumes/shared/data/datasets/``   Demodata generation scripts for each tryton model
+=================================== ==============================================================
+
+Documentation
+'''''''''''''
+
+=================================== ==============================================================
+``scripts/docs``                    Script to build the documentation
+``documentation/index.html``        Main index file of the built documentation
+=================================== ==============================================================
+
+Tests
+'''''
+
+=================================== ==============================================================
+``scripts/test``                    Script to run the tests of all services
+``volumes/shared/tmp/screenshots/`` Screenshots of the integration tests
+=================================== ==============================================================
 
 
-The portal service is started with ``execute`` inside a portal container.
-The --rm parameter for run avoids docker from collecting an increasing amount of volumes.
-The tryton service can be started with::
+Installation
+============
 
-    $ docker-compose run --rm --service-ports erpserver execute deploy-erpserver
+To install the docker development environment from scratch, carry out the
+instructions of the following sections consecutively.
 
-The flag ``service-ports`` runs the container and all its dependecies
-with the service's ports enabled and mapped to the host.
-For development is the benefit of starting a service with
-``docker-compose run --rm --service-ports <service>`` vs ``docker-compose up``
-the possibility to communicate with a debugger like pdb.
+Requirements
+------------
 
-A similar topic is to start a shell in a container.
-To manually examine the operating system of a container, just run a shell in
-the container::
+- Linux or OS X system
+- `docker`__ ``>= 17.12.0``
+- `docker-compose`__ ``>= 1.22.0``
+- `git`__
 
-    $ docker-compose run --rm portal /bin/bash
+__ https://docs.docker.com/engine/installation
+__ https://docs.docker.com/compose/install
+__ https://git-scm.com/downloads
 
-.. warning:: Manual changes are not persisted when closing a container.
-    All changes are reset.
+Summary for Debian/Ubuntu::
 
-.. note:: The console is always opend in a freshly build of the service and
-    does not connect to a running container. To enter a running container use
-    ``docker exec``. See below for further instructions.
+    $ sudo apt-get install docker docker-compose git mercurial
+    $ sudo usermod -aG docker $USER
+    $ newgrp docker
 
-*execute* is a command line tool to setup and maintain services in a container.
-To start the ``execute`` command from inside a container the
-``docker-compose run`` must be removed from the following examples.
+Repositories
+------------
 
-Get acquainted with ``execute`` a command driven tool which performs tasks on
-container start::
+In first step, the repositories of the services have to be cloned and some
+filesystem preparation tasks have to be performed. Clone this repository into
+your working space::
 
-    $ docker-compose run --rm portal execute --help
-    $ docker-compose run --rm portal execute <COMMAND> --help
+    $ cd MY/WORKING/SPACE
+    $ git clone https://github.com/C3S/collecting_society_docker.git
+
+Switch to the root directory of the repository::
+
+    $ cd collecting_society_docker
+
+.. note:: All setup and maintainance tasks are performed in the root path of
+    the ``collecting_society_docker`` repository.
+
+Checkout the branch of the environment to build (``develop``, ``master``)::
+
+    $ git checkout <ENVIRONMENT>
+
+Copy the main environment example file ``.env.example`` to ``.env``::
+
+    $ cp .env.example .env
+
+Adjust the following variables:
+
+================== ====== ======= =================================================
+Variable           Values Default Description
+================== ====== ======= =================================================
+``DEBUGGER_PTVSD`` 0|1    0       Install ptvsd during build process for debugging
+``GIT_SSH``        0|1    0       Checkout git repositories via ssh
+``GIT_USER_NAME``  string ""      Username for git commits *(optional)*
+``GIT_USER_EMAIL`` string ""      Email for git commits *(optional)*
+================== ====== ======= =================================================
+
+Run the ``update`` script, which checkouts the service repositories, creates
+the service folders and copies the configuration example files
+*(~5-10 minutes)*::
+
+    $ ./scripts/update
+
+.. seealso:: The created repositories, folders and files are defined in
+    ``./scripts/config.py``.
+
+Images
+------
+
+Each service runs on a separate docker container. A docker container is
+a running instance of a prebuild docker image. The images for all services
+need to be built first.
+
+.. seealso:: The docker images are defined in ``./services/build/Dockerfile``.
+
+The initial build of the containers will take some time *(~30-60 minutes)*::
+
+    $ docker-compose build
 
 Database
 --------
 
-Update all modules in an existing database::
-
-    $ docker-compose run --rm erpserver execute update
-
-Update specific modules in an existing database::
-
-    $ docker-compose run --rm erpserver execute update  \
-        -m MODULE_NAME1[,MODULE_NAME2,…]
-
-E.g.::
-
-    $ docker-compose run --rm erpserver execute update  \
-        -m party,account,collecting_society
-
-Note: When developing and changing the db model, you probably want to try 
-the above first, because this is the quickest way to adapt db changes. 
-If you run into errors, it is a good idea to stop your containers and do a 
-    $ docker-compose run erpserver execute db-delete.
-If a db build seems to hang, look for a 'running_db_creation.delete_me' 
-locking file in the base folder.
-
-Examine and edit a database, use::
-
-    $ docker-compose run --rm erpserver execute db-psql
-
-Backup a database::
-
-    $ docker-compose run --rm erpserver execute db-backup  \
-        > `date +%F.%T`_DATABASE_NAME.backup
-
-Delete a database::
-
-    $ docker-compose run --rm erpserver execute db-delete
-
-Create a new database::
-
-    $ docker-compose run --rm erpserver execute db-create
-
-Setup test data::
-
-    $ docker-compose run --rm erpserver execute db-test-setup
-
-Setup demo data::
-
-    $ docker-compose run --rm erpserver execute db-demo-setup
-
-Rebuild a database::
-
-    $ docker-compose run --rm erpserver execute db-rebuild
-
-Service Scaling
----------------
-
-To scale increasing load it is possible to start more service containers on
-demand::
-
-    $ docker-compose scale portal=2 erpserver=3 db=1
-
-To scale decreasing load it is possible to stop service containers on demand::
-
-    $ docker-compose scale erpserver=2
-
-Lookup all host ports in use::
-
-    $ /path/to/collecting_society_docker/show_external_urls
-
-… or use ``docker-compose ps`` as an alternative.
-
-Lookup a specific host port in use::
-
-    $ docker-compose --index=1 port tryton 8000
-
-Maintenance After Update
-------------------------
-
-Some changes in the container setup require a rebuild of the whole system.
-
-Update the environment as usual::
-
-    $ cd collecting_society_docker
-    $ ./scripts/update
-
-Build containers, this time without a cache::
-
-    $ docker-compose build --no-cache
-
-Start containers::
+After building the images, the services can be started. On the first run,
+the database and demo data is created *(~10-15 minutes)*::
 
     $ docker-compose up
 
+The services should now be running and ready for clients to connect.
 
-Deployment
-==========
-
-Monitoring
+Webbrowser
 ----------
 
-To monitor all running containers use::
+The webserver uses domain based routing of requests. In order to resolve the
+testing domains to localhost, add the following lines to ``/etc/hosts``::
 
-    $ watch ./monitor
+    127.0.0.1   collecting_society.test
+    127.0.0.1   api.collecting_society.test
 
-.. note:: The monitoring abilities are limted to system and user cpu and
-    rss+cache size. The most informative metrics to use for monitoring
-    are a moving target.
+Test the connection by following the instructions in `Webbrowser Usage`_.
 
+Tryton
+------
+
+To connect to Trytond you can use one of the several Tryton client
+applications or APIs. For back-office use of the application the Gtk2 based
+Tryton client is recommended.
+
+.. note:: The Trytond server and the Tryton client are required to have the
+    same version branch.
+
+.. warning:: As the Tryton branch ``3.4`` is quite outdated, some manual
+    installation steps are neccessary including the installation of outdated
+    python packages.
+
+Clone the repository and switch to the ``3.4`` branch::
+
+    $ cd MY/WORKING/SPACE
+    $ git clone https://github.com/tryton/tryton.git
+    $ cd tryton
+    $ git checkout 3.4
+
+Depending on the OS, there might be different ways to install the dependencies
+(see ``doc/installation.rst`` and `tryton-client`__ package of Ubuntu 16)::
+
+    librsvg2-common
+    python >= 2.7
+    python-chardet
+    python-dateutil
+    python-gtk2 >= 2.22
+
+__ https://packages.ubuntu.com/xenial/tryton-client
+
+- **Ubuntu < 20.04**
+
+  All dependencies can be installed from the apt repositories::
+
+        $ sudo apt-get install librsvg2-common python python-chardet \
+            python-dateutil python-simplejson python-gtk2
+
+- **Ubuntu >= 20.04**
+
+  .. warning:: This method of installation is untested, so please be careful!
+
+     1. Install the dependencies available in the apt repositories::
+
+             $ sudo apt-get install librsvg2-common python2
+
+     2. As pygtk is not packaged and cannot be built by pip anymore, the only
+        option left is to install the last available pygkt from the `archive`__
+        (see working answer in `askubuntu`__). The other packages could be
+        installed with pip2, but as pip2 is also not packaged anymore, it might
+        be easier to install them via archive as well::
+
+             $ wget http://archive.ubuntu.com/ubuntu/pool/universe/p/pygtk/python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
+             $ wget http://archive.ubuntu.com/ubuntu/pool/universe/s/six/python-six_1.15.0-2_all.deb
+             $ wget http://archive.ubuntu.com/ubuntu/pool/universe/c/chardet/python-chardet_3.0.4-4build1_all.deb
+             $ wget http://archive.ubuntu.com/ubuntu/pool/universe/p/python-dateutil/python-dateutil_2.7.3-3ubuntu1_all.deb
+             $ sudo apt-get install ./python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
+             $ sudo apt-get install ./python-six_1.15.0-2_all.deb
+             $ sudo apt-get install ./python-chardet_3.0.4-4build1_all.deb
+             $ sudo apt-get install ./python-dateutil_2.7.3-3ubuntu1_all.deb
+
+__ http://archive.ubuntu.com/ubuntu/pool/universe/
+__ https://askubuntu.com/questions/1235271/pygtk-not-available-on-focal-fossa-20-04/1235347#1235347
+
+Test, if Tryton is running::
+
+    $ python2 bin/tryton
+
+For easy startup create a startup script:
+
+1. Create the file ``/usr/local/bin/tryton`` in your prefered editor, e.g.::
+
+    $ sudo vim /usr/local/bin/tryton
+
+2. Paste the following lines, set ``TRYTONPATH`` to the absolute path of the
+   tryton repository::
+
+    #!/bin/bash
+    TRYTONPATH=/MY/WORKING/SPACE/tryton
+    python2 $TRYTONPATH/bin/tryton -d
+
+3. Set the execution flag to the script::
+
+    $ sudo chmod u+x /usr/local/bin/tryton
+
+Test the connection by following the instructions in `Tryton Usage`_.
+
+
+Configuration
+=============
+
+The services are configured via:
+
+1. Application environment:
+   ``development``, ``production``, ``testing``
+2. Global and service specific envvar files for the containers:
+   ``.env``, ``service/<SERVICE>.env``
+3. Application specific configuration files:
+   ``*.conf``, ``*.ini``
+
+.. note:: Sane defaults for a development setup are given and should work as
+    provided, so this section might be skipped to start with development.
+
+.. warning:: Some files are tracked in git as ``FILE.example`` and are initally
+    copied to the untracked ``FILE`` but not overwritten by the
+    ``./scripts/update`` script. After an upgrade, changes to the ``*.example``
+    files have to be applied manually.
+
+Environments
+------------
+
+The services are configured differently for certain application environments.
+The differences on each level include:
+
+- **docker**: mapped ports, volume handling
+- **database**: demodata generation
+- **application**: debug switches, template caching
+
+=============== ====== ============== ======== ===== =====
+Context         Ports  Volumes        Demodata Debug Cache
+=============== ====== ============== ======== ===== =====
+``development`` all    local mounts   yes      on    off
+``production``  public docker managed no       off   on
+``testing``     public docker managed no       off   on
+=============== ====== ============== ======== ===== =====
+
+Envvars
+-------
+
+The ``.env`` file in the root path of the repository is the main envvar file
+and prefered place to specify configuration variables for all services. It
+is included in all main service containers. The variables might be overridden
+in a service container by the corresponding ``services/<SERVICE>.env``.
+
+The ``.env`` file is also processed by docker-compose by convention and
+contains variables for the build process as well as for the
+``./scripts/update`` script.
+
+.. seealso:: `Compose CLI environment variables`__
+
+__ https://docs.docker.com/compose/reference/envvars/
+
+.env
+''''
+
+================================= =============== =====================================
+Variable                          Values          Description
+================================= =============== =====================================
+``PROJECT``                       string          project name
+``ENVIRONMENT``                   | "development" environment, switch for config files
+                                  | "production"
+                                  | "testing"
+``COMPOSE_DOCKER_CLI_BUILD``      0|1             use BuildKit for docker builds
+``COMPOSE_PROJECT_NAME``          string          prefix for containers
+``APT_CACHERURL``                 url             (deprecated)
+``DEBIAN``                        "jessie"        base image for builds
+``DEBUGGER_WINPDB``               0|1             install packages for winpdb in images
+``DEBUGGER_PTVSD``                0|1             install packages for ptvsd in images
+``WORKDIR``                       PATH            workdir for images
+``GIT_SSH``                       0|1             use git via ssh
+``GIT_USER_NAME``                 string          set git username in repositories
+``GIT_USER_EMAIL``                string          set git email in repositories
+``ECHOPRINT_SCHEMA``              SCHEMA          schema of echoprint server
+``ECHOPRINT_HOSTNAME``            string          hostname of echoprint server
+``ECHOPRINT_PORT``                integer         port of echoprint server
+``POSTGRES_HOSTNAME``             string          hostname of postgres server
+``POSTGRES_PORT``                 integer         port of postgres server
+``TRYTON_HOSTNAME``               string          hostname of tryton server
+``TRYTON_PORT``                   integer         port of tryton server
+``TRYTON_VERSION``                string          version of tryton to use
+``VIRTUAL_HOST_GUI``              URI             nginx URI for the webgui
+``VIRTUAL_HOST_API``              URI             nginx URI for the webapi
+``VIRTUAL_PORT``                  integer         nginx reverse port for webgui/webapi
+``TRUSTED_PROXY``                 IP              trusted IP for WSGI
+``API_C3SUPLOAD_URL``             URL             upload api URL
+``API_C3SUPLOAD_VERSION``         "v1"            upload api version
+``API_C3SUPLOAD_CORS_ORIGINS``    URL             upload api URL for CORS
+``API_C3SUPLOAD_CONTENTBASEPATH`` PATH            upload api content path
+``API_C3SUPLOAD_STORAGEBASEPATH`` PATH            upload api storage path
+``API_DATATABLES_URL``            URL             datatables api URL
+``API_DATATABLES_VERSION``        "v1"            datatables api version
+``API_DATATABLES_CORS_ORIGINS``   URL             datatables api URL for CORS
+``API_C3SMEMBERSHIP_URL``         URL             (deprecated)
+``API_C3SMEMBERSHIP_VERSION``     string          (deprecated)
+``MAIL_HOST``                     string          hostname of the mail server
+``MAIL_PORT``                     integer         port of the mail server
+``MAIL_DEFAULT_SENDER``           EMAIL           default sender email address
+``MAIL_TO_REAL_WORLD``            0|1             simulate sending mails or not
+================================= =============== =====================================
+
+webapi
+''''''
+
+================================= =============== =====================================
+``PYRAMID_SERVICE``               "api"|"gui"     pyramid service to serve
+``AUTHENTICATION_SECRET``         string          secret for authentication
+``SESSION_SECRET``                string          secret for sessions
+``API_C3SMEMBERSHIP_API_KEY``     string          (deprecated)
+================================= =============== =====================================
+
+webgui
+''''''
+
+================================= =============== =====================================
+``PYRAMID_SERVICE``               "api"|"gui"     pyramid service to serve
+``AUTHENTICATION_SECRET``         string          secret for authentication
+``SESSION_SECRET``                string          secret for sessions
+``API_C3SMEMBERSHIP_API_KEY``     string          (deprecated)
+================================= =============== =====================================
+
+worker
+''''''
+
+================================= =============== =====================================
+``ECHOPRINT_TOKEN``               string          authtoken for echoprint server
+================================= =============== =====================================
+
+Applications
+------------
+
+The applications (trytond, proteus, pyramid) provide distinct files for each
+application environment, which are included depending on the value of the
+``.env`` variable ``ENVIRONMENT``. The applications might use envvars as well
+indicated by the syntax ``${VARIABLE}`` in the configuration file. The
+following sections provide a list of all envvar and configuration files for
+each application.
+
+.. _Trytond Config:
+
+Trytond
+'''''''
+
+*Services: erpserver, webapi, webgui*
+
+==================================================== ==============================
+``.env``                                             main envvar file
+``volumes/shared/config/trytond/<ENVIRONMENT>.conf`` trytond config
+``volumes/shared/config/trytond/passfile``           initial trytond admin password
+==================================================== ==============================
+
+.. _Proteus Config:
+
+Proteus
+'''''''
+
+*Services: worker*
+
+==================================================== ==============================
+``.env``                                             main envvar file
+``services/worker.env``                              service envvar file
+``code/collecting_society_worker/config.ini``        worker/proteus config
+==================================================== ==============================
+
+.. _Pyramid Config:
+
+Pyramid
+'''''''
+
+*services: webapi, webgui*
+
+==================================================== ==============================
+``.env``                                             main envvar file
+``services/web[api|gui].env``                        service envvar file
+``code/portal_web/<ENVIRONMENT>.ini``                pyramid config
+``code/collecting_society_web/<ENVIRONMENT>.ini``    pyramid plugin config
+==================================================== ==============================
+
+Usage
+=====
+
+There are several ways to interact with the services:
+
+1. The ``docker-compose`` CLI is the prefered general high level docker tool
+   for everyday use.
+2. The ``docker`` CLI provides sometimes more useful low level commands.
+3. In the ``scripts`` folder some scipts are provided for comfort or
+   automatisation.
+4. The ``CLI`` script provides special maintainance commands for the services.
+
+If you tend to forget the commands or syntax, try getting used to the help
+commands:
+
+=============================== ==============================================================
+List docker commands            ``docker --help``
+Help for docker command         ``docker COMMAND --help``
+List docker-compose commands    ``docker-compose --help``
+Help for docker-compose command ``docker-compose COMMAND --help``
+List CLI command                ``docker-compose run --rm erpserver execute --help``
+Help for CLI command            ``docker-compose run --rm erpserver execute COMMAND --help``
+List scripts                    ``ls scripts``
+Help for scripts                ``cat scripts/SCRIPT``
+=============================== ==============================================================
+
+.. seealso:: `Docker-compose command line reference`__ and
+    `Docker command line reference`__.
+
+__ https://docs.docker.com/compose/reference/overview/
+__ https://docs.docker.com/engine/reference/commandline/cli/
+
+
+Run
+---
+
+============================================ ===================================================
+Start services                               ``docker-compose up``
+Start services in the background             ``docker-compose up -d``
+Start a certain service                      ``docker-compose up SERVICE``
+Start services inside a tmux session         ``./scripts/start``
+Run a command on a running/new container     | ``docker-compose exec SERVICE COMMAND``
+                                             | ``docker-compose run --rm SERVICE COMMAND``
+Run a CLI command on a running/new container | ``docker-compose exec SERVICE execute COMMAND``
+                                             | ``docker-compose run --rm SERVICE execute COMMAND``
+Open a shell on a running service container  ``docker-compose exec SERVICE bash``
+Run a CLI command inside a container shell   ``execute COMMAND``
+Build documentation                          ``./scripts/docs``
+Run tests                                    ``./scripts/tests``
+Scale services on demand                     ``docker-compose scale SERVICE=#``
+Stop services                                ``docker-compose stop``
+Stop a certain service                       ``docker-compose stop SERVICE``
+Stop and remove containers/volumes/networks  ``docker-compose down``
+============================================ ===================================================
+
+.. note:: Use always ``docker-compose exec`` instead of
+    ``docker-compose run --rm``, if containers are running.
+
+.. note:: For the ``SERVICE`` names, see `Table of Services`_.
+
+Update
+------
+
+=================== ============================================================================
+Update repositories ``./scripts/update``
+Diff example files  ``diff FILE FILE.example``
+Build images        ``docker-compose build``
+Update database     ``docker-compose run --rm erpserver execute update -m collecting_society``
+=================== ============================================================================
+
+1. Update the repositories/files/folders::
+
+    $ ./scripts/update
+
+   .. warning:: If a repository is not clean, it won't be updated. Watch out
+       for red output lines.
+
+   .. note:: The ``update`` script will also update this repository first.
+
+2. If there were changes to the ``*.example`` files, diff the files and
+   apply changes manually::
+
+    $ diff FILE FILE.example
+
+   To quickly compare all ``*.example`` files recursivly::
+
+    $ find . -type f -name \*.example 2>/dev/null | sed 's/.example$//' | xargs -I {} diff -u {} {}.example
+
+3. If there were changes in the ``Dockerfile``, rebuild all docker images::
+
+    $ docker-compose build
+
+   If you run into problems, you can also rebuild all docker images without
+   cache::
+
+    $ docker-compose down -v --rmi all --remove-orphans
+    $ docker-compose -f docker-compose.testing.yml down -v --rmi all --remove-orphans
+    $ docker-compose -f docker-compose.documentation.yml down -v --rmi all --remove-orphans
+    $ docker-compose build
+
+   .. warning:: The ``build`` command has a ``--no-cache`` option, but for
+       multistage builds the intermediate stages won't be reused then, which
+       highly increases the build time.
+
+4. If there were changes in the ``collection_society`` repository, update the
+   database::
+
+    $ docker-compose run --rm erpserver execute update -m collecting_society
+
+   If you run into problems and don't care about the data, you can also
+   recreate the database::
+
+    $ docker-compose run --rm erpserver execute db-rebuild
+
+Inspect
+-------
+
+============================================ ===================================================
+Attach to the logs of a certain service      ``docker-compose logs SERVICE``
+Open a shell on a service container          ``docker-compose run --rm SERVICE bash``
+Open a shell on a running container          ``docker-compose exec bash``
+Monitor services                             ``watch ./scripts/monitor``
+Print ports of services                      ``./scripts/ports``
+List docker containers                       ``docker ps [-a]``
+List docker images                           ``docker images ls [-a]``
+List docker networks                         ``docker network ls``
+List docker volumes                          ``docker volume ls``
+Inspect a container/volume/network/...       ``docker inspect ID|NAME``
+Show used resources for containers           ``docker stats``
+Show processes of container                  ``docker top CONTAINERID``
+============================================ ===================================================
+
+Remove
+------
+
+.. warning:: The ``docker`` commands apply to **all** docker containers on the host.
+
+============================================== ================================
+Remove project containers/networks/volumes     ``docker-compose down``
+Remove all stopped docker containers           ``docker container prune``
+Remove all dangling images to free diskspace   ``docker images prune``
+Remove volumes                                 ``docker volume rm VOLUMENAME``
+============================================== ================================
+
+.. note:: For ``VOLUMENAME`` see the output of ``docker volume ls``.
+
+Remove all containers, networks, volumes **and images**::
+
+    $ docker-compose down -v --rmi all --remove-orphans
+    $ docker-compose -f docker-compose.testing.yml down -v --rmi all --remove-orphans
+    $ docker-compose -f docker-compose.documentation.yml down -v --rmi all --remove-orphans
+
+.. note:: The multiple ``down`` commands are needed, as testing and
+    documentation have separate containers, but are based on the same
+    multistage Dockerfile.
+
+Database
+--------
+
+======= =========================================================================================
+Create  ``docker-compose run --rm erpserver execute db-create [NAME]``
+Setup   ``docker-compose run --rm erpserver execute db-setup [NAME]``
+Copy    ``docker-compose run --rm erpserver execute db-copy [--force] [SOURCENAME] [TARGETNAME]``
+Backup  ``docker-compose run --rm erpserver execute db-backup [NAME] > /shared/tmp/db.backup``
+Delete  ``docker-compose run --rm erpserver execute db-delete [NAME]``
+Rebuild | ``docker-compose run --rm erpserver execute db-rebuild``
+        | ``./scripts/reset-db``
+Examine ``docker-compose run --rm erpserver execute db-psql [NAME]``
+======= =========================================================================================
+
+.. note:: The ``NAME`` is optional and defaults to ``collecting_society``.
+
+.. note:: If the setup/rebuild hangs, look for and delete the
+    ``./running_db_creation.delete_me`` locking file.
+
+The database files are stored in ``./volumes/postgresql-data``. If the postgres
+setup itself seem to be broken, you can always delete and recreate the folder::
+
+    $ docker-compose down
+    $ sudo rm -rf ./volumes/postgresql-data/
+    $ mkdir postgresql-data
+    $ docker-compose up
+
+.. warning:: All data in this database will be deleted!
+
+.. note:: The uid/gid of the folder and files matches those of the postgres
+    user in the cointainer, so ``sudo`` is probably neccessary to be able to
+    delete them.
+
+Scripts
+-------
+
+The scripts are either intended to make some operations more comfortable or for
+automatisation (CI). The following sections contain a brief synopsis about each
+of the provided scripts.
+
+aptcacher
+'''''''''
+
+This script starts a docker container with an apt-cacher-ng service to decrease
+the bandwidth usage during the development of docker images.
+
+.. warning:: Currently deprecated.
+
+**Usage**::
+
+    $ ./scripts/aptcache
+
+To use the apt-cacher for docker image builds:
+
+1. Set ``APT_CACHERURL`` in ``.env`` to ``http://172.17.0.1:3142``
+2. Start this script via ``./scripts/aptcacher``
+3. Run ``docker-compose build``
+
+.. note:: ``APT_CACHEURL`` has to be set in the beginning of a clean build.
+
+To monitor the apt-cacher, open the `webinterface`__::
+
+    http://localhost:3142/acng-report.html
+
+__ http://localhost:3142/acng-report.html
+
+To attach to the logs::
+
+    $ docker exec -it collecting_society_aptcache tail -f /var/log/apt-cacher-ng/apt-cacher.log
+
+docs
+''''
+
+This script builds the documentation with sphinx.
+
+**Usage**::
+
+    $ ./scripts/docs [--down] [--build] [--keep]
+
+**Options**:
+
+================ ==================================================
+``--down``       immediately stop and remove the container and exit
+``--build``      build images
+``--keep``       keep container running
+``--no-autoapi`` don't parse the modules
+================ ==================================================
+
+install
+'''''''
+
+This script installs docker on debian-based distribution interactively.
+
+.. warning:: Use with care.
+
+**Usage**::
+
+    $ sudo ./scripts/install
+
+monitor
+'''''''
+
+This script outputs information about the running containers.
+
+**Usage**::
+
+    $ watch ./scripts/monitor
+
+ports
+'''''
+
+This script outputs information about the port mappings of the services and is
+intended to be used, when the services are scaled and use random ports.
+
+**Usage**::
+
+    $ ./scripts/ports
+
+reset
+'''''
+
+This script resets the repository to a clean state:
+
+- Removal of the docker containers and images
+- Removal of the created files, directories and repositories
+- Deletion of the database and data
+
+.. warning:: Use with care.
+
+**Usage**::
+
+    $ ./scripts/reset
+
+reset-db
+''''''''
+
+This script deletes and recreates the database and generates the demo data.
+
+**Usage**::
+
+    $ ./scripts/reset-db
+
+start
+'''''
+
+This script starts the services within a tmus session, opens a tab in all
+repositories and opens a firefox instance pointing to the webgui.
+
+**Usage**::
+
+    $ ./scripts/start
+
+test
+''''
+
+This script runs the unit/function/integration tests for the services:
+
+- erpserver (tryton)
+- web (pyramid)
+- worker (echoprint)
+
+.. note:: In the ``testing`` environment, the ``webgui`` and ``webapi``
+    services run both on the ``web`` service.
+
+**Usage**::
+
+    $ ./test [SERVICE] [--down] [--build] [--keep] [--ci] [PARARAMS]
+
+**Options**:
+
+=========== ===============================================================
+``SERVICE`` web|worker|erpserver|all (default: all)
+``--down``  immediately stop and remove the container and exit
+``--build`` build images and recreate the test database template
+``--keep``  keep container running
+``--ci``    continous integration mode
+``PARAMS``  are passed to run-tests within the container (e.g. nose params)
+=========== ===============================================================
+
+The CI mode implies:
+
+- Update repositories (overrides config files!)
+- Build images
+- Recreate the test database template
+- Stop and remove the container
+
+update
+''''''
+
+This script updates the project:
+
+- Creation of files and folders
+- Copy of ``FILE.example`` files to ``FILE``
+- Checkout/Pull of the repositories (including this one)
+
+.. note:: The configuration of files/folders/repositories can be found in
+    ``./scripts/update.py``.
+
+**Usage**::
+
+    $ ./scripts/update [--reset]
+
+**Options**:
+
+=========== ==============================================
+``--reset`` overrides the ``.example`` configuration files
+=========== ==============================================
+
+CLI
+---
+
+The ``./volumes/shared/execute`` script contains a CLI for special service
+maintainance commands.
+
+.. warning:: The script should only be executed within a service container!
+
+**Usage**:
+
+- On the host::
+
+    $ docker-compose run --rm SERVICE execute COMMAND
+    $ docker-compose exec SERVICE execute COMMAND
+
+  e.g.::
+
+    $ docker-compose run --rm erpserver execute --help
+    $ docker-compose exec erpserver execute --help
+
+- Inside a service container::
+
+    $ execute COMMAND
+
+**Commands**::
+
+    $ execute --help
+    Usage: execute [OPTIONS] COMMAND [ARGS]...
+
+      Command line tool to setup and maintain services in docker containers.
+
+    Options:
+      --help  Show this message and exit.
+
+    Commands:
+      build-docs            Builds the Sphinx documentation.
+      build-docs-noautoapi  Builds the Sphinx documentation without...
+      db-backup             Dumps the postgres database DBNAME to stdout.
+      db-copy               Creates the postrges database DBNAME_DST from...
+      db-create             Creates the postrges database DBNAME.
+      db-delete             Deletes the postrges database DBNAME.
+      db-psql               Opens a SQL console for the database DBNAME.
+      db-rebuild            Deletes DBNAME and executes db setup
+      db-setup              Creates and sets up the postgres database...
+      deploy-erpserver      Deploys the erpserver service.
+      deploy-webapi         Deploys the webapi service.
+      deploy-webgui         Deploys the webgui service.
+      kill-dbconnections    Cut off all database connections to allow...
+      pip-install           Installs required packages for a CONTAINER...
+      run-tests             Runs all tests for a service (web, worker).
+      update                Updates tryton modules for database DBNAME.
+
+**Help**::
+
+    $ execute --help
+    $ execute COMMAND --help
+
+.. _Webbrowser Usage:
+
+Webbrowser
+----------
+
+Open the webbrowser and point it to the
+
+- webgui: http://collecting_society.test
+- webapi: http://api.collecting_society.test
+
+Login as demo user:
+
+===================================== ============ ===================
+Username                              Password     Roles
+===================================== ============ ===================
+``allroles1@collecting-society.test`` ``password`` licenser, licensee
+``licenser1@collecting-society.test`` ``password`` licenser
+``licensee1@collecting-society.test`` ``password`` licensee
+===================================== ============ ===================
+
+.. _Tryton Usage:
+
+Tryton
+------
+
+Start Tryton::
+
+    $ tryton
+
+.. note:: The Tryton client configuration files are stored in
+    ``~/.config/tryton/3.4/``.
+
+Open a connection to Trytond:
+
+========== ================================
+host       ``collecting_society.test:8000``
+database   ``collecting_society``
+user       ``admin``
+password   ``admin``
+========== ================================
+
+.. seealso:: `Tryton Usage Documentation`__
+
+__ https://das-do.readthedocs.io/en/3.4/usage.html
+
+The database entries can be found in the navigation tree:
+
+* **Collecting Society**: Societies, Tariffs, Allocations, Distributions
+* **Licenser**: Artists, Releases, Creations, Licenses, Labels, Publishers
+* **Licensee**: Events, Locations, Websites, Releases, Devices, Declarations,
+  Utilisations
+* **Portal**: Access
+* **Archiving**: Storehouses, Harddisks, Filesystems, Contents
+
+Other important entries are:
+
+* **Party**: Parties, Addresses
+* **Administration / Users**: Users, Web Users
+* **Administration / Sequences**: Sequences
 
 Development
 ===========
 
-The general Python requirements are provided by default Debian packages from
-Jessie (actual testing) if available, otherwise from PyPI.
-Packages under development are located in ``./shared/src`` and can be edited on 
-the host system, outside the containers.
-For developer convenience all Tryton modules use a git mirror of the upstream
-Tryton repositories.
-For this setup the Tryton release branch 3.4 is used.
+Docker
+------
 
-Architecture
-------------
+Compose
+'''''''
 
-This repository is build by the following files and directories::
+The project consists of 3 separate docker-compose setups:
 
-    ├── shared  # This directory is mapped into portal and tryton container
-    │   ├── execute  # Maintenance Utility for containers
-    │   ├── etc
-    │   │   ├── requirements-portal.txt  # Pip requirements for portal service
-    │   │   ├── requirements-tryton.txt  # Pip requirements for Tryton service
-    │   │   ├── scenario_master_data.txt # Demo data script
-    │   │   ├── trytond.conf  # Configuration file for Tryton service
-    │   │   └── trytonpassfile  # Password file for Tryton admin user
-    │   ├── src  # Source repositories, edit here
-    │   │   ├── account
-    │   │   ├── account_invoice
-    │   │   ├── ...
-    │   └── var  # upload directory for tryton webdav service
-    │       └── lib ...
-    ├── CHANGELOG
-    ├── config.py  # Configuration for paths and reporitories
-    ├── Dockerfiles  # Definition of service container images
-    │   ├── portal ...
-    │   └── tryton ...
-    ├── docker-compose.yml  # docker-compose configuration
-    ├── postgresql-data ...  # postgresql database data files
-    ├── README.rst  #*this file*
-    ├── show_external_urls  # helper script to show used external urls
-    └── update  # Update script for repositories and file structure
+**Development/Production**
 
-Packages and Debs
------------------
+- Purpose: Main development/production setup of the services
+- Files
+
+  - ``docker-compose.yml``: main file
+  - ``docker-compose.override.yml``: override file, symlink to development/production
+  - ``docker-compose.development.yml``: additions for development (ports, volumes)
+  - ``docker-compose.production.yml``: additions for productions (ports, volumes)
+
+- Usage: ``docker compose COMMAND``
+- Services: `Table of Services`_
+
+.. note:: The ``docker-compose.override.yml`` is a docker-compose convention.
+
+**Testing**
+
+- Purpose: Manual/Automated testing, CI
+- Files
+
+  - ``docker-compose.testing.yml``
+
+- Usage: ``docker-compose -f docker-compose.testing.yml COMMAND``
+- Services
+
+  - ``test_database``: same as database
+  - ``test_erpserver``: same as erpserver
+  - ``test_web``: webapi + webgui
+  - ``test_worker``: same as worker
+  - ``test_fingerprint``: same as fingerprint
+  - ``test_browser``: selenium
+
+**Documentation**
+
+- Purpose: Manual/Automated builds of the documentation
+- Files
+
+  - ``docker-compose.documentation.yml``
+
+- Usage: ``docker-compose -f docker-compose.documentation.yml COMMAND``
+- Services:
+
+  - ``documentation``: sphinx build container
+
+For more information, look into the ``*.yml`` files.
+
+Images
+''''''
+
+All images for all 3 docker-compose setups are based on the same Dockerfile,
+which is located in ``./services/build/Dockerfile``. The key concepts for this
+image setup are:
+
+- Some and only those images not intended for production use are imported from
+  **Dockerhub** (nginx, postgres, selenium).
+- All custom built images are based on **Debian**.
+- It is a **multistage** build. This means, that all intermediate stages can be
+  reused for multiple images, leading to a stage hierarchy tree.
+- There are **2 branches** in the tree:
+
+  - The **compile** branch contains the libraries needed for the compilation of
+    the packages/applications.
+  - The **service** branch contains only the runtime dependencies for the
+    packages/applications.
+
+- The packages/applications are compiled on images of the compile branch and in
+  the end **copied** to the images on the service branch, which are used for
+  development/production.
+- Each image stage has **3 substages** for the different environments:
+
+  - The **production** substage contains only the minimum of packages needed.
+  - The **testing** substage adds packages for tests/CI/documentation.
+  - The **development** substage adds packages to develop comfortably.
+
+- The reason for both the division of compile/service branches as well as the
+  substages matching the environment is to have **slimmer** images, **smaller**
+  attack surfaces and a **faster** build time.
+
+The tree of the stages of the service branch (without substages)::
+
+                                   jessie_base
+                                        |
+                                  jessie_python
+               _________________________|___________________________
+              |                 |                |                  |
+       jessie_trytond    jessie_worker    jessie_echoprint    jessie_compile
+          |       |             |                |                  |
+    erpserver   webapi        worker        fingerprint       documentation
+                  |
+                webgui
+
+The tree of the stages of the compile branch (without substages)::
+
+                                   jessie_base
+                                        |
+                                  jessie_python
+                                        |
+                                  jessie_compile
+                                        |
+                              jessie_python_compiled
+               _________________________|__________________________
+              |                         |                          |
+    jessie_trytond_compiled   jessie_worker_compiled   jessie_echoprint_compiled
+              |
+    jessie_pyramid_compiled
+
+The copy relations:
+
+============= ====================================
+Image         Copy Sources
+============= ====================================
+erpserver     jessie_trytond_compiled
+webapi        jessie_pyramid_compiled
+webgui        jessie_pyramid_compiled
+worker        jessie_worker_compiled
+fingerprint   jessie_echoprint_compiled
+documentation | jessie_trytond_compiled
+              | jessie_pyramid_compiled
+              | jessie_worker_compiled
+============= ====================================
+
+Packages
+--------
 
 This setup maintains three levels of package inclusion:
 
@@ -358,159 +1223,253 @@ This setup maintains three levels of package inclusion:
     2. Python packages installed with pip
     3. Source repositories for development purposes
 
-Source packages for the development are available as git repositories are
-stored in ``config.py`` in variable ``repositories``::
+Debian
+''''''
 
-    (
-        git repository url or None.
-        git clone option, required if repository is given.
-        relative path to create or clone.
-    ),
+The Debian packages installed for the applications can be found in the
+Dockerfile and are pinned, where reasonable. For a list of packages, search
+for ``apt-get install`` in ``./services/build/Dockerfile``.
 
-These packages are cloned or updated with the ``./scripts/update`` command and must
-be pip installable.
-To install a source repository package in a container, it is be declared in
-*one* of the ``shared/etc/requirements*.txt`` files.
+Pip
+'''
 
-.. note:: The ``requirements-portal.txt`` inherits the
-    ``requirements-tryton.txt``.
-.. note:: The ``config.py`` can be used to create empty directories, too.
+The pip packages installed for the applications also can be found in the
+Dockerfile and are all pinned. For a list of packages, search for
+``pip install`` in ``./services/build/Dockerfile``.
 
-Debian and Python packages are included in one of the ``Dockerfiles``:
+The source code of those packages can also be found in the folder
+``./volumes/shared/ref/`` and are provided for reference and for quick lookups
+during development. The source code is not used though. The repositories are
+cloned on the first run of the ``./scripts/update`` script. The list of
+repositories can be configured in ``./scripts/config.py`` in the dictionary
+``clone_references``::
 
-    * tryton
-    * portal
+    {
+        'url': '<URL>',             # https url to git repository
+        'option': '<PARAMETER>',    # parameter for git (e.g. --branch)
+        'path': '<PATH>',           # folder in ./volumes/shared/ref to clone into
+    },
 
-.. note:: Add source repository packages only when they are realy needed for
-    development.
+Repositories
+''''''''''''
 
-Remove Database
----------------
+Those packages, which are either under development or need to be updated
+regulary are git cloned into the folder ``./volumes/shared/src/``. Those packages
+are pip installed during runtime each time a container is started. The list of
+package requirements for each service container can be found in
+``./services/<SERVICE>.pip``.
 
-The database files are stored in ``postgresql-data``.
-To rebuild a new database use the following pattern::
+The repositories are cloned and updated on each run of the ``./scripts/update``
+script. The list of repositories can be configured in ``./scripts/config.py``
+in the variable ``clone_sources``::
 
-    $ docker-compose stop db
-    $ docker-compose rm db
-    $ sudo rm -rf postgresql-data/
-    $ mkdir postgresql-data
+    {
+        'url': '<URL>',             # https url to git repository
+        'ssh': '<URL>',             # ssh url to git repository (optional)
+        'option': '<PARAMETER>',    # parameter for git (e.g. --branch)
+        'path': '<PATH>',           # folder in ./volumes/shared/ref to clone into
+        'symlink': True|False,      # add symlink in ./code/
+    },
 
-.. warning:: All data in this database will be deleted!
+Services
+--------
 
+To start all services with stdin attached to the service logs, use::
 
-Testing
-=======
+    $ docker-compose up
 
-Tryton
-------
+To start all services detached::
 
-To run tests (for e.g. module collecting_society) in the tryton container use::
+    $ docker-compose up -d
 
-    $ docker-compose run --rm erpserver sh -c \
-          'execute pip-install erpserver \
-          && export DB_NAME=:memory: \
-          && python /shared/src/trytond/trytond/tests/run-tests.py -vvvm collecting_society'
+If you want to start only a certain service with its dependencies, use::
 
-(If the container already runs, use "exec" instead of "run --rm") 
-To run the master setup again, use::
+    $ docker-compose run --rm --service-ports SERVICE    execute deploy-SERVICE
+      '---------------------------------------------'    '--------------------'
+                      host command                         container command
 
-    $ docker-compose run --rm erpserver sh -c \
-          'execute pip-install erpserver \
-          && python -m doctest -v data/master.txt'
+    $ docker-compose run --rm --service-ports webgui     execute deploy-webgui
+    $ docker-compose run --rm --service-ports webapi     execute deploy-webapi
+    $ docker-compose run --rm --service-ports erpserver  execute deploy-erpserver
 
-To run the demo setup again, use::
+The host command explained:
 
-    $ docker-compose run --rm erpserver sh -c \
-          'execute pip-install erpserver \
-          && python -m doctest -v etc/scenario_test_data.txt'
+    - ``docker-compose run``: Run a one-off command in a new container
+    - ``--rm``: The run command won't remove the stopped container by
+      default, so that it can be inspected after the run. To prevent the
+      aggregation of stopped container states, this switch is recommended.
+    - ``--service-ports``: The run command is intended to be used, while
+      the services are already running and does not map the service ports by
+      default to prevent the port being allocated twice. This switch is used
+      to enable the mapping of the service ports.
+    - ``SERVICE``: The service on which the command is executed
 
+The container command explained:
 
-Portal
-------
+    - ``execute``: The name of the `CLI`_ script
+    - ``deploy-SERVICE``: The `CLI`_ command to start the service application
 
-Create a database template, which will be copied and used for tests::
+To open a shell on a new container::
 
-    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
-        execute create-test-db
+    $ docker-compose run --rm [--service-ports] SERVICE bash
 
-Run all tests in PATH (optional) with nosetests PARAMETER (optional)::
+.. warning:: Manual changes are not persisted when the container is stopped.
 
-    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
-        execute run-tests [--path=PATH] [PARAMETER]
+To open a shell on a running container::
 
-Run all tests for portal_web + plugins::
+    $ docker-compose exec SERVICE bash
 
-    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
-        execute run-tests
+Trytond
+'''''''
 
-Run all tests for portal_web + plugins quiet, drop into pdb on errors::
+For the development of tryton modules it is recommended to open two shells
+within the erpserver:
 
-    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
-        execute run-tests --quiet --pdb
+- One shell is to start the trytond server manually, as it often needs to be
+  restarted.
+- The other shell is for the database update command to apply the changes to
+  the database.
 
-Run only tests for portal_web::
+1. Start the first terminal, open a bash in the erpserver and start trytond::
 
-    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
-        execute run-tests --path src/portal_web
+    $ docker-compose run --rm --service-ports erpserver bash
+    > execute deploy-erpserver
 
-Run only unittests of portal::
+   To restart the trytond server::
 
-    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
-        execute run-tests --path src/portal_web/portal_web/tests/unit
+    > <Ctrl+c>
+    > execute deploy-erpserver
 
-Run a specific unittest for a model of portal::
+2. Start the second terminal, open another bash in the running container::
 
-    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal \
-        execute run-tests --path \
-        src/portal_web/portal_web/tests/unit/models.py:TESTCLASS.TESTMETHOD
+    $ docker exec -it $(docker ps -a | grep ":8000" | cut -d' ' -f1) bash
 
-For repeated testing without recreating the container every time, start the
-container once and run the tests from within::
+   To update the collecting_society module for the database::
 
-    $ docker-compose run --rm --use-aliases -e ENVIRONMENT=testing portal bash
-    $ execute run-tests [--path=PATH] [PARAMETER...]
+    > execute update -m collecting_society
 
-Debugging with ptvsd
----------------------
+   To update all modules for the database::
 
-If you use Visual Studio Code as your editor, you would want to install the 
-Remote Containers extension, so you can work directly in the docker containers, 
-including source level debugging from within VS Code. Just make sure that 
-'ENVIRONMENT' is set to 'development' in the resp. containers .env file found 
-in the shared folder, then cd to collecting_society_docker and start VSCode 
-with *"code ."*. The necessary .devcontainer.json and launch.json files are 
-already included in the repositories.
+    > execute update
 
-To start debugging a container, click on the toast notification that will come 
-up in the bottom right corner or click on the green field in the lower left 
-corner of VS Code and select 'Remote-Containers: Reopen in Container'. Then 
-make sure the Python extension is installed in the container's VS Code instance 
-and reload, if necessary. *Git History* and *GitLens* are recommended but will 
-require you to *"apt-get install git"* in the container. To start Debugging, 
-press Ctrl-Shift-D to open the debug sidebar and select the debug configuration 
-in the drop-down box on the top, e.g. *'Portal Attach'*. (Settings for 
-attaching the container can be adjusted in the file 
-*/shared/.vscode/launch.settings*.) Press the play button left to the debug 
-config drop-down box and a debug toolbar should appear.
+To connect to Trytond with the Tryton client, see `Tryton Usage`_.
 
-.. note:: If you wish to debug other containers besides the default 
-*portal*, e.g. *api* or *processing*, change the *service* entry in 
-.devcontainer.json accordingly, otherwise you will experience 'connection 
-refused' errors. The *service* entry in .devcontainer.json will determine which 
-container is being selected by the *Remote-Containers* plugin.
+.. note:: Start Tryton with the ``-d/--debug`` flag to disable caching.
 
-Debugging with winpdb
----------------------
+You can now start coding:
 
-To allow the winpdb debugger to attach to a portal script, uncomment:: 
+================================ =================================
+``code/collecting_society/``     trytond main module
+``volumes/shared/src/``          all trytond module repositories
+``~/.config/tryton/3.4/``        tyton client config files
+================================ =================================
 
-    #RUN apt-get update && apt-get install -y winpdb
+.. seealso:: `Trytond Config`_ and `C3S Redmine Wiki: Tryton HowTo`__
 
-in Dockerfiles/portal/Dockerfile and in your python file insert::
+__ https://redmine.c3s.cc/projects/collecting_society/wiki/HowTo#Tryton
+
+Lint the code::
+
+    python2 -m flake8 code/collecting_society
+
+Pyramid
+'''''''
+
+For the development of the pyramid application, it is sufficiant to just start
+all services with stdin attached to the service logs::
+
+    $ docker-compose up
+
+The application will monitor changes to files and restart itself automatically.
+You can now start coding:
+
+================================ =========================================
+``code/portal_web/``             pyramid main application code
+``code/collecting_society_web/`` pyramid plugin code
+``volumes/shared/ref/``          pinned python package repos for reference
+================================ =========================================
+
+.. seealso:: `Pyramid Config`_
+
+Lint the code::
+
+    python2 -m flake8 code/portal_web code/collecting_society_web
+
+Debugging
+---------
+
+Pdb
+'''
+
+``Pdbpp`` ist installed in all images with python installed and should work out
+of the box. Just add the line in the python file::
+
+    import pdb; pdb.set_trace()
+
+If you want to debug a **service**, you need to start the service via the
+``run`` command to attach stdin/stdout and add the ``--service-port`` flag::
+
+    $ docker-compose run --rm --service-ports SERVICE execute deploy-SERVICE
+
+If you want to debug **tests**, you can add the ``--pdb`` flag to the
+``./scripts/test`` script or the ``execute run-tests`` CLI command to jump into
+pdb on errors automatically.
+
+If you want to debug the **demodata** generation, you can add the ``--pdb``
+flag to the ``execute db-rebuild`` CLI command to jump into pdb on errors
+automatically.
+
+Ptvsd
+'''''
+
+If you use Visual Studio Code as your editor, you would want to install the
+Remote Containers extension, so you can work directly in the docker containers,
+including source level debugging from within VS Code. Just make sure that
+the environment variables in ``.env`` have the right values::
+
+    ENVIRONMENT=development
+    DEBUGGER_PTVSD=1
+
+Now rebuild the docker images for the packages to be installed, ``cd`` to
+``collecting_society_docker`` and start VSCode with ``"code ."``. The necessary
+``.devcontainer.json`` and ``launch.json`` files are already included in the
+repositories.
+
+To start debugging a container, click on the toast notification that will come
+up in the bottom right corner or click on the green field in the lower left
+corner of VS Code and select ``Remote-Containers: Reopen in Container``. Then
+make sure the Python extension is installed in the container's VS Code instance
+and reload, if necessary. *Git History* and *GitLens* are recommended but will
+require you to ``"apt-get install git"`` in the container. To start debugging,
+press ``Ctrl-Shift-D`` to open the debug sidebar and select the debug
+configuration in the drop-down box on the top, e.g. *'Portal Attach'*
+(Settings for attaching the container can be adjusted in the file
+``./volumes/shared/.vscode/launch.settings``). Press the play button left to
+the debug config drop-down box and a debug toolbar should appear.
+
+.. note:: If you wish to debug other containers besides the default
+    *webgui*, e.g. *webapi* or *worker*, change the ``service`` entry in
+    ``.devcontainer.json`` accordingly, otherwise you will experience
+    'connection refused' errors. The ``service`` entry in
+    ``.devcontainer.json`` will determine which container is being selected by
+    the *Remote-Containers* plugin.
+
+Winpdb
+''''''
+
+To allow the winpdb debugger to attach to a portal script, make sure that
+the environment variables in ``.env`` have the right values::
+
+    ENVIRONMENT=development
+    DEBUGGER_WINPDB=1
+
+Now rebuild the docker images for the packages to be installed an in your
+python file insert::
 
     import rpdb2; rpdb2.start_embedded_debugger("password", fAllowRemote = True)
 
-Make sure to open a port for the remote debugger in docker-compose.yml::
+Make sure to open a port for the remote debugger in
+``docker-compose.development.yml``::
 
     ports:
       - "51000:51000"
@@ -520,71 +1479,413 @@ Install winpdb also outside the container and run it::
     $ sudo apt-get install -y winpdb
     $ winpdb
 
-The processing container can be setup for debugging the same way.
-Make sure to only enable either of the both containers for debugging, not both 
-the same time.
+The processing container can be setup for debugging the same way. Make sure to
+only enable either of the both containers for debugging, not both the same
+time.
 
-Sphinx Documentation
-====================
+Tests
+-----
 
-Sphinx doesn't just parse the code but rather wants to start the modules.
-This is why there exists a special documentation container you can build with::
+The tests are performed on separate containers. To build the images on the
+first run, use::
 
-    $ scripts/docs --build
+    $ ./scripts/test --build
 
-Once built, you may ommit the ``--build`` option to rebuild the docs from
-the modules .rst files (e.g. README.rst) and the common .rst files in
-shared/docs/source. Don't edit the .rst files in subfolders of docs/source
-because those are copied or generated by autoapi. If you have not 
-changed any .py files, you can ommit the autoapi step and speed up the
-Sphinx build by entering::
+To run the tests for all services (web, erpserver, worker)::
 
-    $ scrips/docs --no-autoapi
+    $ ./scripts/test
 
-If you have work to do inside the container, start it like this::
+.. seealso:: `test`_ script
 
-    $ docker-compose -f docker-compose.documentation.yml run --rm documentation /bin/bash
+If you develop the tests and need to start them more than once, you can
+use the ``--keep`` flag, to keep the container running and use the command
+multiple times::
 
-or enter it using ::
+    $ ./scripts/test --keep
 
-    $ docker-compose -f docker-compose.documentation.yml exec documentation /bin/bash
+To stop and remove the container, when you have finished, enter ::
 
-if you have left the container running before by ommiting ``--rm`` or by
-starting it with ::
+    $ ./scripts/test --down
 
-    $ scrips/docs --keep
+.. note:: All commits to all repositories are automatically CI tested with
+    `jenkins`__ (needs authentication) using the same test script.
 
-In the container, as alternative to scripts/docs from the outside, enter ::
+__ https://jenkins1b.c3s.cc/job/collecting_society/
 
-    $ cd docs
-    $ ./build.sh
+Trytond
+'''''''
 
-or just ::
+Run all trytond tests (module tests, scenario doctests) once::
 
-    $ cd docs
-    $ make html
+    $ ./scripts/test erpserver
 
-to skip the autoapi step, if you haven't done changes to the python source
-code (nor the modules .rst files).
+Run all trytond tests and keep the container running for the next test run::
 
-To shut down the container enter ::
+    $ ./scripts/test erpserver --keep
 
-    $ scrips/docs --down
+Stop the container afterwards::
+
+    $ ./scripts/test --down
+
+If you prefer, you can also execute the commands above from within the container::
+
+    $ docker-compose -f docker-compose.testing.yml up -d
+    $ docker-compose -f docker-compose.testing.yml exec test_erpserver bash
+
+        # setup container
+        > execute pip-install erpserver
+        > export DB_NAME=:memory:
+
+        # run tests
+        > python /shared/src/trytond/trytond/tests/run-tests.py -vvvm collecting_society
+
+        # exit container
+        > exit
+
+    $ docker-compose -f docker-compose.testing.yml down
+
+Worker
+''''''
+
+Run all worker tests (module tests, scenario doctests) once::
+
+    $ ./scripts/test worker
+
+Run all trytond tests and keep the container running for the next test run::
+
+    $ ./scripts/test worker --keep
+
+Stop the container afterwards::
+
+    $ ./scripts/test --down
+
+.. note:: The following commands will use the ``--keep`` flag by default. It
+    will highly speed up the execution time, if you run the tests more than
+    once.
+
+You can append the normal nosetest parameters::
+
+    $ ./scripts/test worker --keep [--path PATH] [PARAMETER]
+
+- Run all tests quietly, drop into pdb on errors::
+
+    $ ./scripts/test worker --keep --quiet --pdb
+
+- Run a specific set of tests::
+
+    $ ./scripts/test worker --keep --path PATH[/FILE[:CLASS[.METHOD]]]
+
+  For example::
+
+    $ TESTPATH=src/collecting_society_worker/collecting_society_worker/tests
+
+    $ ./scripts/test worker --keep \
+        --path $TESTPATH/integration
+    $ ./scripts/test worker --keep \
+        --path $TESTPATH/integration/test_processing.py
+    $ ./scripts/test worker --keep \
+        -- path $TESTPATH/integration/test_processing.py:TestProcessing.test_200_checksum
+
+Recreate the database template, if the database has changed::
+
+    $ ./scripts/test worker --keep --build
+
+If you prefer, you can also execute the commands above from within the container::
+
+    $ docker-compose -f docker-compose.testing.yml up -d
+    $ docker-compose -f docker-compose.testing.yml exec test_worker bash
+
+        # run tests
+        > execute run-tests worker [--path PATH] [PARAMETER...]
+
+        # rebuild database template
+        > execute db-rebuild --no-template -d master collecting_society_test_template
+
+        # exit container
+        > exit
+
+    $ docker-compose -f docker-compose.testing.yml down
+
+The rendered HTML output of the coverage can be accessed via::
+
+    firefox volumes/shared/cover_worker/index.html
+
+Pyramid
+'''''''
+
+Run all pyramid tests once::
+
+    $ ./scripts/test web
+
+Run all pyramid tests and keep the container running for the next test run::
+
+    $ ./scripts/test web --keep
+
+Stop the container afterwards::
+
+    $ ./scripts/test --down
+
+.. note:: The following commands will use the ``--keep`` flag by default. It
+    will highly speed up the execution time, if you run the tests more than
+    once.
+
+You can append the normal nosetest parameters::
+
+    $ ./scripts/test web --keep [--path PATH] [PARAMETER]
+
+- Run all tests quietly, drop into pdb on errors::
+
+    $ ./scripts/test web --keep --quiet --pdb
+
+- Run a specific set of tests::
+
+    $ ./scripts/test web --keep --path PATH[/FILE[:CLASS[.METHOD]]]
+
+  For example::
+
+    $ ./scripts/test web --keep \
+        --path src/portal_web/portal_web/tests/unit
+    $ ./scripts/test web --keep \
+        --path src/portal_web/portal_web/tests/unit/resources.py
+    $ ./scripts/test web --keep \
+        --path src/portal_web/portal_web/tests/unit/resources.py:TestResources
+    $ ./scripts/test web --keep \
+        --path src/portal_web/portal_web/tests/unit/resources.py:TestResources.test_add_child
+
+Recreate the database template, if the database has changed::
+
+    $ ./scripts/test web --keep --build
+
+If you prefer, you can also execute the commands above from within the container::
+
+    $ docker-compose -f docker-compose.testing.yml up -d
+    $ docker-compose -f docker-compose.testing.yml exec test_web bash
+
+        # run tests
+        > execute run-tests web [--path PATH] [PARAMETER...]
+
+        # rebuild database template
+        > execute db-rebuild --no-template -d master collecting_society_test_template
+
+        # exit container
+        > exit
+
+    $ docker-compose -f docker-compose.testing.yml down
+
+The rendered HTML output of the coverage can be accessed via::
+
+    firefox volumes/shared/cover_web/index.html
+
+The screenshots of the selenium integration tests can be found in the folder::
+
+    volumes/shared/tmp/screenshots/
+
+Linting
+'''''''
+
+Lint the code for all repositories::
+
+    python2 -m flake8 scripts code/portal* code/collecting_society*
+
+Demodata
+--------
+
+The datasets are imported via a custom data import module using `proteus`__
+with a trytond backend (not via XMLRPC). The most important files and folders
+are:
+
+__ https://docs.tryton.org/projects/client-library/en/latest/
+
+============================================ ================================================
+``volumes/shared/data/main.py``              Main function
+``volumes/shared/data/datasets/__init__.py`` Definition of Dataset(s) classes
+``volumes/shared/data/datasets/MODEL.py``    Dataset generation script for tryton model
+``volumes/shared/data/csv/MODEL.csv``        CSV file for tryton model
+``volumes/shared/data/csv/MODEL.py``         Script to generate the CSV file for tryton model
+============================================ ================================================
+
+A minimal working dataset consists of two attributes::
+
+    #!/usr/bin/env python
+    DEPENDS = []            # A list of other datasets to be build first
+    generate(reclimit=0):   # The function to generate the datasets
+        pass
+
+Rebuild
+'''''''
+
+In the ``develop`` branch, the demodata is created automatically during the
+setup of the database. If you need to rebuild the database, just use your
+prefered method:
+
+* via `reset-db`_ script::
+
+    $ ./scripts/reset-db
+
+* on a running container::
+
+    $ docker-compose exec erpserver db-rebuild
+
+* on a new container::
+
+    $ docker-compose run --rm erpserver db-rebuild
+
+* inside the *erpserver* container::
+
+    > execute db-rebuild
+
+The generation script will output some useful information during the run:
+
+- *Configuration* of the run
+- *Name* of the dataset
+- *Description* of the dataset
+- *Models* created/deleted/copied/updated and *Wizards* executed
+- *Duration* of the generation
+
+Update
+''''''
+
+If you want to change a certain dataset for a model:
+
+1. Apply the changes to ``datasets/MODEL.py``.
+2. Test your changes by generating the MODEL dataset using the ``db-rebuild``
+   `CLI`_ command::
+
+    $ docker-compose run --rm erpserver bash
+    > execute db-rebuild -d MODEL
+
+3. While there are errors, fix them and retest using the ``--cache`` flag::
+
+    > execute db-rebuild -d MODEL --cache
+
+4. Retest the whole generation::
+
+    > execute db-rebuild
+
+5. Commit the changes.
+
+If you want to change several datasets, you can prepare a template for the
+most time consuming master dataset and start the data generation from it with
+the ``-e/--exclude`` flag::
+
+    > execute db-rebuild -d master
+    > execute db-copy --force collecting_society collecting_society_template
+    > execute db-rebuild -e master -d <DATASET>
+
+Create
+''''''
+
+If you want to create a new dataset, you can use this template and take a look
+at the other datasets to see, how it works::
+
+    #!/usr/bin/env python
+    # -*- coding: UTF-8 -*-
+    # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+    # Repository: https://github.com/C3S/collecting_society_docker
+
+    """
+    Create the <MODEL>s
+    """
+
+    from proteus import Model
+
+    DEPENDS = [
+        '<DATASET>',
+    ]
+
+
+    def generate(reclimit=0):
+
+        # constants
+
+        # models
+
+        # wizards
+
+        # entries
+
+        # content
+
+        # create <MODEL>s
+
+.. note:: All ``datasets/*.py`` files are registered automatically as new
+    datasets on each run.
+
+Documentation
+-------------
+
+The documentation is built with Sphinx and integrates the documentation of all
+collecting society applications. It contains both the ``*.rst`` files
+(e.g. ``README.rst``) of the application repositories, as well as the python
+code api generated via *autoapi*.
+
+The build process runs on a special ``documentation`` service container, as for
+*autoapi* the python modules need to be imported. To create the image for the
+container on the first built, use::
+
+    $ ./scripts/docs --build
+
+To build the documentation afterwards, you can then just use::
+
+    $ ./scripts/docs
+
+If you develop the documentation and need to build it more than once, you can
+use the ``--keep`` flag, to keep the container running and use the command
+multiple times::
+
+    $ ./scripts/docs --keep
+
+To stop and remove the container, when you have finished, enter ::
+
+    $ ./scripts/docs --down
+
+If you did not change any ``*.py`` files, you can use the ``--no-autopi`` flag
+to omit the *autoapi* step and speed up the build::
+
+    $ ./scripts/docs --no-autoapi
+
+If you have work to do inside the container, start a new container::
+
+    $ docker-compose -f docker-compose.documentation.yml run --rm documentation bash
+
+Or enter a running container::
+
+    $ docker-compose -f docker-compose.documentation.yml exec documentation bash
+
+Inside the container, you can start the build with::
+
+    container$ cd docs
+    container$ ./build.sh
+
+Or just::
+
+    container$ cd docs
+    container$ make html
+
+The main source files can be found in the ``./volumes/shared/docs/source/``
+folder.
+
+.. warning:: Don't edit the ``*.rst`` files in the subfolders, because those
+    are copied or generated by autoapi.
 
 Once built, the docs can be viewed (from outside the container) like this::
- 
-    $ firefox volumes/shared/docs/build/html/index.html
 
-To enrich the docs, stick to the Sphinx .rst markup as documented here:
-https://www.sphinx-doc.org/en/1.5/markup/inline.html
+    $ firefox documentation/index.html
+
+.. seealso:: `Sphinx rst Markup`__
+
+__ https://www.sphinx-doc.org/en/1.5/markup/inline.html
+
 
 Problems
-========
+--------
 
-Couldn't connect to Docker daemon
----------------------------------
-Docker-compose cannot start container <id> port has already been allocated
---------------------------------------------------------------------------
+Docker
+''''''
+
+**Couldn't connect to Docker daemon**
+
+**Docker-compose cannot start container <id> port has already been allocated**
 
 If docker fails to start and you get messages like this:
 "Couldn't connect to Docker daemon at http+unix://var/run/docker.sock
@@ -593,16 +1894,17 @@ been allocated"
 
 1. Check if the docker service is started::
 
-    $ /etc/init.d/docker[.io] stop
-    $ /etc/init.d/docker[.io] start
+    $ sudo systemctl start docker
 
 2. Check if any user of docker is member of group ``docker``::
 
     $ login
     $ groups | grep docker
 
-Bad Fingerprint
----------------
+Tryton
+''''''
+
+**Bad Fingerprint**
 
 If the Tryton client already connected the *tryton*-container, the fingerprint
 check could restrict the login with the message: Bad Fingerprint!
@@ -611,7 +1913,7 @@ That means the fingerprint of the server certificate changed.
 In production use, the ``Bad fingerprint`` alert is a sign that someone
 could try to *fish* your login credentials with another server responding your
 client.
-Ask the server administrator if the certificate is changed.
+Ask the server administrator if the certificate has changed.
 
 Close the Tryton client.
 Check the problematic host entry in ``~/.config/tryton/3.4/known_hosts``.
@@ -620,62 +1922,9 @@ simply remove the whole file, if the setup is not in production use::
 
     rm ~/.config/tryton/3.4/known_hosts
 
-Engine Room
------------
 
-This is a collection of docker internals.
-Good to have but seldom useful.
-
-Show running container (docker-compose level), e.g. ::
-
-    $ docker-compose ps
-    Name          Command                          State  Ports
-    --------------------------------------------------------------------
-    c3s_db_1      /docker-entrypoint.sh postgres   Up     5432/tcp
-    c3s_portal_1  execute deploy-portal            Up     6543->6543/tcp
-    c3s_tryton_1  execute deploy-erpserver c3s     Up     8000->8000/tcp
-
-Use docker help::
-
-    $ docker help
-
-Show running container (docker level)::
-
-    $ docker ps
-
-Enter a running container by id (Docker>=1.3;Kernel>3.8)::
-
-    $ docker exec -it <container-id> bash
-
-.. note:: The docker containers are usually stored under ``/var/lib/docker``
-    and can occupy some gigabyte diskspace.
-
-Docker is memory intensive. To Stop and remove all containers use::
-
-    $ docker stop $(docker ps -a -q)
-    $ docker rm $(docker ps -a -q)
-
-Remove images with ::
-
-    $ docker rmi $(docker images -f "dangling=true" -q)
-
-In case you need disk space, remove all local cached images::
-
-    $ docker rmi $(docker images -q)
-
-Should images not been removed, try the -f (force) switch.
-
-
-Copyright / License
-===================
+License
+=======
 
 For infos on copyright and licenses, see ``./COPYRIGHT.rst``
 
-
-References
-==========
-
-* http://crosbymichael.com/dockerfile-best-practices.html
-* http://crosbymichael.com/dockerfile-best-practices-take-2.html
-* https://crosbymichael.com/advanced-docker-volumes.html
-* http://blog.jacius.info/git-submodule-cheat-sheet/

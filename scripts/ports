@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 """
@@ -45,7 +45,7 @@ if num_containers == 0:
     print('no containers running.')
     exit()
 print('-' * 75)
-print('Browser url: http://{}:81\n'.format(config.env['VIRTUAL_HOST_GUI']))
+print('Browser url: http://{}\n'.format(config.env['VIRTUAL_HOST_GUI']))
 print('Add to your /etc/hosts:')
 print('---8<---')
 print('0.0.0.0\t{}'.format(config.env['VIRTUAL_HOST_GUI']))

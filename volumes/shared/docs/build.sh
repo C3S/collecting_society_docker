@@ -10,7 +10,7 @@ sphinx-apidoc -f -o source/generated --no-toc ../src/collecting_society_worker
 sphinx-apidoc -f -o source/generated --no-toc ../src/portal_web
 
 # echo ".. title:: Collecting Society Docker Setup" > source/generated/collecting_society_docker_README.rst
-cp ../ref/README.rst source/generated/collecting_society_docker_README.rst
+cp /collecting_society_docker/README.rst source/generated/collecting_society_docker_README.rst
 
 # echo ".. title:: Collecting Society Web GUI" > source/generated/collecting_society_web_README.rst
 cp ../src/collecting_society_web/README.rst source/generated/collecting_society_web_README.rst

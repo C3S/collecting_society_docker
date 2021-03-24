@@ -12,18 +12,23 @@ volumes:
 
 services:
 
-  webserver:
-    volumes:
-      - collecting_society_nginx_certs:/etc/nginx/certs
-      - collecting_society_nginx_dhparam:/etc/nginx/dhparam
-
   database:
     volumes:
       - collecting_society_postgresql_data:/var/lib/postgresql/data
 
   erpserver:
+    ports:
+      - "8000:8000"  # jsonrpc (tryton client)
+      - "8069:8069"  # xmlrpc (proteus)
     volumes:
       - collecting_society_trytond_files:/var/lib/trytond
+
+  webserver:
+    ports:
+      - "80:80"  # http
+    volumes:
+      - collecting_society_nginx_certs:/etc/nginx/certs
+      - collecting_society_nginx_dhparam:/etc/nginx/dhparam
 
   webapi:
     volumes:

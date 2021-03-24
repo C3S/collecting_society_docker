@@ -19,6 +19,7 @@ services:
     command: tail -f /dev/null
     volumes:
       - ./volumes/shared:/shared
+      - .:/collecting_society_docker
     env_file:
       - .env
       - services/webgui.env

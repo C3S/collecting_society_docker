@@ -10,10 +10,10 @@ The commands may be executed by `docker-compose` or within a container.
 Examples:
 
     Execution by `docker-compose`:
-    >>> docker-compose run portal execute --help
+    >>> docker-compose run --rm SERVICE execute --help
 
     Execution within a container:
-    >>> docker-compose run portal bash
+    >>> docker-compose run --rm SERVICE bash
     >>> execute --help
 """
 
@@ -25,9 +25,9 @@ import time
 import subprocess
 import glob
 import fcntl
-from urlparse import urlparse
-
 import click
+
+import data
 
 PROJECT = str(os.environ.get('PROJECT'))
 ENVIRONMENT = str(os.environ.get('ENVIRONMENT'))
@@ -58,24 +58,30 @@ def pip_install(context, container):
     After installation a flag file is created within the container to avoid
     multiple execution during its lifespan.
     """
-    print('Install packages for ' + container + ' ... ', end='')
     flagfile = "/tmp/pip_install_" + container
 
     # check flagfile
     if not os.path.exists(flagfile):
 
         # install packages
+        print('Install packages for ' + container + ' ... ', end='')
         subprocess.check_call(
             [sys.executable, '-m', 'pip', 'install', '-qr',
                 os.path.join(
                     SHARED_PATH, 'config', 'pip', '%s.pip' % container)])
+        print('ok')
 
         # create flagfile
         open(flagfile, 'w').close()
+        if container in ['webgui', 'webapi']:
+            open('/tmp/pip_install_erpserver', 'w').close()
+
+        # restart process with new modules installed
+        subprocess.check_call(sys.argv)
+        sys.exit()
 
     import site
-    reload(site)
-    print('ok')
+    reload(site)  # noqa: F821
 
 
 @execute.command('db-create')
@@ -120,6 +126,9 @@ def db_delete(context, dbname):
     On error the deletion is retried several times.
     """
     print('Delete database "%s" ...' % dbname, end='')
+    if not _db_exist(dbname):
+        print(' database does not exist')
+        return
     max_tries = 2
     tries = 0
 
@@ -133,7 +142,7 @@ def db_delete(context, dbname):
         # if tries == max_tries - 1:
         #     kill db connection somehow...
         try:
-            result = subprocess.check_output(
+            subprocess.check_output(
                 [
                     'dropdb',
                     '-h', POSTGRES_HOSTNAME,
@@ -148,19 +157,28 @@ def db_delete(context, dbname):
                 print("error: \n\033[91m{}\033[0m".format(e.output.rstrip()))
                 return
             continue
-        print("ok")
+        print(" ok")
         return
 
 
 @execute.command('db-copy')
 @click.argument('dbname-src')
 @click.argument('dbname-dst')
+@click.option('--force/--no-force', default=False,
+              help='Force execution (default: no)')
 @click.pass_context
-def db_copy(context, dbname_src, dbname_dst):
+def db_copy(context, dbname_src, dbname_dst, force):
     """
     Creates the postrges database DBNAME_DST from template DBNAME_SRC.
     """
     print('Copy database "%s" to "%s" ... ' % (dbname_src, dbname_dst), end='')
+
+    # kill connections (bug? see collecting_society_worker:repro.py:connect_db)
+    context.invoke(kill_dbconnections, dbname=dbname_src)
+
+    # --force option
+    if force:
+        context.invoke(db_delete, dbname=dbname_dst)
 
     # copy database
     subprocess.call(
@@ -222,16 +240,25 @@ def db_backup(context, dbname):
 
 @execute.command('db-setup')
 @click.argument('dbname', default=PROJECT)
-@click.option('--master/--no-master', default=False,
-              help='Execute master data (default: no)')
-@click.option('--demo/--no-demo', default=False,
-              help='Execute demo data (default: no)')
-@click.option('--develop/--no-develop', default=False,
-              help='Execute develop data (default: no)')
+@click.option('--reclimit', '-r', type=int, default=-1,
+              help='Maximum numbers of objects (default: 0 = all)')
+@click.option('--dataset', '-d', type=str, default=[], multiple=True,
+              help='dataset in ./data/datasets/ to generate (default: all)\n'
+                   'can be used multiple times')
+@click.option('--exclude', '-e', type=str, default=[], multiple=True,
+              help='datasets in ./data/datasets/ to exclude (default: none)\n'
+                   'can be used multiple times')
+@click.option('--template/--no-template', default=True,
+              help='Use template db for dataset deps (default: yes)')
+@click.option('--cache/--no-cache', default=False,
+              help='Regenerate template db for dataset deps (default: no)')
 @click.option('--force/--no-force', default=False,
               help='Force execution (default: no)')
+@click.option('--pdb/--no-pdb', default=False,
+              help='Start pdb on error (default: no)')
 @click.pass_context
-def db_setup(context, dbname, master, demo, develop, force):
+def db_setup(context, dbname, reclimit, dataset, exclude,
+             template, cache, force, pdb):
     """
     Creates and sets up the postgres database DBNAME.
 
@@ -256,14 +283,17 @@ def db_setup(context, dbname, master, demo, develop, force):
         except IOError:
             time.sleep(3)
             print("Waiting for the other process to finish db creation...")
+        except KeyboardInterrupt:
+            fcntl.flock(lockfile, fcntl.LOCK_UN)
+            lockfile.close()
+            try:
+                os.remove(TMP_FILE)
+            except OSError:
+                pass
+            sys.exit()
 
     # Check database
     if not _db_exist(dbname) or force:
-
-        # Create database
-        if not _db_exist(dbname):
-            context.invoke(db_create, dbname=dbname)
-            _update(None, dbname)
 
         # Cofigure trytond
         os.environ['DB_NAME'] = dbname
@@ -271,70 +301,52 @@ def db_setup(context, dbname, master, demo, develop, force):
             SHARED_PATH, 'config', 'trytond', ENVIRONMENT + '.conf'
         )
 
-        # Setup master data
-        if master:
-            print("\nSetup master data -> /shared/tmp/logs/db-master.log\n")
-            logfile = open("/shared/tmp/logs/db-master.log", "w")
-            subprocess.call(
-                [
-                    'python',
-                    '-m', 'doctest',
-                    '-v', os.path.join(
-                        SHARED_PATH, 'data', 'master.txt'
-                    ),
-                    ''
-                ], stdout=logfile
-            )
-            logfile.close()
-            print("_____ Test results for master data _____")
-            print(subprocess.check_output(
-                [
-                    'tail',
-                    '-n', '5',
-                    "/shared/tmp/logs/db-master.log"
-                ]
-            ))
+        # With template
+        if template:
+            print("Setup database with template database.")
+            template_dbname = dbname + "_template"
+            # Delete template database
+            if not cache and not exclude:
+                context.invoke(db_delete, dbname=template_dbname)
+            # Create template
+            if not _db_exist(template_dbname):
+                os.environ['DB_NAME'] = template_dbname
+                # Create template database
+                context.invoke(db_create, dbname=template_dbname)
+                # Update template database
+                _update(None, template_dbname)
+                # Generate dependent datasets
+                data.generate(
+                    dataset, exclude, reclimit=reclimit,
+                    dependencies=True, leaves=False, pdb=pdb)
+            # Copy template
+            context.invoke(
+                db_copy, dbname_src=template_dbname, dbname_dst=dbname)
+            # Generate leave datasets
+            os.environ['DB_NAME'] = dbname
+            if exclude:
+                data.generate(
+                    dataset, exclude, reclimit=reclimit,
+                    dependencies=True, leaves=True, pdb=pdb)
+            elif dataset:
+                data.generate(
+                    dataset, exclude, reclimit=reclimit,
+                    dependencies=False, leaves=True, pdb=pdb)
 
-        # Setup development data
-        if ENVIRONMENT == 'development':
-
-            # Demo data
-            if demo:
-                print('\nSetup demo data -> /shared/tmp/logs/db-demo.log\n')
-                logfile = open("/shared/tmp/logs/db-demo.log", "w")
-                subprocess.call(
-                    [
-                        'python',
-                        '-m', 'doctest',
-                        '-v', os.path.join(
-                            SHARED_PATH, 'data', 'demo.txt'
-                        )
-                    ], stdout=logfile
-                )
-                logfile.close()
-                print("_____ Test results for demo data _____")
-                print(subprocess.check_output(
-                    [
-                        'tail',
-                        '-n', '5',
-                        "/shared/tmp/logs/db-demo.log"
-                    ]
-                ))
-
-            # Develop data (to test/develop the doctest files)
-            if develop:
-                subprocess.call(
-                    [
-                        'python',
-                        '-m', 'doctest',
-                        '-v', os.path.join(
-                            SHARED_PATH, 'data', 'develop.txt'
-                        )
-                    ]
-                )
+        # Without template
+        else:
+            print("Setup database without template database.")
+            # Create database
+            if not _db_exist(dbname):
+                context.invoke(db_create, dbname=dbname)
+                _update(None, dbname)
+            # Generate datasets
+            data.generate(
+                dataset, exclude, reclimit=reclimit,
+                dependencies=True, leaves=True, pdb=pdb)
 
     else:
-        print('Setup demo data, but database "%s" exists: Skip!' % dbname)
+        print('Setup database, but database "%s" exists: Skip!' % dbname)
 
     if lockfile:
         # unlock file
@@ -343,108 +355,45 @@ def db_setup(context, dbname, master, demo, develop, force):
         try:
             os.remove(TMP_FILE)
         except OSError:
-            print("Couldn't remove lock file, something has gone wrong here")
-
-
-@execute.command('db-demo-setup')
-@click.argument('dbname', default=PROJECT)
-@click.pass_context
-def db_demo_setup(context, dbname):
-    context.invoke(
-        db_setup, dbname=dbname,
-        master=True, demo=True, force=False)
+            print("Couldn't remove lock file, something has gone wrong")
 
 
 @execute.command('db-rebuild')
 @click.argument('dbname', default=PROJECT)
+@click.option('--reclimit', '-r', type=int, default=-1,
+              help='Maximum numbers of objects (default: 0 = all)')
+@click.option('--dataset', '-d', type=str, default=[], multiple=True,
+              help='dataset in ./data/datasets/ to generate (default: all)\n'
+                   'can be used multiple times')
+@click.option('--exclude', '-e', type=str, default=[], multiple=True,
+              help='datasets in ./data/datasets/ to exclude (default: none)\n'
+                   'can be used multiple times')
+@click.option('--template/--no-template', default=True,
+              help='Use template db for dataset deps (default: yes)')
+@click.option('--cache/--no-cache', default=False,
+              help='Use/Recreate template db for dataset deps (default: no)')
+@click.option('--pdb/--no-pdb', default=False,
+              help='Start pdb on error (default: no)')
 @click.pass_context
-def db_rebuild(context, dbname):
+def db_rebuild(context, dbname, reclimit, dataset, exclude,
+               template, cache, pdb):
     """
     Deletes DBNAME and executes db setup
     """
-
-    # delete database
+    context.invoke(pip_install, container='erpserver')
+    print("-" * 100)
+    print("  Rebuild database")
+    print("-" * 100)
+    # Delete database
     context.invoke(db_delete, dbname=dbname)
-
-    # setup database
+    # Setup database
     context.invoke(
-        db_setup, dbname=dbname,
-        master=True, demo=True, force=False)
-
-
-@execute.command('create-test-db')
-@click.option('--dbtype', default='postgres',
-              help='Type of database (default: postgres)')
-@click.option('--dbname', default=PROJECT + '_test',
-              help='Name of database (default: PROJECT_test)')
-@click.pass_context
-def create_test_db(context, dbtype, dbname):
-    """
-    Recreates DBTYPE database DBNAME_template, sets it up and copies to DBNAME.
-
-    The old database template and database will be overwritten.
-
-    DBTYPE 'sqlite' throws errors on setup, so postgres is recommended.
-    """
-    _db_type = dbtype
-    _db_name = dbname
-    _trytond_conf = 'testing_' + _db_type + '.conf'
-    os.environ['TRYTOND_CONFIG'] = os.path.join(
-        SHARED_PATH, 'config', 'trytond', _trytond_conf
-    )
-
-    # Rereate database template
-    if _db_type == 'sqlite':
-        _file_path = os.path.join(SHARED_PATH, 'tmp')
-        _db_src_path = os.path.join(_file_path, _db_name + '.sqlite')
-        os.environ['DB_NAME'] = _db_name
-        if os.path.isfile(_db_src_path):
-            os.unlink(_db_src_path)
-        open(_db_src_path, 'w').close()
-        os.chmod(_db_src_path, 0777)  # noqa: E999
-
-    if _db_type == 'postgres':
-        _db_tpl = _db_name + "_template"
-        os.environ['DB_NAME'] = _db_tpl
-        context.invoke(db_delete, dbname=_db_tpl)
-        context.invoke(db_create, dbname=_db_tpl)
-
-    # Setup trytond
-    if _db_type == 'sqlite':
-        _update(None, _db_name, _trytond_conf)
-
-    if _db_type == 'postgres':
-        _update(None, _db_tpl, _trytond_conf)
-
-    # Setup database template
-    subprocess.call(
-        [
-            'python',
-            '-m', 'doctest',
-            '-v', os.path.join(
-                SHARED_PATH, 'data', 'master.txt'
-            )
-        ]
-    )
-
-    # Copy database template
-    if _db_type == 'sqlite':
-        _db_dst_path = os.path.join(
-            SHARED_PATH, 'tmp', _db_name + '.sqlite')
-        if os.path.isfile(_db_dst_path):
-            os.unlink(_db_dst_path)
-        shutil.copyfile(_db_src_path, _db_dst_path)
-        os.chmod(_db_src_path, 0777)
-
-    if _db_type == 'postgres':
-        context.invoke(db_delete, dbname=_db_name)
-        context.invoke(db_copy, dbname_src=_db_tpl, dbname_dst=_db_name)
+        db_setup, dbname=dbname, reclimit=reclimit, dataset=dataset,
+        exclude=exclude, template=template, cache=cache, force=False, pdb=pdb)
 
 
 @execute.command('run-tests', context_settings=dict(
                  ignore_unknown_options=True))
-@click.option('--dbtype', default='postgres',
-              help='Type of database (default: postgres)')
 @click.option('--dbname', default=PROJECT + '_test',
               help='Name of database (default: test)')
 @click.option('--reset/--no-reset', default=True,
@@ -454,7 +403,7 @@ def create_test_db(context, dbtype, dbname):
 @click.argument('service')
 @click.argument('nargs', nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
-def run_tests(context, service, dbtype, dbname, reset, path, nargs):
+def run_tests(context, service, dbname, reset, path, nargs):
     """
     Runs all tests for a service (web, worker).
 
@@ -489,6 +438,7 @@ def run_tests(context, service, dbtype, dbname, reset, path, nargs):
         exit(-1)
 
     if service == 'erpserver':
+        context.invoke(pip_install, container='erpserver')
         os.environ['DB_NAME'] = ":memory:"
         # Start tests
         exitcode = subprocess.call(
@@ -502,34 +452,31 @@ def run_tests(context, service, dbtype, dbname, reset, path, nargs):
         # Return exitcode
         sys.exit(exitcode)
 
-    _db_type = dbtype
     _db_name = dbname
     _db_tpl = _db_name + "_template"
     _file_path = os.path.join(SHARED_PATH, 'tmp', 'files')
-    _trytond_conf = 'testing_' + _db_type + '.conf'
+    _trytond_conf = 'testing.conf'
     os.environ['DB_NAME'] = _db_name
     os.environ['TRYTOND_CONFIG'] = os.path.join(
         SHARED_PATH, 'config', 'trytond', _trytond_conf
     )
 
-    print("\nCONFIGURE TESTS ...\n")
-    print("- testpath: %s" % (path or 'all'))
-    print("- parameter: %s" % list(nargs))
-    print("- dbtype: %s" % _db_type)
-    print("- dbname: %s" % _db_name)
-    print("- reset: %s" % bool(reset))
-    print("- trytondconf: %s" % os.environ['TRYTOND_CONFIG'])
-    print("- filepath: %s" % _file_path)
-
-    # Setup containers
-    print("\nPREPARE TESTS ...\n")
+    # Install packages
     if service == "web":
         context.invoke(pip_install, container='webgui')
     if service == "worker":
         context.invoke(pip_install, container='worker')
-    if service == "erpserver":
-        context.invoke(pip_install, container='erpserver')
 
+    # Setup containers
+    print("\nCONFIGURE TESTS ...\n")
+    print("- service: %s" % service)
+    print("- testpath: %s" % (path or 'all'))
+    print("- parameter: %s" % list(nargs))
+    print("- dbname: %s" % _db_name)
+    print("- reset: %s" % bool(reset))
+    print("- trytondconf: %s" % os.environ['TRYTOND_CONFIG'])
+    print("- filepath: %s" % _file_path)
+    print("\nPREPARE TESTS ...\n")
     if reset:
 
         # Delete files
@@ -538,26 +485,13 @@ def run_tests(context, service, dbtype, dbname, reset, path, nargs):
         os.makedirs(_file_path)
 
         # Recreate database
-        if _db_type == 'postgres':
-            if _db_exist(_db_tpl):
-                context.invoke(db_delete, dbname=_db_name)
-                context.invoke(
-                    db_copy, dbname_src=_db_tpl, dbname_dst=_db_name
-                )
-            else:
-                context.invoke(
-                    create_test_db, dbtype=_db_type, dbname=_db_name
-                )
-        if _db_type == 'sqlite':
-            _db_src_path = os.path.join(SHARED_PATH, 'tmp', 'test.sqlite')
-            _db_dst_path = os.path.join(_file_path, _db_name + '.sqlite')
-            if os.path.isfile(_db_src_path):
-                shutil.copyfile(_db_src_path, _db_dst_path)
-                os.chmod(_db_src_path, 0777)
-            else:
-                context.invoke(
-                    create_test_db, dbtype=_db_type, dbname=_db_name
-                )
+        if not _db_exist(_db_tpl):
+            context.invoke(
+                db_setup, dbname=_db_tpl, dataset=['master'], template=False
+            )
+        context.invoke(
+            db_copy, dbname_src=_db_tpl, dbname_dst=_db_name, force=True
+        )
 
     # Prepare paths
     if service == "web":
@@ -617,8 +551,6 @@ def deploy_erpserver(context):
     """
     context.invoke(pip_install, container='erpserver')
     _trytond_conf = ENVIRONMENT + '.conf'
-    if ENVIRONMENT == "testing":
-        _trytond_conf = ENVIRONMENT + '_postgres.conf'
     subprocess.call(
         [
             'trytond',
@@ -640,7 +572,7 @@ def deploy_webgui(context):
     """
     context.invoke(pip_install, container='webgui')
     if str(os.environ.get('ENVIRONMENT')) != "testing":
-        context.invoke(db_demo_setup)
+        context.invoke(db_setup)
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
     subprocess.call(
         [
@@ -665,7 +597,7 @@ def deploy_webapi(context):
     """
     context.invoke(pip_install, container='webapi')
     if str(os.environ.get('ENVIRONMENT')) != "testing":
-        context.invoke(db_demo_setup)
+        context.invoke(db_setup)
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
     subprocess.call(
         [
@@ -715,7 +647,7 @@ def build_docs(context):
 
 @execute.command('build-docs-noautoapi')
 @click.pass_context
-def build_docs(context):
+def build_docs_noautoapi(context):
     """
     Builds the Sphinx documentation without autoapi run.
 
@@ -755,9 +687,6 @@ def _update(modules, dbname, trytondconf=False):
         trytondconf (Optional[str]): Name of tryton config file.
     """
     print('Update services ...')
-    if ENVIRONMENT == "testing" and not trytondconf:
-        print("update omitted (testing environment)")
-        return
     if modules:
         modules = modules.split(',')
     _trytond_conf = trytondconf or ENVIRONMENT + '.conf'

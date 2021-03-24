@@ -8,9 +8,9 @@ networks:
   backend:
 
 volumes:
-  collecting_society_test_postgresql_data:
-  collecting_society_test_echoprint_data:
-  collecting_society_test_trytond_files:
+  test_postgresql_data:
+  test_echoprint_data:
+  test_trytond_files:
 
 services:
 
@@ -33,7 +33,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - collecting_society_test_postgresql_data:/var/lib/postgresql/data
+      - test_postgresql_data:/var/lib/postgresql/data
 
   test_erpserver:
     build:
@@ -47,7 +47,7 @@ services:
       test: ["CMD-SHELL", "if curl -v --silent localhost:8069 2>&1 | grep 'Connection refused'; then exit 1; fi"]
       interval: 10s
       timeout: 5s
-      retries: 5      
+      retries: 5
     volumes:
       - ./volumes/shared:/shared
     depends_on:
@@ -71,10 +71,10 @@ services:
       - frontend
       - backend
     ports:
-      - "51004:51004"  # debugger
+      - "127.0.0.1:51004:51004"  # debugger
     volumes:
       - ./volumes/shared:/shared
-      - collecting_society_test_trytond_files:/var/lib/trytond
+      - test_trytond_files:/var/lib/trytond
     depends_on:
       test_database:
         condition: service_healthy
@@ -91,7 +91,7 @@ services:
       API_DATATABLES_URL: http://test_web:6545/datatables
       API_DATATABLES_CORS_ORIGINS: http://test_web:6544
       API_C3SMEMBERSHIP_URL: http://test_web:6545/c3smembership
-  
+
   test_worker:
     build:
       context: ./services/build
@@ -109,7 +109,7 @@ services:
       test_erpserver:
         condition: service_healthy
       test_fingerprint:
-          condition: service_started
+        condition: service_started
     env_file:
       - .env
       - services/worker.env
@@ -139,7 +139,7 @@ services:
     depends_on:
       test_web:
         condition: service_started
-  
+
   test_fingerprint:
     build:
       context: ./services/build
@@ -147,7 +147,7 @@ services:
       args: *buildargs
     command: /bin/fingerprint
     volumes:
-      - collecting_society_test_echoprint_data:/opt/echoprint-data
+      - test_echoprint_data:/opt/echoprint-data
       - ./volumes/shared:/shared
     networks:
       - backend

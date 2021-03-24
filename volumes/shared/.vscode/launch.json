@@ -1,9 +1,9 @@
 // For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 // Repository: https://github.com/C3S/collecting_society_docker
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // IMPORTANT: If you get a "ECONNREFUSED" error when you debug one of the
+    // configurations, make sure that the selected configuration corresponds
+    // with the service set in .devcontainer.json, e.g. 'webgui' = 'Webgui Attach'
     "version": "0.2.0",
     "configurations": [
         {
@@ -27,6 +27,9 @@
             "port": 51002,
             "host": "localhost"
         },
+        // the followint entry is for other cases, e.g.tests; insert this line:
+        // import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51004), redirect_output=True); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
+        // don't forget to open the resp. port in the docker-compose.yml!
         {
             "name": "Casual Debugging Attach",
             "type": "python",
@@ -34,8 +37,24 @@
             "port": 51004,
             "host": "localhost"
         },
-        // e.g. tests; insert:  import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51004), redirect_output=True); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
-        // don't forget to open the resp. port in the docker-compose.yml!        
+        // the followint entry is for debugging demo data generation in
+        // volumes/shared/data. To create all dependencies for a so called
+        // 'leaf' dataset, for example 'sales' enter:
+        // $ execute db-rebuild --dataset sales
+        // which will create a Postgres template with a snapshot from before
+        // sales is applied. To debug sales and apply it again to the stored
+        // template use the --cache option:
+        // $ execute db-rebuild --dataset sales --cache
+        // if satisfied with sales, you may want to move on to a new dataset
+        // that depends on sales, e.g. sales_statistics, you could enter:
+        // execute db-copy --force collecting_society collecting_society_template
+        {
+            "name": "Demo Data Import Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51005,
+            "host": "localhost"
+        },
         {
             "name": "JavaScript attach",
             "type": "firefox",

@@ -180,14 +180,14 @@ clone_sources = [
         'ssh': 'git@github.com:C3S/archiving.git',
         'option': '--branch=' + branch,
         'path': 'archiving',
-        'symlink': True
+        'symlink': False
     },
     {
         'url': 'https://github.com/C3S/portal.git',
         'ssh': 'git@github.com:C3S/portal.git',
         'option': '--branch=' + branch,
         'path': 'portal',
-        'symlink': True
+        'symlink': False
     },
     {
         'url': 'https://github.com/C3S/collecting_society.git',
