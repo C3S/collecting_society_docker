@@ -65,7 +65,7 @@ env = get_shared_env()
 
 # branch
 branch = env['ENVIRONMENT']
-if branch == "testing":
+if env['ENVIRONMENT'] == "testing":
     branch = "production"
 
 # folders to create
@@ -92,6 +92,14 @@ copy_files = [
     {
         'source': dirs['shared'] + '/config/trytond/passfile.example',
         'target': dirs['shared'] + '/config/trytond/passfile',
+    },
+    {
+        'source': dirs['shared'] + '/config/trytond/staging.conf.example',
+        'target': dirs['shared'] + '/config/trytond/staging.conf',
+    },
+    {
+        'source': dirs['shared'] + '/config/trytond/production.conf.example',
+        'target': dirs['shared'] + '/config/trytond/production.conf',
     },
     {
         'source': dirs['services'] + '/webgui.env.example',

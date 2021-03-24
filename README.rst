@@ -273,7 +273,8 @@ Switch to the root directory of the repository::
 .. note:: All setup and maintainance tasks are performed in the root path of
     the ``collecting_society_docker`` repository.
 
-Checkout the branch of the environment to build (``develop``, ``master``)::
+Checkout the branch of the environment to build
+(``development``, ``staging``, ``production``)::
 
     $ git checkout <ENVIRONMENT>
 
@@ -300,6 +301,32 @@ the service folders and copies the configuration example files
 
 .. seealso:: The created repositories, folders and files are defined in
     ``./scripts/config.py``.
+
+Configuration
+-------------
+
+For ``staging`` and ``production`` environments:
+
+1. Adjust the **variables** in ``.env`` (hostnames, ports, usernames, etc).
+2. Adjust the **secrets**:
+
+   ==================================================== ================================
+   File                                                 Variable
+   ==================================================== ================================
+   ``.env``                                             | ``AUTHENTICATION_SECRET``
+   ``sevices/webapi.env``                               | ``AUTHENTICATION_SECRET``
+                                                        | ``SESSION_SECRET``
+                                                        | ``API_C3SMEMBERSHIP_API_KEY``
+   ``sevices/webgui.env``                               | ``AUTHENTICATION_SECRET``
+                                                        | ``SESSION_SECRET``
+                                                        | ``API_C3SMEMBERSHIP_API_KEY``
+   ``sevices/worker.env``                               | ``ECHOPRINT_TOKEN``
+                                                        | ``WORKER_PROTEUS_PASSWORD``
+   ``volumes/shared/config/trytond/<ENVIRONMENT>.conf`` | ``privatekey``
+                                                        | ``certificate``
+                                                        | ``super_pwd``
+   ``volumes/shared/config/trytond/passfile``           plaintext
+   ==================================================== ================================
 
 Images
 ------
@@ -430,7 +457,7 @@ Configuration
 The services are configured via:
 
 1. Application environment:
-   ``development``, ``production``, ``testing``
+   ``development``, ``staging``, ``production``, ``testing``
 2. Global and service specific envvar files for the containers:
    ``.env``, ``service/<SERVICE>.env``
 3. Application specific configuration files:
@@ -458,6 +485,7 @@ The differences on each level include:
 Context         Ports  Volumes        Demodata Debug Cache
 =============== ====== ============== ======== ===== =====
 ``development`` all    local mounts   yes      on    off
+``staging``     public docker managed yes      off   on
 ``production``  public docker managed no       off   on
 ``testing``     public docker managed no       off   on
 =============== ====== ============== ======== ===== =====
@@ -481,50 +509,53 @@ __ https://docs.docker.com/compose/reference/envvars/
 .env
 ''''
 
-================================= =============== =====================================
-Variable                          Values          Description
-================================= =============== =====================================
-``PROJECT``                       string          project name
-``ENVIRONMENT``                   | "development" environment, switch for config files
-                                  | "production"
-                                  | "testing"
-``COMPOSE_DOCKER_CLI_BUILD``      0|1             use BuildKit for docker builds
-``COMPOSE_PROJECT_NAME``          string          prefix for containers
-``APT_CACHERURL``                 url             (deprecated)
-``DEBIAN``                        "jessie"        base image for builds
-``DEBUGGER_WINPDB``               0|1             install packages for winpdb in images
-``DEBUGGER_PTVSD``                0|1             install packages for ptvsd in images
-``WORKDIR``                       PATH            workdir for images
-``GIT_SSH``                       0|1             use git via ssh
-``GIT_USER_NAME``                 string          set git username in repositories
-``GIT_USER_EMAIL``                string          set git email in repositories
-``ECHOPRINT_SCHEMA``              SCHEMA          schema of echoprint server
-``ECHOPRINT_HOSTNAME``            string          hostname of echoprint server
-``ECHOPRINT_PORT``                integer         port of echoprint server
-``POSTGRES_HOSTNAME``             string          hostname of postgres server
-``POSTGRES_PORT``                 integer         port of postgres server
-``TRYTON_HOSTNAME``               string          hostname of tryton server
-``TRYTON_PORT``                   integer         port of tryton server
-``TRYTON_VERSION``                string          version of tryton to use
-``VIRTUAL_HOST_GUI``              URI             nginx URI for the webgui
-``VIRTUAL_HOST_API``              URI             nginx URI for the webapi
-``VIRTUAL_PORT``                  integer         nginx reverse port for webgui/webapi
-``TRUSTED_PROXY``                 IP              trusted IP for WSGI
-``API_C3SUPLOAD_URL``             URL             upload api URL
-``API_C3SUPLOAD_VERSION``         "v1"            upload api version
-``API_C3SUPLOAD_CORS_ORIGINS``    URL             upload api URL for CORS
-``API_C3SUPLOAD_CONTENTBASEPATH`` PATH            upload api content path
-``API_C3SUPLOAD_STORAGEBASEPATH`` PATH            upload api storage path
-``API_DATATABLES_URL``            URL             datatables api URL
-``API_DATATABLES_VERSION``        "v1"            datatables api version
-``API_DATATABLES_CORS_ORIGINS``   URL             datatables api URL for CORS
-``API_C3SMEMBERSHIP_URL``         URL             (deprecated)
-``API_C3SMEMBERSHIP_VERSION``     string          (deprecated)
-``MAIL_HOST``                     string          hostname of the mail server
-``MAIL_PORT``                     integer         port of the mail server
-``MAIL_DEFAULT_SENDER``           EMAIL           default sender email address
-``MAIL_TO_REAL_WORLD``            0|1             simulate sending mails or not
-================================= =============== =====================================
+================================== =============== =====================================
+Variable                           Values          Description
+================================== =============== =====================================
+``PROJECT``                        string          project name
+``ENVIRONMENT``                    | "development" environment, switch for config files
+                                   | "staging"
+                                   | "production"
+                                   | "testing"
+``COMPOSE_DOCKER_CLI_BUILD``       0|1             use BuildKit for docker builds
+``COMPOSE_PROJECT_NAME``           string          prefix for containers
+``APT_CACHERURL``                  url             (deprecated)
+``DEBIAN``                         "jessie"        base image for builds
+``DEBUGGER_WINPDB``                0|1             install packages for winpdb in images
+``DEBUGGER_PTVSD``                 0|1             install packages for ptvsd in images
+``WORKDIR``                        PATH            workdir for images
+``GIT_SSH``                        0|1             use git via ssh
+``GIT_USER_NAME``                  string          set git username in repositories
+``GIT_USER_EMAIL``                 string          set git email in repositories
+``WORKER_PROTEUS_USER``            string          tryton username for proteus client
+``WORKER_DISEMBODY_DROPPED_FILES`` "yes"|"no"      delete upload content to save space
+``ECHOPRINT_SCHEMA``               SCHEMA          schema of echoprint server
+``ECHOPRINT_HOSTNAME``             string          hostname of echoprint server
+``ECHOPRINT_PORT``                 integer         port of echoprint server
+``POSTGRES_HOSTNAME``              string          hostname of postgres server
+``POSTGRES_PORT``                  integer         port of postgres server
+``TRYTON_HOSTNAME``                string          hostname of tryton server
+``TRYTON_PORT``                    integer         port of tryton server
+``TRYTON_VERSION``                 string          version of tryton to use
+``VIRTUAL_HOST_GUI``               URI             nginx URI for the webgui
+``VIRTUAL_HOST_API``               URI             nginx URI for the webapi
+``VIRTUAL_PORT``                   integer         nginx reverse port for webgui/webapi
+``TRUSTED_PROXY``                  IP              trusted IP for WSGI
+``API_C3SUPLOAD_URL``              URL             upload api URL
+``API_C3SUPLOAD_VERSION``          "v1"            upload api version
+``API_C3SUPLOAD_CORS_ORIGINS``     URL             upload api URL for CORS
+``API_C3SUPLOAD_CONTENTBASEPATH``  PATH            upload api content path
+``API_C3SUPLOAD_STORAGEBASEPATH``  PATH            upload api storage path
+``API_DATATABLES_URL``             URL             datatables api URL
+``API_DATATABLES_VERSION``         "v1"            datatables api version
+``API_DATATABLES_CORS_ORIGINS``    URL             datatables api URL for CORS
+``API_C3SMEMBERSHIP_URL``          URL             (deprecated)
+``API_C3SMEMBERSHIP_VERSION``      string          (deprecated)
+``MAIL_HOST``                      string          hostname of the mail server
+``MAIL_PORT``                      integer         port of the mail server
+``MAIL_DEFAULT_SENDER``            EMAIL           default sender email address
+``MAIL_TO_REAL_WORLD``             0|1             simulate sending mails or not
+================================== =============== =====================================
 
 webapi
 ''''''
@@ -551,6 +582,7 @@ worker
 
 ================================= =============== =====================================
 ``ECHOPRINT_TOKEN``               string          authtoken for echoprint server
+``WORKER_PROTEUS_PASSWORD``       string          tryton password for proteus client
 ================================= =============== =====================================
 
 Applications
@@ -701,6 +733,7 @@ Update database     ``docker-compose run --rm erpserver execute update -m collec
     $ docker-compose down -v --rmi all --remove-orphans
     $ docker-compose -f docker-compose.testing.yml down -v --rmi all --remove-orphans
     $ docker-compose -f docker-compose.documentation.yml down -v --rmi all --remove-orphans
+    $ docker image prune
     $ docker-compose build
 
    .. warning:: The ``build`` command has a ``--no-cache`` option, but for
@@ -743,7 +776,7 @@ Remove
 ============================================== ================================
 Remove project containers/networks/volumes     ``docker-compose down``
 Remove all stopped docker containers           ``docker container prune``
-Remove all dangling images to free diskspace   ``docker images prune``
+Remove all dangling images to free diskspace   ``docker image prune``
 Remove volumes                                 ``docker volume rm VOLUMENAME``
 ============================================== ================================
 
@@ -754,6 +787,7 @@ Remove all containers, networks, volumes **and images**::
     $ docker-compose down -v --rmi all --remove-orphans
     $ docker-compose -f docker-compose.testing.yml down -v --rmi all --remove-orphans
     $ docker-compose -f docker-compose.documentation.yml down -v --rmi all --remove-orphans
+    $ docker image prune
 
 .. note:: The multiple ``down`` commands are needed, as testing and
     documentation have separate containers, but are based on the same
@@ -1104,6 +1138,7 @@ The project consists of 3 separate docker-compose setups:
   - ``docker-compose.yml``: main file
   - ``docker-compose.override.yml``: override file, symlink to development/production
   - ``docker-compose.development.yml``: additions for development (ports, volumes)
+  - ``docker-compose.staging.yml``: additions for staging (ports, volumes)
   - ``docker-compose.production.yml``: additions for productions (ports, volumes)
 
 - Usage: ``docker compose COMMAND``
@@ -1163,10 +1198,11 @@ image setup are:
 
 - The packages/applications are compiled on images of the compile branch and in
   the end **copied** to the images on the service branch, which are used for
-  development/production.
-- Each image stage has **3 substages** for the different environments:
+  the actual services.
+- Each image stage has **4 substages** for the different environments:
 
   - The **production** substage contains only the minimum of packages needed.
+  - The **staging** substage adds packages for stating.
   - The **testing** substage adds packages for tests/CI/documentation.
   - The **development** substage adds packages to develop comfortably.
 
@@ -1723,7 +1759,7 @@ A minimal working dataset consists of two attributes::
 Rebuild
 '''''''
 
-In the ``develop`` branch, the demodata is created automatically during the
+In the ``development`` branch, the demodata is created automatically during the
 setup of the database. If you need to rebuild the database, just use your
 prefered method:
 

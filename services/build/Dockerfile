@@ -40,8 +40,11 @@ ENV LANGUAGE en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
+### staging
+FROM jessie_base_production AS jessie_base_staging
+
 ### testing
-FROM jessie_base_production AS jessie_base_testing
+FROM jessie_base_staging AS jessie_base_testing
 
 ### development
 FROM jessie_base_testing AS jessie_base_development
@@ -79,8 +82,11 @@ RUN python -m virtualenv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV=/opt/venv
 
+### staging
+FROM jessie_python_production AS jessie_python_staging
+
 ### testing
-FROM jessie_python_production AS jessie_python_testing
+FROM jessie_python_staging AS jessie_python_testing
 
 ### development
 FROM jessie_python_testing AS jessie_python_development
@@ -103,8 +109,11 @@ RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/man/*
 
+### staging
+FROM jessie_trytond_production AS jessie_trytond_staging
+
 ### testing
-FROM jessie_trytond_production AS jessie_trytond_testing
+FROM jessie_trytond_staging AS jessie_trytond_testing
 
 ### development
 FROM jessie_trytond_testing AS jessie_trytond_development
@@ -127,8 +136,11 @@ COPY fingerprint.sh /bin/fingerprint
 RUN chmod u+x /bin/fingerprint
 COPY fingerprint-data.json /root/fingerprint-data.json
 
+### staging
+FROM jessie_echoprint_production AS jessie_echoprint_staging
+
 ### testing
-FROM jessie_echoprint_production AS jessie_echoprint_testing
+FROM jessie_echoprint_staging AS jessie_echoprint_testing
 
 ### development
 FROM jessie_echoprint_testing AS jessie_echoprint_development
@@ -148,8 +160,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 RUN ln -s /usr/bin/avconv /usr/local/bin/ffmpeg
 
+### staging
+FROM jessie_worker_production AS jessie_worker_staging
+
 ### testing
-FROM jessie_worker_production AS jessie_worker_testing
+FROM jessie_worker_staging AS jessie_worker_testing
 # install database packages
 RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && apt-get update && apt-get install -y --no-install-recommends \
@@ -202,8 +217,11 @@ FROM jessie_compile AS jessie_python_production_compiled
 RUN pip install \
     click==4.0
 
+### staging
+FROM jessie_python_production_compiled AS jessie_python_staging_compiled
+
 ### testing
-FROM jessie_python_production_compiled AS jessie_python_testing_compiled
+FROM jessie_python_staging_compiled AS jessie_python_testing_compiled
 RUN pip install \
     coverage==4.5.1 \
     flake8==3.9.0 \
@@ -254,8 +272,11 @@ RUN pip install \
     web.py==0.51 \
     pyechonest==9.0.0
 
+### staging
+FROM jessie_echoprint_production_compiled AS jessie_echoprint_staging_compiled
+
 ### testing
-FROM jessie_echoprint_production_compiled AS jessie_echoprint_testing_compiled
+FROM jessie_echoprint_staging_compiled AS jessie_echoprint_testing_compiled
 
 ### development
 FROM jessie_echoprint_testing_compiled AS jessie_echoprint_development_compiled
@@ -292,8 +313,11 @@ RUN pip install \
     pytz==2015.7 \
     vatnumber==1.2
 
+### staging
+FROM jessie_trytond_production_compiled AS jessie_trytond_staging_compiled
+
 ### testing
-FROM jessie_trytond_production_compiled AS jessie_trytond_testing_compiled
+FROM jessie_trytond_staging_compiled AS jessie_trytond_testing_compiled
 
 ### development
 FROM jessie_trytond_testing_compiled AS jessie_trytond_development_compiled
@@ -324,8 +348,11 @@ RUN pip install \
     requests==2.18.4 \
     waitress==1.1.0
 
+### staging
+FROM jessie_pyramid_production_compiled AS jessie_pyramid_staging_compiled
+
 ### testing
-FROM jessie_pyramid_production_compiled AS jessie_pyramid_testing_compiled
+FROM jessie_pyramid_staging_compiled AS jessie_pyramid_testing_compiled
 RUN pip install \
     selenium==3.12.0 \
     WebTest==2.0.29
@@ -356,8 +383,11 @@ RUN pip install  \
     pytaglib==1.4.1  \
     requests==2.9.1
 
+### staging
+FROM jessie_worker_production_compiled AS jessie_worker_staging_compiled
+
 ### testing
-FROM jessie_worker_production_compiled AS jessie_worker_testing_compiled
+FROM jessie_worker_staging_compiled AS jessie_worker_testing_compiled
 
 ### development
 FROM jessie_worker_testing_compiled AS jessie_worker_development_compiled

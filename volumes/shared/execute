@@ -571,7 +571,7 @@ def deploy_webgui(context):
     webgui service (pserve).
     """
     context.invoke(pip_install, container='webgui')
-    if str(os.environ.get('ENVIRONMENT')) != "testing":
+    if ENVIRONMENT in ["development", "staging"]:
         context.invoke(db_setup)
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
     subprocess.call(
@@ -596,7 +596,7 @@ def deploy_webapi(context):
     webapi service (pserve).
     """
     context.invoke(pip_install, container='webapi')
-    if str(os.environ.get('ENVIRONMENT')) != "testing":
+    if ENVIRONMENT in ["development", "staging"]:
         context.invoke(db_setup)
     trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
     subprocess.call(
