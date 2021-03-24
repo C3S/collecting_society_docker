@@ -68,9 +68,10 @@ def update_self():
             ('git', 'fetch'),
             cwd=base_path, stderr=subprocess.STDOUT
             ).rstrip().decode('utf-8')
-        print("update_self: trying git diff --quiet remotes/origin/HEAD ..")
+        print("update_self: trying git diff --quiet remotes/origin/%s .."
+              % git_branch)
         subprocess.check_output(
-            ('git', 'diff', '--quiet', 'remotes/origin/HEAD'),
+            ('git', 'diff', '--quiet', 'remotes/origin/%s' % git_branch),
             cwd=base_path, stderr=subprocess.STDOUT
             ).rstrip().decode('utf-8')
         print('up-to-date.')
