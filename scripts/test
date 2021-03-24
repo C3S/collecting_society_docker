@@ -13,6 +13,7 @@
 #           - update repositories (overrides config files!)
 #           - build images
 #           - recreate the test database template
+#           - run tests and linter
 #           - stop and remove the container
 #     OTHER PARAMS: are passed to run-tests within the container
 
@@ -28,30 +29,22 @@ ROOT_DIR="$( dirname $SCRIPT_DIR )"
 cd $ROOT_DIR
 
 # get options
+SERVICES="erpserver web worker"
 SERVICE="all"
 BUILD=false
 RM=true
 CI=false
 DOWN=false
+TESTING="-f docker-compose.testing.yml"
 TESTPARAMS=""
 for i in "$@"; do
-    if [ $i = $1 ] && ([ $i = "erpserver" ] || [ $i = "web" ] || [ $i = "worker" ]);
-        then SERVICE=$i; continue; fi
+    if [ $i = $1 ] && [[ $i =~ ^(erpserver|web|worker)$ ]]; then SERVICE=$i; SERVICES=$SERVICE; continue; fi
     if [ $i = "--down" ]; then DOWN=true; continue; fi
     if [ $i = "--build" ]; then BUILD=true; continue; fi
     if [ $i = "--keep" ]; then RM=false; continue; fi
     if [ $i = "--ci" ]; then CI=true; continue; fi
     TESTPARAMS="$TESTPARAMS $i"
 done
-
-# sanity checks
-if [ $SERVICE != "all" ] && [ $SERVICE != "erpserver" ] && [ $SERVICE != "web" ] && [ $SERVICE != "worker" ]; then
-    echo "Service unknown. Please specify 'web' or 'worker'"
-    exit -1
-fi
-
-# use testing compose file
-TESTING="-f docker-compose.testing.yml"
 
 # immediately stop and remove the container and exit
 if $DOWN; then
@@ -85,31 +78,25 @@ if $CI || $BUILD; then
     docker-compose $TESTING exec -T test_erpserver execute db-rebuild --no-template -d master collecting_society_test_template
 fi
 
-# run tests
-echo -e "\n== run tests"
-if [ $SERVICE = "all" ]; then
-    # test erpserver service
-    echo -e "\n... run erpserver tests"
-    docker-compose $TESTING exec -T test_erpserver execute run-tests erpserver $TESTPARAMS
-    EXITCODE1=$?
-    # test web service
-    echo -e "\n... run web tests"
-    docker-compose $TESTING exec -T test_web execute run-tests web $TESTPARAMS
-    EXITCODE2=$?
-    # test worker service
-    echo -e "\n... run worker tests"
-    docker-compose $TESTING exec -T test_worker execute run-tests worker $TESTPARAMS
-    EXITCODE3=$?
-    # choose exit code
-    EXITCODE=0
-    if [ "$EXITCODE1" -ne "0" ] || [ "$EXITCODE2" -ne "0" ] || [ "$EXITCODE3" -ne "0" ]; then
-        EXITCODE=-1
-    fi
-else
-    # test certain service
+# run tests and linter
+ERRORS=""
+for SERVICE in $SERVICES; do
+    # run tests
+    echo -e "\n== run tests for $SERVICE"
     docker-compose $TESTING exec -T test_$SERVICE execute run-tests $SERVICE $TESTPARAMS
-    EXITCODE=$?
-fi
+    [ $? -ne 0 ] && ERRORS="$ERRORS\n- $SERVICE tests"
+    # run linter
+    LINTPATHS=""
+    [ $SERVICE = "erpserver" ] && LINTPATHS="collecting_society"
+    [ $SERVICE = "web" ]       && LINTPATHS="portal_web collecting_society_web"
+    [ $SERVICE = "worker" ]    && LINTPATHS="collecting_society_worker"
+    for LINTPATH in $LINTPATHS; do
+        echo -e "\n== run linter for $SERVICE: code/$LINTPATH"
+        docker-compose $TESTING exec -T test_$SERVICE flake8 src/$LINTPATH
+        [ $? -eq 0 ] && echo -e "All fine."
+        [ $? -ne 0 ] && ERRORS="$ERRORS\n- $SERVICE flake8: code/$LINTPATH"
+    done
+done
 
 # remove docker container
 if $CI || $RM; then
@@ -117,11 +104,15 @@ if $CI || $RM; then
     docker-compose $TESTING rm -fs
 fi
 
-if [ "$EXITCODE" -ne "0" ]; then
-    echo -e "\n\n\033[91;5m"
-    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-    echo -e " WARNING: ERRORS OCCURED WHILE TESTS WERE RUNNING. PLEASE FIX.\n"
-    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+EXITCODE=0
+if [[ ! -z "$ERRORS" ]]; then
+    EXITCODE=1
+    echo -e "\033[91;5m"
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo -e " WARNING: ERRORS OCCURED WHILE TESTS WERE RUNNING. PLEASE FIX."
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo -e "\e[25m"
+    echo -e "Errors:\n$ERRORS"
     echo -e "\033[0m"
 fi
 echo `date +%Y-%m-%d:%H:%M:%S`

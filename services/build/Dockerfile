@@ -206,6 +206,7 @@ RUN pip install \
 FROM jessie_python_production_compiled AS jessie_python_testing_compiled
 RUN pip install \
     coverage==4.5.1 \
+    flake8==3.9.0 \
     nose==1.3.7 \
     nose2==0.9.1 \
     pytest==4.6.5 \

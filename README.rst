@@ -157,6 +157,7 @@ Files
     │   │   │   └── upload/                 # file upload processing (development)
     │   │   │       └── <STAGE>/            # processing / archiving STAGE of files
     │   │   │
+    │   │   ├── .flake8                     # settings for flake8 linter
     │   │   └── execute                     # main CLI script for common tasks (run in container!)
     │   │
     │   ├── echoprint-data/                 # (fingerprint) echoprint database data
@@ -176,6 +177,7 @@ Files
     │
     ├── .vscode/                            # settings for vs code
     ├── .devcontainer.json*                 # settings for vs code remote containers
+    ├── .flake8                             # symlink to settings for flake8 linter
     ├── .gitignore                          # ignore patterns for git
     ├── .rgignore                           # ignore patterns for ripgrep
     │
@@ -912,7 +914,7 @@ repositories and opens a firefox instance pointing to the webgui.
 test
 ''''
 
-This script runs the unit/function/integration tests for the services:
+This script runs the unit/function/integration tests and linter for the services:
 
 - erpserver (tryton)
 - web (pyramid)
@@ -941,6 +943,7 @@ The CI mode implies:
 - Update repositories (overrides config files!)
 - Build images
 - Recreate the test database template
+- Run tests and linter
 - Stop and remove the container
 
 update
@@ -1370,7 +1373,7 @@ __ https://redmine.c3s.cc/projects/collecting_society/wiki/HowTo#Tryton
 
 Lint the code::
 
-    python2 -m flake8 code/collecting_society
+    docker-compose exec erpserver flake8 src/collecting_society
 
 Pyramid
 '''''''
@@ -1393,7 +1396,7 @@ You can now start coding:
 
 Lint the code::
 
-    python2 -m flake8 code/portal_web code/collecting_society_web
+    docker-compose exec webgui flake8 src/portal_web src/collecting_society_web
 
 Debugging
 ---------
@@ -1683,9 +1686,15 @@ The screenshots of the selenium integration tests can be found in the folder::
 Linting
 '''''''
 
-Lint the code for all repositories::
+Lint the code for the scripts in this repository::
 
-    python2 -m flake8 scripts code/portal* code/collecting_society*
+    python2 -m flake8 scripts
+
+Lint the code for all application repositories via container::
+
+    docker-compose exec erpserver flake8 scripts code/portal* code/collecting_society*
+
+.. note:: The code is also linted in the ``./scripts/test`` script.
 
 Demodata
 --------
