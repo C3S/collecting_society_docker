@@ -64,9 +64,9 @@ def get_shared_env(path=False):
 env = get_shared_env()
 
 # branch
-branch = "master"
-if env['ENVIRONMENT'] in ["development", "testing"]:
-    branch = "develop"
+branch = env['ENVIRONMENT']
+if branch == "testing":
+    branch = "production"
 
 # folders to create
 create_folders = [
@@ -80,6 +80,7 @@ if env['ENVIRONMENT'] in ["development", "testing"]:
         dirs['volumes'] + '/trytond-files',
         dirs['volumes'] + '/nginx-certs',
         dirs['volumes'] + '/nginx-dhparam',
+        dirs['volumes'] + '/echoprint-data',
     ]
 
 # files to copy
@@ -233,7 +234,7 @@ clone_sources = [
     {
         'url': 'https://github.com/C3S/collecting_society_worker.git',
         'ssh': 'git@github.com:C3S/collecting_society_worker.git',
-        'option': '--branch=master',
+        'option': '--branch=' + branch,
         'path': 'collecting_society_worker',
         'symlink': True
     },
