@@ -1,0 +1,43 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
+version: '2.4'
+
+volumes:
+  collecting_society_postgresql_data:
+  collecting_society_echoprint_data:
+  collecting_society_trytond_files:
+  collecting_society_nginx_certs:
+  collecting_society_nginx_dhparam:
+
+services:
+
+  database:
+    volumes:
+      - collecting_society_postgresql_data:/var/lib/postgresql/data
+
+  erpserver:
+    ports:
+      - "8000:8000"  # jsonrpc (tryton client)
+      - "8069:8069"  # xmlrpc (proteus)
+    volumes:
+      - collecting_society_trytond_files:/var/lib/trytond
+
+  webserver:
+    ports:
+      - "80:80"  # http
+    volumes:
+      - collecting_society_nginx_certs:/etc/nginx/certs
+      - collecting_society_nginx_dhparam:/etc/nginx/dhparam
+
+  webapi:
+    volumes:
+      - collecting_society_trytond_files:/var/lib/trytond
+
+  webgui:
+    volumes:
+      - collecting_society_trytond_files:/var/lib/trytond
+
+  fingerprint:
+    volumes:
+      - collecting_society_echoprint_data:/opt/echoprint-data

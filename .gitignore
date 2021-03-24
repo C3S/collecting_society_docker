@@ -84,14 +84,17 @@ tags
 
 # Configuration files for docker container
 /docker-compose.*.yml
-!/docker-compose.production.yml
 !/docker-compose.development.yml
+!/docker-compose.staging.yml
+!/docker-compose.production.yml
 !/docker-compose.testing.yml
 !/docker-compose.documentation.yml
 /.env
 /services/*.env
 !/services/build
 /volumes/shared/config/trytond/passfile
+/volumes/shared/config/trytond/staging.conf
+/volumes/shared/config/trytond/production.conf
 
 # VS Code
 /.vscode/*
