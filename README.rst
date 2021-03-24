@@ -1368,6 +1368,10 @@ You can now start coding:
 
 __ https://redmine.c3s.cc/projects/collecting_society/wiki/HowTo#Tryton
 
+Lint the code::
+
+    python2 -m flake8 code/collecting_society
+
 Pyramid
 '''''''
 
@@ -1386,6 +1390,10 @@ You can now start coding:
 ================================ =========================================
 
 .. seealso:: `Pyramid Config`_
+
+Lint the code::
+
+    python2 -m flake8 code/portal_web code/collecting_society_web
 
 Debugging
 ---------
@@ -1598,6 +1606,10 @@ If you prefer, you can also execute the commands above from within the container
 
     $ docker-compose -f docker-compose.testing.yml down
 
+The rendered HTML output of the coverage can be accessed via::
+
+    firefox volumes/shared/cover_worker/index.html
+
 Pyramid
 '''''''
 
@@ -1667,6 +1679,13 @@ The rendered HTML output of the coverage can be accessed via::
 The screenshots of the selenium integration tests can be found in the folder::
 
     volumes/shared/tmp/screenshots/
+
+Linting
+'''''''
+
+Lint the code for all repositories::
+
+    python2 -m flake8 scripts code/portal* code/collecting_society*
 
 Demodata
 --------
@@ -1744,6 +1763,14 @@ If you want to change a certain dataset for a model:
     > execute db-rebuild
 
 5. Commit the changes.
+
+If you want to change several datasets, you can prepare a template for the
+most time consuming master dataset and start the data generation from it with
+the ``-e/--exclude`` flag::
+
+    > execute db-rebuild -d master
+    > execute db-copy --force collecting_society collecting_society_template
+    > execute db-rebuild -e master -d <DATASET>
 
 Create
 ''''''
