@@ -1,16 +1,22 @@
 #!/bin/sh
+# set -e
 
 isCommand() {
-    execute "$1" --help > /dev/null 2>&1
+    run "$1" --help > /dev/null 2>&1
 }
 
-# check if the first argument passed in looks like a flag
-if [ "${1#-}" != "$1" ]; then
-    execute "$@"
-# check if the first argument passed in is a command
-elif isCommand "$1"; then
-    execute "$@"
-# otherwise just execute the command
+SCRIPTNAME=$(basename -- "$0")
+
+# docker-compose run commands
+if [ "$SCRIPTNAME" = "entrypoint" ]; then
+    # call of run explicitly
+    [ "$1" = "run" ] && exec "$@"
+    # call of a run subcommand
+    isCommand "$1" && run "$@"
+# docker-compose exec commands
+elif isCommand "$SCRIPTNAME"; then
+    run $SCRIPTNAME "$@"
+# other commands
 else
     exec "$@"
 fi

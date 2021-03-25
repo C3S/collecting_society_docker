@@ -154,7 +154,7 @@ Files
     │   │   ├── .flake8                     # settings for flake8 linter
     │   │   │
     │   │   ├── entrypoint                  # docker entrypoint for python based containers
-    │   │   └── execute                     # main CLI script for common tasks (run in container!)
+    │   │   └── run                         # main CLI script for common tasks (run in container!)
     │   │
     │   ├── echoprint-data/                 # (fingerprint) echoprint database data
     │   ├── nginx-certs/                    # (webserver) certificates

@@ -2,7 +2,7 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./scripts/test [service] [--down] [--build] [--keep] [--ci] [PARARAMS]
+# Usage: ./scripts/service-test [service] [--down] [--build] [--keep] [--ci] [PARARAMS]
 #
 # Options:
 #     service: web|worker|erpserver|all (default: all)
@@ -75,7 +75,7 @@ fi
 # recreate test database template
 if $CI || $BUILD; then
     echo -e "\n== recreate test database template"
-    docker-compose $TESTING exec -T test_erpserver execute db-rebuild --no-template -d master collecting_society_test_template
+    docker-compose $TESTING exec -T test_erpserver db-rebuild --no-template -d master collecting_society_test_template
 fi
 
 # run tests and linter
@@ -83,7 +83,7 @@ ERRORS=""
 for SERVICE in $SERVICES; do
     # run tests
     echo -e "\n== run tests for $SERVICE"
-    docker-compose $TESTING exec -T test_$SERVICE execute run-tests $SERVICE $TESTPARAMS
+    docker-compose $TESTING exec -T test_$SERVICE service-test $SERVICE $TESTPARAMS
     [ $? -ne 0 ] && ERRORS="$ERRORS\n- $SERVICE tests"
     # run linter
     LINTPATHS=""

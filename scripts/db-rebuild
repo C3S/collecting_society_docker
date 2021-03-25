@@ -2,7 +2,7 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./scripts/rebuild
+# Usage: ./scripts/db-rebuild
 
 echo "====================================================================="
 echo "====================================================================="
@@ -21,7 +21,7 @@ docker-compose stop
 
 # delete database
 echo -e "\n== delete database"
-docker-compose run --rm erpserver execute db-rebuild
+docker-compose run --rm erpserver db-rebuild
 echo "exitcode: $?"
 
 # start docker containers

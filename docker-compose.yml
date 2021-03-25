@@ -27,13 +27,15 @@ services:
       retries: 5
     networks:
       - backend
+    environment:
+      SERVICE: database
 
   erpserver:
     build:
       context: ./services/build
       target: erpserver
       args: *buildargs
-    command: execute deploy-erpserver
+    command: run service-deploy
     networks:
       - backend
     healthcheck:
@@ -50,6 +52,8 @@ services:
         condition: service_started
     env_file:
       - .env
+    environment:
+      SERVICE: erpserver
 
   webserver:
     build:
@@ -62,13 +66,15 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock
     logging:
       driver: none
+    environment:
+      SERVICE: webserver
 
   webapi:
     build:
       context: ./services/build
       target: webapi
       args: *buildargs
-    command: execute deploy-webapi
+    command: run service-deploy
     networks:
       - frontend
       - backend
@@ -82,13 +88,15 @@ services:
     env_file:
       - .env
       - services/webapi.env
+    environment:
+      SERVICE: webapi
 
   webgui:
     build:
       context: ./services/build
       target: webgui
       args: *buildargs
-    command: execute deploy-webgui
+    command: run service-deploy
     networks:
       - frontend
       - backend
@@ -100,6 +108,8 @@ services:
     env_file:
       - .env
       - services/webgui.env
+    environment:
+      SERVICE: webgui
 
   worker:
     build:
@@ -122,6 +132,8 @@ services:
     env_file:
       - .env
       - services/worker.env
+    environment:
+      SERVICE: worker
 
   fingerprint:
     build:
@@ -135,3 +147,5 @@ services:
       - ./volumes/shared:/shared
     env_file:
       - .env
+    environment:
+      SERVICE: fingerprint

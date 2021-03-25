@@ -10,11 +10,11 @@ The commands may be executed by `docker-compose` or within a container.
 Examples:
 
     Execution by `docker-compose`:
-    >>> docker-compose run --rm SERVICE execute --help
+    >>> docker-compose run --rm SERVICE run --help
 
     Execution within a container:
     >>> docker-compose run --rm SERVICE bash
-    >>> execute --help
+    >>> run --help
 """
 
 from __future__ import print_function
@@ -31,6 +31,7 @@ import data
 
 PROJECT = str(os.environ.get('PROJECT'))
 ENVIRONMENT = str(os.environ.get('ENVIRONMENT'))
+SERVICE = str(os.environ.get('SERVICE'))
 SHARED_PATH = str(os.environ.get('WORKDIR'))
 POSTGRES_HOSTNAME = str(os.environ.get('POSTGRES_HOSTNAME'))
 POSTGRES_PORT = str(os.environ.get('POSTGRES_PORT'))
@@ -39,16 +40,98 @@ TMP_FILE = 'running_db_creation.delete_me'
 
 
 @click.group()
-def execute():
+def run():
     """
     Command line tool to setup and maintain services in docker containers.
     """
 
 
-@execute.command('pip-install')
-@click.argument('container')
+def _db_disconnect(dbname):
+    """
+    Cut off all database connections to allow delete
+    """
+    try:
+        _db_execute_sql(
+            "SELECT pg_terminate_backend(pg_stat_activity.pid) "
+            "FROM pg_stat_activity "
+            "WHERE pg_stat_activity.datname = '" + dbname + "' "
+            "AND pid <> pg_backend_pid();")
+    except subprocess.CalledProcessError as e:
+        print(e)
+
+
+def _db_update(modules, dbname, trytondconf=False):
+    """
+    Updates tryton modules for database DBNAME.
+
+    Args:
+        modules (str): Comma separated list of modules to update.
+        dbname (str): Name of database.
+        trytondconf (Optional[str]): Name of tryton config file.
+    """
+    print('Update services ...')
+    if modules:
+        modules = modules.split(',')
+    _trytond_conf = trytondconf or ENVIRONMENT + '.conf'
+    os.environ['TRYTONPASSFILE'] = 'config/trytond/passfile'
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        SHARED_PATH, 'config', 'trytond', _trytond_conf
+    )
+    command = [
+        'trytond',
+        '-d', dbname,
+        '-c', os.environ['TRYTOND_CONFIG']
+    ]
+    if modules:
+        command.append('-u')
+        command.extend(modules)
+    else:
+        command.append('--all')
+    subprocess.call(command)
+
+
+def _db_exist(dbname):
+    """
+    Checks if database exists.
+
+    Args:
+        dbname (str): Name of database.
+    """
+    return subprocess.check_output(
+        [
+            "psql",
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
+            '-U', 'postgres',
+            "-tAc",
+            "SELECT 1 FROM pg_database WHERE datname='" + dbname + "'"
+        ]
+    )
+
+
+def _db_execute_sql(sql):
+    """
+    Applies sql statements to the database.
+
+    Args:
+        sql (str): sql statement
+    """
+    return subprocess.check_output(
+        [
+            "psql",
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
+            '-U', 'postgres',
+            "-tAc",
+            sql
+        ]
+    )
+
+
+@run.command('pip-install')
+@click.argument('service', default=SERVICE)
 @click.pass_context
-def pip_install(context, container):
+def pip_install(context, service):
     """
     Installs required packages for a CONTAINER with pip.
 
@@ -58,33 +141,37 @@ def pip_install(context, container):
     After installation a flag file is created within the container to avoid
     multiple execution during its lifespan.
     """
-    flagfile = "/tmp/pip_install_" + container
+    flagfile = "/tmp/pip_install_" + service
 
     # check flagfile
     if not os.path.exists(flagfile):
 
         # install packages
-        print('Install packages for ' + container + ' ... ', end='')
+        print('Install packages for ' + service + ' ... ', end='')
         subprocess.check_call(
             [sys.executable, '-m', 'pip', 'install', '-qr',
                 os.path.join(
-                    SHARED_PATH, 'config', 'pip', '%s.pip' % container)])
+                    SHARED_PATH, 'config', 'pip', '%s.pip' % service)])
         print('ok')
 
         # create flagfile
         open(flagfile, 'w').close()
-        if container in ['webgui', 'webapi']:
+        if service in ['webgui', 'webapi']:
             open('/tmp/pip_install_erpserver', 'w').close()
 
         # restart process with new modules installed
         subprocess.check_call(sys.argv)
         sys.exit()
 
+    else:
+
+        print('Packages already installed.')
+
     import site
     reload(site)  # noqa: F821
 
 
-@execute.command('db-create')
+@run.command('db-create')
 @click.argument('dbname', default=PROJECT)
 @click.pass_context
 def db_create(context, dbname):
@@ -116,7 +203,7 @@ def db_create(context, dbname):
     print('ok')
 
 
-@execute.command('db-delete')
+@run.command('db-delete')
 @click.argument('dbname', default=PROJECT)
 @click.pass_context
 def db_delete(context, dbname):
@@ -133,14 +220,12 @@ def db_delete(context, dbname):
     tries = 0
 
     # kill connections (bug? see collecting_society_worker:repro.py:connect_db)
-    context.invoke(kill_dbconnections, dbname=dbname)
+    _db_disconnect(dbname)
 
     # retry to delete the database
     while tries < max_tries:
         if tries > 0:
             print('...', end='')
-        # if tries == max_tries - 1:
-        #     kill db connection somehow...
         try:
             subprocess.check_output(
                 [
@@ -161,7 +246,7 @@ def db_delete(context, dbname):
         return
 
 
-@execute.command('db-copy')
+@run.command('db-copy')
 @click.argument('dbname-src')
 @click.argument('dbname-dst')
 @click.option('--force/--no-force', default=False,
@@ -174,7 +259,7 @@ def db_copy(context, dbname_src, dbname_dst, force):
     print('Copy database "%s" to "%s" ... ' % (dbname_src, dbname_dst), end='')
 
     # kill connections (bug? see collecting_society_worker:repro.py:connect_db)
-    context.invoke(kill_dbconnections, dbname=dbname_src)
+    _db_disconnect(dbname_src)
 
     # --force option
     if force:
@@ -197,10 +282,10 @@ def db_copy(context, dbname_src, dbname_dst, force):
     print('ok')
 
 
-@execute.command('db-psql')
+@run.command('db-connect')
 @click.argument('dbname', default=PROJECT)
 @click.pass_context
-def db_psql(context, dbname):
+def db_connect(context, dbname):
     """
     Opens a SQL console for the database DBNAME.
     """
@@ -218,7 +303,7 @@ def db_psql(context, dbname):
     )
 
 
-@execute.command('db-backup')
+@run.command('db-backup')
 @click.argument('dbname', default=PROJECT)
 @click.pass_context
 def db_backup(context, dbname):
@@ -238,7 +323,27 @@ def db_backup(context, dbname):
     )
 
 
-@execute.command('db-setup')
+@run.command('db-update')
+@click.option(
+    '--modules', '-m', default='collecting_society',
+    help='Single module or comma separated list of modules to update. '
+    'Whitspace not allowed!')
+@click.argument('dbname', default=PROJECT)
+@click.pass_context
+def db_update(context, modules, dbname):
+    """
+    Updates tryton modules for database DBNAME.
+
+    Modules can be provided, default is 'collecting_society'.
+    If modules are 'all', all modules are updated.
+    """
+    context.invoke(pip_install, container='erpserver')
+    if modules == 'all':
+        modules = ''
+    _db_update(modules, dbname)
+
+
+@run.command('db-setup')
 @click.argument('dbname', default=PROJECT)
 @click.option('--reclimit', '-r', type=int, default=-1,
               help='Maximum numbers of objects (default: 0 = all)')
@@ -314,7 +419,7 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
                 # Create template database
                 context.invoke(db_create, dbname=template_dbname)
                 # Update template database
-                _update(None, template_dbname)
+                _db_update(None, template_dbname)
                 # Generate dependent datasets
                 data.generate(
                     dataset, exclude, reclimit=reclimit,
@@ -339,7 +444,7 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
             # Create database
             if not _db_exist(dbname):
                 context.invoke(db_create, dbname=dbname)
-                _update(None, dbname)
+                _db_update(None, dbname)
             # Generate datasets
             data.generate(
                 dataset, exclude, reclimit=reclimit,
@@ -358,7 +463,7 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
             print("Couldn't remove lock file, something has gone wrong")
 
 
-@execute.command('db-rebuild')
+@run.command('db-rebuild')
 @click.argument('dbname', default=PROJECT)
 @click.option('--reclimit', '-r', type=int, default=-1,
               help='Maximum numbers of objects (default: 0 = all)')
@@ -392,7 +497,7 @@ def db_rebuild(context, dbname, reclimit, dataset, exclude,
         exclude=exclude, template=template, cache=cache, force=False, pdb=pdb)
 
 
-@execute.command('run-tests', context_settings=dict(
+@run.command('service-test', context_settings=dict(
                  ignore_unknown_options=True))
 @click.option('--dbname', default=PROJECT + '_test',
               help='Name of database (default: test)')
@@ -400,12 +505,12 @@ def db_rebuild(context, dbname, reclimit, dataset, exclude,
               help='Reset the database (default: yes)')
 @click.option('--path', default=False,
               help='Searchpath for tests (see nosetest)')
-@click.argument('service')
+@click.argument('service', default=SERVICE)
 @click.argument('nargs', nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
-def run_tests(context, service, dbname, reset, path, nargs):
+def service_test(context, service, dbname, reset, path, nargs):
     """
-    Runs all tests for a service (web, worker).
+    Runs all tests for a service (erpserver, web, worker).
 
     Starts nosetests and prints output to stdout.
 
@@ -540,97 +645,60 @@ def run_tests(context, service, dbname, reset, path, nargs):
     sys.exit(exitcode)
 
 
-@execute.command('deploy-erpserver')
+@run.command('service-deploy')
+@click.argument('service', default=SERVICE)
 @click.pass_context
-def deploy_erpserver(context):
+def service_deploy(context, service):
     """
-    Deploys the erpserver service.
+    Deploys the services (erpserver, webgui, webapi).
 
     Installs pip packages, creates and sets up database and runs the
-    erpserver service (trytond).
+    application (trytond, pyramid).
     """
-    context.invoke(pip_install, container='erpserver')
-    _trytond_conf = ENVIRONMENT + '.conf'
-    subprocess.call(
-        [
-            'trytond',
-            '--dev',
-            '-c', os.path.join(
-                SHARED_PATH, 'config', 'trytond', _trytond_conf)
-        ]
-    )
+    context.invoke(pip_install, container=SERVICE)
 
-
-@execute.command('deploy-webgui')
-@click.pass_context
-def deploy_webgui(context):
-    """
-    Deploys the webgui service.
-
-    Installs pip packages, creates and sets up database and runs the
-    webgui service (pserve).
-    """
-    context.invoke(pip_install, container='webgui')
+    # demodata generation
     if ENVIRONMENT in ["development", "staging"]:
         context.invoke(db_setup)
-    trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
-    subprocess.call(
-        [
-            'pserve',
-            os.path.join(
-                SHARED_PATH, 'src', 'portal_web', ENVIRONMENT + '.ini'
-            ),
-            trusted_proxy,
-            '--reload'
-        ]
-    )
+
+    # erpserver
+    if service == "erpserver":
+        _trytond_conf = ENVIRONMENT + '.conf'
+        subprocess.call(
+            [
+                'trytond',
+                '--dev',
+                '-c', os.path.join(
+                    SHARED_PATH, 'config', 'trytond', _trytond_conf)
+            ]
+        )
+
+    # webgui/webapi
+    if service in ["webgui", "webapi"]:
+        trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
+        subprocess.call(
+            [
+                'pserve',
+                os.path.join(
+                    SHARED_PATH, 'src', 'portal_web', ENVIRONMENT + '.ini'
+                ),
+                trusted_proxy,
+                '--reload'
+            ]
+        )
+
+    # worker
+    # if service == "worker":
+    #     subprocess.call(
+    #         []
+    #     )
 
 
-@execute.command('deploy-webapi')
+@run.command('docs-build')
+@click.option('--autoapi/--no-autoapi', default=True,
+              help='Activate autoapi (default: yes)')
 @click.pass_context
-def deploy_webapi(context):
-    """
-    Deploys the webapi service.
-
-    Installs pip packages, creates and sets up database and runs the
-    webapi service (pserve).
-    """
-    context.invoke(pip_install, container='webapi')
-    if ENVIRONMENT in ["development", "staging"]:
-        context.invoke(db_setup)
-    trusted_proxy = 'trusted_proxy=' + str(os.environ.get('TRUSTED_PROXY'))
-    subprocess.call(
-        [
-            'pserve',
-            os.path.join(
-                SHARED_PATH, 'src', 'portal_web', ENVIRONMENT + '.ini'
-            ),
-            trusted_proxy,
-            '--reload'
-        ]
-    )
-
-
-@execute.command('kill-dbconnections')
-@click.argument('dbname', default=PROJECT)
-@click.pass_context
-def kill_dbconnections(context, dbname):
-    """
-    Cut off all database connections to allow delete
-    """
-    try:
-        _db_execute_sql(
-            "SELECT pg_terminate_backend(pg_stat_activity.pid) "
-            "FROM pg_stat_activity "
-            "WHERE pg_stat_activity.datname = '" + dbname + "' "
-            "AND pid <> pg_backend_pid();")
-    except subprocess.CalledProcessError as e:
-        print(e)
-
-
-@execute.command('build-docs')
-@click.pass_context
-def build_docs(context):
+def docs_build(context, autoapi):
     """
     Builds the Sphinx documentation.
 
@@ -641,109 +709,12 @@ def build_docs(context):
     wd = os.getcwd()
     os.chdir(os.path.join(SHARED_PATH, 'docs'))
     subprocess.Popen("ls")
-    subprocess.call(['./build.sh'])
-    os.chdir(wd)
-
-
-@execute.command('build-docs-noautoapi')
-@click.pass_context
-def build_docs_noautoapi(context):
-    """
-    Builds the Sphinx documentation without autoapi run.
-
-    Installs pip packages of all modules so they can be found by Sphinx.
-    Sphinx are started with 'make html'.
-    """
-    context.invoke(pip_install, container='documentation')
-    wd = os.getcwd()
-    os.chdir(os.path.join(SHARED_PATH, 'docs'))
-    subprocess.Popen("ls")
-    subprocess.call(['make', 'html'])
-    os.chdir(wd)
-
-
-@execute.command()
-@click.option(
-    '--modules', '-m',
-    help='Single module or comma separated list of modules to update. '
-    'Whitspace not allowed!')
-@click.argument('dbname', default=PROJECT)
-@click.pass_context
-def update(context, modules, dbname):
-    """
-    Updates tryton modules for database DBNAME.
-    """
-    context.invoke(pip_install, container='erpserver')
-    _update(modules, dbname)
-
-
-def _update(modules, dbname, trytondconf=False):
-    """
-    Updates tryton modules for database DBNAME.
-
-    Args:
-        modules (str): Comma separated list of modules to update.
-        dbname (str): Name of database.
-        trytondconf (Optional[str]): Name of tryton config file.
-    """
-    print('Update services ...')
-    if modules:
-        modules = modules.split(',')
-    _trytond_conf = trytondconf or ENVIRONMENT + '.conf'
-    os.environ['TRYTONPASSFILE'] = 'config/trytond/passfile'
-    os.environ['TRYTOND_CONFIG'] = os.path.join(
-        SHARED_PATH, 'config', 'trytond', _trytond_conf
-    )
-    command = [
-        'trytond',
-        '-d', dbname,
-        '-c', os.environ['TRYTOND_CONFIG']
-    ]
-    if modules:
-        command.append('-u')
-        command.extend(modules)
+    if autoapi:
+        subprocess.call(['./build.sh'])
     else:
-        command.append('--all')
-    subprocess.call(command)
-
-
-def _db_exist(dbname):
-    """
-    Checks if database exists.
-
-    Args:
-        dbname (str): Name of database.
-    """
-    return subprocess.check_output(
-        [
-            "psql",
-            '-h', POSTGRES_HOSTNAME,
-            '-p', POSTGRES_PORT,
-            '-U', 'postgres',
-            "-tAc",
-            "SELECT 1 FROM pg_database WHERE datname='" + dbname + "'"
-        ]
-    )
-
-
-def _db_execute_sql(sql):
-    """
-    Applies sql statements to the database.
-
-    Args:
-        sql (str): sql statement
-    """
-    return subprocess.check_output(
-        [
-            "psql",
-            '-h', POSTGRES_HOSTNAME,
-            '-p', POSTGRES_PORT,
-            '-U', 'postgres',
-            "-tAc",
-            sql
-        ]
-    )
+        subprocess.call(['make', 'html'])
+    os.chdir(wd)
 
 
 if __name__ == '__main__':
-    execute()
+    run()

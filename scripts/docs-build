@@ -2,7 +2,7 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./scripts/docs [--down] [--build] [--keep] [--no-autoapi]
+# Usage: ./scripts/docs-build [--down] [--build] [--keep] [--no-autoapi]
 #
 # Options:
 #     --down: immediately stop and remove the container and exit
@@ -59,9 +59,9 @@ fi
 # build docs
 echo -e "\n== build docs"
 if $NOAUTOAPI; then
-    docker-compose $DOCUMENTATION exec documentation execute build-docs-noautoapi
+    docker-compose $DOCUMENTATION exec documentation build-docs --no-autoapi
 else
-    docker-compose $DOCUMENTATION exec documentation execute build-docs
+    docker-compose $DOCUMENTATION exec documentation build-docs
 fi
 EXITCODE=$?
 
