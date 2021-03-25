@@ -2,7 +2,7 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./docs [--down] [--build] [--keep]
+# Usage: ./scripts/docs [--down] [--build] [--keep] [--no-autoapi]
 #
 # Options:
 #     --down: immediately stop and remove the container and exit

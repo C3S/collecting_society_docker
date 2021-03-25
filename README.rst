@@ -87,8 +87,8 @@ Services
 Files
 -----
 
-.. note:: Some files and folders are created on the first run of the ``update``
-    or ``docs`` script.
+.. note:: Some files and folders are created on the first run of the
+    `update script`_ or `docs script`_.
 
 ::
 
@@ -103,16 +103,10 @@ Files
     │   └── index.html                      # main index file of the built documentation
     │
     ├── scripts/                            # scripts for common tasks
-    │   ├── docs                            # builds the documentation
-    │   ├── install                         # installs docker (use with caution)
-    │   ├── monitor                         # monitors containers
-    │   ├── ports                           # prints ports of services
-    │   ├── reset                           # resets the whole project (use with caution)
-    │   ├── reset-db                        # rebuilds the database
-    │   ├── start                           # starts the services in a tmux session
-    │   ├── test                            # runs the tests
-    │   ├── update                          # updates the files/folders/repos of the project
-    │   └── config.py                       # config file for the update script
+    │   ├── docs                            # builds the documentation of the project
+    │   ├── rebuild                         # rebuilds the database
+    │   ├── test                            # runs the tests of the project
+    │   └── update                          # updates the files/folders/repos of the project
     │
     ├── services/                           # config files for docker services
     │   ├── build/                          # build environment for docker images
@@ -158,6 +152,8 @@ Files
     │   │   │       └── <STAGE>/            # processing / archiving STAGE of files
     │   │   │
     │   │   ├── .flake8                     # settings for flake8 linter
+    │   │   │
+    │   │   ├── entrypoint                  # docker entrypoint for python based containers
     │   │   └── execute                     # main CLI script for common tasks (run in container!)
     │   │
     │   ├── echoprint-data/                 # (fingerprint) echoprint database data
@@ -211,7 +207,7 @@ Database
 ''''''''
 
 =================================== ==============================================================
-``scripts/reset-db``                Script to rebuild the database and demodata
+``scripts/rebuild``                 Script to rebuild the database and demodata
 ``volumes/shared/data/datasets/``   Demodata generation scripts for each tryton model
 =================================== ==============================================================
 
@@ -242,17 +238,17 @@ Requirements
 ------------
 
 - Linux or OS X system
+- `git`__
 - `docker`__ ``>= 17.12.0``
 - `docker-compose`__ ``>= 1.22.0``
-- `git`__
 
+__ https://git-scm.com/downloads
 __ https://docs.docker.com/engine/installation
 __ https://docs.docker.com/compose/install
-__ https://git-scm.com/downloads
 
 Summary for Debian/Ubuntu::
 
-    $ sudo apt-get install docker docker-compose git mercurial
+    $ sudo apt-get install docker docker-compose git
     $ sudo usermod -aG docker $USER
     $ newgrp docker
 
@@ -273,8 +269,8 @@ Switch to the root directory of the repository::
 .. note:: All setup and maintainance tasks are performed in the root path of
     the ``collecting_society_docker`` repository.
 
-Checkout the branch of the environment to build
-(``development``, ``staging``, ``production``)::
+Checkout the branch of the environment to build:
+``development``, ``staging``, ``production``::
 
     $ git checkout <ENVIRONMENT>
 
@@ -293,21 +289,19 @@ Variable           Values Default Description
 ``GIT_USER_EMAIL`` string ""      Email for git commits *(optional)*
 ================== ====== ======= =================================================
 
-Run the ``update`` script, which checkouts the service repositories, creates
+Run the `update script`_, which checkouts the service repositories, creates
 the service folders and copies the configuration example files
 *(~5-10 minutes)*::
 
     $ ./scripts/update
-
-.. seealso:: The created repositories, folders and files are defined in
-    ``./scripts/config.py``.
 
 Configuration
 -------------
 
 For ``staging`` and ``production`` environments:
 
-1. Adjust the **variables** in ``.env`` (hostnames, ports, usernames, etc).
+1. Adjust the **variables** in ``.env``
+   (hostnames, ports, usernames, paths, etc).
 2. Adjust the **secrets**:
 
    ==================================================== ================================
@@ -468,8 +462,8 @@ The services are configured via:
 
 .. warning:: Some files are tracked in git as ``FILE.example`` and are initally
     copied to the untracked ``FILE`` but not overwritten by the
-    ``./scripts/update`` script. After an upgrade, changes to the ``*.example``
-    files have to be applied manually.
+    `update script`_. After an upgrade, changes to the ``*.example`` files have
+    to be applied manually.
 
 Environments
 ------------
@@ -500,7 +494,7 @@ in a service container by the corresponding ``services/<SERVICE>.env``.
 
 The ``.env`` file is also processed by docker-compose by convention and
 contains variables for the build process as well as for the
-``./scripts/update`` script.
+`update script`_.
 
 .. seealso:: `Compose CLI environment variables`__
 
@@ -643,9 +637,9 @@ There are several ways to interact with the services:
 1. The ``docker-compose`` CLI is the prefered general high level docker tool
    for everyday use.
 2. The ``docker`` CLI provides sometimes more useful low level commands.
-3. In the ``scripts`` folder some scipts are provided for comfort or
+3. In the `Scripts`_ folder some scipts are provided for comfort or
    automatisation.
-4. The ``CLI`` script provides special maintainance commands for the services.
+4. The `CLI`_ script provides special maintainance commands for the services.
 
 If you tend to forget the commands or syntax, try getting used to the help
 commands:
@@ -675,7 +669,6 @@ Run
 Start services                               ``docker-compose up``
 Start services in the background             ``docker-compose up -d``
 Start a certain service                      ``docker-compose up SERVICE``
-Start services inside a tmux session         ``./scripts/start``
 Run a command on a running/new container     | ``docker-compose exec SERVICE COMMAND``
                                              | ``docker-compose run --rm SERVICE COMMAND``
 Run a CLI command on a running/new container | ``docker-compose exec SERVICE execute COMMAND``
@@ -712,7 +705,7 @@ Update database     ``docker-compose run --rm erpserver execute update -m collec
    .. warning:: If a repository is not clean, it won't be updated. Watch out
        for red output lines.
 
-   .. note:: The ``update`` script will also update this repository first.
+   .. note:: The `update script`_ will also update this repository first.
 
 2. If there were changes to the ``*.example`` files, diff the files and
    apply changes manually::
@@ -730,9 +723,9 @@ Update database     ``docker-compose run --rm erpserver execute update -m collec
    If you run into problems, you can also rebuild all docker images without
    cache::
 
-    $ docker-compose down -v --rmi all --remove-orphans
-    $ docker-compose -f docker-compose.testing.yml down -v --rmi all --remove-orphans
     $ docker-compose -f docker-compose.documentation.yml down -v --rmi all --remove-orphans
+    $ docker-compose -f docker-compose.testing.yml down -v --rmi all --remove-orphans
+    $ docker-compose down -v --rmi all --remove-orphans
     $ docker image prune
     $ docker-compose build
 
@@ -748,7 +741,7 @@ Update database     ``docker-compose run --rm erpserver execute update -m collec
    If you run into problems and don't care about the data, you can also
    recreate the database::
 
-    $ docker-compose run --rm erpserver execute db-rebuild
+    $ ./scripts/rebuild
 
 Inspect
 -------
@@ -757,9 +750,9 @@ Inspect
 Attach to the logs of a certain service      ``docker-compose logs SERVICE``
 Open a shell on a service container          ``docker-compose run --rm SERVICE bash``
 Open a shell on a running container          ``docker-compose exec bash``
-Monitor services                             ``watch ./scripts/monitor``
-Print ports of services                      ``./scripts/ports``
-List docker containers                       ``docker ps [-a]``
+List project docker containers               ``docker-compose ps``
+List project docker images                   ``docker-compose images``
+List docker containers                       ``docker-compose ps [-a]``
 List docker images                           ``docker images ls [-a]``
 List docker networks                         ``docker network ls``
 List docker volumes                          ``docker volume ls``
@@ -803,14 +796,14 @@ Copy    ``docker-compose run --rm erpserver execute db-copy [--force] [SOURCENAM
 Backup  ``docker-compose run --rm erpserver execute db-backup [NAME] > /shared/tmp/db.backup``
 Delete  ``docker-compose run --rm erpserver execute db-delete [NAME]``
 Rebuild | ``docker-compose run --rm erpserver execute db-rebuild``
-        | ``./scripts/reset-db``
+        | ``./scripts/rebuild``
 Examine ``docker-compose run --rm erpserver execute db-psql [NAME]``
 ======= =========================================================================================
 
 .. note:: The ``NAME`` is optional and defaults to ``collecting_society``.
 
 .. note:: If the setup/rebuild hangs, look for and delete the
-    ``./running_db_creation.delete_me`` locking file.
+    ``./volumes/shared/running_db_creation.delete_me`` locking file.
 
 The database files are stored in ``./volumes/postgresql-data``. If the postgres
 setup itself seem to be broken, you can always delete and recreate the folder::
@@ -833,35 +826,7 @@ The scripts are either intended to make some operations more comfortable or for
 automatisation (CI). The following sections contain a brief synopsis about each
 of the provided scripts.
 
-aptcacher
-'''''''''
-
-This script starts a docker container with an apt-cacher-ng service to decrease
-the bandwidth usage during the development of docker images.
-
-.. warning:: Currently deprecated.
-
-**Usage**::
-
-    $ ./scripts/aptcache
-
-To use the apt-cacher for docker image builds:
-
-1. Set ``APT_CACHERURL`` in ``.env`` to ``http://172.17.0.1:3142``
-2. Start this script via ``./scripts/aptcacher``
-3. Run ``docker-compose build``
-
-.. note:: ``APT_CACHEURL`` has to be set in the beginning of a clean build.
-
-To monitor the apt-cacher, open the `webinterface`__::
-
-    http://localhost:3142/acng-report.html
-
-__ http://localhost:3142/acng-report.html
-
-To attach to the logs::
-
-    $ docker exec -it collecting_society_aptcache tail -f /var/log/apt-cacher-ng/apt-cacher.log
+.. _docs script:
 
 docs
 ''''
@@ -881,74 +846,24 @@ This script builds the documentation with sphinx.
 ``--no-autoapi`` don't parse the modules
 ================ ==================================================
 
-install
+.. _rebuild script:
+
+rebuild
 '''''''
-
-This script installs docker on debian-based distribution interactively.
-
-.. warning:: Use with care.
-
-**Usage**::
-
-    $ sudo ./scripts/install
-
-monitor
-'''''''
-
-This script outputs information about the running containers.
-
-**Usage**::
-
-    $ watch ./scripts/monitor
-
-ports
-'''''
-
-This script outputs information about the port mappings of the services and is
-intended to be used, when the services are scaled and use random ports.
-
-**Usage**::
-
-    $ ./scripts/ports
-
-reset
-'''''
-
-This script resets the repository to a clean state:
-
-- Removal of the docker containers and images
-- Removal of the created files, directories and repositories
-- Deletion of the database and data
-
-.. warning:: Use with care.
-
-**Usage**::
-
-    $ ./scripts/reset
-
-reset-db
-''''''''
 
 This script deletes and recreates the database and generates the demo data.
 
 **Usage**::
 
-    $ ./scripts/reset-db
+    $ ./scripts/rebuild
 
-start
-'''''
-
-This script starts the services within a tmus session, opens a tab in all
-repositories and opens a firefox instance pointing to the webgui.
-
-**Usage**::
-
-    $ ./scripts/start
+.. _test script:
 
 test
 ''''
 
-This script runs the unit/function/integration tests and linter for the services:
+This script runs the unit/function/integration tests and linter for the
+services:
 
 - erpserver (tryton)
 - web (pyramid)
@@ -959,7 +874,7 @@ This script runs the unit/function/integration tests and linter for the services
 
 **Usage**::
 
-    $ ./test [SERVICE] [--down] [--build] [--keep] [--ci] [PARARAMS]
+    $ ./scripts/test [SERVICE] [--down] [--build] [--keep] [--ci] [PARARAMS]
 
 **Options**:
 
@@ -980,6 +895,8 @@ The CI mode implies:
 - Run tests and linter
 - Stop and remove the container
 
+.. _update script:
+
 update
 ''''''
 
@@ -988,9 +905,6 @@ This script updates the project:
 - Creation of files and folders
 - Copy of ``FILE.example`` files to ``FILE``
 - Checkout/Pull of the repositories (including this one)
-
-.. note:: The configuration of files/folders/repositories can be found in
-    ``./scripts/update.py``.
 
 **Usage**::
 
@@ -1130,16 +1044,17 @@ Compose
 
 The project consists of 3 separate docker-compose setups:
 
-**Development/Production**
+**Development/Staging/Production**
 
 - Purpose: Main development/production setup of the services
 - Files
 
   - ``docker-compose.yml``: main file
-  - ``docker-compose.override.yml``: override file, symlink to development/production
-  - ``docker-compose.development.yml``: additions for development (ports, volumes)
-  - ``docker-compose.staging.yml``: additions for staging (ports, volumes)
-  - ``docker-compose.production.yml``: additions for productions (ports, volumes)
+  - ``docker-compose.override.yml``: override file, symlink to environment config (ports, volumes)
+
+    - ``docker-compose.development.yml``: additions for development environment
+    - ``docker-compose.staging.yml``: additions for staging environment
+    - ``docker-compose.production.yml``: additions for productions environment
 
 - Usage: ``docker compose COMMAND``
 - Services: `Table of Services`_
@@ -1279,9 +1194,8 @@ Dockerfile and are all pinned. For a list of packages, search for
 The source code of those packages can also be found in the folder
 ``./volumes/shared/ref/`` and are provided for reference and for quick lookups
 during development. The source code is not used though. The repositories are
-cloned on the first run of the ``./scripts/update`` script. The list of
-repositories can be configured in ``./scripts/config.py`` in the dictionary
-``clone_references``::
+cloned on the first run of the `update script`_ and can be configured via the
+dictionary ``clone_references``::
 
     {
         'url': '<URL>',             # https url to git repository
@@ -1298,9 +1212,8 @@ are pip installed during runtime each time a container is started. The list of
 package requirements for each service container can be found in
 ``./services/<SERVICE>.pip``.
 
-The repositories are cloned and updated on each run of the ``./scripts/update``
-script. The list of repositories can be configured in ``./scripts/config.py``
-in the variable ``clone_sources``::
+The repositories are cloned and updated on each run of the `update script`_
+and can be configured via the dictionary ``clone_sources``::
 
     {
         'url': '<URL>',             # https url to git repository
@@ -1526,15 +1439,13 @@ Tests
 -----
 
 The tests are performed on separate containers. To build the images on the
-first run, use::
+first run, use the ``--build`` flag of the `test script`_::
 
     $ ./scripts/test --build
 
-To run the tests for all services (web, erpserver, worker)::
+Run tests for all services (web, erpserver, worker)::
 
     $ ./scripts/test
-
-.. seealso:: `test`_ script
 
 If you develop the tests and need to start them more than once, you can
 use the ``--keep`` flag, to keep the container running and use the command
@@ -1730,7 +1641,7 @@ Lint the code for all application repositories via container::
 
     docker-compose exec erpserver flake8 scripts code/portal* code/collecting_society*
 
-.. note:: The code is also linted in the ``./scripts/test`` script.
+.. note:: The code is also linted in the `test script`_.
 
 Demodata
 --------
@@ -1759,13 +1670,13 @@ A minimal working dataset consists of two attributes::
 Rebuild
 '''''''
 
-In the ``development`` branch, the demodata is created automatically during the
-setup of the database. If you need to rebuild the database, just use your
-prefered method:
+In the ``development`` and ``staging`` branch, the demodata is created
+automatically during the setup of the database. If you need to rebuild the
+database, just use your prefered method:
 
-* via `reset-db`_ script::
+* via `rebuild script`_::
 
-    $ ./scripts/reset-db
+    $ ./scripts/rebuild
 
 * on a running container::
 
@@ -1866,7 +1777,7 @@ code api generated via *autoapi*.
 
 The build process runs on a special ``documentation`` service container, as for
 *autoapi* the python modules need to be imported. To create the image for the
-container on the first built, use::
+container on the first built, use the ``--build`` flag of the `docs script`_::
 
     $ ./scripts/docs --build
 
@@ -1889,23 +1800,23 @@ to omit the *autoapi* step and speed up the build::
 
     $ ./scripts/docs --no-autoapi
 
-If you have work to do inside the container, start a new container::
+If you prefer, you can also execute the commands above from within the container::
 
-    $ docker-compose -f docker-compose.documentation.yml run --rm documentation bash
-
-Or enter a running container::
-
+    $ docker-compose -f docker-compose.documentation.yml up -d
     $ docker-compose -f docker-compose.documentation.yml exec documentation bash
 
-Inside the container, you can start the build with::
+        # build documentation via script
+        > cd docs
+        > ./build.sh
 
-    container$ cd docs
-    container$ ./build.sh
+        # build documentation via make
+        > cd docs
+        > make html
 
-Or just::
+        # exit container
+        > exit
 
-    container$ cd docs
-    container$ make html
+    $ docker-compose -f docker-compose.documentation.yml down
 
 The main source files can be found in the ``./volumes/shared/docs/source/``
 folder.

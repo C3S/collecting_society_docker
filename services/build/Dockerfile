@@ -81,6 +81,9 @@ RUN pip install virtualenv
 RUN python -m virtualenv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV=/opt/venv
+# set default entrypoint and cmd for CLI script
+ENTRYPOINT ["entrypoint"]
+CMD ["execute --help"]
 
 ### staging
 FROM jessie_python_production AS jessie_python_staging

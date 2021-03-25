@@ -4,7 +4,7 @@
 """
 Builds and updates development and production environment.
 
-Usage: ./update [--reset]
+Usage: ./scripts/update [--reset]
 
 Options:
     --reset: overrides the configuration files with .example
@@ -14,15 +14,8 @@ import os
 import sys
 import shutil
 import subprocess
-import config
+import re
 
-project = config.env['PROJECT'] + "_docker"
-update_script = os.path.abspath(__file__)
-base_path = config.dirs['root']
-os.chdir(base_path)
-git_branch = subprocess.check_output(
-    ('git', 'rev-parse', '--abbrev-ref', 'HEAD'),
-    stderr=subprocess.STDOUT).rstrip().decode('utf-8')
 
 header = """
 ==============================================================================
@@ -42,9 +35,329 @@ footer = """\n\nDone.\n
   Now you may go ahead and use
     * 'docker-compose build' to build the project
     * 'docker-compose up' to start the project
-    * './scripts/up' to start the project within a tmux session
 =====================================================================
 """
+
+
+def get_root_dir():
+    """Returns the root dir of the repository."""
+    try:
+        return subprocess.check_output(
+            ['git', 'rev-parse', '--show-toplevel'], stderr=subprocess.STDOUT
+        ).rstrip().decode('utf-8')
+    except subprocess.CalledProcessError:
+        directory = os.path.dirname(os.path.realpath(__file__))
+        return os.path.realpath(os.path.join(directory, ".."))
+
+
+def get_shared_env(path=False):
+    """Reads the shared environment file and parses it into a dictionary."""
+
+    # get path
+    if not path:
+        path = os.path.join(dirs['root'], '.env')
+    if not os.path.isfile(path):
+        path = os.path.join(dirs['root'], '.env.example')
+    assert os.path.isfile(path)
+
+    # parse file
+    result = {}
+    envre = re.compile(r'''^([^\s=]+)=(?:[\s"']*)(.+?)(?:[\s"']*)$''')
+    with open(path) as ins:
+        for line in ins:
+            match = envre.match(line)
+            if match is not None:
+                result[match.group(1)] = match.group(2)
+    return result
+
+
+# environment
+env = get_shared_env()
+project = env['PROJECT'] + "_docker"
+git_branch = subprocess.check_output(
+    ('git', 'rev-parse', '--abbrev-ref', 'HEAD'),
+    stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+branch = env['ENVIRONMENT']
+if env['ENVIRONMENT'] == "testing":
+    branch = "production"
+
+# paths
+dirs = {}
+dirs['root'] = get_root_dir()
+dirs['code'] = dirs['root'] + "/code"
+dirs['scripts'] = dirs['root'] + "/scripts"
+dirs['services'] = dirs['root'] + "/services"
+dirs['volumes'] = dirs['root'] + "/volumes"
+dirs['shared'] = dirs['volumes'] + "/shared"
+dirs['ref'] = dirs['shared'] + "/ref"
+dirs['src'] = dirs['shared'] + "/src"
+dirs['tmp'] = dirs['shared'] + "/tmp"
+dirs['logs'] = dirs['tmp'] + "/logs"
+update_script = os.path.abspath(__file__)
+
+# folders to create
+create_folders = [
+    dirs['code'],
+    dirs['tmp'],
+    dirs['logs'],
+]
+if env['ENVIRONMENT'] in ["development", "testing"]:
+    create_folders += [
+        dirs['volumes'] + '/postgresql-data',
+        dirs['volumes'] + '/trytond-files',
+        dirs['volumes'] + '/nginx-certs',
+        dirs['volumes'] + '/nginx-dhparam',
+        dirs['volumes'] + '/echoprint-data',
+    ]
+
+# files to copy
+copy_files = [
+    {
+        'source': dirs['root'] + '/.env.example',
+        'target': dirs['root'] + '/.env'
+    },
+    {
+        'source': dirs['shared'] + '/config/trytond/passfile.example',
+        'target': dirs['shared'] + '/config/trytond/passfile',
+    },
+    {
+        'source': dirs['shared'] + '/config/trytond/staging.conf.example',
+        'target': dirs['shared'] + '/config/trytond/staging.conf',
+    },
+    {
+        'source': dirs['shared'] + '/config/trytond/production.conf.example',
+        'target': dirs['shared'] + '/config/trytond/production.conf',
+    },
+    {
+        'source': dirs['services'] + '/webgui.env.example',
+        'target': dirs['services'] + '/webgui.env'
+    },
+    {
+        'source': dirs['services'] + '/webapi.env.example',
+        'target': dirs['services'] + '/webapi.env'
+    },
+    {
+        'source': dirs['services'] + '/worker.env.example',
+        'target': dirs['services'] + '/worker.env'
+    },
+    {
+        'source':
+            dirs['src'] + '/collecting_society_worker/config.ini.example',
+        'target': dirs['src'] + '/collecting_society_worker/config.ini'
+    },
+]
+
+# source repositories to clone
+clone_sources = [
+    # upstream: tryton
+    {
+        'url': 'https://github.com/tryton/trytond.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'trytond'
+    },
+    {
+        'url': 'https://github.com/tryton/country.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'country'
+    },
+    {
+        'url': 'https://github.com/tryton/currency.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'currency'
+    },
+    {
+        'url': 'https://github.com/tryton/party.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'party'
+    },
+    {
+        'url': 'https://github.com/tryton/company.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'company'
+    },
+    {
+        'url': 'https://github.com/tryton/product.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'product'
+    },
+    {
+        'url': 'https://github.com/tryton/account.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'account'
+    },
+    {
+        'url': 'https://github.com/tryton/account_product.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'account_product'
+    },
+    {
+        'url': 'https://github.com/tryton/account_invoice.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'account_invoice'
+    },
+    {
+        'url': 'https://github.com/tryton/account_invoice_line_standalone.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'account_invoice_line_standalone'
+    },
+    {
+        'url': 'https://github.com/tryton/bank.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'bank'
+    },
+    {
+        'url': 'https://github.com/tryton/account_de_skr03.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'account_de_skr03'
+    },
+    {
+        'url': 'https://github.com/virtualthings/web_user.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'web_user'
+    },
+    # custom: tryton
+    {
+        'url': 'https://github.com/C3S/archiving.git',
+        'ssh': 'git@github.com:C3S/archiving.git',
+        'option': '--branch=' + branch,
+        'path': 'archiving',
+        'symlink': False
+    },
+    {
+        'url': 'https://github.com/C3S/portal.git',
+        'ssh': 'git@github.com:C3S/portal.git',
+        'option': '--branch=' + branch,
+        'path': 'portal',
+        'symlink': False
+    },
+    {
+        'url': 'https://github.com/C3S/collecting_society.git',
+        'ssh': 'git@github.com:C3S/collecting_society.git',
+        'option': '--branch=' + branch,
+        'path': 'collecting_society',
+        'symlink': True
+    },
+    # custom: pyramid
+    {
+        'url': 'https://github.com/C3S/portal_web.git',
+        'ssh': 'git@github.com:C3S/portal_web.git',
+        'option': '--branch=' + branch,
+        'path': 'portal_web',
+        'symlink': True
+    },
+    {
+        'url': 'https://github.com/C3S/collecting_society_web.git',
+        'ssh': 'git@github.com:C3S/collecting_society_web.git',
+        'option': '--branch=' + branch,
+        'path': 'collecting_society_web',
+        'symlink': True
+    },
+    # upstream: worker
+    {
+        'url': 'https://github.com/spotify/echoprint-codegen.git',
+        'option': '--branch=master',
+        'path': 'echoprint-codegen'
+    },
+    # custom: worker
+    {
+        'url': 'https://github.com/C3S/echoprint-server.git',
+        'ssh': 'git@github.com:C3S/echoprint-server.git',
+        'option': '--branch=master',
+        'path': 'echoprint-server',
+        'symlink': True
+    },
+    {
+        'url': 'https://github.com/C3S/collecting_society_worker.git',
+        'ssh': 'git@github.com:C3S/collecting_society_worker.git',
+        'option': '--branch=' + branch,
+        'path': 'collecting_society_worker',
+        'symlink': True
+    },
+]
+
+# reference repositories to clone development stage only
+clone_references = [
+    {
+        'url': 'https://github.com/pallets/click.git',
+        'option': '--tag=4.0',
+        'path': 'click'
+    },
+    {
+        'url': 'https://github.com/requests/requests.git',
+        'option': '--tag=v2.18.4',
+        'path': 'requests'
+    },
+    {
+        'url': 'https://github.com/psycopg/psycopg2.git',
+        'option': '--tag=2_5_4',
+        'path': 'psycopg2'
+    },
+    {
+        'url': 'https://github.com/tryton/proteus.git',
+        'option': '--branch=' + env['TRYTON_VERSION'],
+        'path': 'proteus'
+    },
+    {
+        'url': 'https://github.com/Pylons/webob.git',
+        'option': '--tag=v1.8.2',
+        'path': 'webob'
+    },
+    {
+        'url': 'https://github.com/Pylons/pyramid.git',
+        'option': '--tag=1.9.2',
+        'path': 'pyramid'
+    },
+    {
+        'url': 'https://github.com/Pylons/pyramid_beaker.git',
+        'option': '--tag=0.8',
+        'path': 'pyramid_beaker'
+    },
+    {
+        'url': 'https://github.com/Pylons/pyramid_chameleon.git',
+        'option': '--tag=0.3',
+        'path': 'pyramid_chameleon'
+    },
+    {
+        'url': 'https://github.com/Pylons/pyramid_mailer.git',
+        'option': '--tag=0.15.1',
+        'path': 'pyramid_mailer'
+    },
+    {
+        'url': 'https://github.com/Pylons/colander.git',
+        'option': '--tag=1.4',
+        'path': 'colander'
+    },
+    {
+        'url': 'https://github.com/Cornices/cornice.git',
+        'option': '--tag=3.4.0',
+        'path': 'cornice'
+    },
+    {
+        'url': 'https://github.com/Cornices/cornice.ext.swagger.git',
+        'option': '--tag=0.7.0',
+        'path': 'cornice_swagger'
+    },
+    {
+        'url': 'https://github.com/Pylons/deform.git',
+        'option': '--tag=2.0.5',
+        'path': 'deform'
+    },
+    {
+        'url': 'https://github.com/jiaaro/pydub.git',
+        'option': '--tag=v0.22.0',
+        'path': 'pydub'
+    },
+    {
+        'url': 'https://github.com/supermihi/pytaglib.git',
+        'option': '--tag=v1.4.3',
+        'path': 'pytaglib'
+    },
+    {
+        'url': 'https://github.com/echonest/pyechonest.git',
+        'option': '--tag=9.0.0',
+        'path': 'pyechonest'
+    },
+]
 
 
 def update_self():
@@ -55,7 +368,7 @@ def update_self():
     # check workingdir
     workingdir_dirty = subprocess.check_output(
         ('git', 'status', '--untracked-files=no', '--porcelain'),
-        cwd=base_path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+        cwd=dirs['root'], stderr=subprocess.STDOUT).rstrip().decode('utf-8')
     if workingdir_dirty:
         print("\nWARNING: Working directory not clean. Udpate omitted!" +
               "\n\033[91m{}\033[0m".format(workingdir_dirty))
@@ -66,13 +379,13 @@ def update_self():
         print("update_self: trying git fetch...")
         subprocess.check_output(
             ('git', 'fetch'),
-            cwd=base_path, stderr=subprocess.STDOUT
+            cwd=dirs['root'], stderr=subprocess.STDOUT
             ).rstrip().decode('utf-8')
         print("update_self: trying git diff --quiet remotes/origin/%s .."
               % git_branch)
         subprocess.check_output(
             ('git', 'diff', '--quiet', 'remotes/origin/%s' % git_branch),
-            cwd=base_path, stderr=subprocess.STDOUT
+            cwd=dirs['root'], stderr=subprocess.STDOUT
             ).rstrip().decode('utf-8')
         print('up-to-date.')
         return
@@ -84,7 +397,7 @@ def update_self():
         print('git pull "' + project + '": ', end='')
         pull_result = subprocess.check_output(
             ('git', 'pull'),
-            cwd=base_path, stderr=subprocess.STDOUT
+            cwd=dirs['root'], stderr=subprocess.STDOUT
             ).rstrip().decode('utf-8')
         if pull_result:
             print(pull_result)
@@ -97,17 +410,17 @@ def update_self():
         sys.exit("Exiting. Please check for errors above!")
 
     # configure user
-    username = config.env.get('GIT_USER_NAME')
-    useremail = config.env.get('GIT_USER_EMAIL')
+    username = env.get('GIT_USER_NAME')
+    useremail = env.get('GIT_USER_EMAIL')
     if username and useremail:
         print('configure user {} <{}>: '.format(username, useremail), end='')
         try:
             subprocess.check_output(
                 ('git', 'config', 'user.name', '"{}"'.format(username)),
-                cwd=base_path, stderr=subprocess.STDOUT)
+                cwd=dirs['root'], stderr=subprocess.STDOUT)
             subprocess.check_output(
                 ('git', 'config', 'user.email', '"{}"'.format(useremail)),
-                cwd=base_path, stderr=subprocess.STDOUT)
+                cwd=dirs['root'], stderr=subprocess.STDOUT)
             print('ok.')
         except subprocess.CalledProcessError as e2:
             print("There was a problem: \n\n\033[91m{}\033[0m\n".format(
@@ -122,7 +435,7 @@ def update_repository(repo, branch, path, username=False, useremail=False,
     # sanity checks
     if not repo or not branch or not path:
         return
-    repo_relpath = os.path.relpath(path, base_path)
+    repo_relpath = os.path.relpath(path, dirs['root'])
     repo_name = os.path.basename(os.path.normpath(path))
 
     # create path
@@ -221,7 +534,7 @@ def update_repository(repo, branch, path, username=False, useremail=False,
 
     # symlink
     if symlink:
-        symlink_path = os.path.join(config.dirs['code'], repo_name)
+        symlink_path = os.path.join(dirs['code'], repo_name)
         if os.path.islink(symlink_path):
             print("symlink already present.")
         else:
@@ -239,10 +552,10 @@ def create_folder(path):
 
 
 def copy_file(source_file, target_file, reset=False):
-    """Copies a file from base_path/SOURCE_FILE to base_path/TARGET_FILE."""
-    target = os.path.join(base_path, target_file)
+    """Copies a file from root_dir/SOURCE_FILE to root_dir/TARGET_FILE."""
+    target = os.path.join(dirs['root'], target_file)
     if not os.path.isfile(target) or reset:
-        source = os.path.join(base_path, source_file)
+        source = os.path.join(dirs['root'], source_file)
         shutil.copyfile(source, target)
         if reset:
             print('\t[forced] %s' % target_file)
@@ -256,7 +569,7 @@ def update():
     """Updates itself and the repositories, creates folders, copies files."""
 
     # header
-    print(header.format(project, project, git_branch, base_path))
+    print(header.format(project, project, git_branch, dirs['root']))
 
     # update update script itself
     update_self()
@@ -264,12 +577,12 @@ def update():
     # create folders
     print("\nCreating symlink to docker-compose.override.yml ... ", end='')
     override = 'development'
-    if config.env['ENVIRONMENT'] == 'production':
+    if env['ENVIRONMENT'] == 'production':
         override = 'production'
     symlink_source = os.path.join(
-        config.dirs['root'], 'docker-compose.' + override + '.yml')
+        dirs['root'], 'docker-compose.' + override + '.yml')
     symlink_target = os.path.join(
-        config.dirs['root'], 'docker-compose.override.yml')
+        dirs['root'], 'docker-compose.override.yml')
     if os.path.islink(symlink_target):
         print("already present.")
     else:
@@ -278,37 +591,37 @@ def update():
 
     # create folders
     print("\nCreating folders ...\n")
-    for folder in config.create_folders:
+    for folder in create_folders:
         create_folder(folder)
 
     # update source repositories
-    for repo in config.clone_sources:
+    for repo in clone_sources:
         url = repo['url']
-        if int(config.env.get('GIT_SSH')) and 'ssh' in repo:
+        if int(env.get('GIT_SSH')) and 'ssh' in repo:
             url = repo['ssh']
         option = repo['option']
-        path = os.path.join(config.dirs['src'], repo['path'])
-        username = config.env.get('GIT_USER_NAME')
-        useremail = config.env.get('GIT_USER_EMAIL')
+        path = os.path.join(dirs['src'], repo['path'])
+        username = env.get('GIT_USER_NAME')
+        useremail = env.get('GIT_USER_EMAIL')
         symlink = repo.get('symlink')
         update_repository(url, option, path, username, useremail, symlink)
 
     # update reference repositories
-    if config.env['ENVIRONMENT'] == "development":
-        for repo in config.clone_references:
+    if env['ENVIRONMENT'] == "development":
+        for repo in clone_references:
             url = repo['url']
-            if int(config.env['GIT_SSH']) and 'ssh' in repo:
+            if int(env['GIT_SSH']) and 'ssh' in repo:
                 url = repo['ssh']
             option = repo['option']
-            path = os.path.join(config.dirs['ref'], repo['path'])
-            username = config.env.get('GIT_USER_NAME')
-            useremail = config.env.get('GIT_USER_EMAIL')
+            path = os.path.join(dirs['ref'], repo['path'])
+            username = env.get('GIT_USER_NAME')
+            useremail = env.get('GIT_USER_EMAIL')
             symlink = repo.get('symlink')
             update_repository(url, option, path, username, useremail, symlink)
 
     # copy files
     print("\nCopying files ...\n")
-    for file in config.copy_files:
+    for file in copy_files:
         reset = len(sys.argv) > 1 and sys.argv[1] == "--reset"
         copy_file(file['source'], file['target'], reset)
 
@@ -317,4 +630,5 @@ def update():
 
 
 if __name__ == "__main__":
+    os.chdir(dirs['root'])
     update()

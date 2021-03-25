@@ -2,7 +2,7 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./test [service] [--down] [--build] [--keep] [--ci] [OTHER PARARAMS]
+# Usage: ./scripts/test [service] [--down] [--build] [--keep] [--ci] [PARARAMS]
 #
 # Options:
 #     service: web|worker|erpserver|all (default: all)
@@ -15,7 +15,7 @@
 #           - recreate the test database template
 #           - run tests and linter
 #           - stop and remove the container
-#     OTHER PARAMS: are passed to run-tests within the container
+#     PARAMS: are passed to run-tests within the container
 
 echo "====================================================================="
 echo "====================================================================="
