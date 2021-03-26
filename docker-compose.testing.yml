@@ -75,7 +75,7 @@ services:
       - frontend
       - backend
     ports:
-      - "127.0.0.1:51004:51004"  # debugger
+      - "127.0.0.1:51003:51003"  # debugger
     volumes:
       - ./volumes/shared:/shared
       - test_trytond_files:/var/lib/trytond
