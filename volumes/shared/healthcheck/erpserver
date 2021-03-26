@@ -1,0 +1,8 @@
+#!/bin/bash
+HEADER="Content-Type: text/html"
+DATA="<xml></xml>"
+RESPONSE=$(curl -v -k -X POST -H "$HEADER" -d "$DATA" --silent https://localhost:$TRYTON_PORT 2>&1)
+if echo $RESPONSE | grep 'Connection refused'; then
+    exit 1
+fi
+exit 0

@@ -21,10 +21,12 @@ services:
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: /shared/healthcheck/database
       interval: 10s
       timeout: 5s
       retries: 5
+    volumes:
+      - ./volumes/shared:/shared
     networks:
       - backend
     environment:
@@ -35,11 +37,12 @@ services:
       context: ./services/build
       target: erpserver
       args: *buildargs
-    command: run service-deploy
+    command: service-deploy
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "if curl -v -k -X POST -H 'Content-Type: text/html' -d '<xml></xml>' --silent https://localhost:8069 2>&1 | grep 'Connection refused'; then exit 1; fi"]
+      # test: /shared/healthcheck/erpserver
+      test: service-healthcheck
       interval: 10s
       timeout: 5s
       retries: 5
@@ -74,7 +77,7 @@ services:
       context: ./services/build
       target: webapi
       args: *buildargs
-    command: run service-deploy
+    command: service-deploy
     networks:
       - frontend
       - backend
@@ -96,7 +99,7 @@ services:
       context: ./services/build
       target: webgui
       args: *buildargs
-    command: run service-deploy
+    command: service-deploy
     networks:
       - frontend
       - backend
@@ -118,8 +121,7 @@ services:
       args: *buildargs
     cpu_percent: 50
     mem_limit: 500m
-    #command: cron && tail -f /shared/tmp/repro.log &
-    command: bash -c "while true; do cd /shared/src/collecting_society_worker/collecting_society_worker && python repro.py all; sleep 60; done"
+    command: service-deploy
     networks:
       - backend
     volumes:
@@ -140,7 +142,7 @@ services:
       context: ./services/build
       target: fingerprint
       args: *buildargs
-    command: /bin/fingerprint
+    command: service-deploy
     networks:
       - backend
     volumes:

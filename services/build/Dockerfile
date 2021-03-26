@@ -82,8 +82,8 @@ RUN python -m virtualenv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV=/opt/venv
 # set default entrypoint and cmd for CLI script
-ENTRYPOINT ["entrypoint"]
-CMD ["run --help"]
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["cli --help"]
 
 ### staging
 FROM jessie_python_production AS jessie_python_staging
@@ -135,8 +135,6 @@ RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/man/*
 RUN mkdir /opt/echoprint-data
-COPY fingerprint.sh /bin/fingerprint
-RUN chmod u+x /bin/fingerprint
 COPY fingerprint-data.json /root/fingerprint-data.json
 
 ### staging

@@ -1,1 +1,1 @@
-entrypoint
+docker-entrypoint.sh

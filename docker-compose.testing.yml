@@ -28,23 +28,26 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD', '/shared/healthcheck/database']
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
+      - ./volumes/shared:/shared
       - test_postgresql_data:/var/lib/postgresql/data
+    environment:
+      SERVICE: database
 
   test_erpserver:
     build:
       context: ./services/build
       target: erpserver
       args: *buildargs
-    command: run deploy-erpserver
+    command: service-deploy
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "if curl -v --silent localhost:8069 2>&1 | grep 'Connection refused'; then exit 1; fi"]
+      test: ['CMD', '/shared/healthcheck/erpserver']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,6 +61,7 @@ services:
     env_file:
       - .env
     environment:
+      SERVICE: erpserver
       ENVIRONMENT: testing
       POSTGRES_HOSTNAME: test_database
 
@@ -83,6 +87,7 @@ services:
       - services/webapi.env
       - services/webgui.env
     environment:
+      SERVICE: webgui
       ENVIRONMENT: testing
       TRYTON_HOSTNAME: test_erpserver
       POSTGRES_HOSTNAME: test_database
@@ -99,8 +104,7 @@ services:
       args: *buildargs
     cpu_percent: 50
     mem_limit: 500m
-    #command: cron && tail -f /shared/tmp/repro.log &
-    command: bash -c "while true; do cd /shared/src/collecting_society_worker/collecting_society_worker && python repro.py all; sleep 60; done"
+    command: service-deploy
     networks:
       - backend
     volumes:
@@ -114,6 +118,7 @@ services:
       - .env
       - services/worker.env
     environment:
+      SERVICE: worker
       ENVIRONMENT: testing
       TRYTON_HOSTNAME: test_erpserver
       POSTGRES_HOSTNAME: test_database
@@ -139,13 +144,15 @@ services:
     depends_on:
       test_web:
         condition: service_started
+    environment:
+      SERVICE: browser
 
   test_fingerprint:
     build:
       context: ./services/build
       target: fingerprint
       args: *buildargs
-    command: /bin/fingerprint
+    command: service-delopy
     volumes:
       - test_echoprint_data:/opt/echoprint-data
       - ./volumes/shared:/shared
@@ -154,4 +161,5 @@ services:
     env_file:
       - .env
     environment:
+      SERVICE: fingerprint
       ENVIRONMENT: testing

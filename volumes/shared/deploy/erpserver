@@ -1,0 +1,8 @@
+#!/bin/bash
+
+DEV=""
+if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "staging" ]; then
+    DEV="--dev"
+fi
+
+trytond $DEV -c $WORKDIR/config/trytond/$ENVIRONMENT.conf

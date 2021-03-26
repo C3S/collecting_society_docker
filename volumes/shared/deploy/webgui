@@ -1,0 +1,3 @@
+#!/bin/bash
+
+pserve $WORKDIR/src/portal_web/$ENVIRONMENT.ini trusted_proxy=$TRUSTED_PROXY --reload

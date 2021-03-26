@@ -1,0 +1,8 @@
+#!/bin/bash
+
+WORKERPATH=/shared/src/collecting_society_worker/collecting_society_worker
+
+while true; do
+    $WORKERPATH/repro.py all
+    sleep 60
+done
