@@ -91,6 +91,7 @@ dirs['volumes'] = dirs['root'] + "/volumes"
 dirs['shared'] = dirs['volumes'] + "/shared"
 dirs['ref'] = dirs['shared'] + "/ref"
 dirs['src'] = dirs['shared'] + "/src"
+dirs['tests'] = dirs['shared'] + "/tests"
 dirs['tmp'] = dirs['shared'] + "/tmp"
 dirs['logs'] = dirs['tmp'] + "/logs"
 update_script = os.path.abspath(__file__)
@@ -99,6 +100,7 @@ update_script = os.path.abspath(__file__)
 create_folders = [
     dirs['code'],
     dirs['tmp'],
+    dirs['tests'],
     dirs['logs'],
 ]
 if env['ENVIRONMENT'] in ["development", "testing"]:

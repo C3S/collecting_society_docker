@@ -28,7 +28,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', '/shared/healthcheck/database']
+      test: /shared/healthcheck/database
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,7 +47,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', '/shared/healthcheck/erpserver']
+      test: /shared/healthcheck/erpserver
       interval: 10s
       timeout: 5s
       retries: 5
@@ -105,6 +105,11 @@ services:
     cpu_percent: 50
     mem_limit: 500m
     command: service-deploy
+    healthcheck:
+      test: /shared/healthcheck/worker
+      interval: 5m
+      timeout: 5s
+      retries: 5
     networks:
       - backend
     volumes:
@@ -152,10 +157,15 @@ services:
       context: ./services/build
       target: fingerprint
       args: *buildargs
-    command: service-delopy
+    command: service-deploy
+    healthcheck:
+      test: /shared/healthcheck/fingerprint
+      interval: 5m
+      timeout: 5s
+      retries: 5
     volumes:
-      - test_echoprint_data:/opt/echoprint-data
       - ./volumes/shared:/shared
+      - test_echoprint_data:/opt/echoprint-data
     networks:
       - backend
     env_file:
