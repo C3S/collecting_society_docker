@@ -618,6 +618,7 @@ def service_test(context, service, dbname, reset, path, nargs):
 
     # Start tests
     print("\nSTART TESTS ...\n")
+    os.chdir(os.path.join(WORKDIR, 'tests'))
     exitcode = subprocess.call(
         [
             'nosetests',
@@ -636,6 +637,7 @@ def service_test(context, service, dbname, reset, path, nargs):
             '--cover-package='+','.join(modules),
         ] + list(nargs) + list(paths)
     )
+    os.chdir(WORKDIR)
 
     # Return exitcode
     sys.exit(exitcode)
