@@ -27,7 +27,10 @@ import glob
 import fcntl
 import click
 
-import data
+try:  # needs protues
+    import data
+except ImportError:
+    pass
 
 PROJECT = str(os.environ.get('PROJECT'))
 ENVIRONMENT = str(os.environ.get('ENVIRONMENT'))
@@ -121,21 +124,22 @@ def pip_install(context, service):
     After installation a flag file is created within the container to avoid
     multiple execution during its lifespan.
     """
-    # Check flagfile
-    flagfile = "/tmp/pip_install_" + service
-    if not os.path.exists(flagfile):
+    # Check flagfile and pipfile
+    pipfile = os.path.join(WORKDIR, 'config', 'pip', '%s.pip' % service)
+    flagfile = os.path.join('/', 'tmp', 'pip_install_%s' % service)
+    if os.path.exists(pipfile) and not os.path.exists(flagfile):
 
         # Install packages
         print('Install packages for ' + service + ' ... ', end='')
         subprocess.check_call(
-            [sys.executable, '-m', 'pip', 'install', '-qr',
-                os.path.join(WORKDIR, 'config', 'pip', '%s.pip' % service)])
+            [sys.executable, '-m', 'pip', 'install', '-qr', pipfile])
         print('ok')
 
         # Create flagfile
         open(flagfile, 'w').close()
         if service in ['webgui', 'webapi']:
-            open('/tmp/pip_install_erpserver', 'w').close()
+            flagfile = os.path.join('/', 'tmp', 'pip_install_erpserver')
+            open(flagfile, 'w').close()
 
         # Restart process with new modules installed
         subprocess.check_call(sys.argv)
@@ -648,7 +652,7 @@ def service_deploy(context, service):
     application.
     """
     # Check file
-    script = os.path.join(WORKDIR, 'healthcheck', SERVICE)
+    script = os.path.join(WORKDIR, 'deploy', SERVICE)
     if not os.path.exists(script):
         sys.exit("No deployment file for service %s. Exiting." % SERVICE)
 

@@ -38,14 +38,13 @@ services:
       target: erpserver
       args: *buildargs
     command: service-deploy
-    networks:
-      - backend
     healthcheck:
-      # test: /shared/healthcheck/erpserver
-      test: service-healthcheck
+      test: /shared/healthcheck/erpserver
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
     volumes:
       - ./volumes/shared:/shared
     depends_on:
@@ -63,9 +62,15 @@ services:
       context: ./services/build
       target: webserver
       args: *buildargs
+    healthcheck:
+      test: /shared/healthcheck/webserver
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - frontend
     volumes:
+      - ./volumes/shared:/shared
       - /var/run/docker.sock:/tmp/docker.sock
     logging:
       driver: none
@@ -78,6 +83,11 @@ services:
       target: webapi
       args: *buildargs
     command: service-deploy
+    healthcheck:
+      test: /shared/healthcheck/webapi
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - frontend
       - backend
@@ -100,6 +110,11 @@ services:
       target: webgui
       args: *buildargs
     command: service-deploy
+    healthcheck:
+      test: /shared/healthcheck/webgui
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - frontend
       - backend
@@ -122,6 +137,11 @@ services:
     cpu_percent: 50
     mem_limit: 500m
     command: service-deploy
+    healthcheck:
+      test: /shared/healthcheck/worker
+      interval: 5m
+      timeout: 5s
+      retries: 5
     networks:
       - backend
     volumes:
@@ -143,6 +163,11 @@ services:
       target: fingerprint
       args: *buildargs
     command: service-deploy
+    healthcheck:
+      test: /shared/healthcheck/fingerprint
+      interval: 5m
+      timeout: 5s
+      retries: 5
     networks:
       - backend
     volumes:

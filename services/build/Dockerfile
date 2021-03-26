@@ -135,7 +135,6 @@ RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/man/*
 RUN mkdir /opt/echoprint-data
-COPY fingerprint-data.json /root/fingerprint-data.json
 
 ### staging
 FROM jessie_echoprint_production AS jessie_echoprint_staging

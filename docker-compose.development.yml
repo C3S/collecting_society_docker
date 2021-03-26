@@ -47,5 +47,4 @@ services:
       - "127.0.0.1:8080:8080"  # http
       - "127.0.0.1:51004:51004"  # debugger
     volumes:
-      - ./volumes/shared:/shared
       - ./volumes/echoprint-data:/opt/echoprint-data

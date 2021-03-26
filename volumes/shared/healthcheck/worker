@@ -2,9 +2,11 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Healthcheck script for trytond
+# Healthcheck script for worker
 
-if netstat -tulpn | grep :$TRYTON_PORT; then
+WORKERPATH=/shared/src/collecting_society_worker/collecting_society_worker
+
+if $WORKERPATH/test_connection.py; then
     exit 0
 fi
 exit 1

@@ -2,9 +2,9 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Healthcheck script for trytond
+# Healthcheck script for pyramid
 
-if netstat -tulpn | grep :$TRYTON_PORT; then
+if netstat -tulpn | grep :$VIRTUAL_PORT; then
     exit 0
 fi
 exit 1

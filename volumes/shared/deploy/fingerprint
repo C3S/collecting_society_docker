@@ -1,13 +1,70 @@
 #!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Deploy script for echoprint
 
-INGEST=$(ls /opt/echoprint-data | grep casket)
+WAIT=30
+REPOPATH="$WORKDIR/src/echoprint-server"
+DATAPATH="/opt/echoprint-data"
+INGESTPATH="$WORKDIR/data/fingerprints"
+INGESTFILENAME="data.json"
 
-/bin/ttserver -port 1978 -dmn -pid /tmp/tokyotyrant.pid -log /var/log/tokyotyrant.log /opt/echoprint-data/casket.tch#bnum=100000
-/bin/sh -c "cd /shared/src/echoprint-server/solr/solr/ && /usr/bin/java -Dsolr.solr.home=/shared/src/echoprint-server/solr/solr/solr/ -Djava.awt.headless=true -jar start.jar 2>&1 > /var/log/solr.log" &
-/bin/sh -c "python /shared/src/echoprint-server/API/api.py 80 2>&1 > /var/log/echorint.log" &
+TOKYOTYRANT_LOGFILE="/var/log/tokyotyrant.log"
+TOKYOTYRANT_PIDFILE="/tmp/tokyotyrant.pid"
+TOKYOTYRANT_DATAFILE="$DATAPATH/casket.tch"
+TOKYOTYRANT_PORT=1978
 
-if [ $INGEST ]; then
-    cd /shared/src/echoprint-server/util && python fastingest.py /root/fingerprint-data.json
+SOLR_LOGFILE="/var/log/solr.log"
+SOLR_PORT=8502
+
+ECHOPRINT_LOGFILE="/var/log/echoprint.log"
+ECHOPRINT_PORT=80
+
+# tokyotyrant
+echo "Tokyotyrant startup ..."
+rm $TOKYOTYRANT_PIDFILE
+/bin/ttserver -port $TOKYOTYRANT_PORT -dmn -pid $TOKYOTYRANT_PIDFILE \
+              -log $TOKYOTYRANT_LOGFILE $TOKYOTYRANT_DATAFILE#bnum=100000
+timeout $WAIT bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 $TOKYOTYRANT_PORT
+if [ $? -ne 0 ]; then
+    echo "Tokyotyrant startup error. Exiting."
+    exit 1
+fi
+echo "Tokyotyrant started ..."
+
+# solr
+echo "Solr startup ..."
+/bin/sh -c "cd $REPOPATH/solr/solr/ \
+            && /usr/bin/java -Dsolr.solr.home=$REPOPATH/solr/solr/solr/ \
+                             -Djava.awt.headless=true -jar start.jar 2>&1 > $SOLR_LOGFILE" &
+timeout $WAIT bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 $SOLR_PORT
+if [ $? -ne 0 ]; then
+    echo "Solr startup error. Exiting."
+    exit 1
+fi
+echo "Solr started ..."
+
+# echoprint
+echo "Echoprint startup ..."
+# /bin/sh -c "python $REPOPATH/API/api.py $ECHOPRINT_PORT 2>&1 > $ECHOPRINT_LOGFILE" &
+python $REPOPATH/API/api.py $ECHOPRINT_PORT 2>&1 > $ECHOPRINT_LOGFILE &
+timeout $WAIT bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 $SOLR_PORT
+if [ $? -ne 0 ]; then
+    echo "Echoprint startup error. Exiting."
+    exit 1
+fi
+echo "Echoprint started."
+
+# ingest
+INGESTFILE=$INGESTPATH/$INGESTFILENAME
+FLAGFILE=$DATAPATH/$INGESTFILENAME.ingested
+if [ -f $INGESTFILE ] && [ ! -f $FLAGFILE ] && [ -f $TOKYOTYRANT_DATAFILE ]; then
+    cd $REPOPATH/util
+    python fastingest.py $INGESTFILE
+    touch $FLAGFILE
+    cd $WORKGDIR
 fi
 
-tail -f /var/log/tokyotyrant.log /var/log/solr.log /var/log/echoprint.log
+# logs
+tail -f $TOKYOTYRANT_LOGFILE $SOLR_LOGFILE $ECHOPRINT_LOGFILE
