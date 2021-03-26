@@ -3,9 +3,8 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 #
 # Healthcheck script for echoprint
-exit 0
 
-if $WORKERPATH/test_connection.py; then
+if [ $(netstat -tulpn | grep -P "(80|8502|1978)" | wc -l) = 3 ]; then
     exit 0
 fi
 exit 1

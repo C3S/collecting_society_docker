@@ -165,7 +165,7 @@ services:
     command: service-deploy
     healthcheck:
       test: /shared/healthcheck/fingerprint
-      interval: 5m
+      interval: 10s
       timeout: 5s
       retries: 5
     networks:
