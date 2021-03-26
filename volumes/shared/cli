@@ -40,13 +40,6 @@ POSTGRES_HOSTNAME = str(os.environ.get('POSTGRES_HOSTNAME'))
 POSTGRES_PORT = str(os.environ.get('POSTGRES_PORT'))
 TMP_FILE = 'running_db_creation.delete_me'
 
-# Check, if the script is executed in a service environment
-if not (PROJECT and ENVIRONMENT and SERVICE and WORKDIR):
-    sys.exit(
-        "This script is intended to run within a service container. "
-        "Please do not try to execute it on the host."
-    )
-
 
 def _db_disconnect(dbname):
     """
@@ -712,4 +705,11 @@ def docs_build(context, autoapi):
 
 
 if __name__ == '__main__':
+    # Check, if the script is executed in a service environment
+    if "None" in [PROJECT, ENVIRONMENT, SERVICE, WORKDIR]:
+        sys.exit(
+            "This script is intended to run within a service container. "
+            "Please do not try to execute it on the host."
+        )
+    # Run CLI
     cli()
