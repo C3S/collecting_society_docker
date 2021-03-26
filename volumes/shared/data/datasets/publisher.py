@@ -10,7 +10,7 @@ Create the publishers and publisher parties
 from proteus import Model
 
 DEPENDS = [
-    'master',
+    'production',
 ]
 
 

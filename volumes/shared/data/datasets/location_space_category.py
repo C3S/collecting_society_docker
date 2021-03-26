@@ -15,7 +15,7 @@ from proteus import Model
 from . import csv_delimiter, csv_quotechar
 
 DEPENDS = [
-    'master',
+    'production',
 ]
 
 

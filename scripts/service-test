@@ -75,7 +75,7 @@ fi
 # recreate test database template
 if $CI || $BUILD; then
     echo -e "\n== recreate test database template"
-    docker-compose $TESTING exec -T test_erpserver db-rebuild --no-template -d master collecting_society_test_template
+    docker-compose $TESTING exec -T test_erpserver db-rebuild --no-template -d production collecting_society_test_template
 fi
 
 # run tests and linter

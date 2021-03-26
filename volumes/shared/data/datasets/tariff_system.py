@@ -12,7 +12,7 @@ import datetime
 from proteus import Model
 
 DEPENDS = [
-    'master',
+    'production',
 ]
 
 

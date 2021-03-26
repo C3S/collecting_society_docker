@@ -359,8 +359,7 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
     The execution is skipped if the database already exists.
     The execution might be forced (omits the db creation, if it exists).
 
-    Executes scenario master data to set up the database, if master.
-    Executes scenario demo data in development environment, if demo.
+    Generates production and demodata.
 
     During installation a lockfile is created on the host to prevent multiple
     execution from different docker containers.

@@ -2,7 +2,10 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./scripts/db-rebuild
+# Usage: ./scripts/db-rebuild [--ci]
+#
+# Options:
+#     --ci: stops the services before, starts the services detached afterwards
 
 echo "====================================================================="
 echo "====================================================================="
@@ -15,21 +18,39 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR="$( dirname $SCRIPT_DIR )"
 cd $ROOT_DIR
 
+# get options
+CI=false
+for i in "$@"; do
+    if [ $i = "--ci" ]; then CI=true; continue; fi
+done
+
 # stop docker containers
-echo -e "\n== stop docker containers"
-docker-compose stop
+if $CI; then
+    echo -e "\n== stop docker containers"
+    docker-compose stop
+fi
 
 # delete database
-echo -e "\n== delete database"
-docker-compose run --rm erpserver db-rebuild
-echo "exitcode: $?"
+echo -e "\n== rebuild database"
+if docker-compose ps | grep erpserver; then
+    docker-compose exec erpserver db-rebuild
+    EXITCODE=$1
+else
+    docker-compose run --rm erpserver db-rebuild
+    EXITCODE=$1
+fi
+if $CI; then
+    echo "exitcode: $EXITCODE"
+fi
 
 # start docker containers
-echo -e "\n== start docker containers"
-docker-compose up -d
+if $CI; then
+    echo -e "\n== start docker containers"
+    docker-compose up -d
+fi
 
 echo `date +%Y-%m-%d:%H:%M:%S`
 echo "====================================================================="
 echo "====================================================================="
 
-exit 0
+exit $EXITCODE

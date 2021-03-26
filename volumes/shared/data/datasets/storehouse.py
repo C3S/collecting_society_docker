@@ -10,7 +10,7 @@ Create the storehouses and storehouse admins
 from proteus import Model
 
 DEPENDS = [
-    'master',
+    'production',
 ]
 
 

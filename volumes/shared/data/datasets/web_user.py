@@ -13,7 +13,7 @@ import random
 from proteus import Model
 
 DEPENDS = [
-    'master',
+    'production',
 ]
 
 
