@@ -32,24 +32,21 @@ import data
 PROJECT = str(os.environ.get('PROJECT'))
 ENVIRONMENT = str(os.environ.get('ENVIRONMENT'))
 SERVICE = str(os.environ.get('SERVICE'))
-SHARED_PATH = str(os.environ.get('WORKDIR'))
+WORKDIR = str(os.environ.get('WORKDIR'))
 POSTGRES_HOSTNAME = str(os.environ.get('POSTGRES_HOSTNAME'))
 POSTGRES_PORT = str(os.environ.get('POSTGRES_PORT'))
 
 TMP_FILE = 'running_db_creation.delete_me'
 
 
-@click.group()
-def run():
-    """
-    Command line tool to setup and maintain services in docker containers.
-    """
-
-
 def _db_disconnect(dbname):
     """
-    Cut off all database connections to allow delete
+    Cut off all database connections to allow delete.
+
+    Args:
+        dbname (str): Name of database.
     """
+    # kill connections (bug? see collecting_society_worker:repro.py:connect_db)
     try:
         _db_execute_sql(
             "SELECT pg_terminate_backend(pg_stat_activity.pid) "
@@ -58,36 +55,6 @@ def _db_disconnect(dbname):
             "AND pid <> pg_backend_pid();")
     except subprocess.CalledProcessError as e:
         print(e)
-
-
-def _db_update(modules, dbname, trytondconf=False):
-    """
-    Updates tryton modules for database DBNAME.
-
-    Args:
-        modules (str): Comma separated list of modules to update.
-        dbname (str): Name of database.
-        trytondconf (Optional[str]): Name of tryton config file.
-    """
-    print('Update services ...')
-    if modules:
-        modules = modules.split(',')
-    _trytond_conf = trytondconf or ENVIRONMENT + '.conf'
-    os.environ['TRYTONPASSFILE'] = 'config/trytond/passfile'
-    os.environ['TRYTOND_CONFIG'] = os.path.join(
-        SHARED_PATH, 'config', 'trytond', _trytond_conf
-    )
-    command = [
-        'trytond',
-        '-d', dbname,
-        '-c', os.environ['TRYTOND_CONFIG']
-    ]
-    if modules:
-        command.append('-u')
-        command.extend(modules)
-    else:
-        command.append('--all')
-    subprocess.call(command)
 
 
 def _db_exist(dbname):
@@ -128,15 +95,22 @@ def _db_execute_sql(sql):
     )
 
 
+@click.group()
+def run():
+    """
+    Command line tool to setup and maintain services in docker containers.
+    """
+
+
 @run.command('pip-install')
 @click.argument('service', default=SERVICE)
 @click.pass_context
 def pip_install(context, service):
     """
-    Installs required packages for a CONTAINER with pip.
+    Installs required packages for a SERVICE with pip.
 
     Requirements have to be defined in
-    `./shared/config/pip/CONTAINER.pip`.
+    `./shared/config/pip/SERVICE.pip`.
 
     After installation a flag file is created within the container to avoid
     multiple execution during its lifespan.
@@ -150,8 +124,7 @@ def pip_install(context, service):
         print('Install packages for ' + service + ' ... ', end='')
         subprocess.check_call(
             [sys.executable, '-m', 'pip', 'install', '-qr',
-                os.path.join(
-                    SHARED_PATH, 'config', 'pip', '%s.pip' % service)])
+                os.path.join(WORKDIR, 'config', 'pip', '%s.pip' % service)])
         print('ok')
 
         # create flagfile
@@ -162,10 +135,6 @@ def pip_install(context, service):
         # restart process with new modules installed
         subprocess.check_call(sys.argv)
         sys.exit()
-
-    else:
-
-        print('Packages already installed.')
 
     import site
     reload(site)  # noqa: F821
@@ -219,7 +188,7 @@ def db_delete(context, dbname):
     max_tries = 2
     tries = 0
 
-    # kill connections (bug? see collecting_society_worker:repro.py:connect_db)
+    # disconnect users
     _db_disconnect(dbname)
 
     # retry to delete the database
@@ -258,7 +227,7 @@ def db_copy(context, dbname_src, dbname_dst, force):
     """
     print('Copy database "%s" to "%s" ... ' % (dbname_src, dbname_dst), end='')
 
-    # kill connections (bug? see collecting_society_worker:repro.py:connect_db)
+    # disconnect users
     _db_disconnect(dbname_src)
 
     # --force option
@@ -328,19 +297,37 @@ def db_backup(context, dbname):
     '--modules', '-m', default='collecting_society',
     help='Single module or comma separated list of modules to update. '
     'Whitspace not allowed!')
+@click.argument('trytondconf', default=ENVIRONMENT + '.conf')
 @click.argument('dbname', default=PROJECT)
 @click.pass_context
-def db_update(context, modules, dbname):
+def db_update(context, modules, trytondconf, dbname):
     """
     Updates tryton modules for database DBNAME.
 
     Modules can be provided, default is 'collecting_society'.
     If modules are 'all', all modules are updated.
     """
-    context.invoke(pip_install, container='erpserver')
+    context.invoke(pip_install, service='erpserver')
+    print('Update trytond modules: %s ...' % modules)
     if modules == 'all':
         modules = ''
-    _db_update(modules, dbname)
+    if modules:
+        modules = modules.split(',')
+    os.environ['TRYTONPASSFILE'] = 'config/trytond/passfile'
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        WORKDIR, 'config', 'trytond', trytondconf
+    )
+    command = [
+        'trytond',
+        '-d', dbname,
+        '-c', os.environ['TRYTOND_CONFIG']
+    ]
+    if modules:
+        command.append('-u')
+        command.extend(modules)
+    else:
+        command.append('--all')
+    subprocess.call(command)
 
 
 @run.command('db-setup')
@@ -376,7 +363,7 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
     During installation a lockfile is created on the host to prevent multiple
     execution from different docker containers.
     """
-    context.invoke(pip_install, container='erpserver')
+    context.invoke(pip_install, service='erpserver')
 
     # Check lockfile, if locked, wait till not locked any more
     while True:
@@ -403,7 +390,7 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
         # Cofigure trytond
         os.environ['DB_NAME'] = dbname
         os.environ['TRYTOND_CONFIG'] = os.path.join(
-            SHARED_PATH, 'config', 'trytond', ENVIRONMENT + '.conf'
+            WORKDIR, 'config', 'trytond', ENVIRONMENT + '.conf'
         )
 
         # With template
@@ -419,7 +406,7 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
                 # Create template database
                 context.invoke(db_create, dbname=template_dbname)
                 # Update template database
-                _db_update(None, template_dbname)
+                context.invoke(db_update, modules=None, dbname=template_dbname)
                 # Generate dependent datasets
                 data.generate(
                     dataset, exclude, reclimit=reclimit,
@@ -444,7 +431,7 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
             # Create database
             if not _db_exist(dbname):
                 context.invoke(db_create, dbname=dbname)
-                _db_update(None, dbname)
+                context.invoke(db_update, modules=None, dbname=dbname)
             # Generate datasets
             data.generate(
                 dataset, exclude, reclimit=reclimit,
@@ -485,7 +472,7 @@ def db_rebuild(context, dbname, reclimit, dataset, exclude,
     """
     Deletes DBNAME and executes db setup
     """
-    context.invoke(pip_install, container='erpserver')
+    context.invoke(pip_install, service='erpserver')
     print("-" * 100)
     print("  Rebuild database")
     print("-" * 100)
@@ -543,7 +530,7 @@ def service_test(context, service, dbname, reset, path, nargs):
         exit(-1)
 
     if service == 'erpserver':
-        context.invoke(pip_install, container='erpserver')
+        context.invoke(pip_install, service='erpserver')
         os.environ['DB_NAME'] = ":memory:"
         # Start tests
         exitcode = subprocess.call(
@@ -559,18 +546,18 @@ def service_test(context, service, dbname, reset, path, nargs):
 
     _db_name = dbname
     _db_tpl = _db_name + "_template"
-    _file_path = os.path.join(SHARED_PATH, 'tmp', 'files')
+    _file_path = os.path.join(WORKDIR, 'tmp', 'files')
     _trytond_conf = 'testing.conf'
     os.environ['DB_NAME'] = _db_name
     os.environ['TRYTOND_CONFIG'] = os.path.join(
-        SHARED_PATH, 'config', 'trytond', _trytond_conf
+        WORKDIR, 'config', 'trytond', _trytond_conf
     )
 
     # Install packages
     if service == "web":
-        context.invoke(pip_install, container='webgui')
+        context.invoke(pip_install, service='webgui')
     if service == "worker":
-        context.invoke(pip_install, container='worker')
+        context.invoke(pip_install, service='worker')
 
     # Setup containers
     print("\nCONFIGURE TESTS ...\n")
@@ -600,13 +587,9 @@ def service_test(context, service, dbname, reset, path, nargs):
 
     # Prepare paths
     if service == "web":
-        basepaths = glob.glob(
-            os.path.join(SHARED_PATH, 'src', '*_web')
-        )
+        basepaths = glob.glob(os.path.join(WORKDIR, 'src', '*_web'))
     elif service == "worker":
-        basepaths = [
-            os.path.join(SHARED_PATH, 'src', 'collecting_society_worker')
-        ]
+        basepaths = [os.path.join(WORKDIR, 'src', 'collecting_society_worker')]
     modules = []
     testpaths = []
     for basepath in basepaths:
@@ -614,7 +597,7 @@ def service_test(context, service, dbname, reset, path, nargs):
         modules.append(module)
         testpaths.append(os.path.join(basepath, module, 'tests'))
     if path:
-        paths = [os.path.join(SHARED_PATH, path)]
+        paths = [os.path.join(WORKDIR, path)]
     else:
         paths = [os.path.join(path, 'unit') for path in testpaths] +\
                 [os.path.join(path, 'functional') for path in testpaths] +\
@@ -655,7 +638,7 @@ def service_deploy(context, service):
     Installs pip packages, creates and sets up database and runs the
     application (trytond, pyramid).
     """
-    context.invoke(pip_install, container=SERVICE)
+    context.invoke(pip_install, service=SERVICE)
 
     # demodata generation
     if ENVIRONMENT in ["development", "staging"]:
@@ -668,8 +651,7 @@ def service_deploy(context, service):
             [
                 'trytond',
                 '--dev',
-                '-c', os.path.join(
-                    SHARED_PATH, 'config', 'trytond', _trytond_conf)
+                '-c', os.path.join(WORKDIR, 'config', 'trytond', _trytond_conf)
             ]
         )
 
@@ -680,7 +662,7 @@ def service_deploy(context, service):
             [
                 'pserve',
                 os.path.join(
-                    SHARED_PATH, 'src', 'portal_web', ENVIRONMENT + '.ini'
+                    WORKDIR, 'src', 'portal_web', ENVIRONMENT + '.ini'
                 ),
                 trusted_proxy,
                 '--reload'
@@ -705,9 +687,9 @@ def docs_build(context, autoapi):
     Installs pip packages of all modules so they can be found by Sphinx.
     autoapi and Sphinx are started with docs/build.sh.
     """
-    context.invoke(pip_install, container='documentation')
+    context.invoke(pip_install, service='documentation')
     wd = os.getcwd()
-    os.chdir(os.path.join(SHARED_PATH, 'docs'))
+    os.chdir(os.path.join(WORKDIR, 'docs'))
     subprocess.Popen("ls")
     if autoapi:
         subprocess.call(['./build.sh'])

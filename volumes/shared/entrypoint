@@ -10,9 +10,15 @@ SCRIPTNAME=$(basename -- "$0")
 # docker-compose run commands
 if [ "$SCRIPTNAME" = "entrypoint" ]; then
     # call of run explicitly
-    [ "$1" = "run" ] && exec "$@"
+    if [ "$1" = "run" ]; then
+        exec "$@"
     # call of a run subcommand
-    isCommand "$1" && run "$@"
+    elif isCommand "$1"; then
+        run "$@"
+    # other commands
+    else
+        exec "$@"
+    fi
 # docker-compose exec commands
 elif isCommand "$SCRIPTNAME"; then
     run $SCRIPTNAME "$@"
