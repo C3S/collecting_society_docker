@@ -23,3 +23,5 @@ services:
     env_file:
       - .env
       - services/webgui.env
+    environment:
+      SERVICE: documentation

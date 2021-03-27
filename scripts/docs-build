@@ -59,9 +59,9 @@ fi
 # build docs
 echo -e "\n== build docs"
 if $NOAUTOAPI; then
-    docker-compose $DOCUMENTATION exec documentation build-docs --no-autoapi
+    docker-compose $DOCUMENTATION exec documentation docs-build --no-autoapi
 else
-    docker-compose $DOCUMENTATION exec documentation build-docs
+    docker-compose $DOCUMENTATION exec documentation docs-build
 fi
 EXITCODE=$?
 
