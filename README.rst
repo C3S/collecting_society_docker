@@ -76,6 +76,7 @@ Services
 |             |                     |                            | | 51004: ptvsd  | | echoprint-data |
 +-------------+---------------------+----------------------------+-----------------+------------------+
 
+.. _collecting_society_docker: https://github.com/C3S/collecting_society_docker
 .. _collecting_society: https://github.com/C3S/collecting_society
 .. _archiving: https://github.com/C3S/archiving
 .. _portal: https://github.com/C3S/portal
@@ -88,46 +89,57 @@ Files
 -----
 
 .. note:: Some files and folders are created on the first run of the
-    `update script`_ or `docs script`_.
+    `update script`_, `docs-build script`_ or `service-test script`_ and many
+    are symlinks into the shared volume, as the files need to be accessible
+    from within the container.
 
 ::
 
-    ├── code/                               # symlinks to service repositories
+    ├── code/                               # service application repositories
     │   ├── collecting_society/             # (erpserver) tryton module
     │   ├── portal_web/                     # (webgui/webapi) pyramid main app
     │   ├── collecting_society_web/         # (webgui/webapi) pyramid plugin app
     │   ├── collecting_society_worker/      # (worker) file processing
     │   └── echoprint-server/               # (fingerprint) echoprint server
     │
-    ├── documentation/                      # symlink to documentation build
+    ├── documentation/                      # documentation build
     │   └── index.html                      # main index file of the built documentation
     │
     ├── scripts/                            # scripts for common tasks
-    │   ├── docs                            # builds the documentation of the project
-    │   ├── rebuild                         # rebuilds the database
-    │   ├── test                            # runs the tests of the project
+    │   ├── cli                             # main CLI script for common tasks (run in container!)
+    │   ├── db-rebuild                      # rebuilds the database
+    │   ├── docs-build                      # builds the documentation of the project
+    │   ├── service-test                    # runs the tests of the project
     │   └── update                          # updates the files/folders/repos of the project
     │
-    ├── services/                           # config files for docker services
+    ├── services/                           # files for docker services
     │   ├── build/                          # build environment for docker images
     │   │   ├── Dockerfile                  # multistage Dockerfile for docker images
-    │   │   ├── fingerprint-data.json       # (fingerprint) echoprint demo data
-    │   │   ├── fingerprint.sh              # (fingerprint) echoprint start script
     │   │   └── worker.cron                 # (worker) cronjob file for processing
-    │   ├── <SERVICE>.pip                   # symlink to pip runtime requirements for SERVICE
+    │   │
+    │   ├── config/                         # config files for services
+    │   │   ├── collecting_society.*        # (erpserver) trytond config / passfile
+    │   │   ├── portal_web.*                # (webapi/gui) pyramid config
+    │   │   ├── collecing_society_web.*     # (webapi/gui) pyramid plugin config
+    │   │   └── collecting_society_worker.* # (worker) worker config
+    │   │
+    │   ├── deploy/                         # deployment scripts for services
+    │   ├── healthcheck/                    # healthcheck scripts for services
+    │   ├── pip/                            # pip runtime requirements for services
+    │   │
     │   └── <SERVICE>.env                   # additional envvars file for SERVICE
+    │
+    ├── tests/                              # testing output
+    │   ├── cover_web/                      # (webgui/webapi) coverage results
+    │   │   └── index.html                  # main index file of coverage results
+    │   ├── cover_worker/                   # (worker) coverage results
+    │   │   └── index.html                  # main index file of coverage results
+    │   └── screenshots/                    # (webgui) screenshots of integration tests
     │
     ├── volumes/                            # volumes mounted into the containers
     │   ├── shared/                         # (*) main volume mounted into all containers
     │   │   ├── src/                        # repos of packages to include on runtime
     │   │   ├── ref/                        # repos of packages in docker images for reference
-    │   │   │
-    │   │   ├── config/                     # runtime configuration files
-    │   │   │   ├── pip/                    # pip runtime requirements
-    │   │   │   │   └── <SERVICE>.pip       # pip runtime requirements for SERVICE
-    │   │   │   └── trytond/                # trytond configuration files
-    │   │   │       ├── <ENVIRONMENT>.conf  # trytond configuration file for ENVIRONMENT
-    │   │   │       └── passfile            # initial password for trytond admin user
     │   │   │
     │   │   ├── data/                       # demodata generation module
     │   │   │   ├── csv/                    # csv files to import
@@ -135,8 +147,8 @@ Files
     │   │   │   │   └── <MODEL>.py          # script to generate the csv file for tryton MODEL
     │   │   │   ├── datasets/               # datasets to generate
     │   │   │   │   └── <MODEL>.py          # dataset for tryton MODEL
-    │   │   │   ├── main.py                 # main demodata generation script
-    │   │   │   └── scenario.txt            # scenario doctests for tryton models
+    │   │   │   ├── fingerprints/           # fingerprints for echoprint
+    │   │   │   └── main.py                 # main demodata generation script
     │   │   │
     │   │   ├── docs/                       # documentation sphinx build environment
     │   │   │   ├── build/                  # build of the documentation
@@ -145,16 +157,14 @@ Files
     │   │   │   └── Makefile                # sphinx Makefile
     │   │   │
     │   │   ├── tmp/                        # tmp data of services (development/testing)
-    │   │   │   ├── files/                  # trytond file storage (testing)
-    │   │   │   ├── logs/                   # log files for debugging (development)
-    │   │   │   ├── screenshots/            # screenshots of integration tests (testing)
-    │   │   │   └── upload/                 # file upload processing (development)
+    │   │   │   ├── files/                  # trytond file storage
+    │   │   │   ├── logs/                   # log files for debugging
+    │   │   │   ├── sessions/               # cookie session files
+    │   │   │   └── upload/                 # file upload processing
     │   │   │       └── <STAGE>/            # processing / archiving STAGE of files
     │   │   │
-    │   │   ├── .flake8                     # settings for flake8 linter
-    │   │   │
-    │   │   ├── entrypoint                  # docker entrypoint for python based containers
-    │   │   └── run                         # main CLI script for common tasks (run in container!)
+    │   │   ├── docker-entrypoint.sh        # docker entrypoint for python based containers
+    │   │   └── cli                         # main CLI script for common tasks (run in container!)
     │   │
     │   ├── echoprint-data/                 # (fingerprint) echoprint database data
     │   ├── nginx-certs/                    # (webserver) certificates
@@ -167,6 +177,7 @@ Files
     ├── docker-compose.yml                  # main docker compose file
     ├── docker-compose.override.yml         # symlink to environment docker override file
     ├── docker-compose.development.yml      # -> docker override file for development
+    ├── docker-compose.staging.yml          # -> docker override file for staging
     ├── docker-compose.production.yml       # -> docker override file for production
     ├── docker-compose.testing.yml          # standalone docker compose file for testing
     ├── docker-compose.documentation.yml    # standalone docker compose file for documentation
@@ -185,47 +196,54 @@ Files
 Docker
 ''''''
 
-=================================== ==============================================================
-``.env``                            Main environment variable file for service configuration
-``docker-compose.yml``              Main docker compose file with the definition of the services
-``docker-compose.override.yml``     Environment specific values overriding those of the main file
-``services/build/Dockerfile``       Multistage Dockerfile for the docker images
-=================================== ==============================================================
+======================================= ===============================================================
+``.env``                                Main `.env`_ environment file for service configuration
+``docker-compose.yml``                  Main docker `compose`_ file with the definition of the services
+``docker-compose.override.yml``         `Environments`_ variables overriding those of the main file
+``services/build/Dockerfile``           Multistage Dockerfile for the `docker images`_
+``volumes/shared/docker-entrypoint.sh`` Entrypoint script for python based containers
+======================================= ===============================================================
 
 Development
 '''''''''''
 
-=================================== ==============================================================
-``scripts/update``                  Script to update the files/folders/repositories of the project
-``code/``                           Symlinks to the main repositories to develop
-``volumes/shared/src/``             Repos of the packages installed on runtime
-``volumes/shared/ref/``             Repos of the pinned packages in the images for reference
-``volumes/shared/execute``          Main CLI script for common tasks (run within the container!)
-=================================== ==============================================================
+======================================= ===============================================================
+``scripts/update``                      `update script`_ for the files/folders/repos of the project
+``scripts/cli``                         `CLI`_ script for common tasks (run within the container!)
+``services/config/``                    `Application Configuration`_ files for the services
+``code/``                               Main repositories for the `application development`_
+``volumes/shared/src/``                 Repos of all packages installed on runtime
+``volumes/shared/ref/``                 Repos of all pinned packages in the images for reference
+======================================= ===============================================================
 
-Database
-''''''''
+Data
+''''
 
-=================================== ==============================================================
-``scripts/rebuild``                 Script to rebuild the database and demodata
-``volumes/shared/data/datasets/``   Demodata generation scripts for each tryton model
-=================================== ==============================================================
+============================================ ==========================================================
+``scripts/db-rebuild``                       `db-rebuild script`_ for the database and demodata
+``volumes/postgresql-data``                  Files of the postgres database
+``volumes/echoprint-data``                   Files of the echoprint database
+``volumes/shared/data/datasets/``            `Demodata`_ generation scripts for each tryton model
+``volumes/shared/data/fingerprints/``        Ingestable fingerprints for echoprint
+``volumes/shared/data/updloads/generate.sh`` Audiofile generation and compression script
+============================================ ==========================================================
 
 Documentation
 '''''''''''''
 
-=================================== ==============================================================
-``scripts/docs``                    Script to build the documentation
-``documentation/index.html``        Main index file of the built documentation
-=================================== ==============================================================
+======================================= ===============================================================
+``scripts/docs-build``                  `docs-build script`_ to build the `project documentation`_
+``documentation/index.html``            Main index file of the built documentation
+======================================= ===============================================================
 
 Tests
 '''''
 
-=================================== ==============================================================
-``scripts/test``                    Script to run the tests of all services
-``volumes/shared/tmp/screenshots/`` Screenshots of the integration tests
-=================================== ==============================================================
+======================================= ===============================================================
+``scripts/service-test``                `service-test script`_ to run all service `application tests`_
+``tests/cover_*/index.html``            Html summary of coverage for webapi/webgui and worker
+``tests/screenshots/``                  Screenshots of the integration tests
+======================================= ===============================================================
 
 
 Installation
@@ -256,8 +274,8 @@ Repositories
 ------------
 
 In first step, the repositories of the services have to be cloned and some
-filesystem preparation tasks have to be performed. Clone this repository into
-your working space::
+filesystem preparation tasks have to be performed. Clone the
+`collecting_society_docker`_ repository into your working space::
 
     $ cd MY/WORKING/SPACE
     $ git clone https://github.com/C3S/collecting_society_docker.git
@@ -267,14 +285,14 @@ Switch to the root directory of the repository::
     $ cd collecting_society_docker
 
 .. note:: All setup and maintainance tasks are performed in the root path of
-    the ``collecting_society_docker`` repository.
+    this repository.
 
-Checkout the branch of the environment to build:
+Checkout the `Environments`_ branch to build:
 ``development``, ``staging``, ``production``::
 
     $ git checkout <ENVIRONMENT>
 
-Copy the main environment example file ``.env.example`` to ``.env``::
+Copy the main environment variable example file ``.env.example`` to `.env`_::
 
     $ cp .env.example .env
 
@@ -300,36 +318,34 @@ Configuration
 
 For ``staging`` and ``production`` environments:
 
-1. Adjust the **variables** in ``.env``
+1. Adjust the **variables** in `.env`_
    (hostnames, ports, usernames, paths, etc).
 2. Adjust the **secrets**:
 
-   ==================================================== ================================
-   File                                                 Variable
-   ==================================================== ================================
-   ``.env``                                             | ``AUTHENTICATION_SECRET``
-   ``sevices/webapi.env``                               | ``AUTHENTICATION_SECRET``
-                                                        | ``SESSION_SECRET``
-                                                        | ``API_C3SMEMBERSHIP_API_KEY``
-   ``sevices/webgui.env``                               | ``AUTHENTICATION_SECRET``
-                                                        | ``SESSION_SECRET``
-                                                        | ``API_C3SMEMBERSHIP_API_KEY``
-   ``sevices/worker.env``                               | ``ECHOPRINT_TOKEN``
-                                                        | ``WORKER_PROTEUS_PASSWORD``
-   ``volumes/shared/config/trytond/<ENVIRONMENT>.conf`` | ``privatekey``
-                                                        | ``certificate``
-                                                        | ``super_pwd``
-   ``volumes/shared/config/trytond/passfile``           plaintext
-   ==================================================== ================================
+   ========================================================= ================================
+   File                                                      Variable
+   ========================================================= ================================
+   ``.env``                                                  | ``AUTHENTICATION_SECRET``
+   ``sevices/webapi.env``                                    | ``AUTHENTICATION_SECRET``
+                                                             | ``SESSION_SECRET``
+                                                             | ``API_C3SMEMBERSHIP_API_KEY``
+   ``sevices/webgui.env``                                    | ``AUTHENTICATION_SECRET``
+                                                             | ``SESSION_SECRET``
+                                                             | ``API_C3SMEMBERSHIP_API_KEY``
+   ``sevices/worker.env``                                    | ``ECHOPRINT_TOKEN``
+                                                             | ``WORKER_PROTEUS_PASSWORD``
+   ``services/config/collecting_society.<ENVIRONMENT>.conf`` | ``privatekey``
+                                                             | ``certificate``
+                                                             | ``super_pwd``
+   ``services/config/collecting_society.passfile``           plaintext
+   ========================================================= ================================
 
 Images
 ------
 
 Each service runs on a separate docker container. A docker container is
-a running instance of a prebuild docker image. The images for all services
-need to be built first.
-
-.. seealso:: The docker images are defined in ``./services/build/Dockerfile``.
+a running instance of a prebuild docker image. The `docker images`_ for all
+services need to be built first.
 
 The initial build of the containers will take some time *(~30-60 minutes)*::
 
@@ -338,8 +354,8 @@ The initial build of the containers will take some time *(~30-60 minutes)*::
 Database
 --------
 
-After building the images, the services can be started. On the first run,
-the database and demo data is created *(~10-15 minutes)*::
+After building the images, the services can be started. On the first `run`_,
+the database and `demodata`_ is created *(~10-15 minutes)*::
 
     $ docker-compose up
 
@@ -445,6 +461,8 @@ For easy startup create a startup script:
 Test the connection by following the instructions in `Tryton Usage`_.
 
 
+.. _Application Configuration:
+
 Configuration
 =============
 
@@ -462,8 +480,8 @@ The services are configured via:
 
 .. warning:: Some files are tracked in git as ``FILE.example`` and are initally
     copied to the untracked ``FILE`` but not overwritten by the
-    `update script`_. After an upgrade, changes to the ``*.example`` files have
-    to be applied manually.
+    `update script`_. After an `project update`_, changes to the ``*.example``
+    files have to be applied manually.
 
 Environments
 ------------
@@ -484,10 +502,14 @@ Context         Ports  Volumes        Demodata Debug Cache
 ``testing``     public docker managed no       off   on
 =============== ====== ============== ======== ===== =====
 
+For each of the environments but ``testing``, there is a corresponding branch
+with the same name in this repository and most of the main subrepositories
+pre-configured for this environment.
+
 Envvars
 -------
 
-The ``.env`` file in the root path of the repository is the main envvar file
+The `.env`_ file in the root path of the repository is the main envvar file
 and prefered place to specify configuration variables for all services. It
 is included in all main service containers. The variables might be overridden
 in a service container by the corresponding ``services/<SERVICE>.env``.
@@ -582,9 +604,9 @@ worker
 Applications
 ------------
 
-The applications (trytond, proteus, pyramid) provide distinct files for each
-application environment, which are included depending on the value of the
-``.env`` variable ``ENVIRONMENT``. The applications might use envvars as well
+The applications (trytond, proteus, pyramid) provide distinct files for all
+application `environments`_, which are included depending on the value of the
+`.env`_ variable ``ENVIRONMENT``. The applications might use envvars as well
 indicated by the syntax ``${VARIABLE}`` in the configuration file. The
 following sections provide a list of all envvar and configuration files for
 each application.
@@ -596,11 +618,11 @@ Trytond
 
 *Services: erpserver, webapi, webgui*
 
-==================================================== ==============================
-``.env``                                             main envvar file
-``volumes/shared/config/trytond/<ENVIRONMENT>.conf`` trytond config
-``volumes/shared/config/trytond/passfile``           initial trytond admin password
-==================================================== ==============================
+========================================================= ==============================
+``.env``                                                  main envvar file
+``services/config/collecting_society.<ENVIRONMENT>.conf`` trytond config
+``services/config/collecting_society.passfile``           initial trytond admin password
+========================================================= ==============================
 
 .. _Proteus Config:
 
@@ -609,25 +631,25 @@ Proteus
 
 *Services: worker*
 
-==================================================== ==============================
-``.env``                                             main envvar file
-``services/worker.env``                              service envvar file
-``code/collecting_society_worker/config.ini``        worker/proteus config
-==================================================== ==============================
+======================================================== ==============================
+``.env``                                                 main envvar file
+``services/worker.env``                                  service envvar file
+``services/config/collecting_society_worker.config.ini`` worker/proteus config
+======================================================== ==============================
 
 .. _Pyramid Config:
 
 Pyramid
 '''''''
 
-*services: webapi, webgui*
+*Services: webapi, webgui*
 
-==================================================== ==============================
-``.env``                                             main envvar file
-``services/web[api|gui].env``                        service envvar file
-``code/portal_web/<ENVIRONMENT>.ini``                pyramid config
-``code/collecting_society_web/<ENVIRONMENT>.ini``    pyramid plugin config
-==================================================== ==============================
+============================================================ ==========================
+``.env``                                                     main envvar file
+``services/web[api|gui].env``                                service envvar file
+``services/config/portal_web.<ENVIRONMENT>.ini``             pyramid config
+``services/config/collecting_society_web.<ENVIRONMENT>.ini`` pyramid plugin config
+============================================================ ==========================
 
 Usage
 =====
@@ -645,14 +667,14 @@ If you tend to forget the commands or syntax, try getting used to the help
 commands:
 
 =============================== ==============================================================
-List docker commands            ``docker --help``
-Help for docker command         ``docker COMMAND --help``
 List docker-compose commands    ``docker-compose --help``
 Help for docker-compose command ``docker-compose COMMAND --help``
-List CLI command                ``docker-compose run --rm erpserver execute --help``
-Help for CLI command            ``docker-compose run --rm erpserver execute COMMAND --help``
+List docker commands            ``docker --help``
+Help for docker command         ``docker COMMAND --help``
 List scripts                    ``ls scripts``
-Help for scripts                ``cat scripts/SCRIPT``
+Help for scripts                ``./scripts/SCRIPT --help``
+List CLI command                ``docker-compose [exec|run --rm] erpserver --help``
+Help for CLI command            ``docker-compose [exec|run --rm] erpserver COMMAND --help``
 =============================== ==============================================================
 
 .. seealso:: `Docker-compose command line reference`__ and
@@ -665,38 +687,38 @@ __ https://docs.docker.com/engine/reference/commandline/cli/
 Run
 ---
 
-============================================ ===================================================
-Start services                               ``docker-compose up``
-Start services in the background             ``docker-compose up -d``
-Start a certain service                      ``docker-compose up SERVICE``
-Run a command on a running/new container     | ``docker-compose exec SERVICE COMMAND``
-                                             | ``docker-compose run --rm SERVICE COMMAND``
-Run a CLI command on a running/new container | ``docker-compose exec SERVICE execute COMMAND``
-                                             | ``docker-compose run --rm SERVICE execute COMMAND``
-Open a shell on a running service container  ``docker-compose exec SERVICE bash``
-Run a CLI command inside a container shell   ``execute COMMAND``
-Build documentation                          ``./scripts/docs``
-Run tests                                    ``./scripts/tests``
-Scale services on demand                     ``docker-compose scale SERVICE=#``
-Stop services                                ``docker-compose stop``
-Stop a certain service                       ``docker-compose stop SERVICE``
-Stop and remove containers/volumes/networks  ``docker-compose down``
-============================================ ===================================================
+=========================================== ====================================================
+Start services                              ``docker-compose up``
+Start services in the background            ``docker-compose up -d``
+Start a certain service (in the background) ``docker-compose up SERVICE [-d]``
+Run a command on a running|new container    ``docker-compose [exec|run --rm] SERVICE CMD``
+Run CLI command on a running|new container  ``docker-compose [exec|run --rm] SERVICE [cli] CMD``
+Open a shell on a running|new container     ``docker-compose [exec|run --rm] SERVICE bash``
+Run CLI command inside a container shell    ``[cli] CMD``
+Build documentation                         ``./scripts/docs-build``
+Run tests                                   ``./scripts/service-test``
+Scale services on demand                    ``docker-compose scale SERVICE=#``
+Stop services                               ``docker-compose stop``
+Stop a certain service                      ``docker-compose stop SERVICE``
+Stop and remove containers/volumes/networks ``docker-compose down``
+=========================================== ====================================================
 
-.. note:: Use always ``docker-compose exec`` instead of
-    ``docker-compose run --rm``, if containers are running.
+.. note:: Always prefer ``exec`` to ``run --rm``, if containers are already
+    running.
 
-.. note:: For the ``SERVICE`` names, see `Table of Services`_.
+.. seealso:: ``SERVICE``: `Table of Services`_, ``CMD``: `CLI`_.
+
+.. _Project Update:
 
 Update
 ------
 
-=================== ============================================================================
+=================== =======================================================
 Update repositories ``./scripts/update``
 Diff example files  ``diff FILE FILE.example``
 Build images        ``docker-compose build``
-Update database     ``docker-compose run --rm erpserver execute update -m collecting_society``
-=================== ============================================================================
+Update database     ``docker-compose [exec|run --rm] erpserver db-update``
+=================== =======================================================
 
 1. Update the repositories/files/folders::
 
@@ -716,18 +738,13 @@ Update database     ``docker-compose run --rm erpserver execute update -m collec
 
     $ find . -type f -name \*.example 2>/dev/null | sed 's/.example$//' | xargs -I {} diff -u {} {}.example
 
-3. If there were changes in the ``Dockerfile``, rebuild all docker images::
+3. If there were changes in the ``Dockerfile``, rebuild all `docker images`_::
 
     $ docker-compose build
 
-   If you run into problems, you can also rebuild all docker images without
-   cache::
-
-    $ docker-compose -f docker-compose.documentation.yml down -v --rmi all --remove-orphans
-    $ docker-compose -f docker-compose.testing.yml down -v --rmi all --remove-orphans
-    $ docker-compose down -v --rmi all --remove-orphans
-    $ docker image prune
-    $ docker-compose build
+   If you run into problems, you can also rebuild all `docker images`_ without
+   cache. Just `remove` all project images (also the dangling ones) before the
+   execution of the ``build`` command.
 
    .. warning:: The ``build`` command has a ``--no-cache`` option, but for
        multistage builds the intermediate stages won't be reused then, which
@@ -736,12 +753,12 @@ Update database     ``docker-compose run --rm erpserver execute update -m collec
 4. If there were changes in the ``collection_society`` repository, update the
    database::
 
-    $ docker-compose run --rm erpserver execute update -m collecting_society
+    $ docker-compose run --rm erpserver db-update
 
    If you run into problems and don't care about the data, you can also
    recreate the database::
 
-    $ ./scripts/rebuild
+    $ ./scripts/db-rebuild
 
 Inspect
 -------
@@ -752,13 +769,13 @@ Open a shell on a service container          ``docker-compose run --rm SERVICE b
 Open a shell on a running container          ``docker-compose exec bash``
 List project docker containers               ``docker-compose ps``
 List project docker images                   ``docker-compose images``
-List docker containers                       ``docker-compose ps [-a]``
+List project docker containers               ``docker-compose ps [-a]``
+List processes of project container          ``docker-compose top``
+Show used resources for containers           ``docker stats``
 List docker images                           ``docker images ls [-a]``
 List docker networks                         ``docker network ls``
 List docker volumes                          ``docker volume ls``
 Inspect a container/volume/network/...       ``docker inspect ID|NAME``
-Show used resources for containers           ``docker stats``
-Show processes of container                  ``docker top CONTAINERID``
 ============================================ ===================================================
 
 Remove
@@ -790,14 +807,14 @@ Database
 --------
 
 ======= =========================================================================================
-Create  ``docker-compose run --rm erpserver execute db-create [NAME]``
-Setup   ``docker-compose run --rm erpserver execute db-setup [NAME]``
-Copy    ``docker-compose run --rm erpserver execute db-copy [--force] [SOURCENAME] [TARGETNAME]``
-Backup  ``docker-compose run --rm erpserver execute db-backup [NAME] > /shared/tmp/db.backup``
-Delete  ``docker-compose run --rm erpserver execute db-delete [NAME]``
-Rebuild | ``docker-compose run --rm erpserver execute db-rebuild``
+Create  ``docker-compose [exec|run --rm] erpserver db-create [NAME]``
+Copy    ``docker-compose [exec|run --rm] erpserver db-copy [--force] [SOURCENAME] [TARGETNAME]``
+Backup  ``docker-compose [exec|run --rm] erpserver db-backup [NAME] > /shared/tmp/db.backup``
+Delete  ``docker-compose [exec|run --rm] erpserver db-delete [NAME]``
+Setup   ``docker-compose [exec|run --rm] erpserver db-setup [NAME]``
+Rebuild | ``docker-compose [exec|run --rm] erpserver db-rebuild [NAME]``
         | ``./scripts/rebuild``
-Examine ``docker-compose run --rm erpserver execute db-psql [NAME]``
+Examine ``docker-compose run --rm erpserver db-connect [NAME]``
 ======= =========================================================================================
 
 .. note:: The ``NAME`` is optional and defaults to ``collecting_society``.
@@ -810,7 +827,7 @@ setup itself seem to be broken, you can always delete and recreate the folder::
 
     $ docker-compose down
     $ sudo rm -rf ./volumes/postgresql-data/
-    $ mkdir postgresql-data
+    $ mkdir ./volumes/postgresql-data
     $ docker-compose up
 
 .. warning:: All data in this database will be deleted!
@@ -824,154 +841,415 @@ Scripts
 
 The scripts are either intended to make some operations more comfortable or for
 automatisation (CI). The following sections contain a brief synopsis about each
-of the provided scripts.
+of the provided scripts as provided by the ``--help`` option.
 
-.. _docs script:
+.. _docs-build script:
 
-docs
-''''
+docs-build
+''''''''''
+::
 
-This script builds the documentation with sphinx.
+    $ ./scripts/docs-build --help
+    Usage: ./scripts/docs-build [--down] [--build] [--keep] [--no-autoapi] [--help]
 
-**Usage**::
+      This script builds the documentation with sphinx.
 
-    $ ./scripts/docs [--down] [--build] [--keep]
+    Options:
+      --down: immediately stop and remove the container and exit
+      --build: build images
+      --keep: keep container running
+      --no-autoapi: don't parse the modules
+      --help: display this help
 
-**Options**:
 
-================ ==================================================
-``--down``       immediately stop and remove the container and exit
-``--build``      build images
-``--keep``       keep container running
-``--no-autoapi`` don't parse the modules
-================ ==================================================
+.. _db-rebuild script:
 
-.. _rebuild script:
+db-rebuild
+''''''''''
+::
 
-rebuild
-'''''''
+    $ ./scripts/db-rebuild --help
+    Usage: ./scripts/db-rebuild [--ci] [--help]
 
-This script deletes and recreates the database and generates the demo data.
+      This script deletes and recreates the database and generates the demodata.
 
-**Usage**::
+    Options:
+      --ci: stops the services before, starts the services detached afterwards
+      --help: display this help
 
-    $ ./scripts/rebuild
+.. _service-test script:
 
-.. _test script:
+service-test
+''''''''''''
+::
 
-test
-''''
+    $ ./scripts/service-test --help
+    Usage: ./scripts/service-test [service] [--down] [--build] [--keep] [--ci] [--help] [PARARAMS]
 
-This script runs the unit/function/integration tests and linter for the
-services:
+      This script runs the unit/function/integration tests and linter for the services:
+        - erpserver (tryton)
+        - web (pyramid)
+        - worker (echoprint)
 
-- erpserver (tryton)
-- web (pyramid)
-- worker (echoprint)
-
-.. note:: In the ``testing`` environment, the ``webgui`` and ``webapi``
-    services run both on the ``web`` service.
-
-**Usage**::
-
-    $ ./scripts/test [SERVICE] [--down] [--build] [--keep] [--ci] [PARARAMS]
-
-**Options**:
-
-=========== ===============================================================
-``SERVICE`` web|worker|erpserver|all (default: all)
-``--down``  immediately stop and remove the container and exit
-``--build`` build images and recreate the test database template
-``--keep``  keep container running
-``--ci``    continous integration mode
-``PARAMS``  are passed to run-tests within the container (e.g. nose params)
-=========== ===============================================================
-
-The CI mode implies:
-
-- Update repositories (overrides config files!)
-- Build images
-- Recreate the test database template
-- Run tests and linter
-- Stop and remove the container
+    Options:
+      service: web|worker|erpserver|all (default: all)
+      --down: immediately stop, remove the container and exit
+      --build: build images and recreate the test database template
+      --keep: keep container running
+      --ci: continous integration mode
+            - update repositories (overrides config files!)
+            - build images
+            - recreate the test database template
+            - run tests and linter
+            - stop and remove the container
+      PARAMS: are passed to run-tests within the container
+      --help: display this help
 
 .. _update script:
 
 update
 ''''''
+::
 
-This script updates the project:
+    $ ./scripts/update --help
+    Usage: ./scripts/update [--reset] [--help]
 
-- Creation of files and folders
-- Copy of ``FILE.example`` files to ``FILE``
-- Checkout/Pull of the repositories (including this one)
+      This script updates the project:
+        - Creation of files and folders
+        - Copy of FILE.example files to FILE
+        - Checkout/Pull of the source repositories (including this one)
+        - Checkout/Pull of the reference repositories
 
-**Usage**::
-
-    $ ./scripts/update [--reset]
-
-**Options**:
-
-=========== ==============================================
-``--reset`` overrides the ``.example`` configuration files
-=========== ==============================================
+    Options:
+      --reset: overrides the configuration files with .example
 
 CLI
 ---
 
-The ``./volumes/shared/execute`` script contains a CLI for special service
-maintainance commands.
+The ``./scripts/cli`` script contains a CLI for special service
+maintainance commands. Within the containers it is available in the working
+directory ``/shared/cli``. For convenience and to ensure the same command
+invokation syntax of ``exec`` and ``run --rm``, the commands of the script are
+also available directy via ``/shared/COMMAND``.
 
 .. warning:: The script should only be executed within a service container!
 
+.. note:: Not all commands will work on any service.
+
 **Usage**:
 
-- On the host::
+On the host::
 
-    $ docker-compose run --rm SERVICE execute COMMAND
-    $ docker-compose exec SERVICE execute COMMAND
+    $ docker-compose run --rm SERVICE COMMAND
+    $ docker-compose exec SERVICE COMMAND
 
-  e.g.::
+For example::
 
-    $ docker-compose run --rm erpserver execute --help
-    $ docker-compose exec erpserver execute --help
+    $ docker-compose run --rm erpserver db-rebuild
+    $ docker-compose exec erpserver db-rebuild
 
-- Inside a service container::
+Inside a service container::
 
-    $ execute COMMAND
+    $ COMMAND
+
+For example::
+
+    $ db-rebuild
+
+**Help**::
+
+    $ cli --help
+    $ COMMAND --help
 
 **Commands**::
 
-    $ execute --help
-    Usage: execute [OPTIONS] COMMAND [ARGS]...
+    $ cli --help
+    Usage: cli [OPTIONS] COMMAND [ARGS]...
 
-      Command line tool to setup and maintain services in docker containers.
+      Command line interface to setup and maintain services in docker
+      containers.
 
     Options:
       --help  Show this message and exit.
 
     Commands:
-      build-docs            Builds the Sphinx documentation.
-      build-docs-noautoapi  Builds the Sphinx documentation without...
-      db-backup             Dumps the postgres database DBNAME to stdout.
-      db-copy               Creates the postrges database DBNAME_DST from...
-      db-create             Creates the postrges database DBNAME.
-      db-delete             Deletes the postrges database DBNAME.
-      db-psql               Opens a SQL console for the database DBNAME.
-      db-rebuild            Deletes DBNAME and executes db setup
-      db-setup              Creates and sets up the postgres database...
-      deploy-erpserver      Deploys the erpserver service.
-      deploy-webapi         Deploys the webapi service.
-      deploy-webgui         Deploys the webgui service.
-      kill-dbconnections    Cut off all database connections to allow...
-      pip-install           Installs required packages for a CONTAINER...
-      run-tests             Runs all tests for a service (web, worker).
-      update                Updates tryton modules for database DBNAME.
+      db-backup            Dumps the postgres database DBNAME to stdout.
+      db-connect           Opens a SQL console for the database DBNAME.
+      db-copy              Creates the postrges database DBNAME_DST from...
+      db-create            Creates the postrges database DBNAME.
+      db-delete            Deletes the postrges database DBNAME.
+      db-rebuild           Deletes DBNAME and executes db setup
+      db-setup             Creates and sets up the postgres database...
+      db-update            Updates tryton modules for database DBNAME.
+      docs-build           Builds the Sphinx documentation.
+      pip-install          Installs required packages for a SERVICE with...
+      service-deploy       Deploys the services (erpserver, webgui,...
+      service-healthcheck  Healthcheck for the services.
+      service-test         Runs all tests for a service (erpserver, web,...
 
-**Help**::
+.. _db-backup CLI:
 
-    $ execute --help
-    $ execute COMMAND --help
+db-backup
+'''''''''
+::
+
+    $ db-backup --help
+    Usage: cli db-backup [OPTIONS] [DBNAME]
+
+      Dumps the postgres database DBNAME to stdout.
+
+    Options:
+      --help  Show this message and exit.
+
+.. _db-connect CLI:
+
+db-connect
+''''''''''
+::
+
+    $ db-connect --help
+    Usage: cli db-connect [OPTIONS] [DBNAME]
+
+      Opens a SQL console for the database DBNAME.
+
+    Options:
+      --help  Show this message and exit.
+
+.. _db-copy CLI:
+
+db-copy
+'''''''
+::
+
+    $ db-copy --help
+    Usage: cli db-copy [OPTIONS] DBNAME_SRC DBNAME_DST
+
+      Creates the postrges database DBNAME_DST from template DBNAME_SRC.
+
+    Options:
+      --force / --no-force  Force execution (default: no)
+      --help                Show this message and exit.
+
+.. _db-create CLI:
+
+db-create
+'''''''''
+::
+
+    $ db-create --help
+    Usage: cli db-create [OPTIONS] [DBNAME]
+
+      Creates the postrges database DBNAME.
+
+      The execution is skipped if the database already exists.
+
+    Options:
+      --help  Show this message and exit.
+
+.. _db-delete CLI:
+
+db-delete
+'''''''''
+::
+
+    $ db-delete --help
+    Usage: cli db-delete [OPTIONS] [DBNAME]
+
+      Deletes the postrges database DBNAME.
+
+      On error the deletion is retried several times.
+
+    Options:
+      --help  Show this message and exit.
+
+.. _db-rebuild CLI:
+
+db-rebuild
+''''''''''
+::
+
+    $ db-rebuild --help
+    Usage: cli db-rebuild [OPTIONS] [DBNAME]
+
+      Deletes DBNAME and executes db setup
+
+    Options:
+      -r, --reclimit INTEGER      Maximum numbers of objects (default: 0 = all)
+      -d, --dataset TEXT          dataset in ./data/datasets/ to generate
+                                  (default: all)
+                                  can be used multiple times
+      -e, --exclude TEXT          datasets in ./data/datasets/ to exclude
+                                  (default: none)
+                                  can be used multiple times
+      --template / --no-template  Use template db for dataset deps (default: yes)
+      --cache / --no-cache        Use/Recreate template db for dataset deps
+                                  (default: no)
+      --pdb / --no-pdb            Start pdb on error (default: no)
+      --help                      Show this message and exit.
+
+.. _db-setup CLI:
+
+db-setup
+''''''''
+::
+
+    $ db-setup --help
+    Usage: cli db-setup [OPTIONS] [DBNAME]
+
+      Creates and sets up the postgres database DBNAME.
+
+      The execution is skipped if the database already exists. The execution
+      might be forced (omits the db creation, if it exists).
+
+      Generates production and demodata.
+
+      During installation a lockfile is created on the host to prevent multiple
+      execution from different docker containers.
+
+    Options:
+      -r, --reclimit INTEGER      Maximum numbers of objects (default: 0 = all)
+      -d, --dataset TEXT          dataset in ./data/datasets/ to generate
+                                  (default: all)
+                                  can be used multiple times
+      -e, --exclude TEXT          datasets in ./data/datasets/ to exclude
+                                  (default: none)
+                                  can be used multiple times
+      --template / --no-template  Use template db for dataset deps (default: yes)
+      --cache / --no-cache        Regenerate template db for dataset deps
+                                  (default: no)
+      --force / --no-force        Force execution (default: no)
+      --pdb / --no-pdb            Start pdb on error (default: no)
+      --help                      Show this message and exit.
+
+.. _db-update CLI:
+
+db-update
+'''''''''
+::
+
+    $ db-update --help
+    Usage: cli db-update [OPTIONS] [TRYTONDCONF] [DBNAME]
+
+      Updates tryton modules for database DBNAME.
+
+      Modules can be provided, default is 'collecting_society'. If modules are
+      'all', all modules are updated.
+
+    Options:
+      -m, --modules TEXT  Single module or comma separated list of modules to
+                          update. Whitspace not allowed!
+      --help              Show this message and exit.
+
+.. _docs-build CLI:
+
+docs-build
+''''''''''
+::
+
+    $ docs-build --help
+    Usage: cli docs-build [OPTIONS]
+
+      Builds the Sphinx documentation.
+
+      Installs pip packages of all modules so they can be found by Sphinx.
+      autoapi and Sphinx are started with docs/build.sh.
+
+    Options:
+      --autoapi / --no-autoapi  Activate autoapi (default: yes)
+      --help                    Show this message and exit.
+
+.. _pip-install CLI:
+
+pip-install
+'''''''''''
+::
+
+    $ pip-install --help
+    Usage: cli pip-install [OPTIONS] [SERVICE]
+
+      Installs required packages for a SERVICE with pip.
+
+      Requirements have to be defined in `./shared/config/pip/SERVICE.pip`.
+
+      After installation a flag file is created within the container to avoid
+      multiple execution during its lifespan.
+
+    Options:
+      --help  Show this message and exit.
+
+.. _service-deploy CLI:
+
+service-deploy
+''''''''''''''
+::
+
+    $ service-deploy --help
+    Usage: cli service-deploy [OPTIONS] [SERVICE]
+
+      Deploys the services (erpserver, webgui, webapi, worker, fingerprint).
+
+      Installs pip packages, creates and sets up database and runs the
+      application.
+
+    Options:
+      --help  Show this message and exit.
+
+.. _service-healthcheck CLI:
+
+service-healthcheck
+'''''''''''''''''''
+::
+
+    $ service-healthcheck --help
+    Usage: cli service-healthcheck [OPTIONS] [SERVICE]
+
+      Healthcheck for the services.
+
+    Options:
+      --help  Show this message and exit.
+
+.. _service-test CLI:
+
+service-test
+''''''''''''
+::
+
+    $ service-test --help
+    Usage: cli service-test [OPTIONS] [SERVICE] [NARGS]...
+
+      Runs all tests for a service (erpserver, web, worker).
+
+      Starts nosetests and prints output to stdout.
+
+      Creates the test database template DBNAME_template, if not existant. On
+      RESET, the database DBNAME will be recreated from this template and the
+      temporary tryton file folder will be deleted.
+
+      The location of the temporary tryton upload folder is configured in
+      `./shared/config/trytond/testing_DBTYPE.conf` (currently
+      `./shared/tmp/files`).
+
+      The location of the screenshots of integration tests is configured within
+      `<portal_web>/tests/config.py` (currenty `./shared/tmp/screenshots).
+
+      The PATH to tests may be defined to test certain testfiles, testclasses or
+      test methods (see nosetests for the syntax). If no PATH is given, all tests
+      of portal_web and plugins are included. The test files should be stored
+      below the following subpaths by convention:
+
+          <portal_web||plugin>/tests/unit (unittest)
+
+          <portal_web||plugin>/tests/functional (webtest)
+
+          <portal_web||plugin>/tests/integration (selenium)
+
+      Additional NARGS will be passed to nosetests.
+
+    Options:
+      --dbname TEXT         Name of database (default: test)
+      --reset / --no-reset  Reset the database (default: yes)
+      --path TEXT           Searchpath for tests (see nosetest)
+      --help                Show this message and exit.
 
 .. _Webbrowser Usage:
 
@@ -1033,6 +1311,9 @@ Other important entries are:
 * **Administration / Users**: Users, Web Users
 * **Administration / Sequences**: Sequences
 
+
+.. _Application Development:
+
 Development
 ===========
 
@@ -1090,7 +1371,9 @@ The project consists of 3 separate docker-compose setups:
 
   - ``documentation``: sphinx build container
 
-For more information, look into the ``*.yml`` files.
+For more information, look into the ``docker-compose*.yml`` files.
+
+.. _Docker Images:
 
 Images
 ''''''
@@ -1114,7 +1397,7 @@ image setup are:
 - The packages/applications are compiled on images of the compile branch and in
   the end **copied** to the images on the service branch, which are used for
   the actual services.
-- Each image stage has **4 substages** for the different environments:
+- Each image stage has **4 substages** for the different `environments`_:
 
   - The **production** substage contains only the minimum of packages needed.
   - The **staging** substage adds packages for stating.
@@ -1124,6 +1407,9 @@ image setup are:
 - The reason for both the division of compile/service branches as well as the
   substages matching the environment is to have **slimmer** images, **smaller**
   attack surfaces and a **faster** build time.
+- All images based on ``jessie_python`` use
+  ``volumes/shared/docker-entrypoint.sh`` as entrypoint to detect and execute
+  `CLI`_ commands provided by the ``volumes/shared/cli`` script.
 
 The tree of the stages of the service branch (without substages)::
 
@@ -1195,7 +1481,7 @@ The source code of those packages can also be found in the folder
 ``./volumes/shared/ref/`` and are provided for reference and for quick lookups
 during development. The source code is not used though. The repositories are
 cloned on the first run of the `update script`_ and can be configured via the
-dictionary ``clone_references``::
+dictionary ``clone_references`` within the update script::
 
     {
         'url': '<URL>',             # https url to git repository
@@ -1210,10 +1496,11 @@ Those packages, which are either under development or need to be updated
 regulary are git cloned into the folder ``./volumes/shared/src/``. Those packages
 are pip installed during runtime each time a container is started. The list of
 package requirements for each service container can be found in
-``./services/<SERVICE>.pip``.
+``./services/pip/<SERVICE>.pip``.
 
 The repositories are cloned and updated on each run of the `update script`_
-and can be configured via the dictionary ``clone_sources``::
+and can be configured via the dictionary ``clone_sources`` within the update
+script::
 
     {
         'url': '<URL>',             # https url to git repository
@@ -1236,13 +1523,13 @@ To start all services detached::
 
 If you want to start only a certain service with its dependencies, use::
 
-    $ docker-compose run --rm --service-ports SERVICE    execute deploy-SERVICE
-      '---------------------------------------------'    '--------------------'
-                      host command                         container command
+    $ docker-compose run --rm --service-ports SERVICE    service-deploy
+      '---------------------------------------------'    '-------------'
+                      host command                      container command
 
-    $ docker-compose run --rm --service-ports webgui     execute deploy-webgui
-    $ docker-compose run --rm --service-ports webapi     execute deploy-webapi
-    $ docker-compose run --rm --service-ports erpserver  execute deploy-erpserver
+    $ docker-compose run --rm --service-ports webgui     service-deploy
+    $ docker-compose run --rm --service-ports webapi     service-deploy
+    $ docker-compose run --rm --service-ports erpserver  service-deploy
 
 The host command explained:
 
@@ -1258,8 +1545,10 @@ The host command explained:
 
 The container command explained:
 
-    - ``execute``: The name of the `CLI`_ script
-    - ``deploy-SERVICE``: The `CLI`_ command to start the service application
+    - ``service-deploy``: The `service-deploy CLI`_ command to start the
+      application
+
+.. note:: The deploy scripts can be found in ``services/deploy/SERVICE``.
 
 To open a shell on a new container::
 
@@ -1285,12 +1574,12 @@ within the erpserver:
 1. Start the first terminal, open a bash in the erpserver and start trytond::
 
     $ docker-compose run --rm --service-ports erpserver bash
-    > execute deploy-erpserver
+    > service-deploy
 
    To restart the trytond server::
 
     > <Ctrl+c>
-    > execute deploy-erpserver
+    > service-deploy
 
 2. Start the second terminal, open another bash in the running container::
 
@@ -1298,11 +1587,11 @@ within the erpserver:
 
    To update the collecting_society module for the database::
 
-    > execute update -m collecting_society
+    > db-update
 
    To update all modules for the database::
 
-    > execute update
+    > db-update -m all
 
 To connect to Trytond with the Tryton client, see `Tryton Usage`_.
 
@@ -1310,11 +1599,13 @@ To connect to Trytond with the Tryton client, see `Tryton Usage`_.
 
 You can now start coding:
 
-================================ =================================
-``code/collecting_society/``     trytond main module
-``volumes/shared/src/``          all trytond module repositories
-``~/.config/tryton/3.4/``        tyton client config files
-================================ =================================
+======================================== =================================
+``code/collecting_society/``             trytond main module
+``services/config/collecting_society.*`` trytond server config files
+``~/.config/tryton/3.4/``                tyton client config files
+``volumes/shared/src/``                  all trytond module repositories
+``volumes/trytond-files/``               trytond file storage
+======================================== =================================
 
 .. seealso:: `Trytond Config`_ and `C3S Redmine Wiki: Tryton HowTo`__
 
@@ -1335,11 +1626,16 @@ all services with stdin attached to the service logs::
 The application will monitor changes to files and restart itself automatically.
 You can now start coding:
 
-================================ =========================================
-``code/portal_web/``             pyramid main application code
-``code/collecting_society_web/`` pyramid plugin code
-``volumes/shared/ref/``          pinned python package repos for reference
-================================ =========================================
+============================================ =========================================
+``code/portal_web/``                         pyramid main application code
+``code/collecting_society_web/``             pyramid plugin code
+``services/config/portal_web.*``             pyramid main application config files
+``services/config/collecting_society_web.*`` pyramid plugin config files
+``volumes/shared/ref/``                      pinned python package repos for reference
+``volumes/shared/tmp/logs``                  log folder for some debugging flags
+``volumes/shared/tmp/session``               cookie session data files
+``volumes/shared/tmp/upload``                upload folder for audio/pdfs
+============================================ =========================================
 
 .. seealso:: `Pyramid Config`_
 
@@ -1361,14 +1657,14 @@ of the box. Just add the line in the python file::
 If you want to debug a **service**, you need to start the service via the
 ``run`` command to attach stdin/stdout and add the ``--service-port`` flag::
 
-    $ docker-compose run --rm --service-ports SERVICE execute deploy-SERVICE
+    $ docker-compose run --rm --service-ports SERVICE service-deploy
 
-If you want to debug **tests**, you can add the ``--pdb`` flag to the
-``./scripts/test`` script or the ``execute run-tests`` CLI command to jump into
+If you want to debug `application tests`_, you can add the ``--pdb`` flag to
+the `service-test script`_ or the `service-test CLI`_ command to jump into
 pdb on errors automatically.
 
-If you want to debug the **demodata** generation, you can add the ``--pdb``
-flag to the ``execute db-rebuild`` CLI command to jump into pdb on errors
+If you want to debug the `demodata`_ generation, you can add the ``--pdb``
+flag to the `db-rebuild CLI`_ command to jump into pdb on errors
 automatically.
 
 Ptvsd
@@ -1377,7 +1673,7 @@ Ptvsd
 If you use Visual Studio Code as your editor, you would want to install the
 Remote Containers extension, so you can work directly in the docker containers,
 including source level debugging from within VS Code. Just make sure that
-the environment variables in ``.env`` have the right values::
+the environment variables in `.env`_ have the right values::
 
     ENVIRONMENT=development
     DEBUGGER_PTVSD=1
@@ -1410,7 +1706,7 @@ Winpdb
 ''''''
 
 To allow the winpdb debugger to attach to a portal script, make sure that
-the environment variables in ``.env`` have the right values::
+the environment variables in `.env`_ have the right values::
 
     ENVIRONMENT=development
     DEBUGGER_WINPDB=1
@@ -1435,27 +1731,29 @@ The processing container can be setup for debugging the same way. Make sure to
 only enable either of the both containers for debugging, not both the same
 time.
 
+.. _Application Tests:
+
 Tests
 -----
 
 The tests are performed on separate containers. To build the images on the
-first run, use the ``--build`` flag of the `test script`_::
+first run, use the ``--build`` flag of the `service-test script`_::
 
-    $ ./scripts/test --build
+    $ ./scripts/service-test --build
 
 Run tests for all services (web, erpserver, worker)::
 
-    $ ./scripts/test
+    $ ./scripts/service-test
 
 If you develop the tests and need to start them more than once, you can
 use the ``--keep`` flag, to keep the container running and use the command
 multiple times::
 
-    $ ./scripts/test --keep
+    $ ./scripts/service-test --keep
 
 To stop and remove the container, when you have finished, enter ::
 
-    $ ./scripts/test --down
+    $ ./scripts/service-test --down
 
 .. note:: All commits to all repositories are automatically CI tested with
     `jenkins`__ (needs authentication) using the same test script.
@@ -1467,15 +1765,15 @@ Trytond
 
 Run all trytond tests (module tests, scenario doctests) once::
 
-    $ ./scripts/test erpserver
+    $ ./scripts/service-test erpserver
 
 Run all trytond tests and keep the container running for the next test run::
 
-    $ ./scripts/test erpserver --keep
+    $ ./scripts/service-test erpserver --keep
 
 Stop the container afterwards::
 
-    $ ./scripts/test --down
+    $ ./scripts/service-test --down
 
 If you prefer, you can also execute the commands above from within the container::
 
@@ -1483,10 +1781,13 @@ If you prefer, you can also execute the commands above from within the container
     $ docker-compose -f docker-compose.testing.yml exec test_erpserver bash
 
         # setup container
-        > execute pip-install erpserver
+        > pip-install
         > export DB_NAME=:memory:
 
         # run tests
+        > service-test
+
+        # run tests directly
         > python /shared/src/trytond/trytond/tests/run-tests.py -vvvm collecting_society
 
         # exit container
@@ -1499,15 +1800,15 @@ Worker
 
 Run all worker tests (module tests, scenario doctests) once::
 
-    $ ./scripts/test worker
+    $ ./scripts/service-test worker
 
 Run all trytond tests and keep the container running for the next test run::
 
-    $ ./scripts/test worker --keep
+    $ ./scripts/service-test worker --keep
 
 Stop the container afterwards::
 
-    $ ./scripts/test --down
+    $ ./scripts/service-test --down
 
 .. note:: The following commands will use the ``--keep`` flag by default. It
     will highly speed up the execution time, if you run the tests more than
@@ -1515,30 +1816,30 @@ Stop the container afterwards::
 
 You can append the normal nosetest parameters::
 
-    $ ./scripts/test worker --keep [--path PATH] [PARAMETER]
+    $ ./scripts/service-test worker --keep [--path PATH] [PARAMETER]
 
 - Run all tests quietly, drop into pdb on errors::
 
-    $ ./scripts/test worker --keep --quiet --pdb
+    $ ./scripts/service-test worker --keep --quiet --pdb
 
 - Run a specific set of tests::
 
-    $ ./scripts/test worker --keep --path PATH[/FILE[:CLASS[.METHOD]]]
+    $ ./scripts/service-test worker --keep --path PATH[/FILE[:CLASS[.METHOD]]]
 
   For example::
 
     $ TESTPATH=src/collecting_society_worker/collecting_society_worker/tests
 
-    $ ./scripts/test worker --keep \
+    $ ./scripts/service-test worker --keep \
         --path $TESTPATH/integration
-    $ ./scripts/test worker --keep \
+    $ ./scripts/service-test worker --keep \
         --path $TESTPATH/integration/test_processing.py
-    $ ./scripts/test worker --keep \
+    $ ./scripts/service-test worker --keep \
         -- path $TESTPATH/integration/test_processing.py:TestProcessing.test_200_checksum
 
 Recreate the database template, if the database has changed::
 
-    $ ./scripts/test worker --keep --build
+    $ ./scripts/service-test worker --keep --build
 
 If you prefer, you can also execute the commands above from within the container::
 
@@ -1546,10 +1847,10 @@ If you prefer, you can also execute the commands above from within the container
     $ docker-compose -f docker-compose.testing.yml exec test_worker bash
 
         # run tests
-        > execute run-tests worker [--path PATH] [PARAMETER...]
+        > service-test [--path PATH] [PARAMETER...]
 
         # rebuild database template
-        > execute db-rebuild --no-template -d master collecting_society_test_template
+        > db-rebuild --no-template -d production collecting_society_test_template
 
         # exit container
         > exit
@@ -1565,15 +1866,15 @@ Pyramid
 
 Run all pyramid tests once::
 
-    $ ./scripts/test web
+    $ ./scripts/service-test web
 
 Run all pyramid tests and keep the container running for the next test run::
 
-    $ ./scripts/test web --keep
+    $ ./scripts/service-test web --keep
 
 Stop the container afterwards::
 
-    $ ./scripts/test --down
+    $ ./scripts/service-test --down
 
 .. note:: The following commands will use the ``--keep`` flag by default. It
     will highly speed up the execution time, if you run the tests more than
@@ -1581,30 +1882,30 @@ Stop the container afterwards::
 
 You can append the normal nosetest parameters::
 
-    $ ./scripts/test web --keep [--path PATH] [PARAMETER]
+    $ ./scripts/service-test web --keep [--path PATH] [PARAMETER]
 
 - Run all tests quietly, drop into pdb on errors::
 
-    $ ./scripts/test web --keep --quiet --pdb
+    $ ./scripts/service-test web --keep --quiet --pdb
 
 - Run a specific set of tests::
 
-    $ ./scripts/test web --keep --path PATH[/FILE[:CLASS[.METHOD]]]
+    $ ./scripts/service-test web --keep --path PATH[/FILE[:CLASS[.METHOD]]]
 
   For example::
 
-    $ ./scripts/test web --keep \
+    $ ./scripts/service-test web --keep \
         --path src/portal_web/portal_web/tests/unit
-    $ ./scripts/test web --keep \
+    $ ./scripts/service-test web --keep \
         --path src/portal_web/portal_web/tests/unit/resources.py
-    $ ./scripts/test web --keep \
+    $ ./scripts/service-test web --keep \
         --path src/portal_web/portal_web/tests/unit/resources.py:TestResources
-    $ ./scripts/test web --keep \
+    $ ./scripts/service-test web --keep \
         --path src/portal_web/portal_web/tests/unit/resources.py:TestResources.test_add_child
 
 Recreate the database template, if the database has changed::
 
-    $ ./scripts/test web --keep --build
+    $ ./scripts/service-test web --keep --build
 
 If you prefer, you can also execute the commands above from within the container::
 
@@ -1612,15 +1913,19 @@ If you prefer, you can also execute the commands above from within the container
     $ docker-compose -f docker-compose.testing.yml exec test_web bash
 
         # run tests
-        > execute run-tests web [--path PATH] [PARAMETER...]
+        > service-test [--path PATH] [PARAMETER...]
 
         # rebuild database template
-        > execute db-rebuild --no-template -d master collecting_society_test_template
+        > db-rebuild --no-template -d production collecting_society_test_template
 
         # exit container
         > exit
 
     $ docker-compose -f docker-compose.testing.yml down
+
+.. note:: In the ``testing`` environment, the ``webgui`` and ``webapi``
+    services run both on the ``web`` service as deployment needs to be
+    coordinated and controlled by nosetest.
 
 The rendered HTML output of the coverage can be accessed via::
 
@@ -1641,7 +1946,7 @@ Lint the code for all application repositories via container::
 
     docker-compose exec erpserver flake8 scripts code/portal* code/collecting_society*
 
-.. note:: The code is also linted in the `test script`_.
+.. note:: The code is also linted in the `service-test script`_.
 
 Demodata
 --------
@@ -1667,28 +1972,31 @@ A minimal working dataset consists of two attributes::
     generate(reclimit=0):   # The function to generate the datasets
         pass
 
+.. note:: The dataset ``production`` is a special stage tag to separate the
+    provision, which is neccessary for technical reasons from pure demodata.
+
 Rebuild
 '''''''
 
-In the ``development`` and ``staging`` branch, the demodata is created
+In the ``development`` and ``staging`` environment, the demodata is created
 automatically during the setup of the database. If you need to rebuild the
 database, just use your prefered method:
 
-* via `rebuild script`_::
+* via `db-rebuild script`_::
 
-    $ ./scripts/rebuild
+    $ ./scripts/db-rebuild
 
-* on a running container::
+* via `db-rebuild CLI`_ command on a running container::
 
     $ docker-compose exec erpserver db-rebuild
 
-* on a new container::
+* via `db-rebuild CLI`_ command on a new container::
 
     $ docker-compose run --rm erpserver db-rebuild
 
-* inside the *erpserver* container::
+* via `db-rebuild CLI`_ command inside the *erpserver* container::
 
-    > execute db-rebuild
+    > db-rebuild
 
 The generation script will output some useful information during the run:
 
@@ -1704,19 +2012,19 @@ Update
 If you want to change a certain dataset for a model:
 
 1. Apply the changes to ``datasets/MODEL.py``.
-2. Test your changes by generating the MODEL dataset using the ``db-rebuild``
-   `CLI`_ command::
+2. Test your changes by generating the MODEL dataset using the
+   `db-rebuild CLI`_ command::
 
     $ docker-compose run --rm erpserver bash
-    > execute db-rebuild -d MODEL
+    > db-rebuild -d MODEL
 
 3. While there are errors, fix them and retest using the ``--cache`` flag::
 
-    > execute db-rebuild -d MODEL --cache
+    > db-rebuild -d MODEL --cache
 
 4. Retest the whole generation::
 
-    > execute db-rebuild
+    > db-rebuild
 
 5. Commit the changes.
 
@@ -1724,9 +2032,14 @@ If you want to change several datasets, you can prepare a template for the
 most time consuming master dataset and start the data generation from it with
 the ``-e/--exclude`` flag::
 
-    > execute db-rebuild -d master
-    > execute db-copy --force collecting_society collecting_society_template
-    > execute db-rebuild -e master -d <DATASET>
+    > db-rebuild --no-template -d production collecting_society_template
+    > db-rebuild -e production -d <DATASET>
+
+You can also prepare a template for any dataset and copy it for later use::
+
+    > db-rebuild --no-template -d production collecting_society_artist
+    > db-copy --force collecting_society_artist collecting_society_template
+    > db-rebuild -e artist -d <DATASET>
 
 Create
 ''''''
@@ -1767,6 +2080,8 @@ at the other datasets to see, how it works::
 .. note:: All ``datasets/*.py`` files are registered automatically as new
     datasets on each run.
 
+.. _Project Documentation:
+
 Documentation
 -------------
 
@@ -1777,28 +2092,29 @@ code api generated via *autoapi*.
 
 The build process runs on a special ``documentation`` service container, as for
 *autoapi* the python modules need to be imported. To create the image for the
-container on the first built, use the ``--build`` flag of the `docs script`_::
+container on the first built, use the ``--build`` flag of the
+`docs-build script`_::
 
-    $ ./scripts/docs --build
+    $ ./scripts/docs-build --build
 
 To build the documentation afterwards, you can then just use::
 
-    $ ./scripts/docs
+    $ ./scripts/docs-build
 
 If you develop the documentation and need to build it more than once, you can
 use the ``--keep`` flag, to keep the container running and use the command
 multiple times::
 
-    $ ./scripts/docs --keep
+    $ ./scripts/docs-build --keep
 
 To stop and remove the container, when you have finished, enter ::
 
-    $ ./scripts/docs --down
+    $ ./scripts/docs-build --down
 
-If you did not change any ``*.py`` files, you can use the ``--no-autopi`` flag
+If you did not change any ``*.py`` files, you can use the ``--no-autoapi`` flag
 to omit the *autoapi* step and speed up the build::
 
-    $ ./scripts/docs --no-autoapi
+    $ ./scripts/docs-build --keep --no-autoapi
 
 If you prefer, you can also execute the commands above from within the container::
 
@@ -1806,12 +2122,10 @@ If you prefer, you can also execute the commands above from within the container
     $ docker-compose -f docker-compose.documentation.yml exec documentation bash
 
         # build documentation via script
-        > cd docs
-        > ./build.sh
+        > docs-build
 
-        # build documentation via make
-        > cd docs
-        > make html
+        # build with autoapi omitted
+        > docs-build --no-autoapi
 
         # exit container
         > exit
@@ -1822,7 +2136,7 @@ The main source files can be found in the ``./volumes/shared/docs/source/``
 folder.
 
 .. warning:: Don't edit the ``*.rst`` files in the subfolders, because those
-    are copied or generated by autoapi.
+    are symlinked or generated by autoapi.
 
 Once built, the docs can be viewed (from outside the container) like this::
 
