@@ -2,26 +2,33 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./scripts/service-test [service] [--down] [--build] [--keep] [--ci] [PARARAMS]
-#
-# Options:
-#     service: web|worker|erpserver|all (default: all)
-#     --down: immediately stop and remove the container and exit
-#     --build: build images and recreate the test database template
-#     --keep: keep container running
-#     --ci: continous integration mode
-#           - update repositories (overrides config files!)
-#           - build images
-#           - recreate the test database template
-#           - run tests and linter
-#           - stop and remove the container
-#     PARAMS: are passed to run-tests within the container
+#% Usage: ./scripts/service-test [service] [--down] [--build] [--keep] [--ci] [--help] [PARARAMS]
+#%
+#%   This script runs the unit/function/integration tests and linter for the services:
+#%     - erpserver (tryton)
+#%     - web (pyramid)
+#%     - worker (echoprint)
+#%
+#% Options:
+#%   service: web|worker|erpserver|all (default: all)
+#%   --down: immediately stop, remove the container and exit
+#%   --build: build images and recreate the test database template
+#%   --keep: keep container running
+#%   --ci: continous integration mode
+#%         - update repositories (overrides config files!)
+#%         - build images
+#%         - recreate the test database template
+#%         - run tests and linter
+#%         - stop and remove the container
+#%   PARAMS: are passed to run-tests within the container
+#%   --help: display this help
 
-echo "====================================================================="
-echo "====================================================================="
-echo "= this script stops, updates, builds and tests the docker setup     ="
-echo "====================================================================="
-echo `date +%Y-%m-%d:%H:%M:%S`
+# print usage
+usage() {
+  [ "$*" ] && echo "$0: $*"
+  sed -n '/^#%/,/^$/s/^#% \{0,1\}//p' "$0"
+  exit 2
+} 2>/dev/null
 
 # get directories
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -43,8 +50,16 @@ for i in "$@"; do
     if [ $i = "--build" ]; then BUILD=true; continue; fi
     if [ $i = "--keep" ]; then RM=false; continue; fi
     if [ $i = "--ci" ]; then CI=true; continue; fi
+    if [ $i = "--help" ]; then usage 2>&1; fi
     TESTPARAMS="$TESTPARAMS $i"
 done
+
+# print header
+echo "====================================================================="
+echo "====================================================================="
+echo "= this script runs the application tests for the services setup     ="
+echo "====================================================================="
+echo `date +%Y-%m-%d:%H:%M:%S`
 
 # immediately stop and remove the container and exit
 if $DOWN; then
@@ -104,6 +119,7 @@ if $CI || $RM; then
     docker-compose $TESTING rm -fs
 fi
 
+# print footer
 EXITCODE=0
 if [[ ! -z "$ERRORS" ]]; then
     EXITCODE=1

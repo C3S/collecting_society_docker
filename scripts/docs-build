@@ -2,19 +2,23 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./scripts/docs-build [--down] [--build] [--keep] [--no-autoapi]
-#
-# Options:
-#     --down: immediately stop and remove the container and exit
-#     --build: build images
-#     --keep: keep container running
-#     --no-autoapi: don't parse the modules
+#% Usage: ./scripts/docs-build [--down] [--build] [--keep] [--no-autoapi] [--help]
+#%
+#%   This script builds the documentation with sphinx.
+#%
+#% Options:
+#%   --down: immediately stop and remove the container and exit
+#%   --build: build images
+#%   --keep: keep container running
+#%   --no-autoapi: don't parse the modules
+#%   --help: display this help
 
-echo "====================================================================="
-echo "====================================================================="
-echo "=                   this script builds the docs                     ="
-echo "====================================================================="
-echo `date +%Y-%m-%d:%H:%M:%S`
+# print usage
+usage() {
+  [ "$*" ] && echo "$0: $*"
+  sed -n '/^#%/,/^$/s/^#% \{0,1\}//p' "$0"
+  exit 2
+} 2>/dev/null
 
 # get directories
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -31,10 +35,18 @@ for i in "$@"; do
     if [ $i = "--keep" ]; then RM=false; continue; fi
     if [ $i = "--build" ]; then BUILD=true; continue; fi
     if [ $i = "--no-autoapi" ]; then NOAUTOAPI=true; continue; fi
+    if [ $i = "--help" ]; then usage 2>&1; fi
 done
 
 # use documentation compose file
 DOCUMENTATION="-f docker-compose.documentation.yml"
+
+# print header
+echo "====================================================================="
+echo "====================================================================="
+echo "=                   this script builds the docs                     ="
+echo "====================================================================="
+echo `date +%Y-%m-%d:%H:%M:%S`
 
 # immediately stop and remove the container and exit
 if $DOWN; then
@@ -71,6 +83,7 @@ if $RM; then
     docker-compose $DOCUMENTATION rm -fs
 fi
 
+# print footer
 if [ "$EXITCODE" -ne "0" ]; then
     echo -e "\n\n\033[91;5m"
     echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"

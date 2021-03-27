@@ -2,12 +2,16 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 """
-Builds and updates development and production environment.
+Usage: ./scripts/update [--reset] [--help]
 
-Usage: ./scripts/update [--reset]
+  This script updates the project:
+    - Creation of files and folders
+    - Copy of FILE.example files to FILE
+    - Checkout/Pull of the source repositories (including this one)
+    - Checkout/Pull of the reference repositories
 
 Options:
-    --reset: overrides the configuration files with .example
+  --reset: overrides the configuration files with .example
 """
 
 import os
@@ -633,4 +637,7 @@ def update():
 
 if __name__ == "__main__":
     os.chdir(dirs['root'])
+    if "--help" in sys.argv:
+        print(__doc__.strip())
+        sys.exit(2)
     update()

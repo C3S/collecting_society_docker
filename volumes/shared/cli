@@ -6,15 +6,25 @@
 Command line interface to setup and maintain services in docker containers.
 
 The commands may be executed by `docker-compose` or within a container.
+For convenience, the `cli` command might be omitted.
 
 Examples:
 
     Execution by `docker-compose`:
-    >>> docker-compose run --rm SERVICE cli --help
+    >>> docker-compose [exec|run --rm] SERVICE cli --help
+    >>> docker-compose [exec|run --rm] SERVICE cli COMMAND --help
+
+    >>> docker-compose [exec|run --rm] SERVICE --help
+    >>> docker-compose [exec|run --rm] SERVICE COMMAND --help
 
     Execution within a container:
-    >>> docker-compose run --rm SERVICE bash
+    >>> docker-compose [exec|run --rm] SERVICE bash
+
     >>> cli --help
+    >>> cli COMMAND --help
+
+    >>> --help
+    >>> COMMAND --help
 """
 
 from __future__ import print_function

@@ -2,16 +2,20 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-# Usage: ./scripts/db-rebuild [--ci]
-#
-# Options:
-#     --ci: stops the services before, starts the services detached afterwards
+#% Usage: ./scripts/db-rebuild [--ci] [--help]
+#%
+#%   This script deletes and recreates the database and generates the demodata.
+#%
+#% Options:
+#%   --ci: stops the services before, starts the services detached afterwards
+#%   --help: display this help
 
-echo "====================================================================="
-echo "====================================================================="
-echo "= this script rebuilds the database of the project                  ="
-echo "====================================================================="
-echo `date +%Y-%m-%d:%H:%M:%S`
+# print usage
+usage() {
+  [ "$*" ] && echo "$0: $*"
+  sed -n '/^#%/,/^$/s/^#% \{0,1\}//p' "$0"
+  exit 2
+} 2>/dev/null
 
 # get directories
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -22,7 +26,15 @@ cd $ROOT_DIR
 CI=false
 for i in "$@"; do
     if [ $i = "--ci" ]; then CI=true; continue; fi
+    if [ $i = "--help" ]; then usage 2>&1; fi
 done
+
+# print header
+echo "====================================================================="
+echo "====================================================================="
+echo "= this script rebuilds the database of the project                  ="
+echo "====================================================================="
+echo `date +%Y-%m-%d:%H:%M:%S`
 
 # stop docker containers
 if $CI; then
@@ -49,6 +61,7 @@ if $CI; then
     docker-compose up -d
 fi
 
+# print footer
 echo `date +%Y-%m-%d:%H:%M:%S`
 echo "====================================================================="
 echo "====================================================================="
