@@ -18,12 +18,12 @@ The main resources can be found here:
 Overview
 ========
 
-The setup creates and maintains the `docker`__ services for development,
-deployment, testing and documentation. The tool `docker-compose`__ is used as
+The setup creates and maintains the docker_ services for development,
+deployment, testing and documentation. The tool docker-compose_ is used as
 a creator and configurator for the docker services.
 
-__ https://docs.docker.com
-__ https://docs.docker.com/compose
+.. _docker: https://docs.docker.com
+.. _docker-compose: https://docs.docker.com/compose
 
 Schema
 ------
