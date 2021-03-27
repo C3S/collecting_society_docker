@@ -148,6 +148,7 @@ Files
     │   │   │   ├── datasets/               # datasets to generate
     │   │   │   │   └── <MODEL>.py          # dataset for tryton MODEL
     │   │   │   ├── fingerprints/           # fingerprints for echoprint
+    │   │   │   ├── uploads/                # audiofile generation and compression script
     │   │   │   └── main.py                 # main demodata generation script
     │   │   │
     │   │   ├── docs/                       # documentation sphinx build environment
@@ -211,7 +212,7 @@ Development
 ``scripts/update``                      `update script`_ for the files/folders/repos of the project
 ``scripts/cli``                         `CLI`_ script for common tasks (run within the container!)
 ``services/config/``                    `Application Configuration`_ files for the services
-``code/``                               Main repositories for the `application development`_ (contains only symlinks to ``volumes/shared/src/``)
+``code/``                               Symlinks to src repositories for the `application development`_
 ``volumes/shared/src/``                 Repos of all Tryton and collecting_society modules
 ``volumes/shared/ref/``                 Repos of some pinned packages we use, just for reference
 ======================================= ===============================================================
@@ -427,10 +428,11 @@ __ https://packages.ubuntu.com/xenial/tryton-client
      installed with pip2, but as pip2 is also not packaged anymore, it might
      be easier to install them via archive as well::
 
-          $ wget http://archive.ubuntu.com/ubuntu/pool/universe/p/pygtk/python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
-          $ wget http://archive.ubuntu.com/ubuntu/pool/universe/s/six/python-six_1.15.0-2_all.deb
-          $ wget http://archive.ubuntu.com/ubuntu/pool/universe/c/chardet/python-chardet_3.0.4-4build1_all.deb
-          $ wget http://archive.ubuntu.com/ubuntu/pool/universe/p/python-dateutil/python-dateutil_2.7.3-3ubuntu1_all.deb
+          $ ARCHIVE=http://archive.ubuntu.com/ubuntu/pool/universe
+          $ wget $ARCHIVE/p/pygtk/python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
+          $ wget $ARCHIVE/s/six/python-six_1.15.0-2_all.deb
+          $ wget $ARCHIVE/c/chardet/python-chardet_3.0.4-4build1_all.deb
+          $ wget $ARCHIVE/p/python-dateutil/python-dateutil_2.7.3-3ubuntu1_all.deb
           $ sudo apt-get install ./python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
           $ sudo apt-get install ./python-six_1.15.0-2_all.deb
           $ sudo apt-get install ./python-chardet_3.0.4-4build1_all.deb
@@ -740,14 +742,15 @@ Update database     ``docker-compose [exec|run --rm] erpserver db-update``
 
    To quickly compare all ``*.example`` files recursivly::
 
-    $ find . -type f -name \*.example 2>/dev/null | sed 's/.example$//' | xargs -I {} diff -u {} {}.example
+    $ find . -type f -name \*.example 2>/dev/null | sed 's/.example$//' \
+        | xargs -I {} diff -u {} {}.example
 
 3. If there were changes in the ``Dockerfile``, rebuild all `docker images`_::
 
     $ docker-compose build
 
    If you run into problems, you can also rebuild all `docker images`_ without
-   cache. Just `remove` all project images (also the dangling ones) before the
+   cache. Just `remove`_ all project images (also the dangling ones) before the
    execution of the ``build`` command.
 
    .. warning:: The ``build`` command has a ``--no-cache`` option, but for
