@@ -19,7 +19,7 @@ Overview
 ========
 
 The setup creates and maintains the docker_ services for development,
-deployment, testing and documentation. The tool docker-compose_ is used as
+deployment, testing, and documentation. The tool docker-compose_ is used as
 a creator and configurator for the docker services.
 
 .. _docker: https://docs.docker.com
@@ -211,9 +211,9 @@ Development
 ``scripts/update``                      `update script`_ for the files/folders/repos of the project
 ``scripts/cli``                         `CLI`_ script for common tasks (run within the container!)
 ``services/config/``                    `Application Configuration`_ files for the services
-``code/``                               Main repositories for the `application development`_
-``volumes/shared/src/``                 Repos of all packages installed on runtime
-``volumes/shared/ref/``                 Repos of all pinned packages in the images for reference
+``code/``                               Main repositories for the `application development`_ (contains only symlinks to ``volumes/shared/src/``)
+``volumes/shared/src/``                 Repos of all Tryton and collecting_society modules
+``volumes/shared/ref/``                 Repos of some pinned packages we use, just for reference
 ======================================= ===============================================================
 
 Data
@@ -224,7 +224,7 @@ Data
 ``volumes/postgresql-data``                  Files of the postgres database
 ``volumes/echoprint-data``                   Files of the echoprint database
 ``volumes/shared/data/datasets/``            `Demodata`_ generation scripts for each tryton model
-``volumes/shared/data/fingerprints/``        Ingestable fingerprints for echoprint
+``volumes/shared/data/fingerprints/``        Ingestable demo fingerprints for echoprint
 ``volumes/shared/data/updloads/generate.sh`` Audiofile generation and compression script
 ============================================ ==========================================================
 
@@ -273,7 +273,7 @@ Summary for Debian/Ubuntu::
 Repositories
 ------------
 
-In first step, the repositories of the services have to be cloned and some
+In the first step, the repositories of the services have to be cloned and some
 filesystem preparation tasks have to be performed. Clone the
 `collecting_society_docker`_ repository into your working space::
 
@@ -291,6 +291,8 @@ Checkout the `Environments`_ branch to build:
 ``development``, ``staging``, ``production``::
 
     $ git checkout <ENVIRONMENT>
+
+If you just want to try out the software, the default ``development`` branch is recommended.
 
 Copy the main environment variable example file ``.env.example`` to `.env`_::
 
@@ -344,10 +346,10 @@ Images
 ------
 
 Each service runs on a separate docker container. A docker container is
-a running instance of a prebuild docker image. The `docker images`_ for all
+a running instance of a prebuilt docker image. The `docker images`_ for all
 services need to be built first.
 
-The initial build of the containers will take some time *(~30-60 minutes)*::
+The initial build of the containers will take some time *(around 30-60 minutes)*::
 
     $ docker-compose build
 
@@ -355,7 +357,7 @@ Database
 --------
 
 After building the images, the services can be started. On the first `run`_,
-the database and `demodata`_ is created *(~10-15 minutes)*::
+the database and `demodata`_ is created *(takes about 10 to 15 minutes)*::
 
     $ docker-compose up
 
@@ -375,8 +377,8 @@ Test the connection by following the instructions in `Webbrowser Usage`_.
 Tryton
 ------
 
-To connect to Trytond you can use one of the several Tryton client
-applications or APIs. For back-office use of the application the Gtk2 based
+To connect to Trytond, you can use one of the several Tryton client
+applications or APIs. For back-office use of the application, the Gtk2 based
 Tryton client is recommended.
 
 .. note:: The Trytond server and the Tryton client are required to have the
@@ -415,24 +417,24 @@ __ https://packages.ubuntu.com/xenial/tryton-client
 
   .. warning:: This method of installation is untested, so please be careful!
 
-     1. Install the dependencies available in the apt repositories::
+  1. Install the dependencies available in the apt repositories::
 
-             $ sudo apt-get install librsvg2-common python2
+          $ sudo apt-get install librsvg2-common python2
 
-     2. As pygtk is not packaged and cannot be built by pip anymore, the only
-        option left is to install the last available pygkt from the `archive`__
-        (see working answer in `askubuntu`__). The other packages could be
-        installed with pip2, but as pip2 is also not packaged anymore, it might
-        be easier to install them via archive as well::
+  2. As pygtk is not packaged and cannot be built by pip anymore, the only
+     option left is to install the last available pygkt from the `archive`__
+     (see working answer in `askubuntu`__). The other packages could be
+     installed with pip2, but as pip2 is also not packaged anymore, it might
+     be easier to install them via archive as well::
 
-             $ wget http://archive.ubuntu.com/ubuntu/pool/universe/p/pygtk/python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
-             $ wget http://archive.ubuntu.com/ubuntu/pool/universe/s/six/python-six_1.15.0-2_all.deb
-             $ wget http://archive.ubuntu.com/ubuntu/pool/universe/c/chardet/python-chardet_3.0.4-4build1_all.deb
-             $ wget http://archive.ubuntu.com/ubuntu/pool/universe/p/python-dateutil/python-dateutil_2.7.3-3ubuntu1_all.deb
-             $ sudo apt-get install ./python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
-             $ sudo apt-get install ./python-six_1.15.0-2_all.deb
-             $ sudo apt-get install ./python-chardet_3.0.4-4build1_all.deb
-             $ sudo apt-get install ./python-dateutil_2.7.3-3ubuntu1_all.deb
+          $ wget http://archive.ubuntu.com/ubuntu/pool/universe/p/pygtk/python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
+          $ wget http://archive.ubuntu.com/ubuntu/pool/universe/s/six/python-six_1.15.0-2_all.deb
+          $ wget http://archive.ubuntu.com/ubuntu/pool/universe/c/chardet/python-chardet_3.0.4-4build1_all.deb
+          $ wget http://archive.ubuntu.com/ubuntu/pool/universe/p/python-dateutil/python-dateutil_2.7.3-3ubuntu1_all.deb
+          $ sudo apt-get install ./python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
+          $ sudo apt-get install ./python-six_1.15.0-2_all.deb
+          $ sudo apt-get install ./python-chardet_3.0.4-4build1_all.deb
+          $ sudo apt-get install ./python-dateutil_2.7.3-3ubuntu1_all.deb
 
 __ http://archive.ubuntu.com/ubuntu/pool/universe/
 __ https://askubuntu.com/questions/1235271/pygtk-not-available-on-focal-fossa-20-04/1235347#1235347
@@ -447,14 +449,14 @@ For easy startup create a startup script:
 
     $ sudo vim /usr/local/bin/tryton
 
-2. Paste the following lines, set ``TRYTONPATH`` to the absolute path of the
+2. Paste the following lines, set ``TRYTONPATH`` to the path of the
    tryton repository::
 
     #!/bin/bash
-    TRYTONPATH=/MY/WORKING/SPACE/tryton
+    TRYTONPATH=~/MY/WORKING/SPACE/tryton
     python2 $TRYTONPATH/bin/tryton -d
 
-3. Set the execution flag to the script::
+3. Set the execution flag of the script::
 
     $ sudo chmod u+x /usr/local/bin/tryton
 
@@ -481,7 +483,7 @@ The services are configured via:
 .. warning:: Some files are tracked in git as ``FILE.example`` and are initally
     copied to the untracked ``FILE`` but not overwritten by the
     `update script`_. After an `project update`_, changes to the ``*.example``
-    files have to be applied manually.
+    files, especially new entries, have to be applied manually.
 
 Environments
 ------------
@@ -502,7 +504,7 @@ Context         Ports  Volumes        Demodata Debug Cache
 ``testing``     public docker managed no       off   on
 =============== ====== ============== ======== ===== =====
 
-For each of the environments but ``testing``, there is a corresponding branch
+For each of the environments except ``testing``, there is a corresponding branch
 with the same name in this repository and most of the main subrepositories
 pre-configured for this environment.
 
@@ -661,7 +663,8 @@ There are several ways to interact with the services:
 2. The ``docker`` CLI provides sometimes more useful low level commands.
 3. In the `Scripts`_ folder some scipts are provided for comfort or
    automatisation.
-4. The `CLI`_ script provides special maintainance commands for the services.
+4. The `CLI`_ script provides special maintainance commands for the services
+   (for use within the containers).
 
 If you tend to forget the commands or syntax, try getting used to the help
 commands:
@@ -727,7 +730,8 @@ Update database     ``docker-compose [exec|run --rm] erpserver db-update``
    .. warning:: If a repository is not clean, it won't be updated. Watch out
        for red output lines.
 
-   .. note:: The `update script`_ will also update this repository first.
+   .. note:: The `update script`_ will also try to update the collecting_society_docker
+       repository and thus itself first, before updating the subordinate repositories.
 
 2. If there were changes to the ``*.example`` files, diff the files and
    apply changes manually::
@@ -817,7 +821,7 @@ Rebuild | ``docker-compose [exec|run --rm] erpserver db-rebuild [NAME]``
 Examine ``docker-compose run --rm erpserver db-connect [NAME]``
 ======= =========================================================================================
 
-.. note:: The ``NAME`` is optional and defaults to ``collecting_society``.
+.. note:: ``[NAME]`` is optional and defaults to ``collecting_society``.
 
 .. note:: If the setup/rebuild hangs, look for and delete the
     ``./volumes/shared/running_db_creation.delete_me`` locking file.
@@ -840,8 +844,9 @@ Scripts
 -------
 
 The scripts are either intended to make some operations more comfortable or for
-automatisation (CI). The following sections contain a brief synopsis about each
-of the provided scripts as provided by the ``--help`` option.
+automatisation using a build server (CI). The following sections contain a brief
+synopsis about each of the provided scripts as provided by the ``--help`` option.
+The usual syntax is ``object``-``operation``.
 
 .. _docs-build script:
 
@@ -932,7 +937,7 @@ directory ``/shared/cli``. For convenience and to ensure the same command
 invokation syntax of ``exec`` and ``run --rm``, the commands of the script are
 also available directy via ``/shared/COMMAND``.
 
-.. warning:: The script should only be executed within a service container!
+.. warning:: All CLI commands should only be executed within a service container!
 
 .. note:: Not all commands will work on any service.
 
@@ -947,6 +952,12 @@ For example::
 
     $ docker-compose run --rm erpserver db-rebuild
     $ docker-compose exec erpserver db-rebuild
+
+.. note:: Use ``exec`` if the container is already running, e.g. in another terminal
+     window after a ``docker-compose up``. Use ``run --rm`` if no container is running
+     and your just want to start it for a single task upon which it is removed again (-rm).
+     To start more than a single task, you would want to 'go inside a container' by
+     running a ``bash`` command, e.g. ``docker-compose run --rm erpserver bash``.
 
 Inside a service container::
 
@@ -1755,7 +1766,7 @@ To stop and remove the container, when you have finished, enter ::
 
     $ ./scripts/service-test --down
 
-.. note:: All commits to all repositories are automatically CI tested with
+.. note:: All commits pushed to all C3S GitHub repositories are automatically CI tested with
     `jenkins`__ (needs authentication) using the same test script.
 
 __ https://jenkins1b.c3s.cc/job/collecting_society/
@@ -2009,7 +2020,8 @@ The generation script will output some useful information during the run:
 Update
 ''''''
 
-If you want to change a certain dataset for a model:
+If you want to change a certain dataset for a model without constantly generating
+the demo data from scratch, this workflow is highly recommended:
 
 1. Apply the changes to ``datasets/MODEL.py``.
 2. Test your changes by generating the MODEL dataset using the
@@ -2090,7 +2102,7 @@ collecting society applications. It contains both the ``*.rst`` files
 (e.g. ``README.rst``) of the application repositories, as well as the python
 code api generated via *autoapi*.
 
-The build process runs on a special ``documentation`` service container, as for
+The build process runs on a special ``documentation`` service container, because for
 *autoapi* the python modules need to be imported. To create the image for the
 container on the first built, use the ``--build`` flag of the
 `docs-build script`_::
@@ -2101,9 +2113,9 @@ To build the documentation afterwards, you can then just use::
 
     $ ./scripts/docs-build
 
-If you develop the documentation and need to build it more than once, you can
+If you edit the documentation and need to build it more than once, you can
 use the ``--keep`` flag, to keep the container running and use the command
-multiple times::
+successively::
 
     $ ./scripts/docs-build --keep
 
@@ -2196,5 +2208,5 @@ simply remove the whole file, if the setup is not in production use::
 License
 =======
 
-For infos on copyright and licenses, see ``./COPYRIGHT.rst``
+For infos on copyright and licenses, see ``./COPYRIGHT.rst``.
 

@@ -40,6 +40,7 @@ fi
 
 # link readmes
 ln -sf /collecting_society_docker/README.rst source/generated/collecting_society_docker_README.rst
+ln -sf /collecting_society_docker/COPYRIGHT.rst source/generated/collecting_society_docker_COPYRIGHT.rst
 ln -sf /shared/src/collecting_society_web/README.rst source/generated/collecting_society_web_README.rst
 ln -sf /shared/src/collecting_society/README.rst source/collecting_society/README.rst
 ln -sf /shared/src/collecting_society/INSTALL.rst source/collecting_society/INSTALL.rst
