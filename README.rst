@@ -764,7 +764,7 @@ Inspect
 -------
 
 ============================================ ===================================================
-Attach to the logs of a certain service      ``docker-compose logs SERVICE``
+Attach to the logs of a certain service      ``docker-compose logs [-f] SERVICE``
 Open a shell on a service container          ``docker-compose run --rm SERVICE bash``
 Open a shell on a running container          ``docker-compose exec bash``
 List project docker containers               ``docker-compose ps``
