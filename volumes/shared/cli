@@ -501,7 +501,7 @@ def db_rebuild(context, dbname, reclimit, dataset, exclude,
 
 @cli.command('service-test', context_settings=dict(
                  ignore_unknown_options=True))
-@click.option('--dbname', default=TRYTON_DATABASE + '_test',
+@click.option('--dbname', default=TRYTON_DATABASE,
               help='Name of database (default: test)')
 @click.option('--reset/--no-reset', default=True,
               help='Reset the database (default: yes)')
@@ -594,8 +594,17 @@ def service_test(context, service, dbname, reset, path, nargs):
 
         # Recreate database
         if not _db_exist(_db_tpl):
+            if service == "worker":
+                sys.exit(
+                    "The worker service cannot build the test database "
+                    "template. Please create it first by another container.\n"
+                    "If you started the service-test script, just add the "
+                    "'--build' flag:\n\n"
+                    "    $ ./scripts/service-test worker --build"
+                )
             context.invoke(
-                db_setup, dbname=_db_tpl, dataset=['master'], template=False
+                db_setup, dbname=_db_tpl,
+                dataset=['production'], template=False
             )
         context.invoke(
             db_copy, dbname_src=_db_tpl, dbname_dst=_db_name, force=True
