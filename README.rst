@@ -536,6 +536,7 @@ Variable                           Values          Description
                                    | "testing"
 ``COMPOSE_DOCKER_CLI_BUILD``       0|1             use BuildKit for docker builds
 ``COMPOSE_PROJECT_NAME``           string          prefix for containers
+``COMPOSE_IGNORE_ORPHANS``         0|1             suppress orphan container warnings
 ``DEBUGGER_WINPDB``                0|1             install packages for winpdb in images
 ``DEBUGGER_PTVSD``                 0|1             install packages for ptvsd in images
 ``WORKDIR``                        PATH            workdir for images
