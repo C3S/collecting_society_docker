@@ -61,7 +61,7 @@ services:
     environment:
       SERVICE: erpserver
       ENVIRONMENT: testing
-      POSTGRES_HOSTNAME: test_${POSTGRES_DATABASE}
+      POSTGRES_HOSTNAME: test_${POSTGRES_HOSTNAME}
       TRYTON_DATABASE: ${TRYTON_DATABASE}_test
 
   test_web:
