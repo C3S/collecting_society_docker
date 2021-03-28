@@ -2,7 +2,7 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 """
-Usage: ./scripts/update [--reset] [--help]
+Usage: ./scripts/update [--reset] [--diff] [--help]
 
   This script updates the project:
     - Creation of files and folders
@@ -12,12 +12,15 @@ Usage: ./scripts/update [--reset] [--help]
 
 Options:
   --reset: overrides the configuration files with .example
+  --diff: just outputs the diff of .example files, performs no other updates
 """
 
 import os
 import sys
 import shutil
 import subprocess
+from pathlib import Path
+import difflib
 import re
 
 
@@ -575,8 +578,41 @@ def copy_file(source_file, target_file, reset=False):
         print('\t[exists] %s' % target_file)
 
 
+def diff_example_files(offset=8):
+    """Diffs the example files and returns the output."""
+    for path in Path(dirs['root']).rglob('*.example'):
+        example_path = str(path)
+        copied_path = str(path)[:-8]
+        if not os.path.exists(copied_path):
+            continue
+        start = len(dirs['root']) + 1
+        example_name = example_path[start:]
+        copied_name = copied_path[start:]
+        example_file = open(example_path).readlines()
+        copied_file = open(copied_path).readlines()
+        diff = difflib.unified_diff(
+            example_file, copied_file,
+            fromfile=example_name, tofile=copied_name)
+        try:
+            line = next(diff)
+        except StopIteration:
+            continue
+        if line:
+            print(" " * offset + "-" * 79)
+            print(" " * offset + copied_name)
+            print(" " * offset + "-" * 79)
+            print(" " * offset + line, end="")
+            for line in diff:
+                print(" " * offset + line, end="")
+            print()
+
+
 def update():
     """Updates itself and the repositories, creates folders, copies files."""
+
+    if "--diff" in sys.argv:
+        diff_example_files(0)
+        sys.exit()
 
     # header
     print(header.format(project, project, git_branch, dirs['root']))
@@ -634,6 +670,10 @@ def update():
     for file in copy_files:
         reset = len(sys.argv) > 1 and sys.argv[1] == "--reset"
         copy_file(file['source'], file['target'], reset)
+
+    # diff example file
+    print("\nDiffing example files ...\n")
+    diff_example_files()
 
     # footer
     print(footer)

@@ -713,7 +713,7 @@ Update
 
 =================== =======================================================
 Update repositories ``./scripts/update``
-Diff example files  ``diff FILE FILE.example``
+Diff example files  ``./scripts/update --diff``
 Build images        ``docker-compose build``
 Update database     ``docker-compose [exec|run --rm] erpserver db-update``
 =================== =======================================================
@@ -731,12 +731,7 @@ Update database     ``docker-compose [exec|run --rm] erpserver db-update``
 2. If there were changes to the ``*.example`` files, diff the files and
    apply changes manually::
 
-    $ diff FILE FILE.example
-
-   To quickly compare all ``*.example`` files recursivly::
-
-    $ find . -type f -name \*.example 2>/dev/null | sed 's/.example$//' \
-        | xargs -I {} diff -u {} {}.example
+    $ ./scripts/update --diff
 
 3. If there were changes in the ``Dockerfile``, rebuild all `docker images`_::
 
@@ -915,7 +910,7 @@ update
 ::
 
     $ ./scripts/update --help
-    Usage: ./scripts/update [--reset] [--help]
+    Usage: ./scripts/update [--reset] [--diff] [--help]
 
       This script updates the project:
         - Creation of files and folders
@@ -925,6 +920,7 @@ update
 
     Options:
       --reset: overrides the configuration files with .example
+      --diff: just outputs the diff of .example files, performs no other updates
 
 CLI
 ---
