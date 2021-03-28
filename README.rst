@@ -885,7 +885,8 @@ service-test
 ::
 
     $ ./scripts/service-test --help
-    Usage: ./scripts/service-test [service] [--down] [--build] [--keep] [--ci] [--help] [PARARAMS]
+    Usage: ./scripts/service-test [service] [--down] [--build] [--keep] [--lint] [--ci]
+                                  [--help] [PARAMS]
 
       This script runs the unit/function/integration tests and linter for the services:
         - erpserver (tryton)
@@ -897,14 +898,15 @@ service-test
       --down: immediately stop, remove the container and exit
       --build: build images and recreate the test database template
       --keep: keep container running
+      --lint: only lint the code, don't run the tests
       --ci: continous integration mode
             - update repositories (overrides config files!)
             - build images
             - recreate the test database template
             - run tests and linter
             - stop and remove the container
-      PARAMS: are passed to run-tests within the container
       --help: display this help
+      PARAMS: are passed to nosetest
 
 .. _update script:
 
@@ -1257,6 +1259,24 @@ service-test
       --reset / --no-reset  Reset the database (default: yes)
       --path TEXT           Searchpath for tests (see nosetest)
       --help                Show this message and exit.
+
+.. _service-lint CLI:
+
+service-lint
+''''''''''''
+::
+
+    $ service-lint --help
+    Usage: cli service-lint [OPTIONS] [SERVICE]
+
+      Runs linter for a service (erpserver, web/webgui/webapi, worker).
+
+      If PATH is provided, only the path is linted, not the service. If SERVICE
+      is 'all', all services are linted.
+
+    Options:
+      --path TEXT  Custom path with files to lint
+      --help       Show this message and exit.
 
 .. _Webbrowser Usage:
 
@@ -1949,9 +1969,12 @@ Lint the code for the scripts in this repository::
 
     python2 -m flake8 scripts
 
-Lint the code for all application repositories via container::
+Lint the code for application repositories via container::
 
-    docker-compose exec erpserver flake8 scripts code/portal* code/collecting_society*
+    docker-compose exec SERVICE service-lint
+    docker-compose exec SERVICE service-lint all
+    docker-compose exec SERVICE service-lint --path /some/path/to/lint
+
 
 .. note:: The code is also linted in the `service-test script`_.
 

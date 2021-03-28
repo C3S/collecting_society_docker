@@ -499,6 +499,50 @@ def db_rebuild(context, dbname, reclimit, dataset, exclude,
         exclude=exclude, template=template, cache=cache, force=False, pdb=pdb)
 
 
+@cli.command('service-deploy')
+@click.argument('service', default=SERVICE)
+@click.pass_context
+def service_deploy(context, service):
+    """
+    Deploys the services (erpserver, webgui, webapi, worker, fingerprint).
+
+    Installs pip packages, creates and sets up database and runs the
+    application.
+    """
+    # Check file
+    script = os.path.join(WORKDIR, 'deploy', SERVICE)
+    if not os.path.exists(script):
+        sys.exit("No deployment file for service %s. Exiting." % SERVICE)
+
+    # Install dependencies
+    context.invoke(pip_install, service=SERVICE)
+
+    # Generate demodata
+    if SERVICE == "erpserver" and ENVIRONMENT in ["development", "staging"]:
+        context.invoke(db_setup)
+
+    # Deploy service
+    exitcode = subprocess.call([script])
+    sys.exit(exitcode)
+
+
+@cli.command('service-healthcheck')
+@click.argument('service', default=SERVICE)
+@click.pass_context
+def service_healthcheck(context, service):
+    """
+    Healthcheck for the services.
+    """
+    # Sanity check
+    script = os.path.join(WORKDIR, 'healthcheck', SERVICE)
+    if not os.path.exists(script):
+        sys.exit("No healthcheck file for service %s. Exiting." % SERVICE)
+
+    # Run healthcheck
+    exitcode = subprocess.call([script])
+    sys.exit(exitcode)
+
+
 @cli.command('service-test', context_settings=dict(
                  ignore_unknown_options=True))
 @click.option('--dbname', default=TRYTON_DATABASE,
@@ -654,47 +698,43 @@ def service_test(context, service, dbname, reset, path, nargs):
     sys.exit(exitcode)
 
 
-@cli.command('service-deploy')
+@cli.command('service-lint')
+@click.option('--path', default=None, help='Custom path with files to lint')
 @click.argument('service', default=SERVICE)
 @click.pass_context
-def service_deploy(context, service):
+def service_lint(context, path, service):
     """
-    Deploys the services (erpserver, webgui, webapi, worker, fingerprint).
+    Runs linter for a service (erpserver, web/webgui/webapi, worker).
 
-    Installs pip packages, creates and sets up database and runs the
-    application.
+    If PATH is provided, only the path is linted, not the service.
+    If SERVICE is 'all', all services are linted.
     """
-    # Check file
-    script = os.path.join(WORKDIR, 'deploy', SERVICE)
-    if not os.path.exists(script):
-        sys.exit("No deployment file for service %s. Exiting." % SERVICE)
+    # Define service paths
+    service_paths = {
+        'erpserver': ['collecting_society'],
+        'web': ['portal_web', 'collecting_society_web'],
+        'worker': ['collecting_society_worker']
+    }
+    service_paths['webgui'] = service_paths['web']
+    service_paths['webapi'] = service_paths['web']
 
-    # Install dependencies
-    context.invoke(pip_install, service=SERVICE)
+    # Select lint path
+    lint_paths = []
+    if path:
+        lint_paths.append(path)
+    elif service == 'all':
+        for _, paths in service_paths.items():
+            lint_paths.extend(paths)
+    else:
+        lint_paths.extend(service_paths[service])
+    lint_paths = list(set(lint_paths))
+    lint_paths = [os.path.join(WORKDIR, 'src', path) for path in lint_paths]
 
-    # Generate demodata
-    if SERVICE == "erpserver" and ENVIRONMENT in ["development", "staging"]:
-        context.invoke(db_setup)
+    # Lint paths
+    command = ['flake8'] + lint_paths
+    exitcode = subprocess.call(command)
 
-    # Deploy service
-    exitcode = subprocess.call([script])
-    sys.exit(exitcode)
-
-
-@cli.command('service-healthcheck')
-@click.argument('service', default=SERVICE)
-@click.pass_context
-def service_healthcheck(context, service):
-    """
-    Healthcheck for the services.
-    """
-    # Sanity check
-    script = os.path.join(WORKDIR, 'healthcheck', SERVICE)
-    if not os.path.exists(script):
-        sys.exit("No healthcheck file for service %s. Exiting." % SERVICE)
-
-    # Run healthcheck
-    exitcode = subprocess.call([script])
+    # Return exitcode
     sys.exit(exitcode)
 
 

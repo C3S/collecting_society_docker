@@ -2,7 +2,8 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-#% Usage: ./scripts/service-test [service] [--down] [--build] [--keep] [--ci] [--help] [PARARAMS]
+#% Usage: ./scripts/service-test [service] [--down] [--build] [--keep] [--lint] [--ci]
+#%                               [--help] [PARAMS]
 #%
 #%   This script runs the unit/function/integration tests and linter for the services:
 #%     - erpserver (tryton)
@@ -14,14 +15,15 @@
 #%   --down: immediately stop, remove the container and exit
 #%   --build: build images and recreate the test database template
 #%   --keep: keep container running
+#%   --lint: only lint the code, don't run the tests
 #%   --ci: continous integration mode
 #%         - update repositories (overrides config files!)
 #%         - build images
 #%         - recreate the test database template
 #%         - run tests and linter
 #%         - stop and remove the container
-#%   PARAMS: are passed to run-tests within the container
 #%   --help: display this help
+#%   PARAMS: are passed to nosetest
 
 # print usage
 usage() {
@@ -42,6 +44,7 @@ BUILD=false
 RM=true
 CI=false
 DOWN=false
+TESTS=true
 TESTING="-f docker-compose.testing.yml"
 TESTPARAMS=""
 for i in "$@"; do
@@ -50,6 +53,7 @@ for i in "$@"; do
     if [ $i = "--build" ]; then BUILD=true; continue; fi
     if [ $i = "--keep" ]; then RM=false; continue; fi
     if [ $i = "--ci" ]; then CI=true; continue; fi
+    if [ $i = "--lint" ]; then TESTS=false; continue; fi
     if [ $i = "--help" ]; then usage 2>&1; fi
     TESTPARAMS="$TESTPARAMS $i"
 done
@@ -97,20 +101,19 @@ fi
 ERRORS=""
 for SERVICE in $SERVICES; do
     # run tests
-    echo -e "\n== run tests for $SERVICE"
-    docker-compose $TESTING exec -T test_$SERVICE service-test $SERVICE $TESTPARAMS
-    [ $? -ne 0 ] && ERRORS="$ERRORS\n- $SERVICE tests"
+    if $TESTS; then
+        echo -e "\n== run tests for $SERVICE"
+        docker-compose $TESTING exec -T test_$SERVICE service-test $SERVICE $TESTPARAMS
+        [ $? -ne 0 ] && ERRORS="$ERRORS\n- $SERVICE tests"
+    fi
     # run linter
-    LINTPATHS=""
-    [ $SERVICE = "erpserver" ] && LINTPATHS="collecting_society"
-    [ $SERVICE = "web" ]       && LINTPATHS="portal_web collecting_society_web"
-    [ $SERVICE = "worker" ]    && LINTPATHS="collecting_society_worker"
-    for LINTPATH in $LINTPATHS; do
-        echo -e "\n== run linter for $SERVICE: code/$LINTPATH"
-        docker-compose $TESTING exec -T test_$SERVICE flake8 src/$LINTPATH
-        [ $? -eq 0 ] && echo -e "All fine."
-        [ $? -ne 0 ] && ERRORS="$ERRORS\n- $SERVICE flake8: code/$LINTPATH"
-    done
+    echo -e "\n== run linter for $SERVICE"
+    docker-compose $TESTING exec -T test_$SERVICE service-lint
+    if [ $? -ne 0 ]; then
+        ERRORS="$ERRORS\n- $SERVICE linter"
+    else
+        echo -e "All fine."
+    fi
 done
 
 # remove docker container
@@ -123,12 +126,18 @@ fi
 EXITCODE=0
 if [[ ! -z "$ERRORS" ]]; then
     EXITCODE=1
-    echo -e "\033[91;5m"
+    echo -e "\033[1m\033[5m\033[91m"
     echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     echo -e " WARNING: ERRORS OCCURED WHILE TESTS WERE RUNNING. PLEASE FIX."
     echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     echo -e "\e[25m"
     echo -e "Errors:\n$ERRORS"
+    echo -e "\033[0m"
+else
+    echo -e "\033[1m\033[32m"
+    echo -e "--------------------------------------------"
+    echo -e " ALL TEST RUN SUCCESSFUL. EVEN THE LINTERS."
+    echo -e "--------------------------------------------"
     echo -e "\033[0m"
 fi
 echo `date +%Y-%m-%d:%H:%M:%S`
