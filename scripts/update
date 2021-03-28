@@ -123,6 +123,10 @@ copy_files = [
         'target': dirs['root'] + '/.env'
     },
     {
+        'source': dirs['root'] + '/.devcontainer.json.example',
+        'target': dirs['root'] + '/.devcontainer.json'
+    },
+    {
         'source': dirs['shared'] + '/config/trytond/passfile.example',
         'target': dirs['shared'] + '/config/trytond/passfile',
     },

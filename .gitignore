@@ -47,8 +47,6 @@ nosetests.xml
 nosetests_*.xml
 coverage.xml
 /volumes/shared/tests
-/volumes/shared/cover
-/volumes/shared/cover_*
 
 # Translations
 #*.mo   unless we integrate the translation tools into the build process, 
@@ -98,8 +96,8 @@ tags
 /volumes/shared/config/trytond/production.conf
 
 # VS Code
+/.devcontainer.json
 /.vscode/*
-.devcontainer.json
 
 # Sphinx Documentation
 /volumes/shared/docs/source/generated
