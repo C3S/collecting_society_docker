@@ -325,23 +325,20 @@ For ``staging`` and ``production`` environments:
    (hostnames, ports, usernames, paths, etc).
 2. Adjust the **secrets**:
 
-   ========================================================= ================================
+   ========================================================= ===================================
    File                                                      Variable
-   ========================================================= ================================
-   ``.env``                                                  | ``AUTHENTICATION_SECRET``
-   ``sevices/webapi.env``                                    | ``AUTHENTICATION_SECRET``
-                                                             | ``SESSION_SECRET``
-                                                             | ``API_C3SMEMBERSHIP_API_KEY``
-   ``sevices/webgui.env``                                    | ``AUTHENTICATION_SECRET``
-                                                             | ``SESSION_SECRET``
-                                                             | ``API_C3SMEMBERSHIP_API_KEY``
+   ========================================================= ===================================
+   ``sevices/webapi.env``                                    | ``PYRAMID_AUTHENTICATION_SECRET``
+                                                             | ``PYRAMID_SESSION_SECRET``
+   ``sevices/webgui.env``                                    | ``PYRAMID_AUTHENTICATION_SECRET``
+                                                             | ``PYRAMID_SESSION_SECRET``
    ``sevices/worker.env``                                    | ``ECHOPRINT_TOKEN``
                                                              | ``WORKER_PROTEUS_PASSWORD``
    ``services/config/collecting_society.<ENVIRONMENT>.conf`` | ``privatekey``
                                                              | ``certificate``
                                                              | ``super_pwd``
    ``services/config/collecting_society.passfile``           plaintext
-   ========================================================= ================================
+   ========================================================= ===================================
 
 Images
 ------
@@ -539,42 +536,39 @@ Variable                           Values          Description
                                    | "testing"
 ``COMPOSE_DOCKER_CLI_BUILD``       0|1             use BuildKit for docker builds
 ``COMPOSE_PROJECT_NAME``           string          prefix for containers
-``APT_CACHERURL``                  url             (deprecated)
-``DEBIAN``                         "jessie"        base image for builds
 ``DEBUGGER_WINPDB``                0|1             install packages for winpdb in images
 ``DEBUGGER_PTVSD``                 0|1             install packages for ptvsd in images
 ``WORKDIR``                        PATH            workdir for images
 ``GIT_SSH``                        0|1             use git via ssh
 ``GIT_USER_NAME``                  string          set git username in repositories
 ``GIT_USER_EMAIL``                 string          set git email in repositories
-``WORKER_PROTEUS_USER``            string          tryton username for proteus client
-``WORKER_DISEMBODY_DROPPED_FILES`` "yes"|"no"      delete upload content to save space
-``ECHOPRINT_SCHEMA``               SCHEMA          schema of echoprint server
-``ECHOPRINT_HOSTNAME``             string          hostname of echoprint server
-``ECHOPRINT_PORT``                 integer         port of echoprint server
 ``POSTGRES_HOSTNAME``              string          hostname of postgres server
 ``POSTGRES_PORT``                  integer         port of postgres server
 ``TRYTON_HOSTNAME``                string          hostname of tryton server
+``TRYTON_DATABASE``                string          name of the tryton database
 ``TRYTON_PORT``                    integer         port of tryton server
 ``TRYTON_VERSION``                 string          version of tryton to use
-``VIRTUAL_HOST_GUI``               URI             nginx URI for the webgui
-``VIRTUAL_HOST_API``               URI             nginx URI for the webapi
+``VIRTUAL_HOST_WEBGUI``            URI             nginx URI for the webgui service
+``VIRTUAL_HOST_WEBAPI``            URI             nginx URI for the webapi service
 ``VIRTUAL_PORT``                   integer         nginx reverse port for webgui/webapi
-``TRUSTED_PROXY``                  IP              trusted IP for WSGI
-``API_C3SUPLOAD_URL``              URL             upload api URL
-``API_C3SUPLOAD_VERSION``          "v1"            upload api version
-``API_C3SUPLOAD_CORS_ORIGINS``     URL             upload api URL for CORS
-``API_C3SUPLOAD_CONTENTBASEPATH``  PATH            upload api content path
-``API_C3SUPLOAD_STORAGEBASEPATH``  PATH            upload api storage path
-``API_DATATABLES_URL``             URL             datatables api URL
-``API_DATATABLES_VERSION``         "v1"            datatables api version
-``API_DATATABLES_CORS_ORIGINS``    URL             datatables api URL for CORS
-``API_C3SMEMBERSHIP_URL``          URL             (deprecated)
-``API_C3SMEMBERSHIP_VERSION``      string          (deprecated)
 ``MAIL_HOST``                      string          hostname of the mail server
 ``MAIL_PORT``                      integer         port of the mail server
 ``MAIL_DEFAULT_SENDER``            EMAIL           default sender email address
 ``MAIL_TO_REAL_WORLD``             0|1             simulate sending mails or not
+``PYRAMID_SCHEMA``                 SCHEMA          schema of pyramid server
+``PYRAMID_TRUSTED_PROXY``          IP              trusted IP for pyramid server
+``WEBAPI_URL``                     URL             URL of web api
+``WEBAPI_CORS``                    URL             allowed origins for web api CORS
+``WEBAPI_VERSION``                 string          version of web api
+``WEBAPI_ENDPOINT_DATATABLES``     string          REST endpoint name for datatables
+``WEBAPI_ENDPOINT_REPERTOIRE``     string          REST endpoint name for repertoire
+``WEBAPI_CONTENT``                 PATH            path to content folder (upload)
+``WEBAPI_STORAGE``                 PATH            path to storage folder (processing)
+``ECHOPRINT_SCHEMA``               SCHEMA          schema of echoprint server
+``ECHOPRINT_HOSTNAME``             string          hostname of echoprint server
+``ECHOPRINT_PORT``                 integer         port of echoprint server
+``WORKER_PROTEUS_USER``            string          tryton username for proteus client
+``WORKER_DISEMBODY_DROPPED_FILES`` "yes"|"no"      delete upload content to save space
 ================================== =============== =====================================
 
 webapi
@@ -582,9 +576,8 @@ webapi
 
 ================================= =============== =====================================
 ``PYRAMID_SERVICE``               "api"|"gui"     pyramid service to serve
-``AUTHENTICATION_SECRET``         string          secret for authentication
-``SESSION_SECRET``                string          secret for sessions
-``API_C3SMEMBERSHIP_API_KEY``     string          (deprecated)
+``PYRAMID_AUTHENTICATION_SECRET`` string          secret for authentication
+``PYRAMID_SESSION_SECRET``        string          secret for sessions
 ================================= =============== =====================================
 
 webgui
@@ -592,9 +585,8 @@ webgui
 
 ================================= =============== =====================================
 ``PYRAMID_SERVICE``               "api"|"gui"     pyramid service to serve
-``AUTHENTICATION_SECRET``         string          secret for authentication
-``SESSION_SECRET``                string          secret for sessions
-``API_C3SMEMBERSHIP_API_KEY``     string          (deprecated)
+``PYRAMID_AUTHENTICATION_SECRET`` string          secret for authentication
+``PYRAMID_SESSION_SECRET``        string          secret for sessions
 ================================= =============== =====================================
 
 worker
