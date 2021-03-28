@@ -101,7 +101,7 @@ services:
       args: *buildargs
     cpu_percent: 50
     mem_limit: 500m
-    command: service-deploy
+    command: tail -f /dev/null
     healthcheck:
       test: /shared/healthcheck/worker
       interval: 5m
