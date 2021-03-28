@@ -1,7 +1,5 @@
 ARG ENVIRONMENT
 ARG WORKDIR
-ARG APT_CACHERURL
-ARG DEBIAN
 ARG DEBUGGER_WINPDB
 ARG DEBUGGER_PTVSD
 
@@ -22,11 +20,6 @@ RUN mkdir -p $WORKDIR
 WORKDIR $WORKDIR
 # configure apt
 ENV DEBIAN_FRONTEND noninteractive
-# ARG APT_CACHERURL
-# RUN if [ ${APT_CACHERURL} ]; then \
-#         echo 'Acquire::HTTP::Proxy "http://172.17.0.1:3142";' >> /etc/apt/apt.conf.d/01proxy \
-#         && echo 'Acquire::HTTPS::Proxy "false";' >> /etc/apt/apt.conf.d/01proxy; \
-#     fi
 # install base packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
         locales \
@@ -421,7 +414,7 @@ FROM selenium/standalone-firefox AS browser
 
 #--- base -> python -> FINGERPRINTING -----------------------------------------
 
-FROM ${DEBIAN}_echoprint AS fingerprint
+FROM jessie_echoprint AS fingerprint
 COPY --from=jessie_echoprint_compiled /opt/tokyocabinet/bin/* /bin/
 COPY --from=jessie_echoprint_compiled /opt/tokyocabinet/lib/libtokyocabinet.* /lib/
 COPY --from=jessie_echoprint_compiled /opt/tokyotyrant/bin/* /bin/
@@ -432,7 +425,7 @@ COPY --from=jessie_echoprint_compiled /opt/venv /opt/venv
 
 #--- base -> python -> WORKER -------------------------------------------------
 
-FROM ${DEBIAN}_worker AS worker
+FROM jessie_worker AS worker
 COPY --from=jessie_worker_compiled /opt/echoprint-codegen/echoprint-codegen /usr/local/bin/echoprint-codegen
 COPY --from=jessie_worker_compiled /opt/venv /opt/venv
 COPY worker.cron /etc/cron.d/worker
@@ -440,13 +433,13 @@ COPY worker.cron /etc/cron.d/worker
 
 #--- base -> python -> trytond -> ERPSERVER -----------------------------------
 
-FROM ${DEBIAN}_trytond AS erpserver
+FROM jessie_trytond AS erpserver
 COPY --from=jessie_trytond_compiled /opt/venv /opt/venv
 
 
 #--- base -> python -> trytond -> WEBAPI --------------------------------------
 
-FROM ${DEBIAN}_trytond AS webapi
+FROM jessie_trytond AS webapi
 COPY --from=jessie_pyramid_compiled /opt/venv /opt/venv
 
 
@@ -457,7 +450,7 @@ FROM webapi AS webgui
 
 #--- base -> python -> DOCUMENTATION ------------------------------------------
 
-FROM ${DEBIAN}_compile AS documentation
+FROM jessie_compile AS documentation
 COPY --from=jessie_trytond_compiled /opt/venv /opt/venv
 COPY --from=jessie_pyramid_compiled /opt/venv /opt/venv
 COPY --from=jessie_worker_compiled /opt/venv /opt/venv

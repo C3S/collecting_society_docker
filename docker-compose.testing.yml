@@ -4,8 +4,8 @@
 version: '2.4'
 
 networks:
-  frontend:
-  backend:
+  test_frontend:
+  test_backend:
 
 volumes:
   test_postgresql_data:
@@ -20,13 +20,11 @@ services:
       target: database
       args: &buildargs
         ENVIRONMENT: ${ENVIRONMENT}
-        APT_CACHERURL: ${APT_CACHERURL}
         WORKDIR: ${WORKDIR}
-        DEBIAN: ${DEBIAN}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
     networks:
-      - backend
+      - test_backend
     healthcheck:
       test: /shared/healthcheck/database
       interval: 10s
@@ -45,7 +43,7 @@ services:
       args: *buildargs
     command: service-deploy
     networks:
-      - backend
+      - test_backend
     healthcheck:
       test: /shared/healthcheck/erpserver
       interval: 10s
@@ -63,7 +61,8 @@ services:
     environment:
       SERVICE: erpserver
       ENVIRONMENT: testing
-      POSTGRES_HOSTNAME: test_database
+      POSTGRES_HOSTNAME: test_${POSTGRES_DATABASE}
+      TRYTON_DATABASE: ${TRYTON_DATABASE}_test
 
   test_web:
     build:
@@ -72,8 +71,8 @@ services:
       args: *buildargs
     command: tail -f /dev/null
     networks:
-      - frontend
-      - backend
+      - test_frontend
+      - test_backend
     ports:
       - "127.0.0.1:51003:51003"  # debugger
     volumes:
@@ -89,13 +88,11 @@ services:
     environment:
       SERVICE: webgui
       ENVIRONMENT: testing
-      TRYTON_HOSTNAME: test_erpserver
-      POSTGRES_HOSTNAME: test_database
-      API_C3SUPLOAD_URL: http://test_web:6545/repertoire
-      API_C3SUPLOAD_CORS_ORIGINS: http://test_web:6544
-      API_DATATABLES_URL: http://test_web:6545/datatables
-      API_DATATABLES_CORS_ORIGINS: http://test_web:6544
-      API_C3SMEMBERSHIP_URL: http://test_web:6545/c3smembership
+      TRYTON_HOSTNAME: test_${TRYTON_HOSTNAME}
+      TRYTON_DATABASE: ${TRYTON_DATABASE}_test
+      POSTGRES_HOSTNAME: test_${POSTGRES_HOSTNAME}
+      WEBAPI_URL: http://test_web:6545
+      WEBAPI_CORS: http://test_web:6544
 
   test_worker:
     build:
@@ -111,7 +108,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - backend
+      - test_backend
     volumes:
       - ./volumes/shared:/shared
     depends_on:
@@ -125,9 +122,10 @@ services:
     environment:
       SERVICE: worker
       ENVIRONMENT: testing
-      TRYTON_HOSTNAME: test_erpserver
-      POSTGRES_HOSTNAME: test_database
-      ECHOPRINT_HOSTNAME: test_fingerprint
+      TRYTON_HOSTNAME: test_${TRYTON_HOSTNAME}
+      TRYTON_DATABASE: ${TRYTON_DATABASE}_test
+      POSTGRES_HOSTNAME: test_${POSTGRES_HOSTNAME}
+      ECHOPRINT_HOSTNAME: test_${ECHOPRINT_HOSTNAME}
       DEBUGGER_WINPDB: 0
       DEBUGGER_PTVSD: 0
 
@@ -137,15 +135,13 @@ services:
       target: browser
       args:
         ENVIRONMENT: ${ENVIRONMENT}
-        APT_CACHERURL: ${APT_CACHERURL}
         WORKDIR: ${WORKDIR}
-        DEBIAN: ${DEBIAN}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
     volumes:
       - /dev/shm:/dev/shm
     networks:
-      - frontend
+      - test_frontend
     depends_on:
       test_web:
         condition: service_started
@@ -167,7 +163,7 @@ services:
       - ./volumes/shared:/shared
       - test_echoprint_data:/opt/echoprint-data
     networks:
-      - backend
+      - test_backend
     env_file:
       - .env
     environment:

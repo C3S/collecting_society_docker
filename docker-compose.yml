@@ -15,9 +15,7 @@ services:
       target: database
       args: &buildargs
         ENVIRONMENT: ${ENVIRONMENT}
-        APT_CACHERURL: ${APT_CACHERURL}
         WORKDIR: ${WORKDIR}
-        DEBIAN: ${DEBIAN}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
     healthcheck:

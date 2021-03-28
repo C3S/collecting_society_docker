@@ -48,6 +48,7 @@ SERVICE = str(os.environ.get('SERVICE'))
 WORKDIR = str(os.environ.get('WORKDIR'))
 POSTGRES_HOSTNAME = str(os.environ.get('POSTGRES_HOSTNAME'))
 POSTGRES_PORT = str(os.environ.get('POSTGRES_PORT'))
+TRYTON_DATABASE = str(os.environ.get('TRYTON_DATABASE'))
 TMP_FILE = 'running_db_creation.delete_me'
 
 
@@ -153,7 +154,7 @@ def pip_install(context, service):
 
 
 @cli.command('db-create')
-@click.argument('dbname', default=PROJECT)
+@click.argument('dbname', default=TRYTON_DATABASE)
 @click.pass_context
 def db_create(context, dbname):
     """
@@ -185,7 +186,7 @@ def db_create(context, dbname):
 
 
 @cli.command('db-delete')
-@click.argument('dbname', default=PROJECT)
+@click.argument('dbname', default=TRYTON_DATABASE)
 @click.pass_context
 def db_delete(context, dbname):
     """
@@ -266,7 +267,7 @@ def db_copy(context, dbname_src, dbname_dst, force):
 
 
 @cli.command('db-connect')
-@click.argument('dbname', default=PROJECT)
+@click.argument('dbname', default=TRYTON_DATABASE)
 @click.pass_context
 def db_connect(context, dbname):
     """
@@ -285,7 +286,7 @@ def db_connect(context, dbname):
 
 
 @cli.command('db-backup')
-@click.argument('dbname', default=PROJECT)
+@click.argument('dbname', default=TRYTON_DATABASE)
 @click.pass_context
 def db_backup(context, dbname):
     """
@@ -308,7 +309,7 @@ def db_backup(context, dbname):
     help='Single module or comma separated list of modules to update. '
     'Whitspace not allowed!')
 @click.argument('trytondconf', default=ENVIRONMENT + '.conf')
-@click.argument('dbname', default=PROJECT)
+@click.argument('dbname', default=TRYTON_DATABASE)
 @click.pass_context
 def db_update(context, modules, trytondconf, dbname):
     """
@@ -343,7 +344,7 @@ def db_update(context, modules, trytondconf, dbname):
 
 
 @cli.command('db-setup')
-@click.argument('dbname', default=PROJECT)
+@click.argument('dbname', default=TRYTON_DATABASE)
 @click.option('--reclimit', '-r', type=int, default=-1,
               help='Maximum numbers of objects (default: 0 = all)')
 @click.option('--dataset', '-d', type=str, default=[], multiple=True,
@@ -463,7 +464,7 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
 
 
 @cli.command('db-rebuild')
-@click.argument('dbname', default=PROJECT)
+@click.argument('dbname', default=TRYTON_DATABASE)
 @click.option('--reclimit', '-r', type=int, default=-1,
               help='Maximum numbers of objects (default: 0 = all)')
 @click.option('--dataset', '-d', type=str, default=[], multiple=True,
@@ -500,7 +501,7 @@ def db_rebuild(context, dbname, reclimit, dataset, exclude,
 
 @cli.command('service-test', context_settings=dict(
                  ignore_unknown_options=True))
-@click.option('--dbname', default=PROJECT + '_test',
+@click.option('--dbname', default=TRYTON_DATABASE + '_test',
               help='Name of database (default: test)')
 @click.option('--reset/--no-reset', default=True,
               help='Reset the database (default: yes)')
@@ -621,24 +622,23 @@ def service_test(context, service, dbname, reset, path, nargs):
     # Start tests
     print("\nSTART TESTS ...\n")
     os.chdir(os.path.join(WORKDIR, 'tests'))
-    exitcode = subprocess.call(
-        [
-            'nosetests',
-            '--verbose',
-            '--logging-level=CRITICAL',
-            '--all-modules',
-            '--with-coverage',
-            '--cover-html',
-            '--cover-html-dir=cover_' + service,
-            '--cover-xml',
-            '--cover-xml-file=cover_' + service + '.xml',
-            '--with-xunit',
-            '--xunit-file=nosetests_' + service + '.xml',
-            '--cover-erase',
-            '--cover-inclusive',
-            '--cover-package='+','.join(modules),
-        ] + list(nargs) + list(paths)
-    )
+    command = [
+        'nosetests',
+        '--verbose',
+        '--logging-level=CRITICAL',
+        '--all-modules',
+        '--with-coverage',
+        '--cover-html',
+        '--cover-html-dir=cover_' + service,
+        '--cover-xml',
+        '--cover-xml-file=cover_' + service + '.xml',
+        '--with-xunit',
+        '--xunit-file=nosetests_' + service + '.xml',
+        '--cover-erase',
+        '--cover-inclusive',
+        '--cover-package='+','.join(modules),
+    ] + list(nargs) + list(paths)
+    exitcode = subprocess.call(command)
     os.chdir(WORKDIR)
 
     # Return exitcode

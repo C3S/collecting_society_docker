@@ -4,4 +4,4 @@
 #
 # Deploy script for pyramid
 
-pserve $WORKDIR/src/portal_web/$ENVIRONMENT.ini trusted_proxy=$TRUSTED_PROXY --reload
+pserve $WORKDIR/src/portal_web/$ENVIRONMENT.ini trusted_proxy=$PYRAMID_TRUSTED_PROXY --reload
