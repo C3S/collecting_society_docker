@@ -557,8 +557,9 @@ Variable                           Values          Description
 ``TRYTON_PORT``                    integer         port of tryton server
 ``TRYTON_VERSION``                 string          version of tryton to use
 ``VIRTUAL_HOST_WEBGUI``            URI             nginx URI for the webgui service
+``VIRTUAL_PORT_WEBGUI``            integer         nginx reverse port for webgui
 ``VIRTUAL_HOST_WEBAPI``            URI             nginx URI for the webapi service
-``VIRTUAL_PORT``                   integer         nginx reverse port for webgui/webapi
+``VIRTUAL_PORT_WEBAPI``            integer         nginx reverse port for webapi
 ``MAIL_HOST``                      string          hostname of the mail server
 ``MAIL_PORT``                      integer         port of the mail server
 ``MAIL_DEFAULT_SENDER``            EMAIL           default sender email address
@@ -583,7 +584,6 @@ webapi
 ''''''
 
 ================================= =============== =====================================
-``PYRAMID_SERVICE``               "api"|"gui"     pyramid service to serve
 ``PYRAMID_AUTHENTICATION_SECRET`` string          secret for authentication
 ``PYRAMID_SESSION_SECRET``        string          secret for sessions
 ================================= =============== =====================================
@@ -592,7 +592,6 @@ webgui
 ''''''
 
 ================================= =============== =====================================
-``PYRAMID_SERVICE``               "api"|"gui"     pyramid service to serve
 ``PYRAMID_AUTHENTICATION_SECRET`` string          secret for authentication
 ``PYRAMID_SESSION_SECRET``        string          secret for sessions
 ================================= =============== =====================================
