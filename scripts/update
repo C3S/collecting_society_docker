@@ -621,20 +621,23 @@ def update():
     # update update script itself
     update_self()
 
-    # create folders
+    # create docker-compose symlink
     print("\nCreating symlink to docker-compose.override.yml ... ", end='')
-    override = 'development'
-    if env['ENVIRONMENT'] == 'production':
-        override = 'production'
-    symlink_source = os.path.join(
-        dirs['root'], 'docker-compose.' + override + '.yml')
-    symlink_target = os.path.join(
-        dirs['root'], 'docker-compose.override.yml')
-    if os.path.islink(symlink_target):
-        print("already present.")
-    else:
-        os.symlink(symlink_source, symlink_target)
-        print("created.")
+    if branch in ['development', 'staging', 'production']:
+        new_source = os.path.join('docker-compose.' + branch + '.yml')
+        target = os.path.join(dirs['root'], 'docker-compose.override.yml')
+        if os.path.exists(target) and os.path.islink(target):
+            old_source = os.readlink(target)
+            if new_source == old_source:
+                print("already exists.")
+            else:
+                os.unlink(target)
+                os.symlink(new_source, target)
+                print("changed from %s to %s." % (
+                    old_source[15:-4], new_source[15:-4]))
+        else:
+            os.symlink(new_source, target)
+            print("created.")
 
     # create folders
     print("\nCreating folders ...\n")
