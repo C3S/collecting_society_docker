@@ -673,8 +673,9 @@ def update():
         copy_file(file['source'], file['target'], reset)
 
     # diff example file
-    print("\nDiffing example files ...\n")
-    diff_example_files()
+    if branch == 'development':
+        print("\nDiffing example files ...\n")
+        diff_example_files()
 
     # footer
     print(footer)
