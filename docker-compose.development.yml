@@ -23,6 +23,9 @@ services:
     volumes:
       - ./volumes/nginx-certs:/etc/nginx/certs
       - ./volumes/nginx-dhparam:/etc/nginx/dhparam
+      - ./volumes/nginx-htpasswd:/etc/nginx/htpasswd
+    logging:
+      driver: none
 
   webapi:
     ports:

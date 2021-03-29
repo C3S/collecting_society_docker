@@ -51,30 +51,33 @@ Schema
 Services
 --------
 
-+-------------+---------------------+----------------------------+-----------------+------------------+
-| Service     | Description         | Repositories               | Ports           | Volumes          |
-+=============+=====================+============================+=================+==================+
-| database    | Postgres DB         |                            |                 | postgresql-data  |
-+-------------+---------------------+----------------------------+-----------------+------------------+
-| erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc | | shared         |
-|             |                     |                            | | 8069: xmlrpc  | | trytond-files  |
-|             |                     |                            | | 51005: ptvsd  |                  |
-+-------------+---------------------+----------------------------+-----------------+------------------+
-| webserver   | Nginx Server        |                            | 80: http        | | nginx-certs    |
-|             |                     |                            |                 | | nginx-dhparam  |
-+-------------+---------------------+----------------------------+-----------------+------------------+
-| webgui      | | Pyramid Gui App   | | portal_web_              | | 6543: pserve  | | shared         |
-|             | | *+Trytond Server* | | collecting_society_web_  | | 51000: ptvsd  | | trytond-files  |
-+-------------+---------------------+----------------------------+-----------------+------------------+
-| webapi      | | Pyramid Api App   | | portal_web_              | | 6544: pserve  | | shared         |
-|             | | *+Trytond Server* | | collecting_society_web_  | | 51001: ptvsd  | | trytond-files  |
-+-------------+---------------------+----------------------------+-----------------+------------------+
-| worker      | | File Processing   | collecting_society_worker_ | 51002: ptvsd    | shared           |
-|             | | *+Proteus Client* |                            |                 |                  |
-+-------------+---------------------+----------------------------+-----------------+------------------+
-| fingerprint | Echoprint Server    | echoprint-server_          | | 8080: http    | | shared         |
-|             |                     |                            | | 51004: ptvsd  | | echoprint-data |
-+-------------+---------------------+----------------------------+-----------------+------------------+
++-------------+---------------------+----------------------------+-----------------+-------------------+
+| Service     | Description         | Repositories               | Ports           | Volumes           |
++=============+=====================+============================+=================+===================+
+| database    | Postgres DB         |                            |                 | | shared          |
+|             |                     |                            |                 | | postgresql-data |
++-------------+---------------------+----------------------------+-----------------+-------------------+
+| erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc | | shared          |
+|             |                     |                            | | 8069: xmlrpc  | | trytond-files   |
+|             |                     |                            | | 51005: ptvsd  |                   |
++-------------+---------------------+----------------------------+-----------------+-------------------+
+| webserver   | Nginx Server        |                            | 80: http        | | shared          |
+|             |                     |                            |                 | | nginx-certs     |
+|             |                     |                            |                 | | nginx-dhparam   |
+|             |                     |                            |                 | | nginx-htpasswd  |
++-------------+---------------------+----------------------------+-----------------+-------------------+
+| webgui      | | Pyramid Gui App   | | portal_web_              | | 6543: pserve  | | shared          |
+|             | | *+Trytond Server* | | collecting_society_web_  | | 51000: ptvsd  | | trytond-files   |
++-------------+---------------------+----------------------------+-----------------+-------------------+
+| webapi      | | Pyramid Api App   | | portal_web_              | | 6544: pserve  | | shared          |
+|             | | *+Trytond Server* | | collecting_society_web_  | | 51001: ptvsd  | | trytond-files   |
++-------------+---------------------+----------------------------+-----------------+-------------------+
+| worker      | | File Processing   | collecting_society_worker_ | 51002: ptvsd    | shared            |
+|             | | *+Proteus Client* |                            |                 |                   |
++-------------+---------------------+----------------------------+-----------------+-------------------+
+| fingerprint | Echoprint Server    | echoprint-server_          | | 8080: http    | | shared          |
+|             |                     |                            | | 51004: ptvsd  | | echoprint-data  |
++-------------+---------------------+----------------------------+-----------------+-------------------+
 
 .. _collecting_society_docker: https://github.com/C3S/collecting_society_docker
 .. _collecting_society: https://github.com/C3S/collecting_society
@@ -339,6 +342,10 @@ For ``staging`` and ``production`` environments:
                                                              | ``super_pwd``
    ``services/config/collecting_society.passfile``           plaintext
    ========================================================= ===================================
+3. Add basic http authentication, if needed::
+
+    $ sudo htpasswd -c volumes/nginx-htpasswd/collecting_society.test <USERNAME>
+    $ sudo ln -s collecting_society.test volumes/nginx-htpasswd/api.collecting_society.test
 
 Images
 ------
@@ -498,14 +505,14 @@ The differences on each level include:
 Context         Ports  Volumes        Demodata Debug Cache
 =============== ====== ============== ======== ===== =====
 ``development`` all    local mounts   yes      on    off
-``staging``     public docker managed yes      off   on
+``staging``     public local mounts   yes      off   on
 ``production``  public docker managed no       off   on
 ``testing``     public docker managed no       off   on
 =============== ====== ============== ======== ===== =====
 
-For each of the environments except ``testing``, there is a corresponding branch
-with the same name in this repository and most of the main subrepositories
-pre-configured for this environment.
+For each of the environments except ``testing``, there is a corresponding
+branch with the same name in this repository and most of the main
+subrepositories pre-configured for this environment.
 
 Envvars
 -------
@@ -789,9 +796,9 @@ Remove volumes                                 ``docker volume rm VOLUMENAME``
 
 Remove all containers, networks, volumes **and images**::
 
-    $ docker-compose down -v --rmi all --remove-orphans
-    $ docker-compose -f docker-compose.testing.yml down -v --rmi all --remove-orphans
-    $ docker-compose -f docker-compose.documentation.yml down -v --rmi all --remove-orphans
+    $ docker-compose -f docker-compose.documentation.yml down -v --rmi all
+    $ docker-compose -f docker-compose.testing.yml down -v --rmi all
+    $ docker-compose down -v --rmi all
     $ docker image prune
 
 .. note:: The multiple ``down`` commands are needed, as testing and

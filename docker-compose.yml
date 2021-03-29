@@ -69,9 +69,7 @@ services:
       - frontend
     volumes:
       - ./volumes/shared:/shared
-      - /var/run/docker.sock:/tmp/docker.sock
-    logging:
-      driver: none
+      - /var/run/docker.sock:/tmp/docker.sock:ro
     environment:
       SERVICE: webserver
 
@@ -101,6 +99,8 @@ services:
       - services/webapi.env
     environment:
       SERVICE: webapi
+      VIRTUAL_HOST: ${VIRTUAL_HOST_WEBAPI}
+      VIRTUAL_PORT: ${VIRTUAL_PORT_WEBAPI}
 
   webgui:
     build:
@@ -126,6 +126,8 @@ services:
       - services/webgui.env
     environment:
       SERVICE: webgui
+      VIRTUAL_HOST: ${VIRTUAL_HOST_WEBGUI}
+      VIRTUAL_PORT: ${VIRTUAL_PORT_WEBGUI}
 
   worker:
     build:
