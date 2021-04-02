@@ -44,7 +44,7 @@ fi
 
 # delete database
 echo -e "\n== rebuild database"
-if docker-compose ps | grep erpserver; then
+if docker-compose ps | grep erpserver | grep -v Exit; then
     docker-compose exec erpserver db-rebuild
     EXITCODE=$1
 else

@@ -262,7 +262,7 @@ Requirements
 - Linux or OS X system
 - `git`__
 - `docker`__ ``>= 17.12.0``
-- `docker-compose`__ ``>= 1.22.0``
+- `docker-compose`__ ``>= 1.28.6``
 
 __ https://git-scm.com/downloads
 __ https://docs.docker.com/engine/installation
