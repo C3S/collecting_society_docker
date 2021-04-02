@@ -1,0 +1,264 @@
+---
+#==============================================================================
+# production config
+#==============================================================================
+production:
+
+  # command config ------------------------------------------------------------
+  commands:
+    # update command
+    update:
+      # pull project container
+      self: false
+      # build images on changes
+      images: false
+      # migrate database on changes
+      database: false
+
+  # task config ---------------------------------------------------------------
+  tasks:
+    # update command
+    update: &update
+      # update main repository
+      - name: ${PROJECT}_docker
+        actions: ['update_repo', 'restart_script']
+        target: '.'
+        source: 'git@github.com:C3S/collecting_society_docker.git'
+        version: '${ENVIRONMENT}'
+        upstream: False
+      # create basic folder structure
+      - name: create basic folder structure
+        actions: ['create_folder']
+        batch:
+          - name: 'code'
+          - name: 'volumes/shared/tmp'
+          - name: 'volumes/shared/tmp/logs'
+      # update upstream repos
+      - name: update upstream repos
+        actions: ['update_repo']
+        targetpath: 'volumes/shared/src'
+        batch:
+          - name: trytond
+            source: 'https://github.com/tryton/trytond.git'
+            version: '${TRYTON_VERSION}'
+          - name: country
+            source: 'https://github.com/tryton/country.git'
+            version: '${TRYTON_VERSION}'
+          - name: currency
+            source: 'https://github.com/tryton/currency.git'
+            version: '${TRYTON_VERSION}'
+          - name: party
+            source: 'https://github.com/tryton/party.git'
+            version: '${TRYTON_VERSION}'
+          - name: company
+            source: 'https://github.com/tryton/company.git'
+            version: '${TRYTON_VERSION}'
+          - name: product
+            source: 'https://github.com/tryton/product.git'
+            version: '${TRYTON_VERSION}'
+          - name: account
+            source: 'https://github.com/tryton/account.git'
+            version: '${TRYTON_VERSION}'
+          - name: account_product
+            source: 'https://github.com/tryton/account_product.git'
+            version: '${TRYTON_VERSION}'
+          - name: account_invoice
+            source: 'https://github.com/tryton/account_invoice.git'
+            version: '${TRYTON_VERSION}'
+          - name: account_invoice_line_standalone
+            source: 'https://github.com/tryton/account_invoice_line_standalone.git'
+            version: '${TRYTON_VERSION}'
+          - name: bank
+            source: 'https://github.com/tryton/bank.git'
+            version: '${TRYTON_VERSION}'
+          - name: account_de_skr03
+            source: 'https://github.com/tryton/account_de_skr03.git'
+            version: '${TRYTON_VERSION}'
+          - name: web_user
+            source: 'https://github.com/virtualthings/web_user.git'
+            version: '${TRYTON_VERSION}'
+          - name: echoprint-codegen
+            source: 'https://github.com/spotify/echoprint-codegen.git'
+            version: 'master'
+      # update project repos
+      - name: update project repos
+        actions: ['update_repo']
+        targetpath: 'volumes/shared/src'
+        upstream: false
+        batch:
+          - name: archiving
+            source: 'git@github.com:C3S/archiving.git'
+            version: '${ENVIRONMENT}'
+          - name: portal
+            source: 'git@github.com:C3S/portal.git'
+            version: '${ENVIRONMENT}'
+          - name: collecting_society
+            source: 'git@github.com:C3S/collecting_society.git'
+            version: '${ENVIRONMENT}'
+          - name: portal_web
+            source: 'git@github.com:C3S/portal_web.git'
+            version: '${ENVIRONMENT}'
+          - name: collecting_society_web
+            source: 'git@github.com:C3S/collecting_society_web.git'
+            version: '${ENVIRONMENT}'
+          - name: echoprint-server
+            source: 'git@github.com:C3S/echoprint-server.git'
+            version: 'master'
+          - name: collecting_society_worker
+            source: 'git@github.com:C3S/collecting_society_worker.git'
+            version: '${ENVIRONMENT}'
+      # copy and diff example files
+      - name: copy and diff example files
+        actions: ['copy_file', 'diff_file']
+        batch:
+          - name: '.env'
+          - name: 'services/webgui.env'
+          - name: 'services/webapi.env'
+          - name: 'services/worker.env'
+          - name: 'services/worker.env'
+          - name: 'volumes/shared/config/trytond/production.conf'
+          - name: 'volumes/shared/config/trytond/staging.conf'
+          - name: 'volumes/shared/src/collecting_society_worker/config.ini'
+      # copy tryton admin password example file
+      - name: copy trytond admin password example file
+        actions: ['copy_file']
+        target: 'volumes/shared/config/trytond/passfile'
+      # symlink docker override file
+      - name: symlink docker override file
+        actions: ['link_path']
+        target: 'docker-compose.override.yml'
+        source: 'docker-compose.production.yml'
+
+    # diff command
+    diff: *update
+
+  # action config -------------------------------------------------------------
+  actions:
+    # update_repo action group
+    update_repo: [
+      clone_repo, symlink_repo, set_user, set_origin,
+      check_status, fetch_repo, checkout_repo, pull_repo
+    ]
+    # diff_file action
+    diff_file:
+      # regex for lines to be ignored in diffs
+      ignore: [
+        ^#, ^\/\/, ^\n$,
+        ^GIT_SSH=, ^GIT_USER_NAME=, ^GIT_USER_EMAIL=,
+        ^PYRAMID_AUTHENTICATION_SECRET=, ^PYRAMID_SESSION_SECRET=,
+        ^PYRAMID_AUTHENTICATION_SECRET=, ^PYRAMID_SESSION_SECRET=,
+        ^ECHOPRINT_TOKEN=, ^WORKER_PROTEUS_PASSWORD=,
+        ^privatekey=, ^certificate=, ^super_pwd=,
+      ]
+    clone_repo:
+      create_folder: true
+
+#==============================================================================
+# staging config, inherits from production
+#==============================================================================
+staging:
+  tasks:
+    update:
+      # symlink docker override file
+      - name: symlink docker override file
+        source: 'docker-compose.staging.yml'
+
+#==============================================================================
+# testing config, inherits from staging
+#==============================================================================
+testing:
+  config:
+    update:
+      images: true
+      database: true
+  tasks:
+    update:
+      # create folder for tests output
+      - name: create folder for tests output
+        target: 'volumes/shared/tests'
+        actions: ['create_folder']
+      # symlink docker override file
+      - name: symlink docker override file
+        source: 'docker-compose.${ENVIRONMENT}.yml'
+
+#==============================================================================
+# development config, inherits from testing
+#==============================================================================
+development:
+  config:
+    update:
+      self: true
+  tasks:
+    update:
+      # copy files for debugging
+      - name: copy file for vs code remote containers
+        target: '.devcontainer.json'
+        actions: ['copy_file', 'diff_file']
+      # symlink project repos
+      - name: symlink project repos
+        actions: ['link_path']
+        targetpath: 'code'
+        batch:
+          - name: collecting_society
+            source: 'volumes/shared/src/collecting_society'
+          - name: portal_web
+            source: 'volumes/shared/src/portal_web'
+          - name: collecting_society_web
+            source: 'volumes/shared/src/collecting_society_web'
+          - name: echoprint-server
+            source: 'volumes/shared/src/echoprint-server'
+          - name: collecting_society_worker
+            source: 'volumes/shared/src/collecting_society_worker'
+      # checkout repos of pinned pip packages for reference
+      - name: checkout repos of pinned pip packages for reference
+        actions: ['clone_repo', 'checkout_repo']
+        targetpath: 'volumes/shared/ref'
+        batch:
+          - name: click
+            source: 'https://github.com/pallets/click.git'
+            version: 'tags/4.0'
+          - name: requests
+            source: 'https://github.com/requests/requests.git'
+            version: 'tags/v2.18.4'
+          - name: psycopg2
+            source: 'https://github.com/psycopg/psycopg2.git'
+            version: 'tags/2_5_4'
+          - name: proteus
+            source: 'https://github.com/tryton/proteus.git'
+            version: '${TRYTON_VERSION}'
+          - name: webob
+            source: 'https://github.com/Pylons/webob.git'
+            version: 'tags/1.8.2'
+          - name: pyramid
+            source: 'https://github.com/Pylons/pyramid.git'
+            version: 'tags/1.9.2'
+          - name: pyramid_beaker
+            source: 'https://github.com/Pylons/pyramid_beaker.git'
+            version: 'tags/0.8'
+          - name: pyramid_chameleon
+            source: 'https://github.com/Pylons/pyramid_chameleon.git'
+            version: 'tags/0.3'
+          - name: pyramid_mailer
+            source: 'https://github.com/Pylons/pyramid_mailer.git'
+            version: 'tags/0.15.1'
+          - name: colander
+            source: 'https://github.com/Pylons/colander.git'
+            version: 'tags/1.4'
+          - name: cornice
+            source: 'https://github.com/Cornices/cornice.git'
+            version: 'tags/3.4.0'
+          - name: cornice_swagger
+            source: 'https://github.com/Cornices/cornice.ext.swagger.git'
+            version: 'tags/0.7.0'
+          - name: deform
+            source: 'https://github.com/Pylons/deform.git'
+            version: 'tags/2.0.5'
+          - name: pydub
+            source: 'https://github.com/jiaaro/pydub.git'
+            version: 'tags/v0.22.0'
+          - name: pytaglib
+            source: 'https://github.com/supermihi/pytaglib.git'
+            version: 'tags/v1.4.3'
+          - name: pyechonest
+            source: 'https://github.com/echonest/pyechonest.git'
+            version: 'tags/9.0.0'

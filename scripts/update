@@ -18,675 +18,1140 @@ Options:
 import os
 import sys
 import shutil
+import traceback
 import subprocess
+from subprocess import STDOUT as stdout
 from pathlib import Path
 import difflib
 import re
+import yaml
+from collections.abc import Mapping
+from collections import OrderedDict
+from copy import deepcopy
+
+# regex
+envre = re.compile(r'''^([^\s=]+)=(?:[\s"']*)(.+?)(?:[\s"']*)$''')
+envsubre = re.compile(r'\$\{([A-Z-_]*)\}')
+
+# flags
+_verbose = False
+_reset = False
+_self_updated = False
+_script_updated = False
+_dockerfile_updated = False
+_examplefiles_updated = False
+
+# stacks
+_contexts = []   # list of contexts
+_messages = []   # list of messages added
+_tasks = []      # stack of tasks performed
+
+# registers
+_command = None  # the initially invoked command
+_commands = []   # list of valid command names, autofilled
+_actions = []    # list of valid action names, autofilled
 
 
-header = """
-==============================================================================
-  This is the {} update script.
-  It will create folders and copy files, if not present (use --reset to force)
-  and clone or pull the neccessary repositories.
-
-  Using {} on branch {}
-  Installing/updating in {}
-  Reading info from config...
-  Checking repositories...
-------------------------------------------------------------------------------
-"""
-
-footer = """\n\nDone.\n
-=====================================================================
-  Now you may go ahead and use
-    * 'docker-compose build' to build the project
-    * 'docker-compose up' to start the project
-=====================================================================
-"""
-
+# --- tools -------------------------------------------------------------------
 
 def get_root_dir():
-    """Returns the root dir of the repository."""
-    try:
-        return subprocess.check_output(
-            ['git', 'rev-parse', '--show-toplevel'], stderr=subprocess.STDOUT
-        ).rstrip().decode('utf-8')
-    except subprocess.CalledProcessError:
-        directory = os.path.dirname(os.path.realpath(__file__))
-        return os.path.realpath(os.path.join(directory, ".."))
+    """Returns the root directory of the project."""
+    root = os.path.realpath(
+        os.path.join(os.path.abspath(__file__), "..", ".."))
+    assert os.path.exists(os.path.join(root, '.git'))
+    return root
 
 
-def get_shared_env(path=False):
+def get_repo_name(path="."):
+    """Returns the repository name of the project."""
+    return os.path.basename(os.path.abspath(path))
+
+
+def get_repo_branch(path="."):
+    return subprocess.check_output(
+        ('git', 'rev-parse', '--abbrev-ref', 'HEAD'),
+        stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+
+
+def replace_env_vars(dictionary, env):
+    """Substitues placeholders in dictionary with environment variables."""
+    for key, val in dictionary.items():
+        if isinstance(val, Mapping):
+            replace_env_vars(val, env)
+        elif isinstance(val, list):
+            for i, item in enumerate(val):
+                if isinstance(item, str):
+                    for (match) in envsubre.findall(item):
+                        dictionary[key][i] = dictionary[key][i].replace(
+                            '${%s}' % match, env[match])
+                    continue
+                replace_env_vars(item, env)
+        elif isinstance(val, str):
+            for (match) in envsubre.findall(val):
+                dictionary[key] = dictionary[key].replace(
+                    '${%s}' % match, env[match])
+    return dictionary
+
+
+def get_dot_env(path="."):
     """Reads the shared environment file and parses it into a dictionary."""
-
-    # get path
-    if not path:
-        path = os.path.join(get_root_dir(), '.env')
+    path = os.path.join(path, ".env")
     if not os.path.isfile(path):
-        path = os.path.join(get_root_dir(), '.env.example')
+        path += '.example'
     assert os.path.isfile(path)
-
-    # parse file
-    result = {}
-    envre = re.compile(r'''^([^\s=]+)=(?:[\s"']*)(.+?)(?:[\s"']*)$''')
-    with open(path) as ins:
-        for line in ins:
+    env = {}
+    with open(path) as _file:
+        for line in _file:
             match = envre.match(line)
             if match is not None:
-                result[match.group(1)] = match.group(2)
-    return result
+                env[match.group(1)] = match.group(2)
+    return replace_env_vars(env, env)
 
 
-# environment
-env = get_shared_env()
-project = env['PROJECT'] + "_docker"
-git_branch = subprocess.check_output(
-    ('git', 'rev-parse', '--abbrev-ref', 'HEAD'),
-    stderr=subprocess.STDOUT).rstrip().decode('utf-8')
-branch = env['ENVIRONMENT']
-if env['ENVIRONMENT'] == "testing":
-    branch = "production"
-
-# paths
-dirs = {}
-dirs['root'] = get_root_dir()
-dirs['code'] = dirs['root'] + "/code"
-dirs['scripts'] = dirs['root'] + "/scripts"
-dirs['services'] = dirs['root'] + "/services"
-dirs['volumes'] = dirs['root'] + "/volumes"
-dirs['shared'] = dirs['volumes'] + "/shared"
-dirs['ref'] = dirs['shared'] + "/ref"
-dirs['src'] = dirs['shared'] + "/src"
-dirs['tests'] = dirs['shared'] + "/tests"
-dirs['tmp'] = dirs['shared'] + "/tmp"
-dirs['logs'] = dirs['tmp'] + "/logs"
-update_script = os.path.abspath(__file__)
-
-# folders to create
-create_folders = [
-    dirs['code'],
-    dirs['tmp'],
-    dirs['tests'],
-    dirs['logs'],
-]
-if env['ENVIRONMENT'] in ["development", "staging", "testing"]:
-    create_folders += [
-        dirs['volumes'] + '/postgresql-data',
-        dirs['volumes'] + '/trytond-files',
-        dirs['volumes'] + '/nginx-certs',
-        dirs['volumes'] + '/nginx-dhparam',
-        dirs['volumes'] + '/nginx-htpasswd',
-        dirs['volumes'] + '/echoprint-data',
-    ]
-
-# files to copy
-copy_files = [
-    {
-        'source': dirs['root'] + '/.env.example',
-        'target': dirs['root'] + '/.env'
-    },
-    {
-        'source': dirs['root'] + '/.devcontainer.json.example',
-        'target': dirs['root'] + '/.devcontainer.json'
-    },
-    {
-        'source': dirs['shared'] + '/config/trytond/passfile.example',
-        'target': dirs['shared'] + '/config/trytond/passfile',
-    },
-    {
-        'source': dirs['shared'] + '/config/trytond/staging.conf.example',
-        'target': dirs['shared'] + '/config/trytond/staging.conf',
-    },
-    {
-        'source': dirs['shared'] + '/config/trytond/production.conf.example',
-        'target': dirs['shared'] + '/config/trytond/production.conf',
-    },
-    {
-        'source': dirs['services'] + '/webgui.env.example',
-        'target': dirs['services'] + '/webgui.env'
-    },
-    {
-        'source': dirs['services'] + '/webapi.env.example',
-        'target': dirs['services'] + '/webapi.env'
-    },
-    {
-        'source': dirs['services'] + '/worker.env.example',
-        'target': dirs['services'] + '/worker.env'
-    },
-    {
-        'source':
-            dirs['src'] + '/collecting_society_worker/config.ini.example',
-        'target': dirs['src'] + '/collecting_society_worker/config.ini'
-    },
-]
-
-# source repositories to clone
-clone_sources = [
-    # upstream: tryton
-    {
-        'url': 'https://github.com/tryton/trytond.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'trytond'
-    },
-    {
-        'url': 'https://github.com/tryton/country.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'country'
-    },
-    {
-        'url': 'https://github.com/tryton/currency.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'currency'
-    },
-    {
-        'url': 'https://github.com/tryton/party.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'party'
-    },
-    {
-        'url': 'https://github.com/tryton/company.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'company'
-    },
-    {
-        'url': 'https://github.com/tryton/product.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'product'
-    },
-    {
-        'url': 'https://github.com/tryton/account.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'account'
-    },
-    {
-        'url': 'https://github.com/tryton/account_product.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'account_product'
-    },
-    {
-        'url': 'https://github.com/tryton/account_invoice.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'account_invoice'
-    },
-    {
-        'url': 'https://github.com/tryton/account_invoice_line_standalone.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'account_invoice_line_standalone'
-    },
-    {
-        'url': 'https://github.com/tryton/bank.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'bank'
-    },
-    {
-        'url': 'https://github.com/tryton/account_de_skr03.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'account_de_skr03'
-    },
-    {
-        'url': 'https://github.com/virtualthings/web_user.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'web_user'
-    },
-    # custom: tryton
-    {
-        'url': 'https://github.com/C3S/archiving.git',
-        'ssh': 'git@github.com:C3S/archiving.git',
-        'option': '--branch=' + branch,
-        'path': 'archiving',
-        'symlink': False
-    },
-    {
-        'url': 'https://github.com/C3S/portal.git',
-        'ssh': 'git@github.com:C3S/portal.git',
-        'option': '--branch=' + branch,
-        'path': 'portal',
-        'symlink': False
-    },
-    {
-        'url': 'https://github.com/C3S/collecting_society.git',
-        'ssh': 'git@github.com:C3S/collecting_society.git',
-        'option': '--branch=' + branch,
-        'path': 'collecting_society',
-        'symlink': True
-    },
-    # custom: pyramid
-    {
-        'url': 'https://github.com/C3S/portal_web.git',
-        'ssh': 'git@github.com:C3S/portal_web.git',
-        'option': '--branch=' + branch,
-        'path': 'portal_web',
-        'symlink': True
-    },
-    {
-        'url': 'https://github.com/C3S/collecting_society_web.git',
-        'ssh': 'git@github.com:C3S/collecting_society_web.git',
-        'option': '--branch=' + branch,
-        'path': 'collecting_society_web',
-        'symlink': True
-    },
-    # upstream: worker
-    {
-        'url': 'https://github.com/spotify/echoprint-codegen.git',
-        'option': '--branch=master',
-        'path': 'echoprint-codegen'
-    },
-    # custom: worker
-    {
-        'url': 'https://github.com/C3S/echoprint-server.git',
-        'ssh': 'git@github.com:C3S/echoprint-server.git',
-        'option': '--branch=master',
-        'path': 'echoprint-server',
-        'symlink': True
-    },
-    {
-        'url': 'https://github.com/C3S/collecting_society_worker.git',
-        'ssh': 'git@github.com:C3S/collecting_society_worker.git',
-        'option': '--branch=' + branch,
-        'path': 'collecting_society_worker',
-        'symlink': True
-    },
-]
-
-# reference repositories to clone development stage only
-clone_references = [
-    {
-        'url': 'https://github.com/pallets/click.git',
-        'option': '--tag=4.0',
-        'path': 'click'
-    },
-    {
-        'url': 'https://github.com/requests/requests.git',
-        'option': '--tag=v2.18.4',
-        'path': 'requests'
-    },
-    {
-        'url': 'https://github.com/psycopg/psycopg2.git',
-        'option': '--tag=2_5_4',
-        'path': 'psycopg2'
-    },
-    {
-        'url': 'https://github.com/tryton/proteus.git',
-        'option': '--branch=' + env['TRYTON_VERSION'],
-        'path': 'proteus'
-    },
-    {
-        'url': 'https://github.com/Pylons/webob.git',
-        'option': '--tag=v1.8.2',
-        'path': 'webob'
-    },
-    {
-        'url': 'https://github.com/Pylons/pyramid.git',
-        'option': '--tag=1.9.2',
-        'path': 'pyramid'
-    },
-    {
-        'url': 'https://github.com/Pylons/pyramid_beaker.git',
-        'option': '--tag=0.8',
-        'path': 'pyramid_beaker'
-    },
-    {
-        'url': 'https://github.com/Pylons/pyramid_chameleon.git',
-        'option': '--tag=0.3',
-        'path': 'pyramid_chameleon'
-    },
-    {
-        'url': 'https://github.com/Pylons/pyramid_mailer.git',
-        'option': '--tag=0.15.1',
-        'path': 'pyramid_mailer'
-    },
-    {
-        'url': 'https://github.com/Pylons/colander.git',
-        'option': '--tag=1.4',
-        'path': 'colander'
-    },
-    {
-        'url': 'https://github.com/Cornices/cornice.git',
-        'option': '--tag=3.4.0',
-        'path': 'cornice'
-    },
-    {
-        'url': 'https://github.com/Cornices/cornice.ext.swagger.git',
-        'option': '--tag=0.7.0',
-        'path': 'cornice_swagger'
-    },
-    {
-        'url': 'https://github.com/Pylons/deform.git',
-        'option': '--tag=2.0.5',
-        'path': 'deform'
-    },
-    {
-        'url': 'https://github.com/jiaaro/pydub.git',
-        'option': '--tag=v0.22.0',
-        'path': 'pydub'
-    },
-    {
-        'url': 'https://github.com/supermihi/pytaglib.git',
-        'option': '--tag=v1.4.3',
-        'path': 'pytaglib'
-    },
-    {
-        'url': 'https://github.com/echonest/pyechonest.git',
-        'option': '--tag=9.0.0',
-        'path': 'pyechonest'
-    },
-]
+def get_project_yaml(path=".", env={}):
+    """Reads the project yaml file and parses it into a dictionary."""
+    with open(os.path.join(path, "project.yml"), 'r') as _file:
+        # load yaml file
+        project = yaml.safe_load(_file)
+        # replace env vars
+        replace_env_vars(project, env)
+        # inherit configurations
+        project['staging'] = merge_dicts(
+            deepcopy(project['production']), project['staging'])
+        project['testing'] = merge_dicts(
+            deepcopy(project['staging']), project['testing'])
+        project['development'] = merge_dicts(
+            deepcopy(project['testing']), project['development'])
+        # preprocess tasks
+        for _e, environment in project.items():
+            if not environment or not environment.get('tasks'):
+                continue
+            for _c, command in environment['tasks'].items():
+                if not command:
+                    continue
+                for task in command:
+                    # ensure task name
+                    assert task.get('name'), (
+                        "task has no name.\n\n"
+                        "yaml: %s/tasks/%s\n"
+                        "task: %s" % (_e, _c, task))
+                    # ensure task actions are a list
+                    actions = task.get('actions', [])
+                    if isinstance(actions, str):
+                        task['actions'] = [actions]
+                    # substitue task groups
+                    groups = environment.get('actions')
+                    if groups:
+                        actions = []
+                        for action in task['actions']:
+                            islist = isinstance(groups.get(action), list)
+                            if action in groups and islist:
+                                actions += groups[action]
+                                continue
+                            actions.append(action)
+                        task['actions'] = actions
+                    # ensure task actions are valid and attributes are set
+                    for action in task['actions']:
+                        assert action in actions, (
+                            "action `%s` of task with name `%s` not found.\n\n"
+                            "yaml: %s/tasks/%s\n"
+                            "task: %s" % (action, task['name'], _e, _c, task))
+    return project
 
 
-def update_self():
-    """Updates the update script."""
+def merge_dicts(orig_dict, new_dict):
+    """
+    Recursively merges dict-like objects.
 
-    print('checking for updates of this script ... ', end='')
+    Note:
+        If a value in new_dict is `{}`, the key is removed in orig_dict.
+        Lists of dicts
+        - are merged with key 'name' as identifier.
+        - can be inserted with the key 'before'/'after' and value name.
 
-    # check workingdir
-    workingdir_dirty = subprocess.check_output(
-        ('git', 'status', '--untracked-files=no', '--porcelain'),
-        cwd=dirs['root'], stderr=subprocess.STDOUT).rstrip().decode('utf-8')
-    if workingdir_dirty:
-        print("\nWARNING: Working directory not clean. Udpate omitted!" +
-              "\n\033[91m{}\033[0m".format(workingdir_dirty))
-        return
+    Args:
+        orig_dict (dict): Original dictionary to be merged with.
+        new_dict (dict): New dictionary to be merged.
 
-    # check for updates
-    try:
-        print("update_self: trying git fetch...")
-        subprocess.check_output(
-            ('git', 'fetch'),
-            cwd=dirs['root'], stderr=subprocess.STDOUT
-            ).rstrip().decode('utf-8')
-        print("update_self: trying git diff --quiet remotes/origin/%s .."
-              % git_branch)
-        subprocess.check_output(
-            ('git', 'diff', '--quiet', 'remotes/origin/%s' % git_branch),
-            cwd=dirs['root'], stderr=subprocess.STDOUT
-            ).rstrip().decode('utf-8')
-        print('up-to-date.')
-        return
-    except subprocess.CalledProcessError:
-        print('differences found, trying to update.')
+    Returns:
+        dict: Merged dict.
 
-    # update
-    try:
-        print('git pull "' + project + '": ', end='')
-        pull_result = subprocess.check_output(
-            ('git', 'pull'),
-            cwd=dirs['root'], stderr=subprocess.STDOUT
-            ).rstrip().decode('utf-8')
-        if pull_result:
-            print(pull_result)
-        subprocess.call(update_script)
-        exit()
-
-    except subprocess.CalledProcessError as e2:
-        print("There was a problem: \n\n\033[91m{}\033[0m\n".format(
-            e2.output.rstrip().decode('utf-8')))
-        sys.exit("Exiting. Please check for errors above!")
-
-    # configure user
-    username = env.get('GIT_USER_NAME')
-    useremail = env.get('GIT_USER_EMAIL')
-    if username and useremail:
-        print('configure user {} <{}>: '.format(username, useremail), end='')
-        try:
-            subprocess.check_output(
-                ('git', 'config', 'user.name', '"{}"'.format(username)),
-                cwd=dirs['root'], stderr=subprocess.STDOUT)
-            subprocess.check_output(
-                ('git', 'config', 'user.email', '"{}"'.format(useremail)),
-                cwd=dirs['root'], stderr=subprocess.STDOUT)
-            print('ok.')
-        except subprocess.CalledProcessError as e2:
-            print("There was a problem: \n\n\033[91m{}\033[0m\n".format(
-                e2.output.rstrip().decode('utf-8')))
-            sys.exit("Exiting. Please check for errors above!")
-
-
-def update_repository(repo, branch, path, username=False, useremail=False,
-                      symlink=False):
-    """Updates a BRANCH of a repository REPO in PATH."""
-
-    # sanity checks
-    if not repo or not branch or not path:
-        return
-    repo_relpath = os.path.relpath(path, dirs['root'])
-    repo_name = os.path.basename(os.path.normpath(path))
-
-    # create path
-    if not os.path.exists(path):
-        print('Missing directory, creating {}'.format(repo_relpath))
-        os.makedirs(path)
-
-    # get git option
-    if branch.startswith('--branch='):
-        target_type = 'branch'
-        target_value = branch.lstrip('--branch=')
-        target_param = target_value
-    if branch.startswith('--tag='):
-        target_type = 'tag'
-        target_value = branch.lstrip('--tag=')
-        target_param = target_value
-
-    print('\nREPO: ' + repo_name)
-    print('--------------------------------------------------------------')
-
-    # clone repository
-    try:
-        print('Will use git to clone "{}" {} "{}" into "{}": '.format(
-            repo, target_type, target_value, repo_relpath))
-        clone_result = subprocess.check_output(
-            ('git', 'clone', '--branch', target_param, repo, path),
-            stderr=subprocess.STDOUT).rstrip().decode('utf-8')
-        print('git clone "{}": '.format(repo_name))
-        if clone_result:
-            print('::'.join(
-                x for x in clone_result.strip().split('\n')))
-
-    # pull repository
-    except subprocess.CalledProcessError:
-
-        # ensure, right remote url is set
-        subprocess.check_output(
-            ('git', 'remote', 'set-url', 'origin', repo),
-            cwd=path, stderr=subprocess.STDOUT)
-
-        # check, if the working directory is clean
-        workingdir_dirty = subprocess.check_output(
-            ('git', 'status', '--untracked-files=no', '--porcelain'),
-            cwd=path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
-        if workingdir_dirty:
-            print("WARNING: Working directory not clean. Udpate omitted!" +
-                  "\n\033[91m{}\033[0m".format(workingdir_dirty))
-            return
-        print("Directory exists; using pull instead of clone:")
-
-        # checkout tag
-        if target_type == 'tag':
-            print('git checkout "{}": '.format(repo_name), end='')
-            checkout_result = subprocess.check_output(
-                ('git', 'checkout', 'tags/' + target_param),
-                cwd=path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
-            if checkout_result:
-                print('::'.join(
-                    x for x in checkout_result.strip().split('\n')))
-            return
-
-        # checkout branch
-        subprocess.check_output(
-            ('git', 'checkout', target_param),
-            cwd=path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
-
-        # pull
-        try:
-            pull_result = subprocess.check_output(
-                ('git', 'pull'),
-                cwd=path, stderr=subprocess.STDOUT).rstrip().decode('utf-8')
-            print('git pull "{}": '.format(repo_name), end='')
-            if pull_result:
-                print('::'.join(
-                    x for x in pull_result.strip().split('\n')))
-        except subprocess.CalledProcessError as e2:
-            print("There was a problem: \n\n\033[91m{}\033[0m\n".format(
-                e2.output.rstrip().decode('utf-8')))
-            sys.exit("Exiting. Please check for errors above!")
-
-    # configure user
-    if username and useremail:
-        print('configure user {} <{}>: '.format(username, useremail), end='')
-        try:
-            subprocess.check_output(
-                ('git', 'config', 'user.name', '"{}"'.format(username)),
-                cwd=path, stderr=subprocess.STDOUT)
-            subprocess.check_output(
-                ('git', 'config', 'user.email', '"{}"'.format(useremail)),
-                cwd=path, stderr=subprocess.STDOUT)
-            print('ok.')
-        except subprocess.CalledProcessError as e2:
-            print("There was a problem: \n\n\033[91m{}\033[0m\n".format(
-                e2.output.rstrip().decode('utf-8')))
-            sys.exit("Exiting. Please check for errors above!")
-
-    # symlink
-    if symlink:
-        symlink_path = os.path.join(dirs['code'], repo_name)
-        if os.path.islink(symlink_path):
-            print("symlink already present.")
+    Examples:
+        >>> orig_dict = {
+        ...     'A': {
+        ...         'A1': 'A1',
+        ...         'A2': 'A2'
+        ...     },
+        ...     'B': 'B'
+        ...     'C': [
+        ...         {'name': 'one', 'item': 'old'},
+        ...         {'name': 'three'},
+        ...     ]
+        ... }
+        >>> new_dict = {
+        ...     'A': {
+        ...         'A2': 'XX'
+        ...     },
+        ...     'B': {},
+        ...     'C': [
+        ...         {'name': 'one', 'item': 'new'},
+        ...         {'name': 'two', 'after': 'one'},
+        ...     'D': 'D'
+        ... }
+        >>> print(cls.merge_dicts(orig_dict, new_dict))
+        {
+            'A': {
+                'A1': 'A1',
+                'A2': 'XX'
+            },
+            'C': [
+                {'name': 'one', 'item': 'new'},
+                {'name': 'two'},
+                {'name': 'three'},
+            ],
+            'D': 'D',
+        }
+    """
+    if not new_dict:
+        return isinstance(new_dict, Mapping) and new_dict or orig_dict
+    for key, val in new_dict.items():
+        # delete key if val == {}
+        if isinstance(val, Mapping) and not val:
+            orig_dict.pop(key, None)
+        # update with OrderedDict
+        if isinstance(val, OrderedDict):
+            r = merge_dicts(OrderedDict(orig_dict.get(key, {})), val)
+            orig_dict[key] = r
+        # update with Mapping
+        elif isinstance(val, Mapping):
+            r = merge_dicts(orig_dict.get(key, {}), val)
+            orig_dict[key] = r
+        # update with Lists of items having all the key 'name'
+        elif isinstance(val, list) and \
+                sum(['name' in v for v in val]) == len(val):
+            for new_item in val:
+                new = True
+                for i, orig_item in enumerate(orig_dict[key]):
+                    if new_item['name'] == orig_item['name']:
+                        new = False
+                        orig_dict[key][i] = merge_dicts(orig_item, new_item)
+                if new:
+                    insert = ''
+                    if 'after' in new_item:
+                        insert = 'after'
+                    if 'before' in new_item:
+                        insert = 'before'
+                    if insert:
+                        for i, orig_item in enumerate(orig_dict[key]):
+                            if new_item[insert] == orig_item['name']:
+                                break
+                        if insert == 'after':
+                            i += 1
+                        new_item.pop('after', None)
+                        new_item.pop('before', None)
+                        orig_dict[key].insert(i, new_item)
+                    else:
+                        orig_dict[key].append(new_item)
+        # update with other objects
+        elif isinstance(orig_dict, Mapping):
+            orig_dict[key] = new_dict[key]
         else:
-            os.symlink(path,  symlink_path)
-            print("symlink created.")
+            orig_dict = {key: new_dict[key]}
+    return orig_dict
 
 
-def create_folder(path):
-    """Creates a folder in PATH."""
-    if not os.path.isdir(path):
-        os.makedirs(path)
-        print('\t[create] %s' % path)
+# --- templates ---------------------------------------------------------------
+
+def color(text, status):
+    """Colored output wrapper for stdout text."""
+    text = str(text)
+    if isinstance(status, str):
+        status = [status]
+    # start
+    for s in status:
+        s = s.lower()
+        if s.startswith("\033"):
+            text = s + text
+        if s in colors:
+            text = color(text, colors[s])
+    # stop
+    if text.startswith("\033") and not text.endswith("[0m"):
+        text += "\033[0m"
+    return text
+
+
+def message(msg, offset=1, pad=10, data=True, add=True, output=True):
+    """Prints a message."""
+    # default
+    default = {'level': "debug"}
+    if _tasks:
+        default['action'] = _tasks[-1]['action'].replace("_", " ")
+        default['title'] = _tasks[-1]['name']
+    msg = {**default, **msg}
+    # color
+    _color = msg.get("level", "dim")
+    # level
+    text = "  " * offset
+    level = (msg['level'] + " | ").rjust(pad)
+    text += color(level, _color + "_category")
+    # title
+    if 'title' in msg:
+        title = msg['title']
+        if title == ".":
+            title = repo
+        text += color(title, _color + "_title") + " "
+    # action
+    if 'action' in msg:
+        action = msg['action'] + " ... "
+        if 'description' in msg:
+            action = msg['action'] + " » "
+        if msg['level'] == "error":
+            action = msg['action']
+        text += color(action, _color + "_category")
+    # description
+    if 'description' in msg:
+        if msg['level'] == 'error':
+            _color = 'info'
+        text += color(msg["description"], [_color + "_description", 'italic'])
+    # data
+    if data and 'data' in msg and msg['data']:
+        raw = msg['data']
+        if isinstance(raw, (bytes, bytearray)):
+            raw = raw.strip().decode('utf-8')
+        lines = raw
+        if isinstance(raw, str):
+            lines = raw.strip().split("\n")
+        data = ""
+        for line in lines:
+            data += "\n" + "  " * offset + " ".ljust(pad) + line
+        data += "\n"
+        text += color(data, 'dim')
+    text += "\n"
+    # process
+    if add:
+        _messages.append(msg)
+    if output and msg['level'] in levels['output']:
+        print(text, end="")
+    return text
+
+
+def line(length=89, _color="title", end="\n", output=True):
+    """Prints a division line."""
+    text = color("-" * length, _color)
+    # process
+    if output:
+        print(text, end=end)
+    return text
+
+
+def header(output=True):
+    """Prints the project configuration header."""
+    # data
+    data = {
+        "project": env.get('PROJECT'),
+        "branch": branch,
+        "environment": environment,
+        "root": root,
+    }
+    if username and useremail:
+        data['user'] = "%s <%s>" % (username, useremail)
     else:
-        print('\t[exists] %s' % path)
+        global_username = execute(
+            ('git', 'config', '--global', 'user.name'), log=False)
+        global_useremail = execute(
+            ('git', 'config', '--global', 'user.name'), log=False)
+        data['user'] = "%s <%s>" % (global_username, global_useremail)
+    # text
+    pad = 0
+    for key in data:
+        if len(key) > pad:
+            pad = len(key)
+    pad += 1
+    text = "\n"
+    for key, value in data.items():
+        text += (
+            color("  " + key.capitalize().ljust(pad), 'title') +
+            color(value + "\n", 'dim')
+        )
+    separator = line(output=False)
+    text = "\n" + separator + "\n" + text + "\n" + separator + "\n"
+    # process
+    if output:
+        print(text, end="")
+    return text
 
 
-def copy_file(source_file, target_file, reset=False):
-    """Copies a file from root_dir/SOURCE_FILE to root_dir/TARGET_FILE."""
-    target = os.path.join(dirs['root'], target_file)
-    if not os.path.isfile(target) or reset:
-        source = os.path.join(dirs['root'], source_file)
+def title(string, _color="subtitle", output=True):
+    """Prints a formatted title."""
+    text = "\n" + color("> ", 'title') + color(string, _color) + "\n\n"
+    # process
+    if output:
+        print(text, end="")
+    return text
+
+
+def footer(string="Success.", _color="success", output=True, summary=True):
+    """Prints the result of the command and a summary of important messages."""
+    # determine what to output
+    had_output = False
+    has_summary = False
+    for msg in _messages:
+        if msg['level'] in levels['output']:
+            had_output = True
+        if msg['level'] in levels['summary']:
+            has_summary = True
+    if not had_output:
+        print(color("   All fine.", 'dim'))
+    # summary
+    text = "\n" + line(output=False) + "\n"
+    if summary and has_summary:
+        text += title("Summary", _color='title', output=False)
+        data = False
+        for level in levels['summary']:
+            if level == 'ERROR':
+                data = True
+            for msg in [m for m in _messages if m['level'] == level]:
+                text += message(msg, data=data, add=False, output=False)
+    # title
+    text += title(string, _color=_color, output=False)
+    # process
+    if output:
+        print(text, end="")
+    return text
+
+
+def error(msg):
+    """Prints an error."""
+    _msg = {
+        'level': "error",
+    }
+    if _tasks:
+        _msg['title'] = "%s: `%s`" % (
+            _tasks[-1]['action'].replace("_", " "), _tasks[-1]['name'])
+    message({**_msg, **msg})
+    footer("Aborted.", _color="info", summary=False)
+    sys.exit(-1)
+
+
+# --- execution ---------------------------------------------------------------
+
+def execute(cmd, cwd=False, abort=True, stop=False, msg={}, log=True):
+    """Executes a command via subprocess check_output."""
+    # print hint for the operation
+    context = get_context()
+    task = None
+    action = "command"
+    title = " ".join(cmd)
+    if _tasks:
+        task = _tasks[-1]
+        action = task['action'].replace("_", " ") or "command"
+        title = task['name'] or " ".join(cmd)
+    if log:
+        message({'action': action, 'title': title}, add=False)
+    # execute command
+    try:
+        output = subprocess.check_output(
+            cmd, cwd=cwd or root, stderr=stdout
+        ).strip().decode('utf-8')
+    except subprocess.CalledProcessError as err:
+        error({
+            'title': "$ " + cmd[0],
+            'action': len(cmd) > 1 and " ".join(cmd[1:]) or "",
+            'data': err.output,
+        })
+    # stop task
+    if task and stop:
+        stopped = output
+        if callable(stop):
+            stopped = stop(output)
+        context['task']['stopped'] = stopped
+    # return if logging is disabled for this command
+    if not log:
+        return output
+    # create message
+    _msg = {
+        'level': output and "warning" or "info",
+        'action': action,
+        'title': title,
+        'description': output and "not ok" or "ok",
+        'data': output and "$ " + " ".join(cmd) + "\n" + output,
+    }
+    msg = {**_msg, **msg}
+    # execute callback functions for messages dependent on the output
+    for key, value in msg.items():
+        if callable(value):
+            msg[key] = value(output)
+    # remove hin, add and print message
+    if 'debug' in levels['output']:
+        sys.stdout.write("\033[F")
+    message(msg)
+    # add output to task
+    if _tasks:
+        task = _tasks[-1]
+        if 'output' not in task:
+            task['output'] = {}
+        task['output'][task['action']] = output
+    return output
+
+
+# --- actions -----------------------------------------------------------------
+
+def action(func):
+    """Action decorator, registers available functions, skips stopped tasks."""
+    current_action = func.__name__
+    _actions.append(current_action)
+
+    def wrapper(task, context={}, *args, **kwargs):
+        # stop to process actions of stopped tasks
+        if task.get('stopped'):
+            return
+        # add action config
+        actions_config = project[environment]['actions']
+        context['actions'] = actions_config.get(current_action)
+        # apply the action
+        try:
+            func(task, context, *args, **kwargs)
+        except Exception:
+            error({'data': traceback.format_exc()})
+    return wrapper
+
+
+@action
+def link_path(task, context={}):
+    """Symlinks a file or folder."""
+    source = task['source']
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    # source path does not exist
+    if not os.path.exists(source):
+        error({'description': "source path not found",
+               'data': "source: %s" % task['source']})
+
+    # new symlink, file does not exist
+    source_rel = os.path.relpath(source, os.path.dirname(target))
+    if not os.path.exists(target):
+        os.symlink(source_rel, target)
+        message({'level': "info", 'description': "symlink created"})
+        return
+
+    # file exists, but is no symlink
+    if not os.path.islink(target):
+        error({'description': "target exists and is not a link"})
+
+    # symlink exists and points already to source
+    old_source = os.readlink(target)
+    if source_rel == old_source:
+        message({'description': "symlink exists"})
+        return
+
+    # symlink exists, but is changed
+    os.unlink(target)
+    os.symlink(source_rel, target)
+    message({'level': "warning", 'description': "symlink overwritten",
+             'data': "\n".join(["old source: `%s`" % old_source,
+                                "new source: `%s`" % source_rel])})
+
+
+@action
+def create_file(task, context={}):
+    """Creates a file."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    target = os.path.join(root, target)
+    target_folder = os.path.dirname(target)
+
+    # folder of file does not exist
+    if not os.path.isdir(target_folder):
+        error({'description': "folder does not exist", 'data': target_folder})
+
+    # file already exists
+    if os.path.exists(target):
+        message({'description': "file exists"})
+        return
+
+    # new file created
+    Path(target).touch()
+    message({'level': "info", 'description': "file created"})
+
+
+@action
+def copy_file(task, context={}):
+    """Copies a file."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    source = task.get('source')
+    if not source:
+        source = target + ".example"
+    target = os.path.join(root, target)
+    source = os.path.join(root, source)
+
+    # source file to copy not found
+    if not os.path.exists(source):
+        error({'description': "source file not found"})
+
+    # file already exists
+    target_exists = os.path.exists(target)
+    if target_exists and not _reset:
+        message({'description': "file_exists"})
+        return
+
+    # file overwritten due to reset switch
+    if target_exists and _reset:
         shutil.copyfile(source, target)
-        if reset:
-            print('\t[forced] %s' % target_file)
-        else:
-            print('\t[copied] %s' % target_file)
-    else:
-        print('\t[exists] %s' % target_file)
+        message({'level': "warning", 'description': "file overwritten"})
+        return
+
+    # new file copied
+    shutil.copyfile(source, target)
+    message({'level': "info", 'description': "file copied"})
 
 
-def diff_example_files(offset=8):
-    """Diffs the example files and returns the output."""
-    for path in Path(dirs['root']).rglob('*.example'):
-        example_path = str(path)
-        copied_path = str(path)[:-8]
-        if not os.path.exists(copied_path):
-            continue
-        start = len(dirs['root']) + 1
-        example_name = example_path[start:]
-        copied_name = copied_path[start:]
-        example_file = open(example_path).readlines()
-        copied_file = open(copied_path).readlines()
+@action
+def diff_file(task, context={}):
+    """Diffs example files, prints output and returns different filenames."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    source = task.get('source')
+    if not source:
+        source = target + ".example"
+    target = os.path.join(root, target)
+    source = os.path.join(root, source)
+
+    # source or target not found
+    if not os.path.exists(source):
+        error({'description': "source path not found"})
+    if not os.path.exists(target):
+        error({'description': "target path not found"})
+
+    # create diff
+    with open(source, 'r') as source_file, open(target, 'r') as target_file:
+
+        # get diff
+        source_content = source_file.readlines()
+        target_content = target_file.readlines()
         diff = difflib.unified_diff(
-            example_file, copied_file,
-            fromfile=example_name, tofile=copied_name)
+            source_content, target_content,
+            fromfile=os.path.basename(source), tofile=task["name"])
         try:
             line = next(diff)
         except StopIteration:
+            message({'description': 'file is identical'})
+            return
+        lines = [line] + [d for d in diff]
+
+        # filter diff
+        ignorere = context['actions']['ignore']
+        if isinstance(ignorere, list):
+            ignorere = re.compile(r'(%s)' % "|".join(ignorere))
+            context['actions']['ignore'] = ignorere
+        ignored = False
+        filtered = []
+        for line in lines[2:]:
+            if not line[0] in ["+", "-"]:
+                continue
+            match = ignorere.match(line[1:])
+            if match is not None:
+                ignored = True
+                continue
+            filtered.append(line)
+
+        # files are identical
+        if not filtered:
+            message({'level': 'info',
+                     'description': 'file contain only ignored differences'})
+            return
+
+        # files have differences
+        data = colors['clear']
+        if ignored:
+            data += color("--8<-- (ignored lines stripped) --8<--", "dim")
+            data += colors['clear'] + "\n"
+        for line in lines[0:3] + filtered:
+            if line.startswith('-'):
+                data += colors['remove']
+            if line.startswith('+'):
+                data += colors['add']
+            if line.startswith('@'):
+                data += colors['hunk']
+            data += line
+        data = data.rstrip() + colors['clear']
+        level = "warning"
+        description = "differences found"
+        if _examplefiles_updated:
+            level = "error"
+            description += " (examplefiles changed!)"
+        message({'level': level, 'description': description,
+                 'data': data})
+
+
+@action
+def create_folder(task, context={}):
+    """Creates a folder."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    target = os.path.join(root, target)
+
+    # folder already exists
+    if os.path.exists(target):
+        message({'description': "folder exists"})
+        return
+
+    # new folder created
+    os.makedirs(target)
+    message({'level': "info", 'description': "folder created"})
+
+
+@action
+def copy_folder(task, context={}):
+    """Copies a folder."""
+    source = task['source']
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    # folder already exists
+    if os.path.exists(target) and not _reset:
+        message({'description': "folder exists"})
+        return
+
+    # folder overwritten due to reset switch
+    shutil.copytree(source, target)
+    if _reset:
+        shutil.copytree(source, target)
+        message({'level': "info", 'description': "folder copied"})
+        return
+
+    # new folder copied
+    shutil.copytree(source, target)
+    message({'level': "warning", 'description': "folder overwritten"})
+
+
+@action
+def clone_repo(task, context={}):
+    """Clones a repository."""
+    source = task['source']
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    if context['actions']['create_folder']:
+        create_folder({'name': os.path.dirname(target)})
+
+    # choose ssh or https
+    if "@" in source and not (username and useremail):
+        url = source.split("@", 1)[1]
+        source = "https://" + url.replace(":", "/")
+
+    # repo already exists
+    if os.path.exists(os.path.join(target, '.git')):
+        message({'description': "repo exists"})
+        return
+
+    # new repo cloned
+    execute(('git', 'clone', '--quiet', source, target))
+
+
+@action
+def set_origin(task, context={}):
+    """Sets the origin of a repository."""
+    source = task['source']
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    # choose ssh or https
+    if "@" in source and not (username and useremail):
+        url = source.split("@", 1)[1]
+        source = "https://" + url.replace(":", "/")
+
+    # origin already set
+    old_source = execute(
+        ('git', 'remote', 'get-url', 'origin'), cwd=target, log=False)
+    if source == old_source:
+        message({'description': "origin already set"})
+        return
+
+    # origin changed
+    msg = {
+        'level': "warning",
+        'description': "origin changed",
+        'data': "\n".join([
+            "old origin: `%s`" % old_source,
+            "new origin: `%s`" % source])}
+    execute(('git', 'remote', 'set-url', 'origin', source),
+            cwd=target, msg=msg)
+
+
+@action
+def set_user(task, context={}):
+    """Sets the username and useremail of a repository."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+
+    # skip upstream silently
+    if upstream:
+        return
+
+    # userdata is not set
+    missing = []
+    if not username:
+        missing.append("username")
+    if not useremail:
+        missing.append("useremail")
+    if missing:
+        global_username = execute(
+            ('git', 'config', '--global', 'user.name'), log=False)
+        global_useremail = execute(
+            ('git', 'config', '--global', 'user.email'), log=False)
+        global_userdata = "%s <%s>" % (global_username, global_useremail)
+        message({'level': "info",
+                 'description': "%s missing" % " and ".join(missing),
+                 'data': "NOTE: commits will use: %s" % global_userdata})
+        return
+
+    # userdata already set
+    userdata = "%s <%s>" % (username, useremail)
+    old_username = execute(
+        ('git', 'config', 'user.name'), cwd=target, log=False).strip('"')
+    old_useremail = execute(
+        ('git', 'config', 'user.email'), cwd=target, log=False).strip('"')
+    if username == old_username and old_useremail == old_useremail:
+        message({'description': "git user aready set"})
+        return
+
+    # userdata set
+    execute(('git', 'config', 'user.name', '"{}"'.format(username)),
+            cwd=target, log=False)
+    execute(('git', 'config', 'user.email', '"{}"'.format(useremail)),
+            cwd=target, log=False)
+    message({'level': "info", 'description': "git user set to %s" % userdata})
+
+
+@action
+def check_status(task, context={}):
+    """Checks the status of the repository, cancels task if not ok."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+
+    # workdir checked
+    msg = {'level': lambda o: o and "warning" or "debug",
+           'description':
+               lambda o: o and "workdir not clean -> update skipped" or "ok"}
+    cmd = ['git', 'status', '--porcelain']
+    if upstream:
+        cmd.append('--untracked-files=no')
+    execute(cmd, cwd=target, stop=True, msg=msg)
+
+
+@action
+def fetch_repo(task, context={}):
+    """Fetches updates for a repository."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    # new updates fetched
+    msg = {'level': lambda o: o and "info" or "debug"}
+    execute(('git', 'fetch', '--quiet'), cwd=target, msg=msg)
+
+
+@action
+def checkout_repo(task, context={}):
+    """Checksout a branch or tag in a repository."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    version = task['version']
+    upstream = task.get('upstream', True)
+
+    # already checked out
+    old_version = execute(
+        ('git', 'rev-parse', '--abbrev-ref', 'HEAD'), cwd=target, log=False)
+    if old_version == "HEAD":
+        old_version = execute(
+            ('git', 'name-rev', '--name-only', 'HEAD'), cwd=target, log=False)
+    if old_version.endswith("^0"):
+        old_version = old_version[:-2]
+    if version == old_version:
+        message({'description': "already on %s" % version})
+        return
+
+    # not on environment branch, probably local or feature branch
+    envs = environments
+    if not upstream and version in envs and old_version not in envs:
+        message({'level': "warning",
+                 'description': (
+                     "`%s` is not an environment branch. "
+                     "-> checkout skipped" % old_version)})
+        return
+
+    # checkout performed
+    msg = {'description': "switched from %s to %s" % (old_version, version)}
+    execute(('git', 'checkout', '--quiet', version), cwd=target, msg=msg)
+
+
+@action
+def pull_repo(task, context={}):
+    """Pulls updates in a repository branch."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    # skip pull silently for tags
+    if task['version'].startswith("tags/"):
+        return
+
+    # skip pull silently for local only branches
+    noremote = execute(
+        ('git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'),
+        cwd=target, abort=False, log=False)
+    if not noremote.startswith("origin/"):
+        return
+
+    # pull performed
+    msg = {'level': lambda o: 'changed' in o and "info" or "debug",
+           'description': lambda o: 'changed' in o and "updated" or "uptodate",
+           'data': lambda o: 'changed' in o and o or ""}
+    execute(('git', 'pull'), cwd=target, msg=msg)
+
+
+@action
+def restart_script(task, context={}):
+    """Restarts the update script after updated of itself was checkedout."""
+    # target = task['name']
+    pass
+
+
+# --- tasks -------------------------------------------------------------------
+
+def get_context():
+    """Returns the current context."""
+    if _contexts:
+        return _contexts[-1]
+    return
+
+
+def set_context(override={}):
+    """Sets the context for a command, adds it to the stack."""
+    current_env = project[environment]
+    current_cmd = override.get('command', _command)
+    # default context
+    context = {
+        # command config
+        'commands': current_env['commands'].get(current_cmd),
+        # current command
+        'command': current_cmd,
+        # task config
+        'tasks': deepcopy(current_env['tasks'].get(current_cmd)),
+        # current task
+        'task': None,
+        # action config
+        'actions': {},
+        # current action
+        'action': None,
+    }
+    # overrides
+    context.update(override)
+    # add context
+    _contexts.append(context)
+    return context
+
+
+def process(context):
+    """Main loop to process tasks."""
+    # no tasks
+    if not context['tasks']:
+        error({'title': "No tasks"})
+    # process tasks
+    for task in context['tasks']:
+        # batch tasks
+        if task.get('batch'):
+            batchtasks = []
+            for batchtask in task['batch']:
+                batchtasks.append({**task, **batchtask, **{'batch': False}})
+            batch = set_context(
+                {'command': context['command'], 'tasks': batchtasks})
+            process(batch)
+        # single tasks
+        else:
+            context['task'] = task
+            for action in task['actions']:
+                context['action'] = action
+                _tasks.append({**task, **{'action': action}})
+                if action in _actions:
+                    getattr(sys.modules[__name__], action)(task, context)
+    _contexts.pop()
+
+
+# --- commands ----------------------------------------------------------------
+
+def command(func):
+    """Command decorator, handles context and wrap switch."""
+    current_command = func.__name__
+    _commands.append(current_command)
+
+    def wrapper(*args, **kwargs):
+        # set new command context
+        context = set_context({'command': _command})
+        # apply filters
+        try:
+            func(*args, **kwargs)
+        except Exception:
+            error({'data': traceback.format_exc()})
+        # print header (only once)
+        if current_command == _command:
+            header()
+        # print title
+        title(_command.capitalize() + " ...")
+        # process tasks
+        process(context)
+        # print footer (only once)
+        if current_command == _command:
+            footer()
+    return wrapper
+
+
+@command
+def diff():
+    """Prints the diffs of the example files."""
+    # filter tasks with action diff_file
+    context = get_context()
+    tasks = []
+    for task in context['tasks']:
+        if 'diff_file' not in task['actions']:
             continue
-        if line:
-            print(" " * offset + "-" * 79)
-            print(" " * offset + copied_name)
-            print(" " * offset + "-" * 79)
-            print(" " * offset + line, end="")
-            for line in diff:
-                print(" " * offset + line, end="")
-            print()
+        task['actions'] = ['diff_file']
+        tasks.append(task)
+    context['tasks'] = tasks
 
 
+@command
 def update():
     """Updates itself and the repositories, creates folders, copies files."""
+    pass
 
-    if "--diff" in sys.argv:
-        diff_example_files(0)
-        sys.exit()
 
-    # header
-    print(header.format(project, project, git_branch, dirs['root']))
+# --- configuration -----------------------------------------------------------
 
-    # update update script itself
-    update_self()
+# project
+root = get_root_dir()
+repo = get_repo_name(root)
+branch = get_repo_branch(root)
+env = get_dot_env(root)
+project = get_project_yaml(root, env)
+environments = project.keys()
 
-    # create docker-compose symlink
-    print("\nCreating symlink to docker-compose.override.yml ... ", end='')
-    if branch in ['development', 'staging', 'production']:
-        new_source = os.path.join('docker-compose.' + branch + '.yml')
-        target = os.path.join(dirs['root'], 'docker-compose.override.yml')
-        if os.path.exists(target) and os.path.islink(target):
-            old_source = os.readlink(target)
-            if new_source == old_source:
-                print("already exists.")
-            else:
-                os.unlink(target)
-                os.symlink(new_source, target)
-                print("changed from %s to %s." % (
-                    old_source[15:-4], new_source[15:-4]))
-        else:
-            os.symlink(new_source, target)
-            print("created.")
+# environment
+environment = env['ENVIRONMENT']
+username = env.get('GIT_USER_NAME')
+useremail = env.get('GIT_USER_EMAIL')
 
-    # create folders
-    print("\nCreating folders ...\n")
-    for folder in create_folders:
-        create_folder(folder)
+# messages
+levels = {
+    'output':  ['error', 'warning', 'info'],
+    'summary': ['error', 'warning']
+}
+colors = {
+    # level
+    'success': "\033[32m",
+    'success_category': 'success',
+    'success_title': ['success', 'bold'],
+    'error': "\033[91m",
+    'error_category': 'error',
+    'error_title': ['title', 'bold'],
+    'error_description': ['error', 'bold'],
+    'warning': "\033[33m",
+    'warning_category': 'warning',
+    'warning_title': ['warning', 'bold'],
+    'warning_description': 'warning',
+    'info': "",
+    'info_category': 'info',
+    'info_title': ['info', 'bold'],
+    'info_description': 'info',
+    'debug': "\033[2m",
+    'debug_category': 'debug',
+    'debug_title': ['debug', 'bold'],
+    'debug_description': 'debug',
+    # context
+    'title': ['bold', "\033[33m"],
+    'subtitle': "\033[35m",
+    'output': "\033[94m",
+    # diff
+    'hunk': "\033[36m",
+    'remove': "\033[31m",
+    'add': "\033[32m",
+    # function
+    'clear': "\033[0m",
+    'bold': "\033[1m",
+    'dim': "\033[2m",
+    'italic': "\033[3m",
+    'underline': "\033[4m",
+    'blink': "\033[5m",
+}
 
-    # update source repositories
-    for repo in clone_sources:
-        url = repo['url']
-        if int(env.get('GIT_SSH')) and 'ssh' in repo:
-            url = repo['ssh']
-        option = repo['option']
-        path = os.path.join(dirs['src'], repo['path'])
-        username = env.get('GIT_USER_NAME')
-        useremail = env.get('GIT_USER_EMAIL')
-        symlink = repo.get('symlink')
-        update_repository(url, option, path, username, useremail, symlink)
 
-    # update reference repositories
-    if env['ENVIRONMENT'] == "development":
-        for repo in clone_references:
-            url = repo['url']
-            if int(env['GIT_SSH']) and 'ssh' in repo:
-                url = repo['ssh']
-            option = repo['option']
-            path = os.path.join(dirs['ref'], repo['path'])
-            username = env.get('GIT_USER_NAME')
-            useremail = env.get('GIT_USER_EMAIL')
-            symlink = repo.get('symlink')
-            update_repository(url, option, path, username, useremail, symlink)
-
-    # copy files
-    print("\nCopying files ...\n")
-    for file in copy_files:
-        reset = len(sys.argv) > 1 and sys.argv[1] == "--reset"
-        copy_file(file['source'], file['target'], reset)
-
-    # diff example file
-    if branch == 'development':
-        print("\nDiffing example files ...\n")
-        diff_example_files()
-
-    # footer
-    print(footer)
-
+# --- entrypoint --------------------------------------------------------------
 
 if __name__ == "__main__":
-    os.chdir(dirs['root'])
+
+    # set flags
+    if "--reset" in sys.argv:
+        _reset = True
+    if "--verbose" in sys.argv:
+        _verbose = True
+        levels['output'].append('debug')
+    for param in sys.argv:
+        if param.startswith('--updated='):
+            updated = param[11:].split(',')
+            if 'self' in updated:
+                _self_updated = True
+            if 'script' in updated:
+                _script_updated = True
+            if 'dockerfile' in updated:
+                _dockerfile_updated = True
+            if 'examplefiles' in updated:
+                _examplefiles_updated = True
+
+    # choose command
+    _command = 'update'
+    if "--diff" in sys.argv:
+        _command = 'diff'
     if "--help" in sys.argv:
+        _command = 'help'
+
+    # print help
+    if _command == 'help':
         print(__doc__.strip())
         sys.exit(2)
-    update()
+
+    # set workdir
+    os.chdir(root)
+
+    # execute command
+    if _command == 'update':
+        update()
+    if _command == 'diff':
+        diff()
