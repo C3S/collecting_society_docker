@@ -150,12 +150,14 @@ production:
       # regex for lines to be ignored in diffs
       ignore: [
         ^#, ^\/\/, ^\n$,
-        ^GIT_SSH=, ^GIT_USER_NAME=, ^GIT_USER_EMAIL=,
+        ^ENVIRONMENT, ^BRANCH=, ^GIT_SSH=, ^GIT_USER_NAME=, ^GIT_USER_EMAIL=,
         ^PYRAMID_AUTHENTICATION_SECRET=, ^PYRAMID_SESSION_SECRET=,
         ^PYRAMID_AUTHENTICATION_SECRET=, ^PYRAMID_SESSION_SECRET=,
         ^ECHOPRINT_TOKEN=, ^WORKER_PROTEUS_PASSWORD=,
         ^privatekey=, ^certificate=, ^super_pwd=,
       ]
+    git_status:
+      porcelain: true
     git_clone:
       create_folder: true
 

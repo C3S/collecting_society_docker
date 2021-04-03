@@ -600,7 +600,8 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
         'action': action,
         'title': title,
         'description': output and "not ok" or "ok",
-        'data': output and "$ " + " ".join(cmd) + "\n" + output,
+        # 'data': output and "$ " + " ".join(cmd) + "\n" + output,
+        'data': output,
     }
     msg = {**_msg, **msg, **error_msg}
     # execute callback functions for messages dependent on the output
@@ -983,13 +984,38 @@ def git_status(task, context={}):
     upstream = task.get('upstream', True)
 
     # workdir checked
-    msg = {'level': lambda o: o and "warning" or "debug",
-           'description':
-               lambda o: o and "workdir not clean -> update skipped" or "ok"}
-    cmd = ['git', 'status', '--porcelain']
+    cmd = ['git', 'status']
     if upstream:
         cmd.append('--untracked-files=no')
-    execute(cmd, cwd=target, stop_actions=True, msg=msg)
+
+    # procelain
+    if context['actions']['porcelain']:
+        msg = {'level': lambda o: o and "warning" or "debug",
+               'description':
+                   lambda o: o and "workdir dirty -> update skipped" or "ok"}
+        cmd.append('--porcelain')
+        execute(cmd, cwd=target, stop_actions=True, msg=msg)
+        return
+
+    # full
+    clean = True
+    colored = [colors['clear']]
+    output = execute(cmd, cwd=target, stop_actions=True, log=False).split("\n")
+    _color = ''
+    for line in output:
+        if line.startswith("  ("):
+            _color = 'remove'
+            if 'reset' in line:
+                _color = 'add'
+        if not line.startswith("\t"):
+            colored.append(color(line, 'dim'))
+            continue
+        clean = False
+        colored.append(color(line, _color))
+    if clean:
+        message({'level': "info", 'data': "\n".join(output)})
+        return
+    message({'level': "warning", 'data': "\n".join(colored)})
 
 
 @action
@@ -1194,7 +1220,7 @@ def set_context(override={}):
         # current task
         'task': None,
         # action config
-        'actions': {},
+        'actions': current_env['actions'],
         # current action
         'action': None,
     }
@@ -1254,9 +1280,15 @@ def command(func):
 
 
 @command
+def update():
+    """Updates itself and the repositories, creates folders, copies files."""
+    pass
+
+
+@command
 def diff():
     """Prints the diffs of the example files."""
-    # filter tasks with action diff_file
+    # filter tasks
     context = get_context()
     tasks = []
     for task in context['tasks']:
@@ -1267,9 +1299,37 @@ def diff():
 
 
 @command
-def update():
-    """Updates itself and the repositories, creates folders, copies files."""
-    pass
+def status():
+    """Prints the status of the project repositories."""
+    # filter tasks
+    context = get_context()
+    tasks = []
+    for task in context['tasks']:
+        if task['action'] != 'git_status':
+            continue
+        if 'upstream' not in task or task['upstream']:
+            continue
+        tasks.append(task)
+    context['tasks'] = tasks
+    context['actions']['git_status']['porcelain'] = False
+
+
+@command
+def pull():
+    """Pulls only the project repositories."""
+    raise NotImplementedError()
+
+
+@command
+def commit():
+    """Commits changes and untracked files to the project repositories."""
+    raise NotImplementedError()
+
+
+@command
+def push():
+    """Pushed to the project repositories."""
+    raise NotImplementedError()
 
 
 # --- configuration -----------------------------------------------------------
@@ -1367,6 +1427,14 @@ if __name__ == "__main__":
     _command = 'update'
     if "--diff" in sys.argv:
         _command = 'diff'
+    if "--status" in sys.argv:
+        _command = 'status'
+    if "--pull" in sys.argv:
+        _command = 'pull'
+    if "--commit" in sys.argv:
+        _command = 'commit'
+    if "--push" in sys.argv:
+        _command = 'push'
     if "--help" in sys.argv:
         _command = 'help'
 
@@ -1379,7 +1447,6 @@ if __name__ == "__main__":
     os.chdir(root)
 
     # execute command
-    if _command == 'update':
-        update()
-    if _command == 'diff':
-        diff()
+    if _command not in _commands:
+        sys.exit("command `%s` not found" % _command)
+    getattr(sys.modules[__name__], _command)()
