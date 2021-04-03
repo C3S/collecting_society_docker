@@ -1189,16 +1189,22 @@ def git_commit(task, context={}):
     if targetpath:
         target = os.path.join(targetpath, target)
     upstream = task.get('upstream', True)
+    if not _commit_msg:
+        error({'description': "no commit message"})
 
     # skip silently for upstream repos
     if upstream:
         return
 
+    # skip repos with clean workdir
+    output = execute(('git', 'status', '--porcelain'), cwd=target, log=False)
+    if not output:
+        message({'level': "info", 'description': "nothing to commit"})
+
     # commit performed
-    msg = {'level': "info", 'description': ""}
+    msg = {'level': "info", 'description': "changes added", 'data': output}
     execute(('git', 'add', '-A'), cwd=target, msg=msg)
-    if not _commit_msg:
-        error({'description': "no commit message"})
+    msg = {'level': "info", 'description': "changes commited"}
     execute(('git', 'commit', '-m', _commit_msg), cwd=target, msg=msg)
 
 
