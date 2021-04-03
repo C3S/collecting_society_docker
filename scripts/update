@@ -1201,11 +1201,14 @@ def git_commit(task, context={}):
     if not output:
         message({'level': "info", 'description': "nothing to commit"})
 
-    # commit performed
+    # add performed
     msg = {'level': "info", 'description': "changes added", 'data': output}
-    execute(('git', 'add', '-A'), cwd=target, msg=msg, abort=False)
+    execute(('git', 'add', '-A'), cwd=target, msg=msg)
+
+    # commit performed
     msg = {'level': "info", 'description': "changes commited"}
-    execute(('git', 'commit', '-m', _commit_msg), cwd=target, msg=msg)
+    execute(('git', 'commit', '-m', _commit_msg),
+            cwd=target, msg=msg, abort=False)
 
 
 @action
