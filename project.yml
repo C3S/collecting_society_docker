@@ -24,8 +24,8 @@ production:
         actions: ['update_repo', 'restart_script']
         target: '.'
         source: 'git@github.com:C3S/collecting_society_docker.git'
-        version: '${ENVIRONMENT}'
-        upstream: False
+        version: '${BRANCH}'
+        upstream: false
       # create basic folder structure
       - name: create basic folder structure
         actions: ['create_folder']
@@ -85,28 +85,23 @@ production:
         actions: ['update_repo']
         targetpath: 'volumes/shared/src'
         upstream: false
+        version: '${BRANCH}'
         batch:
           - name: archiving
             source: 'git@github.com:C3S/archiving.git'
-            version: '${ENVIRONMENT}'
           - name: portal
             source: 'git@github.com:C3S/portal.git'
-            version: '${ENVIRONMENT}'
           - name: collecting_society
             source: 'git@github.com:C3S/collecting_society.git'
-            version: '${ENVIRONMENT}'
           - name: portal_web
             source: 'git@github.com:C3S/portal_web.git'
-            version: '${ENVIRONMENT}'
           - name: collecting_society_web
             source: 'git@github.com:C3S/collecting_society_web.git'
-            version: '${ENVIRONMENT}'
+          - name: collecting_society_worker
+            source: 'git@github.com:C3S/collecting_society_worker.git'
           - name: echoprint-server
             source: 'git@github.com:C3S/echoprint-server.git'
             version: 'master'
-          - name: collecting_society_worker
-            source: 'git@github.com:C3S/collecting_society_worker.git'
-            version: '${ENVIRONMENT}'
       # copy and diff example files
       - name: copy and diff example files
         actions: ['copy_file', 'diff_file']
@@ -136,8 +131,8 @@ production:
   actions:
     # update_repo action group
     update_repo: [
-      clone_repo, symlink_repo, set_user, set_origin,
-      check_status, fetch_repo, checkout_repo, pull_repo
+      clone_repo, symlink_repo, set_user, set_origin, check_status,
+      fetch_repo, checkout_repo, track_remote, pull_repo
     ]
     # diff_file action
     diff_file:

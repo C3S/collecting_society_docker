@@ -20,6 +20,7 @@ import sys
 import shutil
 import traceback
 import subprocess
+import pprint
 from subprocess import STDOUT as stdout
 from pathlib import Path
 import difflib
@@ -35,6 +36,7 @@ envsubre = re.compile(r'\$\{([A-Z-_]*)\}')
 
 # flags
 _verbose = False
+_debug = False
 _reset = False
 _self_updated = False
 _script_updated = False
@@ -293,7 +295,7 @@ def message(msg, offset=1, pad=10, data=True, add=True, output=True):
     # level
     text = "  " * offset
     level = (msg['level'] + " | ").rjust(pad)
-    text += color(level, _color + "_category")
+    text += color(level, _color + "_level")
     # title
     if 'title' in msg:
         title = msg['title']
@@ -303,11 +305,11 @@ def message(msg, offset=1, pad=10, data=True, add=True, output=True):
     # action
     if 'action' in msg:
         action = msg['action'] + " ... "
-        if 'description' in msg:
-            action = msg['action'] + " » "
         if msg['level'] == "error":
             action = msg['action']
-        text += color(action, _color + "_category")
+        if 'description' in msg:
+            action = msg['action'] + " » "
+        text += color(action, _color + "_action")
     # description
     if 'description' in msg:
         if msg['level'] == 'error':
@@ -320,12 +322,12 @@ def message(msg, offset=1, pad=10, data=True, add=True, output=True):
             raw = raw.strip().decode('utf-8')
         lines = raw
         if isinstance(raw, str):
-            lines = raw.strip().split("\n")
+            lines = raw.rstrip().split("\n")
         data = ""
         for line in lines:
             data += "\n" + "  " * offset + " ".ljust(pad) + line
         data += "\n"
-        text += color(data, 'dim')
+        text += color(data, _color + "_data")
     text += "\n"
     # process
     if add:
@@ -349,8 +351,8 @@ def header(output=True):
     # data
     data = {
         "project": env.get('PROJECT'),
-        "branch": branch,
         "environment": environment,
+        "branch": branch,
         "root": root,
     }
     if username and useremail:
@@ -361,6 +363,9 @@ def header(output=True):
         global_useremail = execute(
             ('git', 'config', '--global', 'user.name'), log=False)
         data['user'] = "%s <%s>" % (global_username, global_useremail)
+        message({'level': "info",
+                 'description': "GIT_USER_NAME/EMAIL in .env not set",
+                 'data': "NOTE: commits will use: %s" % data['user']})
     # text
     pad = 0
     for key in data:
@@ -369,9 +374,12 @@ def header(output=True):
     pad += 1
     text = "\n"
     for key, value in data.items():
+        value_color = 'dim'
+        if key in ['environment', 'branch'] and value not in environments:
+            value_color = 'warning'
         text += (
             color("  " + key.capitalize().ljust(pad), 'title') +
-            color(value + "\n", 'dim')
+            color(value + "\n", value_color)
         )
     separator = line(output=False)
     text = "\n" + separator + "\n" + text + "\n" + separator + "\n"
@@ -402,10 +410,28 @@ def footer(string="Success.", _color="success", output=True, summary=True):
             has_summary = True
     if not had_output:
         print(color("   All fine.", 'dim'))
+    # separator
+    text = "\n" + line(output=False) + "\n\n"
     # summary
-    text = "\n" + line(output=False) + "\n"
+    text += title("Summary", _color='title', output=False)
+    # data
+    data = {
+        "environment": environment,
+        "branch": branch,
+    }
+    text += "  "
+    for key, value in data.items():
+        value_color = 'dim'
+        if key in ['environment', 'branch'] and value not in environments:
+            value_color = 'warning'
+        text += (
+            color(key.capitalize(), ['dim', 'bold']) + " " +
+            color(value, value_color) + ", "
+        )
+    text = text[:-2] + "\n"
+    # messages
     if summary and has_summary:
-        text += title("Summary", _color='title', output=False)
+        text += "\n"
         data = False
         for level in levels['summary']:
             if level == 'ERROR':
@@ -418,6 +444,22 @@ def footer(string="Success.", _color="success", output=True, summary=True):
     if output:
         print(text, end="")
     return text
+
+
+def debug(obj=None, title=""):
+    """Prints objects for debugging."""
+    if not _debug:
+        return
+    pad = 12
+    # title
+    if title:
+        print(" " * pad + color(title, ['output', 'bold']))
+    # object
+    if not isinstance(obj, str):
+        obj = pprint.pformat(obj)
+    for line in obj.split("\n"):
+        print(" " * pad + color(line, 'output'))
+    print()
 
 
 def error(msg):
@@ -448,17 +490,23 @@ def execute(cmd, cwd=False, abort=True, stop=False, msg={}, log=True):
         title = task['name'] or " ".join(cmd)
     if log:
         message({'action': action, 'title': title}, add=False)
+    output = ""
+    error_msg = {}
     # execute command
     try:
         output = subprocess.check_output(
             cmd, cwd=cwd or root, stderr=stdout
-        ).strip().decode('utf-8')
+        ).rstrip().decode('utf-8')
+        if _debug:
+            debug(output, "$ " + " ".join(cmd))
     except subprocess.CalledProcessError as err:
-        error({
+        error_msg = {
             'title': "$ " + cmd[0],
             'action': len(cmd) > 1 and " ".join(cmd[1:]) or "",
             'data': err.output,
-        })
+        }
+        if abort:
+            error(error_msg)
     # stop task
     if task and stop:
         stopped = output
@@ -476,7 +524,7 @@ def execute(cmd, cwd=False, abort=True, stop=False, msg={}, log=True):
         'description': output and "not ok" or "ok",
         'data': output and "$ " + " ".join(cmd) + "\n" + output,
     }
-    msg = {**_msg, **msg}
+    msg = {**_msg, **msg, **error_msg}
     # execute callback functions for messages dependent on the output
     for key, value in msg.items():
         if callable(value):
@@ -805,29 +853,15 @@ def set_user(task, context={}):
         target = os.path.join(targetpath, target)
     upstream = task.get('upstream', True)
 
-    # skip upstream silently
+    # skip silently for upstream repos
     if upstream:
         return
 
-    # userdata is not set
-    missing = []
-    if not username:
-        missing.append("username")
-    if not useremail:
-        missing.append("useremail")
-    if missing:
-        global_username = execute(
-            ('git', 'config', '--global', 'user.name'), log=False)
-        global_useremail = execute(
-            ('git', 'config', '--global', 'user.email'), log=False)
-        global_userdata = "%s <%s>" % (global_username, global_useremail)
-        message({'level': "info",
-                 'description': "%s missing" % " and ".join(missing),
-                 'data': "NOTE: commits will use: %s" % global_userdata})
+    # skip silently, if userdata is not set
+    if not username or not useremail:
         return
 
     # userdata already set
-    userdata = "%s <%s>" % (username, useremail)
     old_username = execute(
         ('git', 'config', 'user.name'), cwd=target, log=False).strip('"')
     old_useremail = execute(
@@ -841,7 +875,9 @@ def set_user(task, context={}):
             cwd=target, log=False)
     execute(('git', 'config', 'user.email', '"{}"'.format(useremail)),
             cwd=target, log=False)
-    message({'level': "info", 'description': "git user set to %s" % userdata})
+    message({'level': "info", 'description': "git user set",
+             'data': "\n".join(["user.name: `%s`" % username,
+                                "user.email: `%s`" % useremail])})
 
 
 @action
@@ -872,8 +908,9 @@ def fetch_repo(task, context={}):
         target = os.path.join(targetpath, target)
 
     # new updates fetched
-    msg = {'level': lambda o: o and "info" or "debug"}
-    execute(('git', 'fetch', '--quiet'), cwd=target, msg=msg)
+    msg = {'level': lambda o: o and "info" or "debug",
+           'description': lambda o: o and "updates available" or "uptodate"}
+    execute(('git', 'fetch'), cwd=target, msg=msg)
 
 
 @action
@@ -886,7 +923,7 @@ def checkout_repo(task, context={}):
     version = task['version']
     upstream = task.get('upstream', True)
 
-    # already checked out
+    # get checked out version
     old_version = execute(
         ('git', 'rev-parse', '--abbrev-ref', 'HEAD'), cwd=target, log=False)
     if old_version == "HEAD":
@@ -894,22 +931,96 @@ def checkout_repo(task, context={}):
             ('git', 'name-rev', '--name-only', 'HEAD'), cwd=target, log=False)
     if old_version.endswith("^0"):
         old_version = old_version[:-2]
-    if version == old_version:
-        message({'description': "already on %s" % version})
+    checked_out = old_version == version and True or False
+
+    # find out, if branch or tag exists locally
+    version_exists = False
+    if version.startswith("tags/"):
+        output = execute(
+            ('git', 'tag', '-l', version[5:]), cwd=target, log=False)
+        if output:
+            version_exists = True
+    else:
+        output = execute(('git', 'branch', '-lvv'), cwd=target, log=False)
+        for line in output.split("\n"):
+            if line[2:].startswith(version + " "):
+                version_exists = True
+
+    # just checkout, if remote or local branch exists
+    if version_exists:
+
+        # version already checked out
+        if checked_out:
+            message({'description': "already on `%s`" % version})
+            return
+
+        # version switched
+        msg = {'level': "info", 'description': "branch switched",
+               'data': "\n".join(["old branch/tag: `%s`" % old_version,
+                                  "new branch/tag: `%s`" % version])}
+        execute(('git', 'checkout', '--quiet', version),
+                cwd=target, msg=msg)
         return
 
-    # not on environment branch, probably local or feature branch
-    envs = environments
-    if not upstream and version in envs and old_version not in envs:
-        message({'level': "warning",
-                 'description': (
-                     "`%s` is not an environment branch. "
-                     "-> checkout skipped" % old_version)})
+    # upstream version does not exist
+    if upstream or version.startswith("tags/"):
+        error({'description': "no upstream version `%s` found" % version})
+
+    # new branch created
+    msg = {'level': 'info', 'description': "new branch created",
+           'data': 'branch name: `%s`' % version}
+    execute(('git', 'checkout', '-b', version), cwd=target, msg=msg)
+
+
+@action
+def track_remote(task, context={}):
+    """Ensures, that remote branches are followed."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    version = task['version']
+    upstream = task.get('upstream', True)
+
+    # skip silently for upstream repos and tags
+    if upstream or version.startswith("tags/"):
         return
 
-    # checkout performed
-    msg = {'description': "switched from %s to %s" % (old_version, version)}
-    execute(('git', 'checkout', '--quiet', version), cwd=target, msg=msg)
+    # find out, if remote branch exists
+    remote_exists = False
+    output = execute(('git', 'branch', '-rvv'), cwd=target, log=False)
+    for line in output.split("\n"):
+        if line[2:].startswith("origin/%s " % version):
+            remote_exists = True
+
+    # skip, if remote brach does not exist
+    if not remote_exists:
+        message({'description':
+                 'upstream branch `%s` does not exist' % version})
+        return
+
+    # get currently tracked branch
+    tracked_branch = execute(
+        ('git', 'rev-parse', '--abbrev-ref',
+         '--symbolic-full-name', '@{u}'),
+        cwd=target, abort=False, log=False)
+    is_tracked = tracked_branch == "origin/%s" % version
+
+    # remote branch is already tracked
+    if is_tracked:
+        message({'description':
+                 'upstream branch `%s` already tracked' % version})
+        return
+
+    # track remote branch
+    # NOTE: conflicts, if the same branch was created and committed to on
+    # different repositories. this edge case should be rare.
+    msg = {'level': "info",
+           'description':
+               "switched upstream branch from `%s` to `%s`" % (
+                   tracked_branch, "origin/%s" % version)}
+    execute(('git', 'branch', '-u', 'origin/%s' % version, version),
+            cwd=target, msg=msg)
 
 
 @action
@@ -919,16 +1030,21 @@ def pull_repo(task, context={}):
     targetpath = task.get('targetpath')
     if targetpath:
         target = os.path.join(targetpath, target)
+    version = task['version']
 
     # skip pull silently for tags
     if task['version'].startswith("tags/"):
         return
 
-    # skip pull silently for local only branches
-    noremote = execute(
-        ('git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'),
+    # skip pull for local only branches
+    tracked_branch = execute(
+        ('git', 'rev-parse', '--abbrev-ref',
+         '--symbolic-full-name', '@{u}'),
         cwd=target, abort=False, log=False)
-    if not noremote.startswith("origin/"):
+    is_local = not tracked_branch.startswith("origin/%s" % version)
+    if is_local:
+        message({'description': "no remote branch `%s` -> pull skipped"
+                 % version})
         return
 
     # pull performed
@@ -942,6 +1058,14 @@ def pull_repo(task, context={}):
 def restart_script(task, context={}):
     """Restarts the update script after updated of itself was checkedout."""
     # target = task['name']
+    # updated = ['self']
+    # if pull_result:
+    #     if 'scripts/update |' in pull_result:
+    #         updated.append('script')
+    #     if 'services/build/Dockerfile |' in pull_result:
+    #         updated.append('dockerfile')
+    #     if '.example |' in pull_result:
+    #         updated.append('examplefiles')
     pass
 
 
@@ -1059,13 +1183,13 @@ def update():
 # project
 root = get_root_dir()
 repo = get_repo_name(root)
-branch = get_repo_branch(root)
 env = get_dot_env(root)
 project = get_project_yaml(root, env)
 environments = project.keys()
 
 # environment
 environment = env['ENVIRONMENT']
+branch = env['BRANCH']
 username = env.get('GIT_USER_NAME')
 useremail = env.get('GIT_USER_EMAIL')
 
@@ -1076,29 +1200,35 @@ levels = {
 }
 colors = {
     # level
-    'success': "\033[32m",
-    'success_category': 'success',
-    'success_title': ['success', 'bold'],
     'error': "\033[91m",
-    'error_category': 'error',
+    'error_level': 'error',
     'error_title': ['title', 'bold'],
+    'error_action': '',
     'error_description': ['error', 'bold'],
+    'error_data': 'dim',
     'warning': "\033[33m",
-    'warning_category': 'warning',
+    'warning_level': 'warning',
     'warning_title': ['warning', 'bold'],
+    'warning_action': '',
     'warning_description': 'warning',
-    'info': "",
-    'info_category': 'info',
+    'warning_data': 'dim',
+    'info': '',
+    'info_level': 'info',
     'info_title': ['info', 'bold'],
-    'info_description': 'info',
+    'info_action': 'info',
+    'info_description': 'dim',
+    'info_data': 'dim',
     'debug': "\033[2m",
-    'debug_category': 'debug',
+    'debug_level': 'debug',
     'debug_title': ['debug', 'bold'],
+    'debug_action': 'dim',
     'debug_description': 'debug',
+    'debug_data': 'dim',
     # context
     'title': ['bold', "\033[33m"],
     'subtitle': "\033[35m",
     'output': "\033[94m",
+    'success': "\033[32m",
     # diff
     'hunk': "\033[36m",
     'remove': "\033[31m",
@@ -1121,6 +1251,10 @@ if __name__ == "__main__":
     if "--reset" in sys.argv:
         _reset = True
     if "--verbose" in sys.argv:
+        _verbose = True
+        levels['output'].append('debug')
+    if "--debug" in sys.argv:
+        _debug = True
         _verbose = True
         levels['output'].append('debug')
     for param in sys.argv:
