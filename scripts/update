@@ -1203,7 +1203,7 @@ def git_commit(task, context={}):
 
     # commit performed
     msg = {'level': "info", 'description': "changes added", 'data': output}
-    execute(('git', 'add', '-A'), cwd=target, msg=msg)
+    execute(('git', 'add', '-A'), cwd=target, msg=msg, abort=False)
     msg = {'level': "info", 'description': "changes commited"}
     execute(('git', 'commit', '-m', _commit_msg), cwd=target, msg=msg)
 
