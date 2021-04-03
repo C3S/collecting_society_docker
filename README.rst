@@ -2224,6 +2224,11 @@ simply remove the whole file, if the setup is not in production use::
 
     rm ~/.config/tryton/3.4/known_hosts
 
+**Incompatible Server Version**
+
+If the tryton client shows an "incompatible server version" error on login try::
+
+    rm ~/.config/tryton/3.4/known_hosts
 
 License
 =======
