@@ -1199,7 +1199,7 @@ def git_commit(task, context={}):
     # skip repos with clean workdir
     output = execute(('git', 'status', '--porcelain'), cwd=target, log=False)
     if not output:
-        message({'level': "info", 'description': "nothing to commit"})
+        message({'description': "nothing to commit"})
         return
 
     # add performed
