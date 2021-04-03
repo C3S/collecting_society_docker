@@ -1317,7 +1317,15 @@ def status():
 @command
 def pull():
     """Pulls only the project repositories."""
-    raise NotImplementedError()
+    context = get_context()
+    tasks = []
+    for task in context['tasks']:
+        if task['action'] != 'git_pull':
+            continue
+        if 'upstream' not in task or task['upstream']:
+            continue
+        tasks.append(task)
+    context['tasks'] = tasks
 
 
 @command
