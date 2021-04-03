@@ -39,6 +39,7 @@ _command = None      # the initially invoked command
 _verbose = False
 _debug = False
 _reset = False
+_commit_msg = False
 _self_updated = False
 _script_updated = False
 _dockerfile_updated = False
@@ -558,6 +559,7 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
         message({'action': action, 'title': title}, add=False)
     output = ""
     error_msg = {}
+
     # execute command
     try:
         output = subprocess.check_output(
@@ -573,6 +575,7 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
         }
         if abort:
             error(error_msg)
+
     # stop processing
     if task:
         # stop batch groups
@@ -591,9 +594,11 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
             action_groups = context['action_groups']
             action_group = context['action_group']
             action_groups[action_group]['stopped'] = stopped
+
     # return if logging is disabled for this command
     if not log:
         return output
+
     # create message
     _msg = {
         'level': output and "warning" or "info",
@@ -604,14 +609,17 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
         'data': output,
     }
     msg = {**_msg, **msg, **error_msg}
+
     # execute callback functions for messages dependent on the output
     for key, value in msg.items():
         if callable(value):
             msg[key] = value(output)
-    # remove hin, add and print message
+
+    # remove line, add and print message
     if 'debug' in levels['output']:
         sys.stdout.write("\033[F")
     message(msg)
+
     # add output to task
     if _tasks:
         task = _tasks[-1]
@@ -1174,6 +1182,27 @@ def git_pull(task, context={}):
 
 
 @action
+def git_commit(task, context={}):
+    """Commits all changed and untracked files."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # commit performed
+    msg = {'level': "info", 'description': ""}
+    execute(('git', 'add', '-A'), cwd=target, msg=msg)
+    if not _commit_msg:
+        error({'description': "no commit message"})
+    execute(('git', 'commit', '-m', _commit_msg), cwd=target, msg=msg)
+
+
+@action
 def restart_script(task, context={}):
     """Restarts the update script after updated of itself was checkedout."""
     # target = task['name']
@@ -1331,7 +1360,16 @@ def pull():
 @command
 def commit():
     """Commits changes and untracked files to the project repositories."""
-    raise NotImplementedError()
+    context = get_context()
+    tasks = []
+    for task in context['tasks']:
+        if task['action'] != 'git_pull':
+            continue
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['action'] = 'git_commit'
+        tasks.append(task)
+    context['tasks'] = tasks
 
 
 @command
@@ -1433,18 +1471,27 @@ if __name__ == "__main__":
 
     # choose command
     _command = 'update'
-    if "--diff" in sys.argv:
-        _command = 'diff'
-    if "--status" in sys.argv:
-        _command = 'status'
-    if "--pull" in sys.argv:
-        _command = 'pull'
-    if "--commit" in sys.argv:
-        _command = 'commit'
-    if "--push" in sys.argv:
-        _command = 'push'
-    if "--help" in sys.argv:
-        _command = 'help'
+    for i, param in enumerate(sys.argv):
+        if param == "--help":
+            _command = 'help'
+            break
+        if param == "--diff":
+            _command = 'diff'
+            break
+        if param == "--status":
+            _command = 'status'
+            break
+        if param == "--pull":
+            _command = 'pull'
+            break
+        if param == "--push":
+            _command = 'push'
+            break
+        if param == "--commit":
+            _command = 'commit'
+            if len(sys.argv) < i + 2:
+                sys.exit("No commit message")
+            _commit_msg = sys.argv[i + 1]
 
     # print help
     if _command == 'help':
