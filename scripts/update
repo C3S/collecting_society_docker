@@ -422,13 +422,13 @@ def header(output=True):
         "root": root,
     }
     if username and useremail:
-        data['user'] = "%s <%s>" % (username, useremail)
+        data['gituser'] = "%s <%s>" % (username, useremail)
     else:
         global_username = execute(
             ('git', 'config', '--global', 'user.name'), log=False)
         global_useremail = execute(
             ('git', 'config', '--global', 'user.name'), log=False)
-        data['user'] = "%s <%s>" % (global_username, global_useremail)
+        data['gituser'] = "%s <%s>" % (global_username, global_useremail)
         message({'level': "info",
                  'description': "GIT_USER_NAME/EMAIL in .env not set",
                  'data': "NOTE: commits will use: %s" % data['user']})
@@ -605,8 +605,7 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
         'action': action,
         'title': title,
         'description': output and "not ok" or "ok",
-        # 'data': output and "$ " + " ".join(cmd) + "\n" + output,
-        'data': output,
+        'data': output and "$ " + " ".join(cmd) + "\n" + output,
     }
     msg = {**_msg, **msg, **error_msg}
 
