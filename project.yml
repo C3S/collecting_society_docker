@@ -110,7 +110,6 @@ production:
           - name: 'services/webgui.env'
           - name: 'services/webapi.env'
           - name: 'services/worker.env'
-          - name: 'services/worker.env'
           - name: 'volumes/shared/config/trytond/production.conf'
           - name: 'volumes/shared/config/trytond/staging.conf'
           - name: 'volumes/shared/src/collecting_society_worker/config.ini'
@@ -127,12 +126,24 @@ production:
     # diff command
     diff: *update
 
+    # status command
+    status: *update
+
+    # pull command
+    pull: *update
+
+    # pull command
+    commit: *update
+
+    # push command
+    push: *update
+
   # action config -------------------------------------------------------------
   actions:
     # update_repo action group
     update_repo: [
-      clone_repo, symlink_repo, set_user, set_origin, check_status,
-      fetch_repo, checkout_repo, track_remote, pull_repo
+      git_clone, git_user, git_origin, git_status,
+      git_fetch, git_checkout, git_track, git_pull
     ]
     # diff_file action
     diff_file:
@@ -145,7 +156,7 @@ production:
         ^ECHOPRINT_TOKEN=, ^WORKER_PROTEUS_PASSWORD=,
         ^privatekey=, ^certificate=, ^super_pwd=,
       ]
-    clone_repo:
+    git_clone:
       create_folder: true
 
 #==============================================================================
@@ -206,7 +217,7 @@ development:
             source: 'volumes/shared/src/collecting_society_worker'
       # checkout repos of pinned pip packages for reference
       - name: checkout repos of pinned pip packages for reference
-        actions: ['clone_repo', 'checkout_repo']
+        actions: ['git_clone', 'git_checkout']
         targetpath: 'volumes/shared/ref'
         batch:
           - name: click
