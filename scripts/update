@@ -1220,25 +1220,34 @@ def git_push(task, context={}):
     if targetpath:
         target = os.path.join(targetpath, target)
     upstream = task.get('upstream', True)
+    version = task['version']
 
     # skip silently for upstream repos
     if upstream:
         return
 
-    # skip repos with clean workdir
-    output = execute(('git', 'status', '--porcelain'), cwd=target, log=False)
-    if not output:
-        message({'description': "nothing to commit"})
+    # find out, if remote branch exists
+    remote_exists = False
+    output = execute(('git', 'branch', '-rvv'), cwd=target, log=False)
+    for line in output.split("\n"):
+        if line[2:].startswith("origin/%s " % version):
+            remote_exists = True
+
+    # skip local only branches
+    if not remote_exists:
+        message({'level': "warning", 'description': "no remote branch"})
+        return
+
+    # find out, if unpushed commits exist
+    unpushed = execute(('git', 'log', '@{u}..'), cwd=target, log=False)
+
+    # skip repos without commits
+    if not unpushed:
         return
 
     # add performed
-    msg = {'level': "info", 'description': "changes added", 'data': output}
-    execute(('git', 'add', '-A'), cwd=target, msg=msg)
-
-    # commit performed
-    msg = {'level': "info", 'description': "changes commited"}
-    execute(('git', 'commit', '-m', _commit_msg),
-            cwd=target, msg=msg, abort=False)
+    msg = {'level': "info", 'description': "commits pushed", 'data': unpushed}
+    execute(('git', 'push'), cwd=target, msg=msg)
 
 
 @action
@@ -1385,6 +1394,7 @@ def status():
 @command
 def pull():
     """Pulls only the project repositories."""
+    # filter tasks
     context = get_context()
     tasks = []
     for task in context['tasks']:
@@ -1399,6 +1409,7 @@ def pull():
 @command
 def commit():
     """Commits changes and untracked files to the project repositories."""
+    # filter tasks
     context = get_context()
     tasks = []
     for task in context['tasks']:
@@ -1413,8 +1424,19 @@ def commit():
 
 @command
 def push():
-    """Pushed to the project repositories."""
-    raise NotImplementedError()
+    """Pushes commits of the project repositories."""
+    # filter tasks
+    context = get_context()
+    tasks = []
+    for task in context['tasks']:
+        if task['action'] != 'git_pull':
+            continue
+        if 'upstream' not in task or task['upstream']:
+            continue
+        tasks.append({**task, **{'action': 'git_fetch'}})
+        tasks.append({**task, **{'action': 'git_pull'}})
+        tasks.append({**task, **{'action': 'git_push'}})
+    context['tasks'] = tasks
 
 
 # --- configuration -----------------------------------------------------------
