@@ -1213,6 +1213,35 @@ def git_commit(task, context={}):
 
 
 @action
+def git_push(task, context={}):
+    """Pushes all staged commits to remote origin."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # skip repos with clean workdir
+    output = execute(('git', 'status', '--porcelain'), cwd=target, log=False)
+    if not output:
+        message({'description': "nothing to commit"})
+        return
+
+    # add performed
+    msg = {'level': "info", 'description': "changes added", 'data': output}
+    execute(('git', 'add', '-A'), cwd=target, msg=msg)
+
+    # commit performed
+    msg = {'level': "info", 'description': "changes commited"}
+    execute(('git', 'commit', '-m', _commit_msg),
+            cwd=target, msg=msg, abort=False)
+
+
+@action
 def restart_script(task, context={}):
     """Restarts the update script after updated of itself was checkedout."""
     # target = task['name']
