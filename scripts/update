@@ -34,23 +34,27 @@ from copy import deepcopy
 envre = re.compile(r'''^([^\s=]+)=(?:[\s"']*)(.+?)(?:[\s"']*)$''')
 envsubre = re.compile(r'\$\{([A-Z-_]*)\}')
 
-# flags
-_command = None      # the initially invoked command
-_verbose = False
-_debug = False
-_reset = False
-_commit_msg = False
-_self_updated = False
-_script_updated = False
-_dockerfile_updated = False
-_examplefiles_updated = False
-
 # lists
 _contexts = []       # list of contexts
 _messages = []       # list of messages added
 _tasks = []          # list of tasks performed
 _actions = []        # list of valid action names, autofilled
 _commands = []       # list of valid command names, autofilled
+
+# params
+_command = None      # the initially invoked command
+_commit_msg = ""     # commit message
+
+# flags
+_reset = False       # reset example files
+_verbose = False     # verbose output
+_debug = False       # debug output
+_ci = False          # ci mode
+_colored = True      # colored output
+_self_updated = False
+_script_updated = False
+_dockerfile_updated = False
+_examplefiles_updated = False
 
 
 # --- tools -------------------------------------------------------------------
@@ -304,6 +308,8 @@ def merge_dicts(orig_dict, new_dict):
 
 def color(text, status):
     """Colored output wrapper for stdout text."""
+    if not _colored:
+        return text
     text = str(text)
     if isinstance(status, str):
         status = [status]
@@ -1481,11 +1487,15 @@ if __name__ == "__main__":
         _reset = True
     if "--verbose" in sys.argv:
         _verbose = True
-        levels['output'].append('debug')
     if "--debug" in sys.argv:
         _debug = True
         _verbose = True
-        levels['output'].append('debug')
+    if "--ci" in sys.argv:
+        _ci = True
+        _colored = False
+        _reset = True
+        _verbose = True
+        _debug = True
     for param in sys.argv:
         if param.startswith('--updated='):
             updated = param[11:].split(',')
@@ -1497,6 +1507,12 @@ if __name__ == "__main__":
                 _dockerfile_updated = True
             if 'examplefiles' in updated:
                 _examplefiles_updated = True
+
+    # process flags
+    if _verbose:
+        levels['output'].append('debug')
+    if _debug:
+        levels['output'].append('debug')
 
     # choose command
     _command = 'update'
