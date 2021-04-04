@@ -32,14 +32,14 @@ production:
         changes:
           - name: 'update script was updated'
             files: 'scripts/update'
-          - name: 'Dockerfile was updated'
+          - name: 'DOCKERFILE was updated!'
             files: 'services/build/Dockerfile'
             level: 'warning'
             data: [
               'NOTE: you should update the database:',
               '$ docker-compose run --rm erpserver db-update'
             ]
-          - name: 'an example files was updated'
+          - name: 'EXAMPLE FILES were updated'
             files: '.example'
             level: 'warning'
             data: [

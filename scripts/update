@@ -2,7 +2,6 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 """
-
 Usage: ./scripts/update [--reset] [--diff] [--help]
 
   This script updates the project:
@@ -1319,7 +1318,8 @@ def changes_notify(task, context={}):
         # files changed
         if changed:
             message({'level': change.get('level', "info"),
-                     'description': task['name'], 'data': task.get('data')})
+                     'description': change['name'],
+                     'data': change.get('data')})
 
 
 # --- tasks -------------------------------------------------------------------
