@@ -1426,8 +1426,7 @@ def update(context={}):
     for task in context['tasks']:
         actions = task['actions']
         if 'script_restart' in actions:
-            task['actions'] = actions[actions.index('script_restart'):]
-            print(task['actions'])
+            task['actions'] = actions[actions.index('script_restart') + 1:]
 
 
 @command
