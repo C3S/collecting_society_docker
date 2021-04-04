@@ -396,8 +396,8 @@ def header(output=True):
         "branch": branch,
         "root": root,
     }
-    if username and useremail:
-        data['gituser'] = "%s <%s>" % (username, useremail)
+    if git_name and git_email:
+        data['gituser'] = "%s <%s>" % (git_name, git_email)
     else:
         global_username = execute(
             ('git', 'config', '--global', 'user.name'), log=False)
@@ -866,7 +866,7 @@ def git_clone(task, context={}):
         folder_create({'name': os.path.dirname(target)})
 
     # choose ssh or https
-    if "@" in source and not (username and useremail):
+    if git_protocol == 'https' and "@" in source:
         url = source.split("@", 1)[1]
         source = "https://" + url.replace(":", "/")
 
@@ -889,7 +889,7 @@ def git_origin(task, context={}):
         target = os.path.join(targetpath, target)
 
     # choose ssh or https
-    if "@" in source and not (username and useremail):
+    if git_protocol == 'https' and "@" in source:
         url = source.split("@", 1)[1]
         source = "https://" + url.replace(":", "/")
 
@@ -925,7 +925,7 @@ def git_user(task, context={}):
         return
 
     # skip silently, if userdata is not set
-    if not username or not useremail:
+    if not git_name or not git_email:
         return
 
     # userdata already set
@@ -933,18 +933,18 @@ def git_user(task, context={}):
         ('git', 'config', 'user.name'), cwd=target, log=False).strip('"')
     old_useremail = execute(
         ('git', 'config', 'user.email'), cwd=target, log=False).strip('"')
-    if username == old_username and old_useremail == old_useremail:
+    if git_name == old_username and old_useremail == old_useremail:
         message({'description': "git user aready set"})
         return
 
     # userdata set
-    execute(('git', 'config', 'user.name', '"{}"'.format(username)),
+    execute(('git', 'config', 'user.name', '"{}"'.format(git_name)),
             cwd=target, log=False)
-    execute(('git', 'config', 'user.email', '"{}"'.format(useremail)),
+    execute(('git', 'config', 'user.email', '"{}"'.format(git_email)),
             cwd=target, log=False)
     message({'level': "info", 'description': "git user set",
-             'data': "\n".join(["user.name: `%s`" % username,
-                                "user.email: `%s`" % useremail])})
+             'data': "\n".join(["user.name: `%s`" % git_name,
+                                "user.email: `%s`" % git_email])})
 
 
 @action
@@ -1418,8 +1418,9 @@ environments = project.keys()
 # environment
 environment = env['ENVIRONMENT']
 branch = env['BRANCH']
-username = env.get('GIT_USER_NAME')
-useremail = env.get('GIT_USER_EMAIL')
+git_name = env.get('GIT_USER_NAME')
+git_email = env.get('GIT_USER_EMAIL')
+git_protocol = env.get('GIT_SSH') and 'ssh' or 'https'
 
 # messages
 levels = {
