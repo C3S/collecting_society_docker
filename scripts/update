@@ -2,7 +2,6 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 """
-
 Usage: ./scripts/update [--reset] [--diff] [--help]
 
   This script updates the project:
@@ -431,8 +430,11 @@ def header(output=True):
     text = "\n" + separator + "\n" + text + "\n" + separator + "\n\n"
     # extended mode
     extended = context['commands'].get('extended')
-    if not extended or _restarted:
+    if not extended:
         text = "\n"
+    # no output after restart
+    if _restarted:
+        text = ""
     # process
     if output:
         print(text, end="")
@@ -1320,7 +1322,7 @@ def changes_notify(task, context={}):
         if changed:
             message({'level': change.get('level', "info"),
                      'description': change['name'],
-                     'data': change.get('data')})
+                     'data': "\n".join(change.get('data', []))})
 
 
 # --- tasks -------------------------------------------------------------------

@@ -43,7 +43,7 @@ production:
             files: '.example'
             level: 'warning'
             data: [
-              'NOTE: you should diff the example files:',
+              'NOTE: you should diff and adjust the example files:',
               '$ ./scripts/update --diff'
             ]
       # update project repos
