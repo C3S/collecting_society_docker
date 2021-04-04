@@ -777,13 +777,13 @@ def file_diff(task, context={}):
 
         # filter diff
         ignored = False
+        filtered = []
         ignore = task.get('ignore')
         if ignore:
             if isinstance(ignore, list):
                 ignore = context['actions'].get('ignore', []) + task['ignore']
                 ignore = re.compile(r'(%s)' % "|".join(ignore))
                 task['ignore'] = ignore
-            filtered = []
             for line in lines[2:]:
                 if not line[0] in ["+", "-"]:
                     continue
@@ -792,28 +792,34 @@ def file_diff(task, context={}):
                     ignored = True
                     continue
                 filtered.append(line)
-            lines = lines[0:3] + filtered
-
-            # files contains only ignored differences
-            if not filtered:
-                message({'level': 'info',
-                         'description': 'diff contains only ignored lines'})
-                return
+            if not _verbose:
+                lines = lines[0:3] + filtered
 
         # color diff
         data = colors['clear']
-        if ignored:
+        if ignored and not _verbose:
             data += color("--8<-- (ignored lines stripped) --8<--", "dim")
             data += colors['clear'] + "\n"
         for line in lines:
             if line.startswith('-'):
                 data += colors['remove']
-            if line.startswith('+'):
+            elif line.startswith('+'):
                 data += colors['add']
-            if line.startswith('@'):
+            elif line.startswith('@'):
                 data += colors['hunk']
-            data += line
-        data = data.rstrip() + colors['clear']
+            else:
+                data += colors['dim']
+            data += line + colors['clear']
+        data = data.rstrip()
+
+        # files contains only ignored differences
+        if ignored and not filtered:
+            msg = {'level': 'info',
+                   'description': 'diff contains only ignored lines'}
+            if _verbose:
+                msg['data'] = data
+            message(msg)
+            return
 
         # differences found
         message({'level': "warning", 'description': "differences found",
@@ -1001,7 +1007,7 @@ def git_status(task, context={}):
 
     # clean workdir
     if clean:
-        message({'level': "info", 'data': "\n".join(output)})
+        message({'level': "info", 'data': output})
         return
 
     # dirty workdir
@@ -1455,6 +1461,7 @@ def diff(context={}):
     for task in context['tasks']:
         if 'file_diff' not in task['actions']:
             continue
+        task['actions'] = ['file_diff']
         tasks.append(task)
     context['tasks'] = tasks
 
@@ -1469,6 +1476,7 @@ def status(context={}):
             continue
         if 'upstream' not in task or task['upstream']:
             continue
+        task['actions'] = ['git_status']
         tasks.append(task)
     context['tasks'] = tasks
     context['actions']['git_status']['porcelain'] = False
@@ -1484,6 +1492,7 @@ def pull(context={}):
             continue
         if 'upstream' not in task or task['upstream']:
             continue
+        task['actions'] = ['git_pull']
         tasks.append(task)
     context['tasks'] = tasks
 
