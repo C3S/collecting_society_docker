@@ -430,7 +430,7 @@ def header(output=True):
     text = "\n" + separator + "\n" + text + "\n" + separator + "\n\n"
     # extended mode
     extended = context['commands'].get('extended')
-    if not extended:
+    if not extended or _restarted:
         text = "\n"
     # process
     if output:
@@ -478,7 +478,7 @@ def footer(string="Success.", _color="success", output=True, summary=True):
     text += title(string, _color=_color, output=False)
     # extended mode
     extended = context['commands'].get('extended')
-    if not extended:
+    if not extended or _restarted:
         text = ""
     # process
     if output:
@@ -1175,7 +1175,8 @@ def git_pull(task, context={}):
         return
 
     # pull performed
-    output = execute(('git', 'pull'), cwd=target, log=False)
+    output = execute(
+        ('git', 'pull', '-v', 'origin', version), cwd=target, log=False)
 
     # updated
     if "changed" in output:
@@ -1259,6 +1260,9 @@ def git_push(task, context={}):
 def script_restart(task, context={}):
     """Restarts the update script after updated of itself was checkedout."""
     version = task['version']
+    fetch = task['result']['git_fetch']
+    pull = task['result']['git_pull']
+    changed = 'changed' in pull
 
     # script was restarted
     if _restarted:
@@ -1266,14 +1270,22 @@ def script_restart(task, context={}):
         task['result']['git_pull'] = diff
         return
 
+    # skip silently for unchanged repo
+    if not changed:
+        return
+
     # find out commit ids
-    for line in task['result']['git_pull']:
+    for line in fetch.split("\n"):
         if "%s -> origin/%s" % (version, version) in line:
             match = commit_re.match(line)
             commit_range = match.group(1)
 
     # restart script
-    cmd = (os.path.abspath(__file__), '--restarted', commit_range)
+    cmd = [os.path.abspath(__file__), *sys.argv[1:],
+           '--restarted', commit_range]
+    message({'level': "info", 'description': "script will be restarted now",
+             'data': "REASON: the main repository was updated\n"
+                     "$ " + " ".join(cmd)})
     exitcode = subprocess.call(cmd)
     sys.exit(exitcode)
 
@@ -1282,7 +1294,7 @@ def script_restart(task, context={}):
 def changes_notify(task, context={}):
     """Adds messages dependent on file changes."""
     changes = task.get('changes')
-    diff = task['result'].get('git_pull')
+    diff = task['result']['git_pull']
 
     # skip silently, if no messages should be added
     if not changes:
