@@ -1176,8 +1176,7 @@ def git_pull(task, context={}):
 
     # pull performed
     output = execute(
-        ('git', 'pull', '--progress', '-v', 'origin', version),
-        cwd=target, log=False)
+        ('git', 'pull', '-v', 'origin', version), cwd=target, log=False)
 
     # updated
     if "changed" in output:
