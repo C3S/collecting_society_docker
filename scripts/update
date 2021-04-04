@@ -388,6 +388,7 @@ def line(length=89, _color="title", end="\n", output=True):
 
 def header(output=True):
     """Prints the project configuration header."""
+    context = get_context()
     # data
     data = {
         "project": env.get('PROJECT'),
@@ -422,7 +423,11 @@ def header(output=True):
             color(value + "\n", value_color)
         )
     separator = line(output=False)
-    text = "\n" + separator + "\n" + text + "\n" + separator + "\n"
+    text = "\n" + separator + "\n" + text + "\n" + separator + "\n\n"
+    # extended mode
+    extended = context['commands'].get('extended')
+    if not extended:
+        text = "\n"
     # process
     if output:
         print(text, end="")
@@ -440,6 +445,7 @@ def title(string, _color="subtitle", output=True):
 
 def footer(string="Success.", _color="success", output=True, summary=True):
     """Prints the result of the command and a summary of important messages."""
+    context = get_context()
     # determine what to output
     had_output = False
     has_summary = False
@@ -450,8 +456,10 @@ def footer(string="Success.", _color="success", output=True, summary=True):
             has_summary = True
     if not had_output:
         print(color("   All fine.", 'dim'))
+    # output
+    text = ""
     # separator
-    text = "\n" + line(output=False) + "\n\n"
+    text += "\n" + line(output=False) + "\n"
     # summary
     text += title("Summary", _color='title', output=False)
     # data
@@ -480,6 +488,10 @@ def footer(string="Success.", _color="success", output=True, summary=True):
                 text += message(msg, data=data, add=False, output=False)
     # title
     text += title(string, _color=_color, output=False)
+    # extended mode
+    extended = context['commands'].get('extended')
+    if not extended:
+        text = ""
     # process
     if output:
         print(text, end="")
@@ -602,6 +614,7 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
 def action(func):
     """Action decorator, registers available functions, skips stopped tasks."""
     current_action = func.__name__
+    # add action name to list of actions
     _actions.append(current_action)
 
     def wrapper(task, context={}, *args, **kwargs):
@@ -614,8 +627,10 @@ def action(func):
         if context['action_group'].get("stopped"):
             return
         # add action config
-        actions_config = project[environment]['actions']
-        context['actions'] = actions_config.get(current_action)
+        actions = project[environment]['actions']
+        if current_action not in actions:
+            actions[current_action] = {}
+        context['actions'] = actions[current_action]
         # apply the action
         try:
             func(task, context, *args, **kwargs)
@@ -1240,13 +1255,13 @@ def set_context(override={}):
     # default context
     context = {
         # command config
-        'commands': current_env['commands'].get(current_cmd),
+        'commands': current_env['commands'].get(current_cmd, {}),
         # current command
         'command': current_cmd,
         # command tasks
-        'tasks': current_env['tasks'].get(current_cmd),
+        'tasks': current_env['tasks'].get(current_cmd, []),
         # action config
-        'actions': {},
+        'actions': current_env['actions'],
         # current task
         'task': None,
         # current batch group
@@ -1290,7 +1305,9 @@ def process(context):
             _tasks.append({**task, **{'action': action}})
             if action in _actions:
                 getattr(sys.modules[__name__], action)(task, context)
-    _contexts.pop()
+    # do not remove the main context
+    if len(_contexts) > 1:
+        _contexts.pop()
 
 
 # --- commands ----------------------------------------------------------------
@@ -1298,40 +1315,39 @@ def process(context):
 def command(func):
     """Command decorator, handles context and wrap switch."""
     current_command = func.__name__
+    # append command name to list of commands
     _commands.append(current_command)
 
-    def wrapper(*args, **kwargs):
+    def wrapper(context={}, *args, **kwargs):
         # set new command context
-        context = set_context({'command': _command})
+        if not context:
+            context = set_context({'command': _command})
         # apply filters
         try:
-            func(*args, **kwargs)
+            func(context, *args, **kwargs)
         except Exception:
             error({'data': traceback.format_exc()})
-        # print header (only once)
-        if current_command == _command:
-            header()
+        # print header
+        header()
         # print title
-        title(_command.capitalize() + " ...")
+        # title(_command.capitalize())
         # process tasks
         process(context)
-        # print footer (only once)
-        if current_command == _command:
-            footer()
+        # print footer
+        footer()
     return wrapper
 
 
 @command
-def update():
+def update(context={}):
     """Updates itself and the repositories, creates folders, copies files."""
     pass
 
 
 @command
-def diff():
+def diff(context={}):
     """Prints the diffs of the example files."""
     # filter tasks
-    context = get_context()
     tasks = []
     for task in context['tasks']:
         if 'diff_file' not in task['actions']:
@@ -1341,10 +1357,9 @@ def diff():
 
 
 @command
-def status():
+def status(context={}):
     """Prints the status of the project repositories."""
     # filter tasks
-    context = get_context()
     tasks = []
     for task in context['tasks']:
         if 'git_status' not in task['actions']:
@@ -1357,10 +1372,9 @@ def status():
 
 
 @command
-def pull():
+def pull(context={}):
     """Pulls only the project repositories."""
     # filter tasks
-    context = get_context()
     tasks = []
     for task in context['tasks']:
         if 'git_pull' not in task['actions']:
@@ -1372,10 +1386,9 @@ def pull():
 
 
 @command
-def commit():
+def commit(context={}):
     """Commits changes and untracked files to the project repositories."""
     # filter tasks
-    context = get_context()
     tasks = []
     for task in context['tasks']:
         if 'git_pull' not in task['actions']:
@@ -1388,10 +1401,9 @@ def commit():
 
 
 @command
-def push():
+def push(context={}):
     """Pushes commits of the project repositories."""
     # filter tasks
-    context = get_context()
     tasks = []
     for task in context['tasks']:
         if 'git_pull' not in task['actions']:
@@ -1523,10 +1535,12 @@ if __name__ == "__main__":
         print(__doc__.strip())
         sys.exit(2)
 
+    # sanity check
+    if _command not in _commands:
+        sys.exit("command `%s` not found" % _command)
+
     # set workdir
     os.chdir(root)
 
     # execute command
-    if _command not in _commands:
-        sys.exit("command `%s` not found" % _command)
     getattr(sys.modules[__name__], _command)()

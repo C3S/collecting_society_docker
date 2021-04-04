@@ -14,6 +14,9 @@ production:
       images: false
       # migrate database on changes
       database: false
+      # print header and footer
+      extended: true
+
 
   # task config ---------------------------------------------------------------
   tasks:
