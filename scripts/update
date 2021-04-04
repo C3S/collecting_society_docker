@@ -1259,6 +1259,7 @@ def git_push(task, context={}):
 def script_restart(task, context={}):
     """Restarts the update script after updated of itself was checkedout."""
     version = task['version']
+    import pdb; pdb.set_trace()
     pull = task['result']['pull']
     changed = 'changed' in pull
 
@@ -1288,7 +1289,7 @@ def script_restart(task, context={}):
 def changes_notify(task, context={}):
     """Adds messages dependent on file changes."""
     changes = task.get('changes')
-    diff = task['result'].get('git_pull')
+    diff = task['result']['git_pull']
 
     # skip silently, if no messages should be added
     if not changes:
