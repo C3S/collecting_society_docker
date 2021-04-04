@@ -447,45 +447,29 @@ def footer(string="Success.", _color="success", output=True, summary=True):
     """Prints the result of the command and a summary of important messages."""
     context = get_context()
     # determine what to output
-    had_output = False
+    had_output = 0
     has_summary = False
     for msg in _messages:
         if msg['level'] in levels['output']:
-            had_output = True
+            had_output += 1
+            if msg.get('data'):
+                had_output += str(msg['data']).count("\n") + 2
         if msg['level'] in levels['summary']:
             has_summary = True
     if not had_output:
         print(color("   All fine.", 'dim'))
+    if had_output < 50:
+        summary = False
     # output
     text = ""
     # separator
     text += "\n" + line(output=False) + "\n"
     # summary
-    text += title("Summary", _color='title', output=False)
-    # data
-    data = {
-        "environment": environment,
-        "branch": branch,
-    }
-    text += "  "
-    for key, value in data.items():
-        value_color = 'dim'
-        if key in ['environment', 'branch'] and value not in environments:
-            value_color = 'warning'
-        text += (
-            color(key.capitalize(), ['dim', 'bold']) + " " +
-            color(value, value_color) + ", "
-        )
-    text = text[:-2] + "\n"
-    # messages
     if summary and has_summary:
-        text += "\n"
-        data = False
+        text += title("Summary", _color='title', output=False) + "\n"
         for level in levels['summary']:
-            if level == 'ERROR':
-                data = True
             for msg in [m for m in _messages if m['level'] == level]:
-                text += message(msg, data=data, add=False, output=False)
+                text += message(msg, data=False, add=False, output=False)
     # title
     text += title(string, _color=_color, output=False)
     # extended mode
