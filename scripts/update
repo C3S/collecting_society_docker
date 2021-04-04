@@ -430,7 +430,7 @@ def header(output=True):
     text = "\n" + separator + "\n" + text + "\n" + separator + "\n\n"
     # extended mode
     extended = context['commands'].get('extended')
-    if not extended:
+    if not extended or _restarted:
         text = "\n"
     # process
     if output:
@@ -478,7 +478,7 @@ def footer(string="Success.", _color="success", output=True, summary=True):
     text += title(string, _color=_color, output=False)
     # extended mode
     extended = context['commands'].get('extended')
-    if not extended:
+    if not extended or _restarted:
         text = ""
     # process
     if output:
@@ -1281,7 +1281,11 @@ def script_restart(task, context={}):
             commit_range = match.group(1)
 
     # restart script
-    cmd = (os.path.abspath(__file__), '--restarted', commit_range)
+    cmd = [os.path.abspath(__file__), *sys.argv[1:],
+           '--restarted', commit_range]
+    message({'level': "info", 'description': "script will be restarted now",
+             'data': "REASON: the main repository was updated\n"
+                     "$ " + " ".join(cmd)})
     exitcode = subprocess.call(cmd)
     sys.exit(exitcode)
 
