@@ -20,6 +20,8 @@ import sys
 import shutil
 import traceback
 import subprocess
+import argparse
+from functools import wraps
 import pprint
 from subprocess import STDOUT as stdout
 from pathlib import Path
@@ -36,23 +38,11 @@ envsub_re = re.compile(r'\$\{([A-Z-_]*)\}')
 commit_re = re.compile(r'\s*(\w*\.\.\w*)\s')
 
 # lists
-_contexts = []    # list of contexts
-_messages = []    # list of messages added
-_tasks = []       # list of tasks performed
-_actions = []     # list of valid action names, autofilled
-_commands = []    # list of valid command names, autofilled
-
-# params
-_command = None   # the initially invoked command
-_commit_msg = ""  # commit message
-_restarted = ""   # commit range of update for restarted script
-
-# flags
-_reset = False    # reset example files
-_verbose = False  # verbose output
-_debug = False    # debug output
-_ci = False       # ci mode
-_colored = True   # colored output
+_contexts = []     # list of contexts
+_messages = []     # list of messages added
+_tasks = []        # list of tasks performed
+_actions = []      # list of valid action names, autofilled
+_commands = []     # list of valid command names, autofilled
 
 
 # --- tools -------------------------------------------------------------------
@@ -306,7 +296,7 @@ def merge_dicts(orig_dict, new_dict):
 
 def color(text, status):
     """Colored output wrapper for stdout text."""
-    if not _colored:
+    if _colorless:
         return text
     text = str(text)
     if isinstance(status, str):
@@ -616,6 +606,7 @@ def action(func):
     # add action name to list of actions
     _actions.append(current_action)
 
+    @wraps(func)
     def wrapper(task, context={}, *args, **kwargs):
         # get last context, if empty
         if not context:
@@ -1422,6 +1413,7 @@ def command(func):
     # append command name to list of commands
     _commands.append(current_command)
 
+    @wraps(func)
     def wrapper(context={}, *args, **kwargs):
         # set new command context
         if not context:
@@ -1444,7 +1436,7 @@ def command(func):
 
 @command
 def update(context={}):
-    """Updates itself and the repositories, creates folders, copies files."""
+    """Updates files, folders, symlinks and repos."""
     if not _restarted:
         return
     for task in context['tasks']:
@@ -1468,7 +1460,7 @@ def diff(context={}):
 
 @command
 def status(context={}):
-    """Prints the status of the project repositories."""
+    """Prints the git status of the project repositories."""
     # filter tasks
     tasks = []
     for task in context['tasks']:
@@ -1484,7 +1476,7 @@ def status(context={}):
 
 @command
 def pull(context={}):
-    """Pulls only the project repositories."""
+    """Pulls the project repositories."""
     # filter tasks
     tasks = []
     for task in context['tasks']:
@@ -1597,63 +1589,90 @@ colors = {
 
 if __name__ == "__main__":
 
-    # set flags
-    if "--reset" in sys.argv:
-        _reset = True
-    if "--verbose" in sys.argv:
-        _verbose = True
-    if "--debug" in sys.argv:
-        _debug = True
-        _verbose = True
-    if "--ci" in sys.argv:
-        _ci = True
-        _colored = False
-        _reset = True
-        _verbose = True
-        _debug = True
+    # command
+    cmd = argparse.ArgumentParser(
+        usage="./scripts/project",
+        description="Performs development and maintainance tasks "
+                    "for the project.")
+    subcmds = cmd.add_subparsers(
+        title='subcommands', dest="command", metavar="")
 
-    # process flags
+    # global flags
+    subcmd = argparse.ArgumentParser(add_help=False)
+    subcmd.add_argument(
+        '-v', '--verbose', action='store_true',
+        help="verbose output")
+    subcmd.add_argument(
+        '-d', '--debug', action='store_true',
+        help="debug output, implies verbose")
+    subcmd.add_argument(
+        '--no-color', action='store_true',
+        help="colorless output")
+    subcmd.add_argument(
+        '--restarted', metavar="COMMITRANGE",
+        help=argparse.SUPPRESS)
+
+    # update command
+    subcmd_update = subcmds.add_parser(
+        'update', parents=[subcmd], description=update.__doc__.strip('.'),
+        help=update.__doc__.strip('.'))
+    subcmd_update.add_argument(
+        '--reset', action='store_true',
+        help="overwrites the configuration files with example files")
+    subcmd_update.add_argument(
+        '--ci', action='store_true',
+        help="continues integration mode: reset, debug, colorless")
+
+    # diff command
+    subcmd_diff = subcmds.add_parser(
+        'diff', parents=[subcmd], description=diff.__doc__.strip('.'),
+        help=diff.__doc__.strip('.'))
+
+    # status command
+    subcmd_status = subcmds.add_parser(
+        'status', parents=[subcmd], description=status.__doc__.strip('.'),
+        help=status.__doc__.strip('.'))
+
+    # pull command
+    subcmd_pull = subcmds.add_parser(
+        'pull', parents=[subcmd], description=pull.__doc__.strip('.'),
+        help=pull.__doc__.strip('.'))
+
+    # commit command
+    subcmd_commit = subcmds.add_parser(
+        'commit', parents=[subcmd], description=commit.__doc__.strip('.'),
+        help=commit.__doc__.strip('.'))
+    subcmd_commit.add_argument(
+        'message', nargs='+', metavar="MESSAGE",
+        help="Commit message")
+
+    # push command
+    subcmd_push = subcmds.add_parser(
+       'push', parents=[subcmd], description=push.__doc__.strip('.'),
+       help=push.__doc__.strip('.'))
+
+    # parse
+    args = vars(cmd.parse_args())
+    _command = args.get('command') or 'status'
+    _commit_msg = " ".join(args.get('message', []))
+    _restarted = args.get('restarted', "")
+    _reset = args.get('reset', False)
+    _verbose = args.get('verbose', False)
+    _debug = args.get('debug', False)
+    _ci = args.get('ci', False)
+    _colorless = args.get('no_color')
+
+    # set implications
+    if _ci:
+        _colorless = True
+        _reset = True
+        _verbose = True
+        _debug = True
+    if _debug:
+        _verbose = True
+        levels['output'].append('debug')
     if _verbose:
         levels['output'].append('debug')
-    if _debug:
-        levels['output'].append('debug')
-
-    # choose command
-    _command = 'update'
-    for i, param in enumerate(sys.argv):
-        if param == "--help":
-            _command = 'help'
-            break
-        if param == "--diff":
-            _command = 'diff'
-            break
-        if param == "--status":
-            _command = 'status'
-            break
-        if param == "--pull":
-            _command = 'pull'
-            break
-        if param == "--push":
-            _command = 'push'
-            break
-        if param == "--commit":
-            _command = 'commit'
-            if len(sys.argv) < i + 2:
-                sys.exit("No commit message")
-            _commit_msg = sys.argv[i + 1]
-        if param == "--restarted":
-            if len(sys.argv) < i + 2:
-                sys.exit("No restarted commit range")
-            _restarted = sys.argv[i + 1]
-
-    # print help
-    if _command == 'help':
-        print(__doc__.strip())
-        sys.exit(2)
-
-    # sanity check
-    if _command not in _commands:
-        sys.exit("command `%s` not found" % _command)
 
     # set workdir
     os.chdir(root)
