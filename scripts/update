@@ -2,7 +2,6 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 """
-
 Usage: ./scripts/update [--reset] [--diff] [--help]
 
   This script updates the project:
@@ -371,9 +370,10 @@ def message(msg, offset=1, pad=10, data=True, add=True, output=True):
         data = ""
         for line in lines:
             data += "\n" + "  " * offset + " ".ljust(pad) + line
-        data += "\n"
         text += color(data, _color + "_data")
     text += "\n"
+    if not _verbose:
+        text += "\n"
     # process
     if add:
         _messages.append(msg)
@@ -444,7 +444,9 @@ def header(output=True):
 
 def title(string, _color="subtitle", output=True):
     """Prints a formatted title."""
-    text = "\n" + color("> ", 'title') + color(string, _color) + "\n\n"
+    text = color("> ", 'title') + color(string, _color) + "\n"
+    if not _verbose:
+        text += "\n"
     # process
     if output:
         print(text, end="")
@@ -468,16 +470,21 @@ def footer(string="Success.", _color="success", output=True, summary=True):
         print(color("   All fine.", 'dim'))
     if had_output < 50:
         summary = False
-    # output
-    text = ""
     # separator
-    text += "\n" + line(output=False) + "\n"
+    text = ""
+    if _verbose:
+        text += "\n"
+    text += line(output=False) + "\n\n"
     # summary
     if summary and has_summary:
-        text += title("Summary", _color='title', output=False) + "\n"
+        text += title("Summary", _color='title', output=False)
+        if _verbose:
+            text += "\n"
         for level in levels['summary']:
             for msg in [m for m in _messages if m['level'] == level]:
                 text += message(msg, data=False, add=False, output=False)
+        if _verbose:
+            text += "\n"
     # title
     text += title(string, _color=_color, output=False)
     # extended mode
@@ -501,9 +508,10 @@ def debug(obj=None, title=""):
     # object
     if not isinstance(obj, str):
         obj = pprint.pformat(obj)
+    if not obj:
+        obj = color("output was empty", 'italic')
     for line in obj.split("\n"):
         print(" " * pad + color(line, 'output'))
-    print()
 
 
 def error(msg):
@@ -533,7 +541,7 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
         task = _tasks[-1]
         action = task['action'].replace("_", " ") or "command"
         title = task['name'] or " ".join(cmd)
-    if log:
+    if log or _debug:
         message({'action': action, 'title': title}, add=False)
     output = ""
     error_msg = {}
@@ -593,7 +601,7 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
             msg[key] = value(output)
 
     # remove line, add and print message
-    if 'debug' in levels['output']:
+    if 'debug' in levels['output'] and not _debug:
         sys.stdout.write("\033[F")
     message(msg)
 
