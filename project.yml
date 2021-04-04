@@ -24,18 +24,59 @@ production:
     update: &update
       # update main repository
       - name: ${PROJECT}_docker
-        actions: ['repo_update', 'script_restart']
+        actions: ['repo_update', 'script_restart', 'changes_notify']
         target: '.'
         source: 'git@github.com:C3S/collecting_society_docker.git'
         version: '${BRANCH}'
         upstream: false
-      # create basic folder structure
-      - name: create basic folder structure
-        actions: ['folder_create']
+        changes:
+          - name: 'update script was updated'
+            files: 'scripts/update'
+            level: 'info'
+          - name: 'Dockerfile was updated'
+            files: 'services/build/Dockerfile'
+            level: 'warning'
+            data: [
+              'NOTE: you should update the database:',
+              '$ docker-compose run --rm erpserver db-update'
+            ]
+          - name: 'an example files was updated'
+            files: '.example'
+            level: 'warning'
+            data: [
+              'NOTE: you should diff the example files:',
+              '$ ./scripts/update --diff'
+            ]
+      # update project repos
+      - name: update project repos
+        actions: ['repo_update', 'changes_notify']
+        targetpath: 'volumes/shared/src'
+        upstream: false
+        version: '${BRANCH}'
         batch:
-          - name: 'code'
-          - name: 'volumes/shared/tmp'
-          - name: 'volumes/shared/tmp/logs'
+          - name: archiving
+            source: 'git@github.com:C3S/archiving.git'
+          - name: portal
+            source: 'git@github.com:C3S/portal.git'
+          - name: collecting_society
+            source: 'git@github.com:C3S/collecting_society.git'
+            changes:
+              - name: 'database structure has changed'
+                files: ['.py', '.xml']
+                level: 'warning'
+                data: [
+                  'NOTE: you should update the database:',
+                  '$ docker-compose run --rm erpserver db-update'
+                ]
+          - name: portal_web
+            source: 'git@github.com:C3S/portal_web.git'
+          - name: collecting_society_web
+            source: 'git@github.com:C3S/collecting_society_web.git'
+          - name: collecting_society_worker
+            source: 'git@github.com:C3S/collecting_society_worker.git'
+          - name: echoprint-server
+            source: 'git@github.com:C3S/echoprint-server.git'
+            version: 'master'
       # update upstream repos
       - name: update upstream repos
         actions: ['repo_update']
@@ -83,28 +124,13 @@ production:
           - name: echoprint-codegen
             source: 'https://github.com/spotify/echoprint-codegen.git'
             version: 'master'
-      # update project repos
-      - name: update project repos
-        actions: ['repo_update']
-        targetpath: 'volumes/shared/src'
-        upstream: false
-        version: '${BRANCH}'
+      # create basic folder structure
+      - name: create basic folder structure
+        actions: ['folder_create']
         batch:
-          - name: archiving
-            source: 'git@github.com:C3S/archiving.git'
-          - name: portal
-            source: 'git@github.com:C3S/portal.git'
-          - name: collecting_society
-            source: 'git@github.com:C3S/collecting_society.git'
-          - name: portal_web
-            source: 'git@github.com:C3S/portal_web.git'
-          - name: collecting_society_web
-            source: 'git@github.com:C3S/collecting_society_web.git'
-          - name: collecting_society_worker
-            source: 'git@github.com:C3S/collecting_society_worker.git'
-          - name: echoprint-server
-            source: 'git@github.com:C3S/echoprint-server.git'
-            version: 'master'
+          - name: 'code'
+          - name: 'volumes/shared/tmp'
+          - name: 'volumes/shared/tmp/logs'
       # copy and diff example files
       - name: copy and diff example files
         actions: ['file_copy', 'file_diff']
@@ -205,7 +231,7 @@ development:
       self: true
   tasks:
     update:
-      # copy files for debugging
+      # copy and diff example files
       - name: copy and diff example files
         batch:
           - name: '.devcontainer.json'

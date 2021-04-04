@@ -31,30 +31,28 @@ from collections import OrderedDict
 from copy import deepcopy
 
 # regex
-envre = re.compile(r'''^([^\s=]+)=(?:[\s"']*)(.+?)(?:[\s"']*)$''')
-envsubre = re.compile(r'\$\{([A-Z-_]*)\}')
+env_re = re.compile(r'''^([^\s=]+)=(?:[\s"']*)(.+?)(?:[\s"']*)$''')
+envsub_re = re.compile(r'\$\{([A-Z-_]*)\}')
+commit_re = re.compile(r'\s*(\w*\.\.\w*)\s')
 
 # lists
-_contexts = []       # list of contexts
-_messages = []       # list of messages added
-_tasks = []          # list of tasks performed
-_actions = []        # list of valid action names, autofilled
-_commands = []       # list of valid command names, autofilled
+_contexts = []    # list of contexts
+_messages = []    # list of messages added
+_tasks = []       # list of tasks performed
+_actions = []     # list of valid action names, autofilled
+_commands = []    # list of valid command names, autofilled
 
 # params
-_command = None      # the initially invoked command
-_commit_msg = ""     # commit message
+_command = None   # the initially invoked command
+_commit_msg = ""  # commit message
+_restarted = ""   # commit range of update for restarted script
 
 # flags
-_reset = False       # reset example files
-_verbose = False     # verbose output
-_debug = False       # debug output
-_ci = False          # ci mode
-_colored = True      # colored output
-_self_updated = False
-_script_updated = False
-_dockerfile_updated = False
-_examplefiles_updated = False
+_reset = False    # reset example files
+_verbose = False  # verbose output
+_debug = False    # debug output
+_ci = False       # ci mode
+_colored = True   # colored output
 
 
 # --- tools -------------------------------------------------------------------
@@ -86,13 +84,13 @@ def replace_env_vars(dictionary, env):
         elif isinstance(val, list):
             for i, item in enumerate(val):
                 if isinstance(item, str):
-                    for (match) in envsubre.findall(item):
+                    for (match) in envsub_re.findall(item):
                         dictionary[key][i] = dictionary[key][i].replace(
                             '${%s}' % match, env[match])
                     continue
                 replace_env_vars(item, env)
         elif isinstance(val, str):
-            for (match) in envsubre.findall(val):
+            for (match) in envsub_re.findall(val):
                 dictionary[key] = dictionary[key].replace(
                     '${%s}' % match, env[match])
     return dictionary
@@ -107,7 +105,7 @@ def get_dot_env(path="."):
     env = {}
     with open(path) as _file:
         for line in _file:
-            match = envre.match(line)
+            match = env_re.match(line)
             if match is not None:
                 env[match.group(1)] = match.group(2)
     return replace_env_vars(env, env)
@@ -805,13 +803,6 @@ def file_diff(task, context={}):
             data += line
         data = data.rstrip() + colors['clear']
 
-        # example files were updated
-        if _examplefiles_updated:
-            message({'level': "error",
-                     'description': "differences found (examplefiles changed)",
-                     'data': data})
-            return
-
         # differences found
         message({'level': "warning", 'description': "differences found",
                  'data': data})
@@ -1267,16 +1258,56 @@ def git_push(task, context={}):
 @action
 def script_restart(task, context={}):
     """Restarts the update script after updated of itself was checkedout."""
-    # target = task['name']
-    # updated = ['self']
-    # if pull_result:
-    #     if 'scripts/update |' in pull_result:
-    #         updated.append('script')
-    #     if 'services/build/Dockerfile |' in pull_result:
-    #         updated.append('dockerfile')
-    #     if '.example |' in pull_result:
-    #         updated.append('examplefiles')
-    pass
+    version = task['version']
+
+    # script was restarted
+    if _restarted:
+        diff = execute(('git', 'diff', '--name-only', _restarted), log=False)
+        task['result']['git_pull'] = diff
+        return
+
+    # find out commit ids
+    for line in task['result']['git_pull']:
+        if "%s -> origin/%s" % (version, version) in line:
+            match = commit_re.match(line)
+            commit_range = match.group(1)
+
+    # restart script
+    cmd = (os.path.abspath(__file__), '--restarted', commit_range)
+    exitcode = subprocess.call(cmd)
+    sys.exit(exitcode)
+
+
+@action
+def changes_notify(task, context={}):
+    """Adds messages dependent on file changes."""
+    changes = task.get('changes')
+    diff = task['result'].get('git_pull')
+
+    # skip silently, if no messages should be added
+    if not changes:
+        return
+
+    # skip silently, if no changes were pulled
+    if not diff:
+        return
+
+    # add messages
+    for change in changes:
+        files = change['files']
+        if isinstance(files, str):
+            files = [files]
+        # search pull output for files
+        changed = False
+        for line in diff:
+            for pattern in files:
+                if pattern + " | " in line:
+                    changed = True
+                    break
+        # files changed
+        if changed:
+            message({'level': change.get('level', "info"),
+                     'description': task['name'], 'data': task.get('data')})
 
 
 # --- tasks -------------------------------------------------------------------
@@ -1539,17 +1570,6 @@ if __name__ == "__main__":
         _reset = True
         _verbose = True
         _debug = True
-    for param in sys.argv:
-        if param.startswith('--updated='):
-            updated = param[11:].split(',')
-            if 'self' in updated:
-                _self_updated = True
-            if 'script' in updated:
-                _script_updated = True
-            if 'dockerfile' in updated:
-                _dockerfile_updated = True
-            if 'examplefiles' in updated:
-                _examplefiles_updated = True
 
     # process flags
     if _verbose:
@@ -1580,6 +1600,10 @@ if __name__ == "__main__":
             if len(sys.argv) < i + 2:
                 sys.exit("No commit message")
             _commit_msg = sys.argv[i + 1]
+        if param == "--restarted":
+            if len(sys.argv) < i + 2:
+                sys.exit("No restarted commit range")
+            _restarted = sys.argv[i + 1]
 
     # print help
     if _command == 'help':
