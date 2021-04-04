@@ -2,7 +2,6 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 """
-
 Usage: ./scripts/update [--reset] [--diff] [--help]
 
   This script updates the project:
@@ -1310,8 +1309,11 @@ def changes_notify(task, context={}):
         # search pull output for files
         changed = False
         for line in diff:
+            if "|" not in line:
+                continue
+            filename = line.split("|")[0].strip()
             for pattern in files:
-                if pattern + " | " in line:
+                if pattern in filename:
                     changed = True
                     break
         # files changed
