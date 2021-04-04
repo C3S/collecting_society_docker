@@ -112,11 +112,9 @@ def get_dot_env(path="."):
 def get_project_yaml(path=".", env={}):
     """Reads the project yaml file and parses it into a dictionary."""
     with open(os.path.join(path, "project.yml"), 'r') as _file:
-
         # load yaml file
         project = yaml.safe_load(_file)
         replace_env_vars(project, env)
-
         # inherit configurations
         project['staging'] = merge_dicts(
             deepcopy(project['production']), project['staging'])
@@ -124,18 +122,16 @@ def get_project_yaml(path=".", env={}):
             deepcopy(project['staging']), project['testing'])
         project['development'] = merge_dicts(
             deepcopy(project['testing']), project['development'])
-
-        # preprocess tasks
+        # environment validation
         for _e, environment in project.items():
             if not environment:
                 continue
-
             # action groups
             groups = environment.get('actions', {})
             for _g, group in groups.items():
                 if not isinstance(group, list):
                     continue
-                # valid actions
+                # valid actions in action groups
                 for action in group:
                     assert action in _actions, (
                         "action `%s` in group `%s` not found.\n\n"
@@ -143,61 +139,10 @@ def get_project_yaml(path=".", env={}):
                         "group: %s" % (action, _g, _e, action, group)
                     )
                 continue
-
-            # command tasks
-            for _c, project_tasks in environment.get('tasks', {}).items():
-                if not project_tasks:
-                    continue
-
-                # render batch tasks to tasks
-                batch_groups = {}
-                batch_tasks = []
-                for project_task in project_tasks:
-                    batch = project_task.get('batch')
-                    if not batch:
-                        batch_tasks.append({
-                            **project_task,
-                            **{'batch_group': False}
-                        })
-                    else:
-                        batch_group = project_task['name']
-                        assert batch_group not in batch_groups
-                        batch_groups[batch_group] = project_task
-                        for batch_task in project_task['batch']:
-                            batch_tasks.append({
-                                **project_task,
-                                **{'name': False},  # ensure name check works
-                                **batch_task,
-                                **{'batch_group': batch_group}
-                            })
-
-                # substitue task groups
-                for batch_task in batch_tasks:
-                    actions = []
-                    for action in batch_task.get('actions'):
-                        is_group = isinstance(groups.get(action), list)
-                        if is_group and action in groups:
-                            actions += groups[action]
-                            continue
-                        actions.append(action)
-                    batch_task['actions'] = actions
-
-                # render actions to tasks
-                action_groups = {}
-                tasks = []
-                for task in batch_tasks:
-                    action_group = "%s -> %s" % (
-                        task.get('batch_group'), task.get('name'))
-                    assert action_group not in action_groups
-                    action_groups[action_group] = task
-                    for action in task.get('actions', {}):
-                        tasks.append({
-                            **task,
-                            **{'action': action, 'action_group': action_group}
-                        })
-
-                # task validation
-                for task in tasks:
+            # tasks
+            tasks = environment.get('tasks', {})
+            for _c, tasks in environment.get('tasks', {}).items():
+                for task in tasks or []:
                     # ensure task name
                     assert task.get('name'), (
                         "task has no name.\n\n"
@@ -205,23 +150,52 @@ def get_project_yaml(path=".", env={}):
                         "task: %s" % (_e, _c, task)
                     )
                     # ensure task action
-                    assert task.get('action'), (
+                    assert task.get('actions'), (
                         "task has no action.\n\n"
                         "yaml: %s/tasks/%s\n"
                         "task: %s" % (_e, _c, task)
                     )
+                    # ensure task actions are a list
+                    actions = task.get('actions', [])
+                    if isinstance(actions, str):
+                        task['actions'] = [actions]
+                    # substitue task groups
+                    actions = []
+                    for action in task['actions']:
+                        islist = isinstance(groups.get(action), list)
+                        if action in groups and islist:
+                            actions += groups[action]
+                            continue
+                        actions.append(action)
+                    task['actions'] = actions
                     # ensure task actions are valid
-                    assert task['action'] in _actions, (
-                        "action `%s` of task with name `%s` not found.\n\n"
-                        "yaml: %s/tasks/%s\n"
-                        "task: %s" % (action, task['name'], _e, _c, task)
-                    )
-
-                # save environment
-                environment['batch_groups'] = batch_groups
-                environment['action_groups'] = action_groups
-                environment['tasks'][_c] = tasks
-
+                    for action in task.get('actions', []):
+                        assert action in _actions, (
+                            "action `%s` of task with name `%s` not found.\n\n"
+                            "yaml: %s/tasks/%s\n"
+                            "task: %s" % (action, task['name'], _e, _c, task)
+                        )
+                    # batch tasks
+                    if not task.get('batch'):
+                        continue
+                    for batch_task in task['batch']:
+                        # ensure task name
+                        assert batch_task.get('name'), (
+                            "task has no name.\n\n"
+                            "yaml: %s/tasks/%s\n"
+                            "task: %s" % (_e, _c, batch_task)
+                        )
+                        # ensure task actions are valid
+                        for action in batch_task.get('actions', []):
+                            assert action in _actions, (
+                                "action `%s` of batch task with name `%s` "
+                                "in task with name %s not found.\n\n"
+                                "yaml: %s/tasks/%s\n"
+                                "task: %s\n"
+                                "batch_task: %s" % (
+                                    action, batch_task['name'], task['name'],
+                                    _e, _c, task, batch_task)
+                            )
     return project
 
 
@@ -576,24 +550,19 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
         if abort:
             error(error_msg)
 
-    # stop processing
-    if task:
-        # stop batch groups
-        if stop_batch:
-            stopped = output
-            if callable(stop_batch):
-                stopped = stop_batch(output)
-            batch_groups = context['batch_groups']
-            batch_group = context['batch_group']
-            batch_groups[batch_group]['stopped'] = stopped
-        # stop action groups
-        if stop_actions:
-            stopped = output
-            if callable(stop_actions):
-                stopped = stop_actions(output)
-            action_groups = context['action_groups']
-            action_group = context['action_group']
-            action_groups[action_group]['stopped'] = stopped
+    # stop batch groups
+    if task and stop_batch:
+        stopped = output
+        if callable(stop_batch):
+            stopped = stop_batch(output)
+        context['batch_group']['stopped'] = stopped
+
+    # stop action groups
+    if task and stop_actions:
+        stopped = output
+        if callable(stop_actions):
+            stopped = stop_actions(output)
+        context['action_group']['stopped'] = stopped
 
     # return if logging is disabled for this command
     if not log:
@@ -639,20 +608,11 @@ def action(func):
         # get last context, if empty
         if not context:
             context = get_context()
-        # stop to process actions of stopped tasks batches
-        batch_groups = context['batch_groups']
-        batch_group = context['batch_group']
-        if batch_group:
-            batch_stopped = batch_groups[batch_group].get('stopped')
-            if batch_stopped:
-                return
-        # stop to process actions of stopped action groups
-        action_groups = context['action_groups']
-        action_group = context['action_group']
-        if action_group:
-            actions_stopped = action_groups[action_group].get('stopped')
-            if actions_stopped:
-                return
+        # stop to process stopped action groups or batch groups
+        if context['batch_group'].get("stopped"):
+            return
+        if context['action_group'].get("stopped"):
+            return
         # add action config
         actions_config = project[environment]['actions']
         context['actions'] = actions_config.get(current_action)
@@ -1283,20 +1243,16 @@ def set_context(override={}):
         'commands': current_env['commands'].get(current_cmd),
         # current command
         'command': current_cmd,
-        # batch groups
-        'batch_groups': current_env['batch_groups'],
-        # current batch group
-        'batch_group': None,
-        # action groups
-        'action_groups': current_env['action_groups'],
-        # current action group
-        'action_group': None,
         # command tasks
         'tasks': current_env['tasks'].get(current_cmd),
+        # action config
+        'actions': {},
         # current task
         'task': None,
-        # action config
-        'actions': current_env['actions'],
+        # current batch group
+        'batch_group': {},
+        # current action group
+        'action_group': {},
         # current action
         'action': None,
     }
@@ -1310,20 +1266,30 @@ def set_context(override={}):
 def process(context):
     """Main loop to process tasks."""
     # no tasks
-    if not context['tasks']:
+    if not context.get('tasks'):
         error({'title': "No tasks"})
     # process tasks
     for task in context['tasks']:
-        action = task['action']
+        # batch tasks
+        if task.get('batch'):
+            batch_tasks = []
+            for batch_task in task['batch']:
+                batch_tasks.append({**task, **batch_task, **{'batch': False}})
+            batch = set_context({
+                'command': context['command'],
+                'batch_group': task, 'tasks': batch_tasks})
+            process(batch)
+            continue
+        # single tasks
+        context['action_group'] = task
         context['task'] = task
-        context['action'] = action
-        context['action_group'] = task['action_group']
-        context['batch_group'] = task['batch_group']
-        _tasks.append(task)
-        if action not in _actions:
-            error({'description': "action not found",
-                   'data': task})
-        getattr(sys.modules[__name__], action)(task, context)
+        for action in task['actions']:
+            if action not in _actions:
+                error({'description': "action not found", 'data': task})
+            context['action'] = action
+            _tasks.append({**task, **{'action': action}})
+            if action in _actions:
+                getattr(sys.modules[__name__], action)(task, context)
     _contexts.pop()
 
 
@@ -1368,7 +1334,7 @@ def diff():
     context = get_context()
     tasks = []
     for task in context['tasks']:
-        if task['action'] != 'diff_file':
+        if 'diff_file' not in task['actions']:
             continue
         tasks.append(task)
     context['tasks'] = tasks
@@ -1381,7 +1347,7 @@ def status():
     context = get_context()
     tasks = []
     for task in context['tasks']:
-        if task['action'] != 'git_status':
+        if 'git_status' not in task['actions']:
             continue
         if 'upstream' not in task or task['upstream']:
             continue
@@ -1397,7 +1363,7 @@ def pull():
     context = get_context()
     tasks = []
     for task in context['tasks']:
-        if task['action'] != 'git_pull':
+        if 'git_pull' not in task['actions']:
             continue
         if 'upstream' not in task or task['upstream']:
             continue
@@ -1412,11 +1378,11 @@ def commit():
     context = get_context()
     tasks = []
     for task in context['tasks']:
-        if task['action'] != 'git_pull':
+        if 'git_pull' not in task['actions']:
             continue
         if 'upstream' not in task or task['upstream']:
             continue
-        task['action'] = 'git_commit'
+        task['actions'] = ['git_commit']
         tasks.append(task)
     context['tasks'] = tasks
 
@@ -1428,13 +1394,11 @@ def push():
     context = get_context()
     tasks = []
     for task in context['tasks']:
-        if task['action'] != 'git_pull':
+        if 'git_pull' not in task['actions']:
             continue
         if 'upstream' not in task or task['upstream']:
             continue
-        tasks.append({**task, **{'action': 'git_fetch'}})
-        tasks.append({**task, **{'action': 'git_pull'}})
-        tasks.append({**task, **{'action': 'git_push'}})
+        tasks['actions'] = ['git_fetch', 'git_pull', 'git_push']
     context['tasks'] = tasks
 
 
