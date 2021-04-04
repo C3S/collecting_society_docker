@@ -624,7 +624,7 @@ def action(func):
 
 
 @action
-def link_path(task, context={}):
+def path_link(task, context={}):
     """Symlinks a file or folder."""
     source = task['source']
     target = task.get('target') or task['name']
@@ -663,7 +663,7 @@ def link_path(task, context={}):
 
 
 @action
-def create_file(task, context={}):
+def file_create(task, context={}):
     """Creates a file."""
     target = task.get('target') or task['name']
     targetpath = task.get('targetpath')
@@ -687,7 +687,7 @@ def create_file(task, context={}):
 
 
 @action
-def copy_file(task, context={}):
+def file_copy(task, context={}):
     """Copies a file."""
     target = task.get('target') or task['name']
     targetpath = task.get('targetpath')
@@ -721,7 +721,7 @@ def copy_file(task, context={}):
 
 
 @action
-def diff_file(task, context={}):
+def file_diff(task, context={}):
     """Diffs example files, prints output and returns different filenames."""
     target = task.get('target') or task['name']
     targetpath = task.get('targetpath')
@@ -756,33 +756,36 @@ def diff_file(task, context={}):
         lines = [line] + [d for d in diff]
 
         # filter diff
-        ignorere = context['actions']['ignore']
-        if isinstance(ignorere, list):
-            ignorere = re.compile(r'(%s)' % "|".join(ignorere))
-            context['actions']['ignore'] = ignorere
         ignored = False
-        filtered = []
-        for line in lines[2:]:
-            if not line[0] in ["+", "-"]:
-                continue
-            match = ignorere.match(line[1:])
-            if match is not None:
-                ignored = True
-                continue
-            filtered.append(line)
+        ignore = task.get('ignore')
+        if ignore:
+            if isinstance(ignore, list):
+                ignore = context['actions'].get('ignore', []) + task['ignore']
+                ignore = re.compile(r'(%s)' % "|".join(ignore))
+                task['ignore'] = ignore
+            filtered = []
+            for line in lines[2:]:
+                if not line[0] in ["+", "-"]:
+                    continue
+                match = ignore.match(line[1:])
+                if match is not None:
+                    ignored = True
+                    continue
+                filtered.append(line)
+            lines = lines[0:3] + filtered
 
-        # files are identical
-        if not filtered:
-            message({'level': 'info',
-                     'description': 'file contain only ignored differences'})
-            return
+            # files contains only ignored differences
+            if not filtered:
+                message({'level': 'info',
+                         'description': 'diff contains only ignored lines'})
+                return
 
-        # files have differences
+        # color diff
         data = colors['clear']
         if ignored:
             data += color("--8<-- (ignored lines stripped) --8<--", "dim")
             data += colors['clear'] + "\n"
-        for line in lines[0:3] + filtered:
+        for line in lines:
             if line.startswith('-'):
                 data += colors['remove']
             if line.startswith('+'):
@@ -791,17 +794,21 @@ def diff_file(task, context={}):
                 data += colors['hunk']
             data += line
         data = data.rstrip() + colors['clear']
-        level = "warning"
-        description = "differences found"
+
+        # example files were updated
         if _examplefiles_updated:
-            level = "error"
-            description += " (examplefiles changed!)"
-        message({'level': level, 'description': description,
+            message({'level': "error",
+                     'description': "differences found (examplefiles changed)",
+                     'data': data})
+            return
+
+        # differences found
+        message({'level': "warning", 'description': "differences found",
                  'data': data})
 
 
 @action
-def create_folder(task, context={}):
+def folder_create(task, context={}):
     """Creates a folder."""
     target = task.get('target') or task['name']
     targetpath = task.get('targetpath')
@@ -820,7 +827,7 @@ def create_folder(task, context={}):
 
 
 @action
-def copy_folder(task, context={}):
+def folder_copy(task, context={}):
     """Copies a folder."""
     source = task['source']
     target = task.get('target') or task['name']
@@ -856,7 +863,7 @@ def git_clone(task, context={}):
 
     # create containing path for repo
     if context['actions']['create_folder']:
-        create_folder({'name': os.path.dirname(target)})
+        folder_create({'name': os.path.dirname(target)})
 
     # choose ssh or https
     if "@" in source and not (username and useremail):
@@ -1209,7 +1216,7 @@ def git_push(task, context={}):
 
 
 @action
-def restart_script(task, context={}):
+def script_restart(task, context={}):
     """Restarts the update script after updated of itself was checkedout."""
     # target = task['name']
     # updated = ['self']
@@ -1334,7 +1341,7 @@ def diff(context={}):
     # filter tasks
     tasks = []
     for task in context['tasks']:
-        if 'diff_file' not in task['actions']:
+        if 'file_diff' not in task['actions']:
             continue
         tasks.append(task)
     context['tasks'] = tasks
