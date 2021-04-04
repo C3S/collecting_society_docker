@@ -2,7 +2,6 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 """
-
 Usage: ./scripts/update [--reset] [--diff] [--help]
 
   This script updates the project:
@@ -1289,7 +1288,6 @@ def changes_notify(task, context={}):
     """Adds messages dependent on file changes."""
     changes = task.get('changes')
     diff = task['result'].get('git_pull')
-    debug(changes)
     # script was restarted
     if _restarted:
         diff = execute(('git', 'diff', '--stat', _restarted), log=False)
@@ -1303,25 +1301,20 @@ def changes_notify(task, context={}):
         return
 
     # add messages
-    debug("msg")
     for change in changes:
         files = change['files']
         if isinstance(files, str):
             files = [files]
-        debug(files)
         # search pull output for files
         changed = False
-        for line in diff:
-            debug(line)
+        for line in diff.split("\n"):
             if "|" not in line:
                 continue
             filename = line.split("|")[0].strip()
-            debug(filename)
             for pattern in files:
                 if pattern in filename:
                     changed = True
                     break
-        debug(changed)
         # files changed
         if changed:
             message({'level': change.get('level', "info"),
