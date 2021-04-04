@@ -478,7 +478,7 @@ def footer(string="Success.", _color="success", output=True, summary=True):
     text += title(string, _color=_color, output=False)
     # extended mode
     extended = context['commands'].get('extended')
-    if not extended or _restarted:
+    if not extended:
         text = ""
     # process
     if output:
@@ -1264,12 +1264,6 @@ def script_restart(task, context={}):
     pull = task['result']['git_pull']
     changed = 'changed' in pull
 
-    # script was restarted
-    if _restarted:
-        diff = execute(('git', 'diff', '--name-only', _restarted), log=False)
-        task['result']['git_pull'] = diff
-        return
-
     # skip silently for unchanged repo
     if not changed:
         return
@@ -1284,8 +1278,7 @@ def script_restart(task, context={}):
     cmd = [os.path.abspath(__file__), *sys.argv[1:],
            '--restarted', commit_range]
     message({'level': "info", 'description': "script will be restarted now",
-             'data': "REASON: the main repository was updated\n"
-                     "$ " + " ".join(cmd)})
+             'data': "REASON: the main repository was updated"})
     exitcode = subprocess.call(cmd)
     sys.exit(exitcode)
 
@@ -1295,6 +1288,10 @@ def changes_notify(task, context={}):
     """Adds messages dependent on file changes."""
     changes = task.get('changes')
     diff = task['result']['git_pull']
+
+    # script was restarted
+    if _restarted:
+        diff = execute(('git', 'diff', '--stat', _restarted), log=False)
 
     # skip silently, if no messages should be added
     if not changes:
@@ -1424,7 +1421,13 @@ def command(func):
 @command
 def update(context={}):
     """Updates itself and the repositories, creates folders, copies files."""
-    pass
+    if not _restarted:
+        return
+    for task in context['tasks']:
+        actions = task['actions']
+        if 'script_restart' in actions:
+            task['actions'] = actions[actions.index('script_restart'):]
+            print(task['actions'])
 
 
 @command
