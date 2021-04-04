@@ -32,7 +32,6 @@ production:
         changes:
           - name: 'update script was updated'
             files: 'scripts/update'
-            level: 'info'
           - name: 'Dockerfile was updated'
             files: 'services/build/Dockerfile'
             level: 'warning'
