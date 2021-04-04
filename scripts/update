@@ -1398,7 +1398,8 @@ def push():
             continue
         if 'upstream' not in task or task['upstream']:
             continue
-        tasks['actions'] = ['git_fetch', 'git_pull', 'git_push']
+        task['actions'] = ['git_fetch', 'git_pull', 'git_push']
+        tasks.append(task)
     context['tasks'] = tasks
 
 
