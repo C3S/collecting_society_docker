@@ -1176,8 +1176,7 @@ def git_pull(task, context={}):
 
     # pull performed
     output = execute(
-        ('git', 'pull', '-v', '--summary', '--progress'),
-        cwd=target, log=False)
+        ('git', 'pull', '-v', 'origin', version), cwd=target, log=False)
 
     # updated
     if "changed" in output:
@@ -1261,6 +1260,7 @@ def git_push(task, context={}):
 def script_restart(task, context={}):
     """Restarts the update script after updated of itself was checkedout."""
     version = task['version']
+    fetch = task['result']['git_fetch']
     pull = task['result']['git_pull']
     changed = 'changed' in pull
 
@@ -1275,7 +1275,7 @@ def script_restart(task, context={}):
         return
 
     # find out commit ids
-    for line in task['result']['git_pull'].split("\n"):
+    for line in fetch.split("\n"):
         if "%s -> origin/%s" % (version, version) in line:
             match = commit_re.match(line)
             commit_range = match.group(1)
