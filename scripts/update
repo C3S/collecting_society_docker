@@ -1531,6 +1531,15 @@ git_name = env.get('GIT_USER_NAME')
 git_email = env.get('GIT_USER_EMAIL')
 git_protocol = env.get('GIT_SSH') and 'ssh' or 'https'
 
+# sanity checks
+assert root
+assert repo
+assert env
+assert project
+assert environments
+assert environment
+assert branch
+
 # messages
 levels = {
     'output':  ['error', 'warning', 'info'],
