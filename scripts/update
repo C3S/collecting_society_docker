@@ -1273,7 +1273,7 @@ def script_restart(task, context={}):
         return
 
     # find out commit ids
-    for line in task['result']['git_pull']:
+    for line in task['result']['git_pull'].split("\n"):
         if "%s -> origin/%s" % (version, version) in line:
             match = commit_re.match(line)
             commit_range = match.group(1)
