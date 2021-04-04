@@ -1259,11 +1259,17 @@ def git_push(task, context={}):
 def script_restart(task, context={}):
     """Restarts the update script after updated of itself was checkedout."""
     version = task['version']
+    pull = task['result']['pull']
+    changed = 'changed' in pull
 
     # script was restarted
     if _restarted:
         diff = execute(('git', 'diff', '--name-only', _restarted), log=False)
         task['result']['git_pull'] = diff
+        return
+
+    # skip silently for unchanged repo
+    if not changed:
         return
 
     # find out commit ids
