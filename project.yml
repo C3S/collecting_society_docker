@@ -209,7 +209,7 @@ development:
       - name: copy and diff example files
         batch:
           - name: '.devcontainer.json'
-            ignore: []
+            ignore: ['^\s*"service":', '^\s*"dockerComposeFile":']
       # symlink project repos
       - name: symlink project repos
         actions: ['path_link']
