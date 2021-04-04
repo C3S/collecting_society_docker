@@ -1287,7 +1287,7 @@ def script_restart(task, context={}):
 def changes_notify(task, context={}):
     """Adds messages dependent on file changes."""
     changes = task.get('changes')
-    diff = task['result']['git_pull']
+    diff = task['result'].get('git_pull')
 
     # script was restarted
     if _restarted:
