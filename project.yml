@@ -29,6 +29,7 @@ production:
         source: 'git@github.com:C3S/collecting_society_docker.git'
         version: '${BRANCH}'
         upstream: false
+        # notifications added, when files were changed
         changes:
           - name: 'update script was updated'
             files: 'scripts/update'

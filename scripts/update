@@ -1591,7 +1591,7 @@ if __name__ == "__main__":
 
     # command
     cmd = argparse.ArgumentParser(
-        usage="./scripts/project",
+        usage="./scripts/update",
         description="Performs development and maintainance tasks "
                     "for the project.")
     subcmds = cmd.add_subparsers(
@@ -1653,7 +1653,7 @@ if __name__ == "__main__":
 
     # parse
     args = vars(cmd.parse_args())
-    _command = args.get('command') or 'status'
+    _command = args.get('command') or 'update'
     _commit_msg = " ".join(args.get('message', []))
     _restarted = args.get('restarted', "")
     _reset = args.get('reset', False)

@@ -177,6 +177,7 @@ Files
     │   └── tryton-files/                   # (erpserver/webgui/webapi) trytond file storage
     │
     ├── .env                                # main environment variable file
+    ├── project.yml                         # main project setup file
     │
     ├── docker-compose.yml                  # main docker compose file
     ├── docker-compose.override.yml         # symlink to environment docker override file
@@ -212,7 +213,12 @@ Development
 '''''''''''
 
 ======================================= ===============================================================
+``project.yaml``                        project setup configuration file for files/folders/repos
 ``scripts/update``                      `update script`_ for the files/folders/repos of the project
+``scripts/update status``               status of all project repositories
+``scripts/update pull``                 pull all project repositoriey
+``scripts/update commit MESSAGE``       add changed/untracked files, commit them in project repos
+``scripts/update push``                 push all commits in all project repositories
 ``scripts/cli``                         `CLI`_ script for common tasks (run within the container!)
 ``services/config/``                    `Application Configuration`_ files for the services
 ``code/``                               Symlinks to src repositories for the `application development`_
@@ -261,16 +267,20 @@ Requirements
 
 - Linux or OS X system
 - `git`__
+- `python`__ ``>=3.7``
+- `pyyaml`__
 - `docker`__ ``>= 17.12.0``
 - `docker-compose`__ ``>= 1.28.6``
 
 __ https://git-scm.com/downloads
+__ https://www.python.org/downloads
+__ https://pyyaml.org/wiki/PyYAMLDocumentation
 __ https://docs.docker.com/engine/installation
 __ https://docs.docker.com/compose/install
 
 Summary for Debian/Ubuntu::
 
-    $ sudo apt-get install docker docker-compose git
+    $ sudo apt-get install docker docker-compose git python python-yaml
     $ sudo usermod -aG docker $USER
     $ newgrp docker
 
@@ -476,11 +486,13 @@ Configuration
 
 The services are configured via:
 
-1. Application environment:
+1. Project configuration:
+   ``project.yml``
+2. Application environment:
    ``development``, ``staging``, ``production``, ``testing``
-2. Global and service specific envvar files for the containers:
+3. Global and service specific envvar files for the containers:
    ``.env``, ``service/<SERVICE>.env``
-3. Application specific configuration files:
+4. Application specific configuration files:
    ``*.conf``, ``*.ini``
 
 .. note:: Sane defaults for a development setup are given and should work as
@@ -490,6 +502,16 @@ The services are configured via:
     copied to the untracked ``FILE`` but not overwritten by the
     `update script`_. After an `project update`_, changes to the ``*.example``
     files, especially new entries, have to be applied manually.
+
+
+Project
+-------
+
+The project configuration file ``project.yml`` describes the tasks to perform
+to setup and update the `environments`_. Tasks may include the the creation
+or copying of files, folders and symlinks and the checkout specific branches
+or tags of upstream and project repositories.
+
 
 Environments
 ------------
@@ -540,6 +562,7 @@ Variable                           Values          Description
 ``ENVIRONMENT``                    | "development" environment, switch for config files
                                    | "staging"
                                    | "production"
+``BRANCH``                         string          branch of project repositories
 ``COMPOSE_DOCKER_CLI_BUILD``       0|1             use BuildKit for docker builds
 ``COMPOSE_PROJECT_NAME``           string          prefix for containers
 ``COMPOSE_IGNORE_ORPHANS``         0|1             suppress orphan container warnings
@@ -609,9 +632,9 @@ Applications
 The applications (trytond, proteus, pyramid) provide distinct files for all
 application `environments`_, which are included depending on the value of the
 `.env`_ variable ``ENVIRONMENT``. The applications might use envvars as well
-indicated by the syntax ``${VARIABLE}`` in the configuration file. The
-following sections provide a list of all envvar and configuration files for
-each application.
+indicated by the syntax ``${VARIABLE}`` in the configuration file. The same
+syntax can also be used in ``project.yml``. The following sections provide
+a list of all envvar and configuration files for each application.
 
 .. _Trytond Config:
 
@@ -706,10 +729,10 @@ Stop a certain service                      ``docker-compose stop SERVICE``
 Stop and remove containers/volumes/networks ``docker-compose down``
 =========================================== ====================================================
 
+.. seealso:: ``[SERVICE]``: `Table of Services`_, ``[CMD]``: `CLI`_.
+
 .. note:: Always prefer ``exec`` to ``run --rm``, if containers are already
     running.
-
-.. seealso:: ``SERVICE``: `Table of Services`_, ``CMD``: `CLI`_.
 
 .. _Project Update:
 
@@ -718,7 +741,7 @@ Update
 
 =================== =======================================================
 Update repositories ``./scripts/update``
-Diff example files  ``./scripts/update --diff``
+Diff example files  ``./scripts/update diff``
 Build images        ``docker-compose build``
 Update database     ``docker-compose [exec|run --rm] erpserver db-update``
 =================== =======================================================
@@ -727,8 +750,8 @@ Update database     ``docker-compose [exec|run --rm] erpserver db-update``
 
     $ ./scripts/update
 
-   .. warning:: If a repository is not clean, it won't be updated. Watch out
-       for red output lines.
+   The update script will print notifications and instruction, if further steps
+   are neccessary.
 
    .. note:: The `update script`_ will also try to update the collecting_society_docker
        repository and thus itself first, before updating the subordinate repositories.
@@ -736,7 +759,7 @@ Update database     ``docker-compose [exec|run --rm] erpserver db-update``
 2. If there were changes to the ``*.example`` files, diff the files and
    apply changes manually::
 
-    $ ./scripts/update --diff
+    $ ./scripts/update diff
 
 3. If there were changes in the ``Dockerfile``, rebuild all `docker images`_::
 
@@ -915,17 +938,104 @@ update
 ::
 
     $ ./scripts/update --help
-    Usage: ./scripts/update [--reset] [--diff] [--help]
+    usage: ./scripts/update
 
-      This script updates the project:
-        - Creation of files and folders
-        - Copy of FILE.example files to FILE
-        - Checkout/Pull of the source repositories (including this one)
-        - Checkout/Pull of the reference repositories
+    Performs development and maintainance tasks for the project.
 
-    Options:
-      --reset: overrides the configuration files with .example
-      --diff: just outputs the diff of .example files, performs no other updates
+    optional arguments:
+      -h, --help  show this help message and exit
+
+    subcommands:
+
+        update    Updates files, folders, symlinks and repos
+        diff      Prints the diffs of the example files
+        status    Prints the git status of the project repositories
+        pull      Pulls the project repositories
+        commit    Commits changes and untracked files to the project repositories
+        push      Pushes commits of the project repositories
+
+::
+
+    $ ./scripts/update update --help
+    usage: ./scripts/update update [-h] [-v] [-d] [--no-color] [--reset] [--ci]
+
+    Updates files, folders, symlinks and repos
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output
+      -d, --debug    debug output, implies verbose
+      --no-color     colorless output
+      --reset        overwrites the configuration files with example files
+      --ci           continues integration mode: reset, debug, colorless
+
+::
+
+    $ ./scripts/update diff --help
+    usage: ./scripts/update diff [-h] [-v] [-d] [--no-color]
+
+    Prints the diffs of the example files
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output
+      -d, --debug    debug output, implies verbose
+      --no-color     colorless output
+
+::
+
+    ./scripts/update status --help
+    usage: ./scripts/update status [-h] [-v] [-d] [--no-color]
+
+    Prints the git status of the project repositories
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output
+      -d, --debug    debug output, implies verbose
+      --no-color     colorless output
+
+::
+
+    ./scripts/update pull --help
+    usage: ./scripts/update pull [-h] [-v] [-d] [--no-color]
+
+    Pulls the project repositories
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output
+      -d, --debug    debug output, implies verbose
+      --no-color     colorless output
+
+::
+
+    ./scripts/update commit --help
+    usage: ./scripts/update commit [-h] [-v] [-d] [--no-color] MESSAGE [MESSAGE ...]
+
+    Commits changes and untracked files to the project repositories
+
+    positional arguments:
+      MESSAGE        Commit message
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output
+      -d, --debug    debug output, implies verbose
+      --no-color     colorless output
+
+::
+
+    ./scripts/update push --help
+    usage: ./scripts/update push [-h] [-v] [-d] [--no-color]
+
+    Pushes commits of the project repositories
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output
+      -d, --debug    debug output, implies verbose
+      --no-color     colorless output
 
 CLI
 ---
@@ -1345,6 +1455,98 @@ Other important entries are:
 Development
 ===========
 
+Environment
+-----------
+
+Project
+'''''''
+
+The tasks to setup each environment can be configured in ``./project.yml``:
+
+.. code-block:: yaml
+
+    <ENVIRONMENT>:
+
+      commands:
+        <COMMAND>: {}
+
+      tasks:
+        <COMMAND>:
+
+          - name: <NAME>
+            actions: [<ACTION>, <ACTION>]
+            <KEY>: <VALUE>
+
+          - name: <NAME>
+            actions: [<ACTION>, <ACTION>]
+            <KEY>: <VALUE>
+            batch:
+              - name: <NAME>
+                <KEY>: <VALUE>
+
+      actions:
+        <ACTION>: {}
+        <ACTION>: []
+
+=============== ===============================================================
+Key             Description
+=============== ===============================================================
+``ENVIRONMENT`` | environment, for which the tasks are performed.
+                | inheritance: production -> staging -> testing -> development
+``commands``    configuration variables availbable for each command
+``COMMAND``     | main commands
+                | maps to ``@command`` functions in the `update script`_
+``tasks``       list of tasks to perform consecutively for each command
+``NAME``        name of the task, required for all tasks
+``ACTION``      | actions to perform consecutivky for each task,
+                | maps to ``@action`` functions in the `update script`_
+``actions``     | *[dictionary]* configuration values available in actions
+                | *[list]* action group with actions to perform consecutivley
+=============== ===============================================================
+
+Commands can be invoked via the `update script`_. Commands currently available:
+update, diff, status, pull, commit, push. To see a list of all commands, you
+can use the ``--help`` flag::
+
+    $ ./scripts/update --help
+
+Each command processes its task list and for each task the defined actions
+consecutivley. Each action receives the task dictionary and expects the task
+to have the proper key/value pairs (e.g. repos need a source, etc). The
+command/action config dictionary is also available to the actions and might
+configure how the action should be performed. Actions currently available:
+path_link, file_create, file_copy, file_diff, folder_create, folder_copy,
+git_clone, git_user, git_origin, git_status, git_fetch, git_checkout,
+git_track, git_pull, script_restart.
+
+For a list of command/action configuration variables, see the comments in
+``./project.yml``.
+
+Batch tasks will use the key/value pairs of its parent. In inherited
+environments, tasks may be changed by using the same name of the inherited
+task.
+
+Branches
+''''''''
+
+Each project repository has a branch for each environment. To switch a branch,
+you can override the ``BRANCH`` value in ``.env`` and execute
+``./script/update`` to setup the branch.
+
+The same method can be used to setup a local feature branch. If there is no
+upstream branch, the `update script`_ will create local branches in all project
+repositories.
+
+Other commands will help to perform common git commands to all project
+repositories:
+
+=================================== ==========================================
+``./scripts/update status``         ``git status``
+``./scripts/update pull``           ``git pull``
+``./scripts/update commit MESSAGE`` ``git add -a && git commit -m 'MESSAGE'``
+``./scripts/update push``           ``git push``
+=================================== ==========================================
+
 Docker
 ------
 
@@ -1508,14 +1710,19 @@ Dockerfile and are all pinned. For a list of packages, search for
 The source code of those packages can also be found in the folder
 ``./volumes/shared/ref/`` and are provided for reference and for quick lookups
 during development. The source code is not used though. The repositories are
-cloned on the first run of the `update script`_ and can be configured via the
-dictionary ``clone_references`` within the update script::
+cloned on the first run of the `update script`_ and can be configured in
+``./project.yml``:
 
-    {
-        'url': '<URL>',             # https url to git repository
-        'option': '<PARAMETER>',    # parameter for git (e.g. --branch)
-        'path': '<PATH>',           # folder in ./volumes/shared/ref to clone into
-    },
+.. code-block:: yaml
+
+    development:
+      tasks:
+        update:
+          - name: checkout repos of pinned pip packages for reference
+            batch:
+              - name: <REPOFOLDER>
+                source: <REPOSOURCE>
+                version: tags/<TAG>
 
 Repositories
 ''''''''''''
@@ -1527,16 +1734,22 @@ package requirements for each service container can be found in
 ``./services/pip/<SERVICE>.pip``.
 
 The repositories are cloned and updated on each run of the `update script`_
-and can be configured via the dictionary ``clone_sources`` within the update
-script::
+and can be configured in ``./project.yml``:
 
-    {
-        'url': '<URL>',             # https url to git repository
-        'ssh': '<URL>',             # ssh url to git repository (optional)
-        'option': '<PARAMETER>',    # parameter for git (e.g. --branch)
-        'path': '<PATH>',           # folder in ./volumes/shared/ref to clone into
-        'symlink': True|False,      # add symlink in ./code/
-    },
+.. code-block:: yaml
+
+    production:
+      tasks:
+        update:
+          - name: update project repos
+            batch:
+              - name: <REPOFOLDER>
+                source: <REPOSOURCE>
+          - name: update upstream repos
+            batch:
+              - name: <REPOFOLDER>
+                source: <REPOSOURCE>
+                version: <BRANCH>
 
 Services
 --------
