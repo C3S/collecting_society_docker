@@ -1388,6 +1388,18 @@ def git_push(task, context={}):
 
 
 @action
+def git_merge(task, context={}):
+    """Merges a branch into another."""
+    raise NotImplementedError
+
+
+@action
+def git_elevate(task, context={}):
+    """Pushes staged commits, creates remote branch for local ones."""
+    raise NotImplementedError
+
+
+@action
 def script_restart(task, context={}):
     """Restarts the update script after update of main repo."""
     version = task['version']
@@ -1688,6 +1700,55 @@ def push(context={}):
     context['tasks'] = tasks
 
 
+@command
+def merge(context={}):
+    """Merges the current feature branch into the development branch."""
+    # action configuration
+    context['actions']['git_merge']['verbose'] = _verbose
+    context['actions']['git_status']['stop_all'] = True
+    # filter tasks
+    project_tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        project_tasks.append(task)
+    # perform each action for all repos first
+    tasks = []
+    for task in project_tasks:
+        task['name'] = "Ensure clean workdir"
+        task['actions'] = ['git_status']
+        tasks.append(task)
+    for task in project_tasks:
+        task['name'] = "Merge all repos"
+        task['actions'] = ['git_merge']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
+def promote(context={}):
+    """Merges the requested environment branch into the next stage."""
+    # action configuration
+    context['actions']['project_promote']['verbose'] = _verbose
+    # filter tasks
+    project_tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        project_tasks.append(task)
+    # perform each action for all repos first
+    tasks = []
+    for task in project_tasks:
+        task['name'] = "Ensure clean workdir"
+        task['actions'] = ['git_status']
+        tasks.append(task)
+    for task in project_tasks:
+        task['name'] = "Elevate all repos"
+        task['actions'] = ['git_promote']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
 # --- configuration -----------------------------------------------------------
 
 # project
@@ -1841,6 +1902,19 @@ if __name__ == "__main__":
     subcmd_push = subcmds.add_parser(
        'push', parents=[subcmd], description=push.__doc__,
        help=push.__doc__.strip('.'))
+
+    # merge command
+    subcmd_merge = subcmds.add_parser(
+       'merge', parents=[subcmd], description=merge.__doc__,
+       help=merge.__doc__.strip('.'))
+
+    # promote command
+    subcmd_promote = subcmds.add_parser(
+       'merge', parents=[subcmd], description=promote.__doc__,
+       help=promote.__doc__.strip('.'))
+    subcmd_commit.add_argument(
+        'environment', nargs='+', metavar="ENVIRONMENT",
+        help="Environment to be promoted to the next stage")
 
     # parse
     args = vars(cmd.parse_args())
