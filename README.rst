@@ -1532,7 +1532,7 @@ repositories:
 =================================== ==========================================
 ``./scripts/update status``         ``git status``
 ``./scripts/update pull``           ``git pull``
-``./scripts/update commit MESSAGE`` ``git add -a && git commit -m 'MESSAGE'``
+``./scripts/update commit MESSAGE`` ``git add -A && git commit -m 'MESSAGE'``
 ``./scripts/update push``           ``git push``
 =================================== ==========================================
 
