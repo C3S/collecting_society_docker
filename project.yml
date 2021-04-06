@@ -54,10 +54,6 @@ production:
         upstream: false
         version: '${BRANCH}'
         batch:
-          # - name: archiving
-          #   source: 'git@github.com:C3S/archiving.git'
-          # - name: portal
-          #   source: 'git@github.com:C3S/portal.git'
           - name: collecting_society
             source: 'git@github.com:C3S/collecting_society.git'
             changes:
@@ -159,11 +155,11 @@ production:
         target: 'docker-compose.override.yml'
         source: 'docker-compose.production.yml'
 
-    # diff command
-    diff: *update
-
     # status command
     status: *update
+
+    # diff command
+    diff: *update
 
     # pull command
     pull: *update
@@ -177,7 +173,8 @@ production:
     # push command
     push: *update
 
-    replace:
+    # merge command
+    merge: *update
 
   # action config -------------------------------------------------------------
   actions:
@@ -192,6 +189,8 @@ production:
       ignore: [^#, ^\/\/, ^\n$]
     # git status action
     git_status:
+      # stop all tasks on error
+      stop_all: false
       # stop further actions on error
       stop_action_group: true
     # git clone action

@@ -2,8 +2,8 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 #
-#% Usage: ./scripts/service-test [service] [--down] [--build] [--keep] [--lint] [--ci]
-#%                               [--help] [PARAMS]
+#% Usage: ./service-test [service] [--down] [--build] [--keep] [--lint] [--ci]
+#%                       [--help] [PARAMS]
 #%
 #%   This script runs the unit/function/integration tests and linter for the services:
 #%     - erpserver (tryton)
@@ -33,8 +33,7 @@ usage() {
 } 2>/dev/null
 
 # get directories
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-ROOT_DIR="$( dirname $SCRIPT_DIR )"
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd $ROOT_DIR
 
 # get options

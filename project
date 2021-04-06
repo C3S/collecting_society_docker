@@ -50,8 +50,7 @@ _commands = []     # list of valid command names, autofilled
 
 def get_root_dir():
     """Returns the root directory of the project."""
-    root = os.path.realpath(
-        os.path.join(os.path.abspath(__file__), "..", ".."))
+    root = os.path.realpath(os.path.join(os.path.abspath(__file__), ".."))
     assert os.path.exists(os.path.join(root, '.git'))
     return root
 
@@ -1575,6 +1574,21 @@ def update(context={}):
 
 
 @command
+def status(context={}):
+    """Prints the git status of the project repositories."""
+    # action configuration
+    context['actions']['git_status']['verbose'] = _verbose
+    # filter tasks
+    tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['actions'] = ['git_status']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
 def diff(context={}):
     """Prints the diff of the project repos and the example files."""
     # action configuration
@@ -1593,21 +1607,6 @@ def diff(context={}):
         if 'file_diff' not in task['actions']:
             continue
         task['actions'] = ['file_diff']
-        tasks.append(task)
-    context['tasks'] = tasks
-
-
-@command
-def status(context={}):
-    """Prints the git status of the project repositories."""
-    # action configuration
-    context['actions']['git_status']['verbose'] = _verbose
-    # filter tasks
-    tasks = []
-    for task in deepcopy(context['tasks']):
-        if 'upstream' not in task or task['upstream']:
-            continue
-        task['actions'] = ['git_status']
         tasks.append(task)
     context['tasks'] = tasks
 
@@ -1771,32 +1770,11 @@ if __name__ == "__main__":
 
     # command
     cmd = argparse.ArgumentParser(
-        usage="./scripts/update",
-        # description="Performs development and maintainance tasks "
-        #             "for the project.")
-        description=update.__doc__)
+        usage="./project",
+        description="Performs development and maintainance tasks "
+                    "for the project.")
     subcmds = cmd.add_subparsers(
         title='subcommands', dest="command", metavar="")
-
-    # update command
-    cmd.add_argument(
-        '-v', '--verbose', action='store_true',
-        help="verbose output")
-    cmd.add_argument(
-        '-d', '--debug', action='store_true',
-        help="debug output, implies verbose")
-    cmd.add_argument(
-        '--no-color', action='store_true',
-        help="colorless output")
-    cmd.add_argument(
-        '--restarted', metavar="COMMITRANGE",
-        help=argparse.SUPPRESS)
-    cmd.add_argument(
-        '--reset', action='store_true',
-        help="overwrites the configuration files with example files")
-    cmd.add_argument(
-        '--ci', action='store_true',
-        help="continues integration mode: reset, debug, colorless")
 
     # global flags
     subcmd = argparse.ArgumentParser(add_help=False)
@@ -1814,25 +1792,25 @@ if __name__ == "__main__":
         help=argparse.SUPPRESS)
 
     # update command
-    # subcmd_update = subcmds.add_parser(
-    #     'update', parents=[subcmd], description=update.__doc__.strip('.'),
-    #     help=update.__doc__.strip('.'))
-    # subcmd_update.add_argument(
-    #     '--reset', action='store_true',
-    #     help="overwrites the configuration files with example files")
-    # subcmd_update.add_argument(
-    #     '--ci', action='store_true',
-    #     help="continues integration mode: reset, debug, colorless")
-
-    # diff command
-    subcmd_diff = subcmds.add_parser(
-        'diff', parents=[subcmd], description=diff.__doc__,
-        help=diff.__doc__.strip('.'))
+    subcmd_update = subcmds.add_parser(
+        'update', parents=[subcmd], description=update.__doc__.strip('.'),
+        help=update.__doc__.strip('.'))
+    subcmd_update.add_argument(
+        '--reset', action='store_true',
+        help="overwrites the configuration files with example files")
+    subcmd_update.add_argument(
+        '--ci', action='store_true',
+        help="continues integration mode: reset, debug, colorless")
 
     # status command
     subcmd_status = subcmds.add_parser(
         'status', parents=[subcmd], description=status.__doc__,
         help=status.__doc__.strip('.'))
+
+    # diff command
+    subcmd_diff = subcmds.add_parser(
+        'diff', parents=[subcmd], description=diff.__doc__,
+        help=diff.__doc__.strip('.'))
 
     # pull command
     subcmd_pull = subcmds.add_parser(
@@ -1862,7 +1840,7 @@ if __name__ == "__main__":
 
     # parse
     args = vars(cmd.parse_args())
-    _command = args.get('command') or 'update'
+    _command = args.get('command') or 'diff'
     _commit_message = " ".join(args.get('message', []))
     _checkout_branch = args.get('branch', None)
     _restarted = args.get('restarted', "")
