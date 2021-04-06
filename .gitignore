@@ -73,6 +73,7 @@ tags
 !/volumes/shared
 
 # Created files and foldes
+/cli
 .flake8
 /code
 /docs
