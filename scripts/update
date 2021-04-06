@@ -550,7 +550,7 @@ def error(msg):
 
 # --- execution ---------------------------------------------------------------
 
-def execute(cmd, cwd=False, abort=True, msg={}, log=True,
+def execute(cmd, cwd=False, abort=True, msg={},
             stop_batch_group=False, stop_action_group=False):
     """Executes a command via subprocess check_output."""
     # print hint for the operation
@@ -563,7 +563,7 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
         action = task['action'].replace("_", " ") or "command"
         title = task['name'] or " ".join(cmd)
     waiting = False
-    if log or _debug:
+    if msg or _debug:
         message({'action': action + " ... ", 'title': title}, add=False)
         waiting = 'debug' in levels['output']
     output = ""
@@ -605,7 +605,7 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
         context['action_group']['stopped'] = stopped
 
     # return if logging is disabled for this command
-    if not log:
+    if not msg:
         return output
 
     # create message
@@ -964,8 +964,7 @@ def git_origin(task, context={}):
         source = "https://" + url.replace(":", "/")
 
     # origin already set
-    old_source = execute(
-        ('git', 'remote', 'get-url', 'origin'), cwd=target, log=False)
+    old_source = execute(('git', 'remote', 'get-url', 'origin'), cwd=target)
     if source == old_source:
         message({'description': "origin already set"})
         return
@@ -999,12 +998,10 @@ def git_user(task, context={}):
         return
 
     # userdata already set
-    old_name = execute(
-        ('git', 'config', 'user.name'), cwd=target, log=False).strip('"')
-    old_email = execute(
-        ('git', 'config', 'user.email'), cwd=target, log=False).strip('"')
+    old_name = execute(('git', 'config', 'user.name'), cwd=target).strip('"')
+    old_email = execute(('git', 'config', 'user.email'), cwd=target).strip('"')
     old_key = execute(
-        ('git', 'config', 'user.signingkey'), cwd=target, log=False).strip('"')
+        ('git', 'config', 'user.signingkey'), cwd=target).strip('"')
 
     # changed
     changed = False
@@ -1018,11 +1015,11 @@ def git_user(task, context={}):
 
     # userdata set
     execute(('git', 'config', 'user.name', '"{}"'.format(git_name)),
-            cwd=target, log=False)
+            cwd=target)
     execute(('git', 'config', 'user.email', '"{}"'.format(git_email)),
-            cwd=target, log=False)
+            cwd=target)
     execute(('git', 'config', 'user.signingkey', '"{}"'.format(git_key)),
-            cwd=target, log=False)
+            cwd=target)
     message({'level': "info", 'description': "git user set",
              'data': "\n".join(["user.name: `%s`" % git_name,
                                 "user.email: `%s`" % git_email,
@@ -1049,7 +1046,7 @@ def git_status(task, context={}):
         cmd.append('--porcelain')
 
     # status
-    output = execute(cmd, cwd=target, log=False)
+    output = execute(cmd, cwd=target)
     description = "workdir dirty"
     if stop_all:
         description += " -> %s aborted" % _command
@@ -1099,11 +1096,10 @@ def git_diff(task, context={}):
 
     # diff repo
     if verbose:
-        output = execute(('git', 'diff'), cwd=target, log=False)
+        output = execute(('git', 'diff'), cwd=target)
         data = color_file_diff(output)
     else:
-        output = execute(
-            ('git', 'status', '--porcelain'), cwd=target, log=False)
+        output = execute(('git', 'status', '--porcelain'), cwd=target)
         data = output
 
     # no differences
@@ -1131,7 +1127,7 @@ def git_fetch(task, context={}):
 
     # find out, if remote branch exists
     remote_exists = False
-    output = execute(('git', 'branch', '-rvv'), cwd=target, log=False)
+    output = execute(('git', 'branch', '-rvv'), cwd=target)
     for line in output.split("\n"):
         if line[2:].startswith("origin/%s " % version):
             remote_exists = True
@@ -1141,8 +1137,7 @@ def git_fetch(task, context={}):
         return
 
     # update branch, check for updates
-    output = execute(
-        ('git', 'fetch', 'origin', version), cwd=target, log=False)
+    output = execute(('git', 'fetch', 'origin', version), cwd=target)
     updates = False
     for line in output:
         if version + " -> " in line:
@@ -1179,10 +1174,10 @@ def git_checkout(task, context={}):
 
     # get checked out version
     old_version = execute(
-        ('git', 'rev-parse', '--abbrev-ref', 'HEAD'), cwd=target, log=False)
+        ('git', 'rev-parse', '--abbrev-ref', 'HEAD'), cwd=target)
     if old_version == "HEAD":
         old_version = execute(
-            ('git', 'name-rev', '--name-only', 'HEAD'), cwd=target, log=False)
+            ('git', 'name-rev', '--name-only', 'HEAD'), cwd=target)
     if old_version.endswith("^0"):
         old_version = old_version[:-2]
     checked_out = old_version == version and True or False
@@ -1190,12 +1185,11 @@ def git_checkout(task, context={}):
     # find out, if branch or tag exists locally
     version_exists = False
     if version.startswith("tags/"):
-        output = execute(
-            ('git', 'tag', '-l', version[5:]), cwd=target, log=False)
+        output = execute(('git', 'tag', '-l', version[5:]), cwd=target)
         if output:
             version_exists = True
     else:
-        output = execute(('git', 'branch', '-lvv'), cwd=target, log=False)
+        output = execute(('git', 'branch', '-lvv'), cwd=target)
         for line in output.split("\n"):
             if line[2:].startswith(version + " "):
                 version_exists = True
@@ -1249,7 +1243,7 @@ def git_track(task, context={}):
 
     # find out, if remote branch exists
     remote_exists = False
-    output = execute(('git', 'branch', '-rvv'), cwd=target, log=False)
+    output = execute(('git', 'branch', '-rvv'), cwd=target)
     for line in output.split("\n"):
         if line[2:].startswith("origin/%s " % version):
             remote_exists = True
@@ -1262,9 +1256,8 @@ def git_track(task, context={}):
 
     # get currently tracked branch
     tracked_branch = execute(
-        ('git', 'rev-parse', '--abbrev-ref',
-         '--symbolic-full-name', '@{u}'),
-        cwd=target, abort=False, log=False)
+        ('git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'),
+        cwd=target, abort=False)
     is_tracked = tracked_branch == "origin/%s" % version
 
     # remote branch is already tracked
@@ -1300,9 +1293,8 @@ def git_pull(task, context={}):
 
     # skip pull for local only branches
     tracked_branch = execute(
-        ('git', 'rev-parse', '--abbrev-ref',
-         '--symbolic-full-name', '@{u}'),
-        cwd=target, abort=False, log=False)
+        ('git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'),
+        cwd=target, abort=False)
     is_local = not tracked_branch.startswith("origin/%s" % version)
     if is_local:
         message({'level': verbose and "info" or "debug",
@@ -1311,8 +1303,7 @@ def git_pull(task, context={}):
         return
 
     # pull performed
-    output = execute(
-        ('git', 'pull', '-v', 'origin', version), cwd=target, log=False)
+    output = execute(('git', 'pull', '-v', 'origin', version), cwd=target)
 
     # updated
     if "changed" in output:
@@ -1340,7 +1331,7 @@ def git_commit(task, context={}):
         return
 
     # skip repos with clean workdir
-    output = execute(('git', 'status', '--porcelain'), cwd=target, log=False)
+    output = execute(('git', 'status', '--porcelain'), cwd=target)
     if not output:
         message({'description': "nothing to commit"})
         return
@@ -1374,7 +1365,7 @@ def git_push(task, context={}):
 
     # find out, if remote branch exists
     remote_exists = False
-    output = execute(('git', 'branch', '-rvv'), cwd=target, log=False)
+    output = execute(('git', 'branch', '-rvv'), cwd=target)
     for line in output.split("\n"):
         if line[2:].startswith("origin/%s " % version):
             remote_exists = True
@@ -1386,7 +1377,7 @@ def git_push(task, context={}):
         return
 
     # find out, if unpushed commits exist
-    unpushed = execute(('git', 'log', '@{u}..'), cwd=target, log=False)
+    unpushed = execute(('git', 'log', '@{u}..'), cwd=target)
 
     # skip repos without commits
     if not unpushed:
@@ -1428,7 +1419,7 @@ def changes_notify(task, context={}):
     diff = task['result'].get('git_pull')
     # script was restarted
     if _restarted:
-        diff = execute(('git', 'diff', '--stat', _restarted), log=False)
+        diff = execute(('git', 'diff', '--stat', _restarted))
 
     # skip silently, if no messages should be added
     if not changes:
