@@ -1522,9 +1522,9 @@ git_track, git_pull, script_restart.
 For a list of command/action configuration variables, see the comments in
 ``./project.yml``.
 
-Batch tasks will use the key/value pairs of its parent. In inherited
-environments, tasks may be changed by using the same name of the inherited
-task.
+Batch tasks will use the key/value pairs of its parent updated with itself.
+In inherited environments, tasks may be changed by using the same name of the
+inherited task.
 
 Branches
 ''''''''
