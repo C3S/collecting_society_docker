@@ -940,26 +940,7 @@ update
     $ ./scripts/update --help
     usage: ./scripts/update
 
-    Performs development and maintainance tasks for the project.
-
-    optional arguments:
-      -h, --help  show this help message and exit
-
-    subcommands:
-
-        update    Updates files, folders, symlinks and repos
-        diff      Prints the diffs of the example files
-        status    Prints the git status of the project repositories
-        pull      Pulls the project repositories
-        commit    Commits changes and untracked files to the project repositories
-        push      Pushes commits of the project repositories
-
-::
-
-    $ ./scripts/update update --help
-    usage: ./scripts/update update [-h] [-v] [-d] [--no-color] [--reset] [--ci]
-
-    Updates files, folders, symlinks and repos
+    Updates files, folders, symlinks and repos.
 
     optional arguments:
       -h, --help     show this help message and exit
@@ -969,12 +950,20 @@ update
       --reset        overwrites the configuration files with example files
       --ci           continues integration mode: reset, debug, colorless
 
+    subcommands:
+
+        diff         Prints the diffs of the example files
+        status       Prints the git status of the project repositories
+        pull         Pulls the project repositories
+        commit       Commits changes and untracked files to the project repositories
+        push         Pushes commits of the project repos, creates missing remote branches
+
 ::
 
     $ ./scripts/update diff --help
     usage: ./scripts/update diff [-h] [-v] [-d] [--no-color]
 
-    Prints the diffs of the example files
+    Prints the diffs of the example files.
 
     optional arguments:
       -h, --help     show this help message and exit
@@ -987,7 +976,7 @@ update
     ./scripts/update status --help
     usage: ./scripts/update status [-h] [-v] [-d] [--no-color]
 
-    Prints the git status of the project repositories
+    Prints the git status of the project repositories.
 
     optional arguments:
       -h, --help     show this help message and exit
@@ -1000,7 +989,7 @@ update
     ./scripts/update pull --help
     usage: ./scripts/update pull [-h] [-v] [-d] [--no-color]
 
-    Pulls the project repositories
+    Pulls the project repositories.
 
     optional arguments:
       -h, --help     show this help message and exit
@@ -1013,7 +1002,7 @@ update
     ./scripts/update commit --help
     usage: ./scripts/update commit [-h] [-v] [-d] [--no-color] MESSAGE [MESSAGE ...]
 
-    Commits changes and untracked files to the project repositories
+    Commits changes and untracked files to the project repositories.
 
     positional arguments:
       MESSAGE        Commit message
@@ -1029,7 +1018,7 @@ update
     ./scripts/update push --help
     usage: ./scripts/update push [-h] [-v] [-d] [--no-color]
 
-    Pushes commits of the project repositories
+    Pushes commits of the project repos, creates missing remote branches.
 
     optional arguments:
       -h, --help     show this help message and exit

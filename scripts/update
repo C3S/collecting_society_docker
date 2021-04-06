@@ -1235,7 +1235,7 @@ def git_commit(task, context={}):
 
 @action
 def git_push(task, context={}):
-    """Pushes all staged commits to remote origin."""
+    """Pushes staged commits, creates remote branch for local ones."""
     target = task.get('target') or task['name']
     targetpath = task.get('targetpath')
     if targetpath:
@@ -1254,9 +1254,10 @@ def git_push(task, context={}):
         if line[2:].startswith("origin/%s " % version):
             remote_exists = True
 
-    # skip local only branches
+    # create remote branch, if repo is local
     if not remote_exists:
-        message({'level': "warning", 'description': "no remote branch"})
+        msg = {'level': "info", 'description': "remote branch created"}
+        execute(('git', 'push', 'origin', version), cwd=target)
         return
 
     # find out, if unpushed commits exist
@@ -1506,15 +1507,28 @@ def commit(context={}):
 
 @command
 def push(context={}):
-    """Pushes commits of the project repositories."""
+    """Pushes commits of the project repos, creates missing remote branches."""
     # filter tasks
-    tasks = []
+    project_tasks = []
     for task in context['tasks']:
         if 'git_pull' not in task['actions']:
             continue
         if 'upstream' not in task or task['upstream']:
             continue
-        task['actions'] = ['git_fetch', 'git_pull', 'git_push']
+        project_tasks.append(task)
+    # perform each action for all repos first
+    tasks = []
+    for task in project_tasks:
+        task['name'] = "Ensure a clean workdir for all repos"
+        task['actions'] = ['git_fetch']
+        tasks.append(task)
+    for task in project_tasks:
+        task['name'] = "Ensure no repo has a merge conflict"
+        task['actions'] = ['git_pull']
+        tasks.append(task)
+    for task in project_tasks:
+        task['name'] = "Finally push all repos"
+        task['actions'] = ['git_push']
         tasks.append(task)
     context['tasks'] = tasks
 
@@ -1592,10 +1606,31 @@ if __name__ == "__main__":
     # command
     cmd = argparse.ArgumentParser(
         usage="./scripts/update",
-        description="Performs development and maintainance tasks "
-                    "for the project.")
+        # description="Performs development and maintainance tasks "
+        #             "for the project.")
+        description=update.__doc__)
     subcmds = cmd.add_subparsers(
         title='subcommands', dest="command", metavar="")
+
+    # update command
+    cmd.add_argument(
+        '-v', '--verbose', action='store_true',
+        help="verbose output")
+    cmd.add_argument(
+        '-d', '--debug', action='store_true',
+        help="debug output, implies verbose")
+    cmd.add_argument(
+        '--no-color', action='store_true',
+        help="colorless output")
+    cmd.add_argument(
+        '--restarted', metavar="COMMITRANGE",
+        help=argparse.SUPPRESS)
+    cmd.add_argument(
+        '--reset', action='store_true',
+        help="overwrites the configuration files with example files")
+    cmd.add_argument(
+        '--ci', action='store_true',
+        help="continues integration mode: reset, debug, colorless")
 
     # global flags
     subcmd = argparse.ArgumentParser(add_help=False)
@@ -1613,34 +1648,34 @@ if __name__ == "__main__":
         help=argparse.SUPPRESS)
 
     # update command
-    subcmd_update = subcmds.add_parser(
-        'update', parents=[subcmd], description=update.__doc__.strip('.'),
-        help=update.__doc__.strip('.'))
-    subcmd_update.add_argument(
-        '--reset', action='store_true',
-        help="overwrites the configuration files with example files")
-    subcmd_update.add_argument(
-        '--ci', action='store_true',
-        help="continues integration mode: reset, debug, colorless")
+    # subcmd_update = subcmds.add_parser(
+    #     'update', parents=[subcmd], description=update.__doc__.strip('.'),
+    #     help=update.__doc__.strip('.'))
+    # subcmd_update.add_argument(
+    #     '--reset', action='store_true',
+    #     help="overwrites the configuration files with example files")
+    # subcmd_update.add_argument(
+    #     '--ci', action='store_true',
+    #     help="continues integration mode: reset, debug, colorless")
 
     # diff command
     subcmd_diff = subcmds.add_parser(
-        'diff', parents=[subcmd], description=diff.__doc__.strip('.'),
+        'diff', parents=[subcmd], description=diff.__doc__,
         help=diff.__doc__.strip('.'))
 
     # status command
     subcmd_status = subcmds.add_parser(
-        'status', parents=[subcmd], description=status.__doc__.strip('.'),
+        'status', parents=[subcmd], description=status.__doc__,
         help=status.__doc__.strip('.'))
 
     # pull command
     subcmd_pull = subcmds.add_parser(
-        'pull', parents=[subcmd], description=pull.__doc__.strip('.'),
+        'pull', parents=[subcmd], description=pull.__doc__,
         help=pull.__doc__.strip('.'))
 
     # commit command
     subcmd_commit = subcmds.add_parser(
-        'commit', parents=[subcmd], description=commit.__doc__.strip('.'),
+        'commit', parents=[subcmd], description=commit.__doc__,
         help=commit.__doc__.strip('.'))
     subcmd_commit.add_argument(
         'message', nargs='+', metavar="MESSAGE",
@@ -1648,7 +1683,7 @@ if __name__ == "__main__":
 
     # push command
     subcmd_push = subcmds.add_parser(
-       'push', parents=[subcmd], description=push.__doc__.strip('.'),
+       'push', parents=[subcmd], description=push.__doc__,
        help=push.__doc__.strip('.'))
 
     # parse
