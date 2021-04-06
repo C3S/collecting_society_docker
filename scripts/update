@@ -18,6 +18,7 @@ Options:
 import os
 import sys
 import shutil
+from fileinput import FileInput
 import traceback
 import subprocess
 import argparse
@@ -107,6 +108,15 @@ def get_project_yaml(path=".", env={}):
         # load yaml file
         project = yaml.safe_load(_file)
         replace_env_vars(project, env)
+        # environment preparation
+        for _e, environment in project.items():
+            for action in _actions:
+                if 'actions' not in environment:
+                    environment['actions'] = {}
+                if action not in environment['actions']:
+                    environment['actions'][action] = {}
+                if 'verbose' not in environment['actions'][action]:
+                    environment['actions'][action]['verbose'] = False
         # inherit configurations
         project['staging'] = merge_dicts(
             deepcopy(project['production']), project['staging'])
@@ -370,7 +380,7 @@ def message(msg, offset=1, pad=10, data=True, add=True, output=True):
         text += color(title, _color + "_title") + " "
     # action
     if 'action' in msg:
-        action = msg['action'] + " ... "
+        action = msg['action']
         if msg['level'] == "error":
             action = msg['action']
         if 'description' in msg:
@@ -396,7 +406,7 @@ def message(msg, offset=1, pad=10, data=True, add=True, output=True):
             data += "\n" + "  " * offset + " ".ljust(pad) + line
         text += color(data, _color + "_data")
     text += "\n"
-    if not _verbose:
+    if not action.endswith(" ... "):
         text += "\n"
     # process
     if add:
@@ -424,18 +434,8 @@ def header(output=True):
         "environment": environment,
         "branch": branch,
         "root": root,
+        "gituser": git_data,
     }
-    if git_name and git_email:
-        data['gituser'] = "%s <%s>" % (git_name, git_email)
-    else:
-        global_username = execute(
-            ('git', 'config', '--global', 'user.name'), log=False)
-        global_useremail = execute(
-            ('git', 'config', '--global', 'user.email'), log=False)
-        data['gituser'] = "%s <%s>" % (global_username, global_useremail)
-        message({'level': "info",
-                 'description': "GIT_USER_NAME/EMAIL in .env not set",
-                 'data': "NOTE: commits will use: %s" % data['gituser']})
     # text
     pad = 0
     for key in data:
@@ -468,9 +468,7 @@ def header(output=True):
 
 def title(string, _color="subtitle", output=True):
     """Prints a formatted title."""
-    text = color("> ", 'title') + color(string, _color) + "\n"
-    if not _verbose:
-        text += "\n"
+    text = color("> ", 'title') + color(string, _color) + "\n\n"
     # process
     if output:
         print(text, end="")
@@ -480,6 +478,11 @@ def title(string, _color="subtitle", output=True):
 def footer(string="Success.", _color="success", output=True, summary=True):
     """Prints the result of the command and a summary of important messages."""
     context = get_context()
+    # add user note
+    if not git_name or not git_email:
+        message({'level': "info", 'title': ".env", "action": "",
+                 'description': "GIT_USER_NAME/EMAIL not set",
+                 'data': "NOTE: commits will use `%s`" % git_data})
     # determine what to output
     had_output = 0
     has_summary = False
@@ -495,20 +498,13 @@ def footer(string="Success.", _color="success", output=True, summary=True):
     if had_output < 50:
         summary = False
     # separator
-    text = ""
-    if _verbose:
-        text += "\n"
-    text += line(output=False) + "\n\n"
+    text = line(output=False) + "\n\n"
     # summary
     if summary and has_summary:
         text += title("Summary", _color='title', output=False)
-        if _verbose:
-            text += "\n"
         for level in levels['summary']:
             for msg in [m for m in _messages if m['level'] == level]:
                 text += message(msg, data=False, add=False, output=False)
-        if _verbose:
-            text += "\n"
     # title
     text += title(string, _color=_color, output=False)
     # extended mode
@@ -536,6 +532,7 @@ def debug(obj=None, title=""):
         obj = color("output was empty", 'italic')
     for line in obj.split("\n"):
         print(" " * pad + color(line, 'output'))
+    print()
 
 
 def error(msg):
@@ -565,8 +562,10 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
         task = _tasks[-1]
         action = task['action'].replace("_", " ") or "command"
         title = task['name'] or " ".join(cmd)
+    waiting = False
     if log or _debug:
-        message({'action': action, 'title': title}, add=False)
+        message({'action': action + " ... ", 'title': title}, add=False)
+        waiting = 'debug' in levels['output']
     output = ""
     error_msg = {}
 
@@ -625,7 +624,7 @@ def execute(cmd, cwd=False, abort=True, msg={}, log=True,
             msg[key] = value(output)
 
     # remove line, add and print message
-    if 'debug' in levels['output'] and not _debug:
+    if waiting and not _debug:
         sys.stdout.write("\033[F")
     message(msg)
 
@@ -777,6 +776,7 @@ def file_diff(task, context={}):
         source = target + ".example"
     target = os.path.join(root, target)
     source = os.path.join(root, source)
+    verbose = context['actions']['verbose']
 
     # source or target not found
     if not os.path.exists(source):
@@ -817,20 +817,22 @@ def file_diff(task, context={}):
                     ignored = True
                     continue
                 filtered.append(line)
-            if not _verbose:
+            if not verbose:
                 lines = lines[0:3] + filtered
 
         # color diff
         data = ""
-        if ignored and not _verbose:
-            data += color("--8<-- (ignored lines stripped) --8<--\n", "dim")
-        data += color_file_diff("".join(lines))
+        if _ci:
+            data += "--8<-- (ignored lines stripped) --8<--\n"
+            data += "".join(filtered)
+        else:
+            data += color_file_diff("".join(lines))
 
         # files contains only ignored differences
         if ignored and not filtered:
             msg = {'level': 'info',
                    'description': 'diff contains only ignored lines'}
-            if _verbose:
+            if verbose:
                 msg['data'] = data
             message(msg)
             return
@@ -838,6 +840,41 @@ def file_diff(task, context={}):
         # differences found
         message({'level': "warning", 'description': "differences found",
                  'data': data})
+
+
+@action
+def line_replace(task, context={}):
+    """Replaces regex patterns in lines in files"""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    target = os.path.join(root, target)
+    before = task.get('before', '') and '(?=%s)' % task.get('before')
+    after = task.get('after', '') and '(?<=%s)' % task.get('after')
+    regexp = after + task.get('regexp', '.*$') + before
+    replace = task.get('replace')
+
+    # replace pattern
+    linecount = 0
+    filecount = 0
+    try:
+        with FileInput(target, inplace=True, backup=".backup") as input:
+            for line in input:
+                newline, count = re.subn(regexp, replace, line)
+                if count:
+                    linecount += 1
+                    filecount += count
+                print(newline, end="")
+    except Exception:
+        shutil.copyfile(target + ".backup", target)
+        error({'description': "error in line replace",
+               'data': traceback.format_exc()})
+    if linecount:
+        message({'level': "debug", 'description': "lines replaced",
+                 'data': "regexp: %s\n" % regexp +
+                         "replace: %s\n" % replace +
+                         "%s matches in %s lines" % (filecount, linecount)})
 
 
 @action
@@ -988,32 +1025,55 @@ def git_status(task, context={}):
     if targetpath:
         target = os.path.join(targetpath, target)
     upstream = task.get('upstream', True)
+    stop_all = context['actions'].get('stop_all', False)
+    stop_action_group = context['actions'].get('stop_action_group', False)
+    verbose = context['actions']['verbose']
 
     # workdir checked
     cmd = ['git', 'status']
     if upstream:
         cmd.append('--untracked-files=no')
-
-    # procelain
-    if context['actions']['porcelain']:
-        msg = {'level': lambda o: o and "warning" or "debug",
-               'description':
-                   lambda o: o and "workdir dirty -> update skipped" or "ok"}
+    if not verbose:
         cmd.append('--porcelain')
-        execute(cmd, cwd=target, stop_action_group=True, msg=msg)
+
+    # status
+    output = execute(cmd, cwd=target, log=False)
+    description = "workdir dirty"
+    if stop_all:
+        description += " -> %s aborted" % _command
+    elif stop_action_group:
+        description += " -> further actions on this repo skipped"
+
+    # verbose
+    if verbose:
+        data, clean = color_git_status(output)
+        # clean
+        if clean:
+            message({'level': 'info', 'description': "workdir ok"})
+            return
+        # dirty
+        if stop_action_group:
+            context['action_group']['stopped'] = True
+        if stop_all:
+            error({'title': task['name'], 'description': description,
+                   'data': data})
+        message({'level': 'warning', 'description': description,
+                 'data': data})
         return
 
-    # full
-    output = execute(cmd, cwd=target, stop_action_group=True, log=False)
-    data, clean = color_git_status(output)
-
-    # clean workdir
-    if clean:
-        message({'level': "info", 'data': output})
+    # not verbose dirty
+    if output:
+        if stop_all:
+            error({'title': task['name'], 'description': description,
+                   'output': output})
+        if stop_action_group:
+            context['action_group']['stopped'] = True
+        message({'level': 'warning', 'description': description,
+                 'data': output})
         return
 
-    # dirty workdir
-    message({'level': "warning", 'data': data})
+    # not verbose clean
+    message({'level': 'debug', 'description': "workdir ok"})
 
 
 @action
@@ -1023,9 +1083,10 @@ def git_diff(task, context={}):
     targetpath = task.get('targetpath')
     if targetpath:
         target = os.path.join(targetpath, target)
+    verbose = context['actions']['verbose']
 
     # diff repo
-    if _verbose:
+    if verbose:
         output = execute(('git', 'diff'), cwd=target, log=False)
         data = color_file_diff(output)
     else:
@@ -1096,6 +1157,13 @@ def git_checkout(task, context={}):
         target = os.path.join(targetpath, target)
     version = task['version']
     upstream = task.get('upstream', True)
+    verbose = context['actions']['verbose']
+
+    # set new branch, if requested
+    if _checkout_branch:
+        version = _checkout_branch
+        line_replace({
+            'name': ".env", 'after': "^BRANCH=", 'replace': _checkout_branch})
 
     # get checked out version
     old_version = execute(
@@ -1125,7 +1193,8 @@ def git_checkout(task, context={}):
 
         # version already checked out
         if checked_out:
-            message({'description': "already on `%s`" % version})
+            message({'level': verbose and "info" or "debug",
+                    'description': "already on `%s`" % version})
             return
 
         # version switched
@@ -1147,7 +1216,7 @@ def git_checkout(task, context={}):
         error({'description': "no upstream version `%s` found" % version})
 
     # new branch created
-    msg = {'level': 'info', 'description': "new branch created",
+    msg = {'level': 'warning', 'description': "new branch created",
            'data': 'branch name: `%s`' % version}
     execute(('git', 'checkout', '-b', version), cwd=target, msg=msg)
 
@@ -1211,6 +1280,7 @@ def git_pull(task, context={}):
     if targetpath:
         target = os.path.join(targetpath, target)
     version = task['version']
+    verbose = context['actions']['verbose']
 
     # skip pull silently for tags
     if task['version'].startswith("tags/"):
@@ -1223,7 +1293,8 @@ def git_pull(task, context={}):
         cwd=target, abort=False, log=False)
     is_local = not tracked_branch.startswith("origin/%s" % version)
     if is_local:
-        message({'description': "no remote branch `%s` -> pull skipped"
+        message({'level': verbose and "info" or "debug",
+                 'description': "no remote branch `%s` -> pull skipped"
                  % version})
         return
 
@@ -1237,7 +1308,8 @@ def git_pull(task, context={}):
         return
 
     # uptodate
-    message({'level': "debug", 'description': "uptodate"})
+    message({'level': verbose and "info" or "debug",
+             'description': "uptodate"})
 
 
 @action
@@ -1248,7 +1320,7 @@ def git_commit(task, context={}):
     if targetpath:
         target = os.path.join(targetpath, target)
     upstream = task.get('upstream', True)
-    if not _commit_msg:
+    if not _commit_message:
         error({'description': "no commit message"})
 
     # skip silently for upstream repos
@@ -1267,7 +1339,7 @@ def git_commit(task, context={}):
 
     # commit performed
     msg = {'level': "info", 'description': "changes commited"}
-    execute(('git', 'commit', '-m', _commit_msg),
+    execute(('git', 'commit', '-m', _commit_message),
             cwd=target, msg=msg, abort=False)
 
 
@@ -1476,9 +1548,21 @@ def command(func):
 @command
 def update(context={}):
     """Updates files, folders, symlinks and repos."""
+    # action configuration
+    context['actions']['file_diff']['verbose'] = _verbose
+    context['actions']['git_diff']['verbose'] = _verbose
+    context['actions']['git_clone']['verbose'] = _verbose
+    context['actions']['git_user']['verbose'] = _verbose
+    context['actions']['git_origin']['verbose'] = _verbose
+    context['actions']['git_status']['verbose'] = _verbose
+    context['actions']['git_fetch']['verbose'] = _verbose
+    context['actions']['git_checkout']['verbose'] = _verbose
+    context['actions']['git_track']['verbose'] = _verbose
+    context['actions']['git_pull']['verbose'] = _verbose
+    # proceed at next task after restart
     if not _restarted:
         return
-    for task in context['tasks']:
+    for task in deepcopy(context['tasks']):
         actions = task['actions']
         if 'script_restart' in actions:
             task['actions'] = actions[actions.index('script_restart') + 1:]
@@ -1487,16 +1571,19 @@ def update(context={}):
 @command
 def diff(context={}):
     """Prints the diff of the project repos and the example files."""
+    # action configuration
+    context['actions']['file_diff']['verbose'] = _verbose
+    context['actions']['git_diff']['verbose'] = _verbose
     # filter tasks
     tasks = []
     # repos
-    for task in context['tasks']:
+    for task in deepcopy(context['tasks']):
         if 'upstream' not in task or task['upstream']:
             continue
         task['actions'] = ['git_diff']
         tasks.append(task)
     # files
-    for task in context['tasks']:
+    for task in deepcopy(context['tasks']):
         if 'file_diff' not in task['actions']:
             continue
         task['actions'] = ['file_diff']
@@ -1507,23 +1594,27 @@ def diff(context={}):
 @command
 def status(context={}):
     """Prints the git status of the project repositories."""
+    # action configuration
+    context['actions']['git_status']['verbose'] = _verbose
     # filter tasks
     tasks = []
-    for task in context['tasks']:
+    for task in deepcopy(context['tasks']):
         if 'upstream' not in task or task['upstream']:
             continue
         task['actions'] = ['git_status']
         tasks.append(task)
     context['tasks'] = tasks
-    context['actions']['git_status']['porcelain'] = False
 
 
 @command
 def pull(context={}):
     """Pulls the project repositories."""
+    # action configuration
+    context['actions']['git_pull']['verbose'] = _verbose
+    context['actions']['git_status']['stop_action_group'] = True
     # filter tasks
     tasks = []
-    for task in context['tasks']:
+    for task in deepcopy(context['tasks']):
         if 'upstream' not in task or task['upstream']:
             continue
         task['actions'] = ['git_status', 'git_pull']
@@ -1534,22 +1625,33 @@ def pull(context={}):
 @command
 def checkout(context={}):
     """Checksout the project repositories."""
+    # action configuration
+    context['actions']['git_checkout']['verbose'] = _verbose
+    context['actions']['git_status']['stop_all'] = True
     # filter tasks
     tasks = []
-    for task in context['tasks']:
+    for task in deepcopy(context['tasks']):
         if 'upstream' not in task or task['upstream']:
             continue
-        task['actions'] = ['git_status', 'git_checkout']
+        task['actions'] = ['git_status']
         tasks.append(task)
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['actions'] = ['git_checkout']
+        tasks.append(task)
+    debug(tasks)
     context['tasks'] = tasks
 
 
 @command
 def commit(context={}):
     """Commits changes and untracked files to the project repositories."""
+    # action configuration
+    context['actions']['git_commit']['verbose'] = _verbose
     # filter tasks
     tasks = []
-    for task in context['tasks']:
+    for task in deepcopy(context['tasks']):
         if 'upstream' not in task or task['upstream']:
             continue
         task['actions'] = ['git_commit']
@@ -1560,24 +1662,22 @@ def commit(context={}):
 @command
 def push(context={}):
     """Pushes commits of the project repos, creates missing remote branches."""
+    # action configuration
+    context['actions']['git_push']['verbose'] = _verbose
     # filter tasks
     project_tasks = []
-    for task in context['tasks']:
+    for task in deepcopy(context['tasks']):
         if 'upstream' not in task or task['upstream']:
             continue
         project_tasks.append(task)
     # perform each action for all repos first
     tasks = []
     for task in project_tasks:
-        task['name'] = "Ensure a clean workdir for all repos"
-        task['actions'] = ['git_fetch']
-        tasks.append(task)
-    for task in project_tasks:
         task['name'] = "Ensure no repo has a merge conflict"
         task['actions'] = ['git_pull']
         tasks.append(task)
     for task in project_tasks:
-        task['name'] = "Finally push all repos"
+        task['name'] = "Push all repos"
         task['actions'] = ['git_push']
         tasks.append(task)
     context['tasks'] = tasks
@@ -1597,7 +1697,16 @@ environment = env['ENVIRONMENT']
 branch = env['BRANCH']
 git_name = env.get('GIT_USER_NAME', '')
 git_email = env.get('GIT_USER_EMAIL', '')
+git_data = "%s <%s>" % (git_name, git_email)
 git_protocol = int(env.get('GIT_SSH')) and 'ssh' or 'https'
+global_git_name = subprocess.check_output(
+    ('git', 'config', '--global', 'user.name'), cwd=root
+    ).strip().decode('utf-8')
+global_git_email = subprocess.check_output(
+    ('git', 'config', '--global', 'user.email'), cwd=root
+    ).strip().decode('utf-8')
+if not git_name or not git_email:
+    git_data = "%s <%s>" % (global_git_name, global_git_email)
 
 # messages
 levels = {
@@ -1727,6 +1836,9 @@ if __name__ == "__main__":
     subcmd_checkout = subcmds.add_parser(
         'checkout', parents=[subcmd], description=checkout.__doc__,
         help=checkout.__doc__.strip('.'))
+    subcmd_checkout.add_argument(
+        'branch', nargs='?', metavar="BRANCH",
+        help="Branch name")
 
     # commit command
     subcmd_commit = subcmds.add_parser(
@@ -1744,7 +1856,8 @@ if __name__ == "__main__":
     # parse
     args = vars(cmd.parse_args())
     _command = args.get('command') or 'update'
-    _commit_msg = " ".join(args.get('message', []))
+    _commit_message = " ".join(args.get('message', []))
+    _checkout_branch = args.get('branch', None)
     _restarted = args.get('restarted', "")
     _reset = args.get('reset', False)
     _verbose = args.get('verbose', False)
@@ -1760,8 +1873,6 @@ if __name__ == "__main__":
         _debug = True
     if _debug:
         _verbose = True
-        levels['output'].append('debug')
-    if _verbose:
         levels['output'].append('debug')
 
     # set workdir

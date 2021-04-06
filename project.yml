@@ -33,19 +33,19 @@ production:
         changes:
           - name: 'update script was updated'
             files: 'scripts/update'
-          - name: 'DOCKERFILE was updated!'
+          - name: '∇ DOCKERFILE was updated!'
             files: 'services/build/Dockerfile'
             level: 'warning'
             data: [
               'NOTE: you should update the database:',
               '$ docker-compose run --rm erpserver db-update'
             ]
-          - name: 'EXAMPLE FILES were updated'
+          - name: '∇ EXAMPLE FILES were updated'
             files: '.example'
             level: 'warning'
             data: [
               'NOTE: you should diff and adjust the example files:',
-              '$ ./scripts/update --diff'
+              '$ ./scripts/update diff'
             ]
       # update project repos
       - name: update project repos
@@ -61,7 +61,7 @@ production:
           - name: collecting_society
             source: 'git@github.com:C3S/collecting_society.git'
             changes:
-              - name: 'database structure has changed'
+              - name: '∇ DATABASE structure has changed'
                 files: ['.py', '.xml']
                 level: 'warning'
                 data: [
@@ -76,7 +76,6 @@ production:
             source: 'git@github.com:C3S/collecting_society_worker.git'
           - name: echoprint-server
             source: 'git@github.com:C3S/echoprint-server.git'
-            version: 'master'
       # update upstream repos
       - name: update upstream repos
         actions: ['repo_update']
@@ -177,6 +176,8 @@ production:
     # push command
     push: *update
 
+    replace:
+
   # action config -------------------------------------------------------------
   actions:
     # update_repo action group
@@ -190,8 +191,8 @@ production:
       ignore: [^#, ^\/\/, ^\n$]
     # git status action
     git_status:
-      # use porcelain
-      porcelain: true
+      # stop further actions on error
+      stop_action_group: true
     # git clone action
     git_clone:
       # create the conaining folder of the repo
