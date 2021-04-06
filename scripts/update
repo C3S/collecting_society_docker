@@ -314,6 +314,40 @@ def color(text, status):
     return text
 
 
+def color_git_status(output):
+    """Colores git status output."""
+    _color = ''
+    clean = True
+    data = colors['clear']
+    for line in output.split("\n"):
+        if line.startswith("  ("):
+            _color = 'remove'
+            if 'reset' in line:
+                _color = 'add'
+        if not line.startswith("\t"):
+            data += color(line, 'dim') + "\n"
+            continue
+        clean = False
+        data += color(line, _color) + "\n"
+    return data.rstrip(), clean
+
+
+def color_file_diff(output):
+    """Colores file diff output."""
+    data = colors['clear']
+    for line in output.split("\n"):
+        if line.startswith('-'):
+            data += colors['remove']
+        elif line.startswith('+'):
+            data += colors['add']
+        elif line.startswith('@'):
+            data += colors['hunk']
+        else:
+            data += colors['dim']
+        data += line + colors['clear'] + "\n"
+    return data.rstrip()
+
+
 def message(msg, offset=1, pad=10, data=True, add=True, output=True):
     """Prints a message."""
     # default
@@ -787,21 +821,10 @@ def file_diff(task, context={}):
                 lines = lines[0:3] + filtered
 
         # color diff
-        data = colors['clear']
+        data = ""
         if ignored and not _verbose:
-            data += color("--8<-- (ignored lines stripped) --8<--", "dim")
-            data += colors['clear'] + "\n"
-        for line in lines:
-            if line.startswith('-'):
-                data += colors['remove']
-            elif line.startswith('+'):
-                data += colors['add']
-            elif line.startswith('@'):
-                data += colors['hunk']
-            else:
-                data += colors['dim']
-            data += line + colors['clear']
-        data = data.rstrip()
+            data += color("--8<-- (ignored lines stripped) --8<--\n", "dim")
+        data += color_file_diff("".join(lines))
 
         # files contains only ignored differences
         if ignored and not filtered:
@@ -959,7 +982,7 @@ def git_user(task, context={}):
 
 @action
 def git_status(task, context={}):
-    """Checks the status of the repository, cancels task if not ok."""
+    """Checks the status of the repository, cancels action group if not ok."""
     target = task.get('target') or task['name']
     targetpath = task.get('targetpath')
     if targetpath:
@@ -981,20 +1004,8 @@ def git_status(task, context={}):
         return
 
     # full
-    clean = True
-    colored = [colors['clear']]
     output = execute(cmd, cwd=target, stop_action_group=True, log=False)
-    _color = ''
-    for line in output.split("\n"):
-        if line.startswith("  ("):
-            _color = 'remove'
-            if 'reset' in line:
-                _color = 'add'
-        if not line.startswith("\t"):
-            colored.append(color(line, 'dim'))
-            continue
-        clean = False
-        colored.append(color(line, _color))
+    data, clean = color_git_status(output)
 
     # clean workdir
     if clean:
@@ -1002,7 +1013,34 @@ def git_status(task, context={}):
         return
 
     # dirty workdir
-    message({'level': "warning", 'data': "\n".join(colored)})
+    message({'level': "warning", 'data': data})
+
+
+@action
+def git_diff(task, context={}):
+    """Diffs a repository."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    # diff repo
+    if _verbose:
+        output = execute(('git', 'diff'), cwd=target, log=False)
+        data = color_file_diff(output)
+    else:
+        output = execute(
+            ('git', 'status', '--porcelain'), cwd=target, log=False)
+        data = output
+
+    # no differences
+    if not output:
+        message({'level': 'debug', 'description': 'no differences'})
+        return
+
+    # color diff
+    message({'level': 'warning', 'description': 'differences found',
+             'data': data})
 
 
 @action
@@ -1448,9 +1486,18 @@ def update(context={}):
 
 @command
 def diff(context={}):
-    """Prints the diffs of the example files."""
+    """Prints the diff of the project repos and the example files."""
     # filter tasks
     tasks = []
+    # repos
+    for task in context['tasks']:
+        if 'git_status' not in task['actions']:
+            continue
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['actions'] = ['git_diff']
+        tasks.append(task)
+    # files
     for task in context['tasks']:
         if 'file_diff' not in task['actions']:
             continue
@@ -1485,7 +1532,7 @@ def pull(context={}):
             continue
         if 'upstream' not in task or task['upstream']:
             continue
-        task['actions'] = ['git_pull']
+        task['actions'] = ['git_status', 'git_pull']
         tasks.append(task)
     context['tasks'] = tasks
 

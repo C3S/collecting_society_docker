@@ -952,7 +952,7 @@ update
 
     subcommands:
 
-        diff         Prints the diffs of the example files
+        diff         Prints the diff of the project repos and the example files
         status       Prints the git status of the project repositories
         pull         Pulls the project repositories
         commit       Commits changes and untracked files to the project repositories
@@ -963,7 +963,7 @@ update
     $ ./scripts/update diff --help
     usage: ./scripts/update diff [-h] [-v] [-d] [--no-color]
 
-    Prints the diffs of the example files.
+    Prints the diff of the project repos and the example files.
 
     optional arguments:
       -h, --help     show this help message and exit
