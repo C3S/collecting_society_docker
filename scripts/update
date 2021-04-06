@@ -1597,7 +1597,7 @@ environment = env['ENVIRONMENT']
 branch = env['BRANCH']
 git_name = env.get('GIT_USER_NAME', '')
 git_email = env.get('GIT_USER_EMAIL', '')
-git_protocol = env.get('GIT_SSH') and 'ssh' or 'https'
+git_protocol = int(env.get('GIT_SSH')) and 'ssh' or 'https'
 
 # messages
 levels = {
