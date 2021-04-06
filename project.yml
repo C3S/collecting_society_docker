@@ -54,10 +54,10 @@ production:
         upstream: false
         version: '${BRANCH}'
         batch:
-          - name: archiving
-            source: 'git@github.com:C3S/archiving.git'
-          - name: portal
-            source: 'git@github.com:C3S/portal.git'
+          # - name: archiving
+          #   source: 'git@github.com:C3S/archiving.git'
+          # - name: portal
+          #   source: 'git@github.com:C3S/portal.git'
           - name: collecting_society
             source: 'git@github.com:C3S/collecting_society.git'
             changes:
