@@ -397,11 +397,11 @@ def header(output=True):
         global_username = execute(
             ('git', 'config', '--global', 'user.name'), log=False)
         global_useremail = execute(
-            ('git', 'config', '--global', 'user.name'), log=False)
+            ('git', 'config', '--global', 'user.email'), log=False)
         data['gituser'] = "%s <%s>" % (global_username, global_useremail)
         message({'level': "info",
                  'description': "GIT_USER_NAME/EMAIL in .env not set",
-                 'data': "NOTE: commits will use: %s" % data['user']})
+                 'data': "NOTE: commits will use: %s" % data['gituser']})
     # text
     pad = 0
     for key in data:
@@ -1531,8 +1531,8 @@ environments = project.keys()
 # environment
 environment = env['ENVIRONMENT']
 branch = env['BRANCH']
-git_name = env.get('GIT_USER_NAME')
-git_email = env.get('GIT_USER_EMAIL')
+git_name = env.get('GIT_USER_NAME', '')
+git_email = env.get('GIT_USER_EMAIL', '')
 git_protocol = env.get('GIT_SSH') and 'ssh' or 'https'
 
 # messages
