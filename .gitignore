@@ -72,8 +72,15 @@ tags
 /volumes/*
 !/volumes/shared
 
-# Created foldes
+# Created files and foldes
+.flake8
 /code
+/docs
+/tests
+/services/config
+/services/deploy
+/services/healthcheck
+/services/pip
 /volumes/shared/src
 /volumes/shared/ref
 /volumes/shared/tmp

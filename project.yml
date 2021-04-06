@@ -123,7 +123,6 @@ production:
       - name: create basic folder structure
         actions: ['folder_create']
         batch:
-          - name: 'code'
           - name: 'volumes/shared/tmp'
           - name: 'volumes/shared/tmp/logs'
       # copy and diff example files
@@ -240,6 +239,12 @@ development:
         batch:
           - name: '.devcontainer.json'
             ignore: ['^\s*"service":', '^\s*"dockerComposeFile":']
+      # create development folder structure
+      - name: create development folder structure
+        actions: ['folder_create']
+        batch:
+          - name: 'code'
+          - name: 'services/config'
       # symlink project repos
       - name: symlink project repos
         actions: ['path_link']
@@ -255,6 +260,63 @@ development:
             source: 'volumes/shared/src/echoprint-server'
           - name: collecting_society_worker
             source: 'volumes/shared/src/collecting_society_worker'
+      # symlink script folders for services
+      - name: symlink script folders for services
+        actions: ['path_link']
+        targetpath: 'services'
+        batch:
+          - name: deploy
+            source: 'volumes/shared/deploy'
+          - name: healthcheck
+            source: 'volumes/shared/healthcheck'
+          - name: pip
+            source: 'volumes/shared/config/pip'
+      # symlink configuration files for applications
+      - name: symlink configuration files for applications
+        actions: ['path_link']
+        targetpath: 'services/config'
+        batch:
+          # tryton
+          - name: collecting_society.development.conf
+            source: 'volumes/shared/config/trytond/development.conf'
+          - name: collecting_society.staging.conf
+            source: 'volumes/shared/config/trytond/staging.conf'
+          - name: collecting_society.testing.conf
+            source: 'volumes/shared/config/trytond/testing.conf'
+          - name: collecting_society.production.conf
+            source: 'volumes/shared/config/trytond/production.conf'
+          # pyramid
+          - name: portal_web.development.ini
+            source: 'volumes/shared/src/portal_web/development.ini'
+          - name: portal_web.staging.ini
+            source: 'volumes/shared/src/portal_web/staging.ini'
+          - name: portal_web.staging.ini
+            source: 'volumes/shared/src/portal_web/staging.ini'
+          - name: portal_web.testing.ini
+            source: 'volumes/shared/src/portal_web/testing.ini'
+          - name: collecting_society_web.development.ini
+            source: 'volumes/shared/src/collecting_society_web/development.ini'
+          - name: collecting_society_web.staging.ini
+            source: 'volumes/shared/src/collecting_society_web/staging.ini'
+          - name: collecting_society_web.staging.ini
+            source: 'volumes/shared/src/collecting_society_web/staging.ini'
+          - name: collecting_society_web.testing.ini
+            source: 'volumes/shared/src/collecting_society_web/testing.ini'
+          # worker
+          - name: collecting_society_worker.config.ini
+            source: 'volumes/shared/src/collecting_society_worker/config.ini'
+      # symlink paths and scripts for easy access
+      - name: symlink paths and scripts for easy access
+        actions: ['path_link']
+        batch:
+          - name: cli
+            source: 'volumes/shared/cli'
+          - name: .flake8
+            source: 'volumes/shared/.flake8'
+          - name: tests
+            source: 'volumes/shared/tests'
+          - name: docs
+            source: 'volumes/shared/docs/build/html'
       # checkout repos of pinned pip packages for reference
       - name: checkout repos of pinned pip packages for reference
         actions: ['git_clone', 'git_checkout']
