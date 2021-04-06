@@ -135,7 +135,8 @@ production:
         actions: ['file_copy', 'file_diff']
         batch:
           - name: .env
-            ignore: ['^ENVIRONMENT', '^BRANCH=', '^GIT_SSH=', '^GIT_USER_NAME=', '^GIT_USER_EMAIL=']
+            ignore: ['^ENVIRONMENT', '^BRANCH=', '^GIT_SSH=',
+                     '^GIT_USER_NAME=', '^GIT_USER_EMAIL=', '^GIT_USER_SIGNINGKEY']
           - name: services/webgui.env
             ignore: ['^PYRAMID_AUTHENTICATION_SECRET=', '^PYRAMID_SESSION_SECRET=']
           - name: services/webapi.env
