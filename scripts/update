@@ -1491,8 +1491,6 @@ def diff(context={}):
     tasks = []
     # repos
     for task in context['tasks']:
-        if 'git_status' not in task['actions']:
-            continue
         if 'upstream' not in task or task['upstream']:
             continue
         task['actions'] = ['git_diff']
@@ -1512,8 +1510,6 @@ def status(context={}):
     # filter tasks
     tasks = []
     for task in context['tasks']:
-        if 'git_status' not in task['actions']:
-            continue
         if 'upstream' not in task or task['upstream']:
             continue
         task['actions'] = ['git_status']
@@ -1528,11 +1524,22 @@ def pull(context={}):
     # filter tasks
     tasks = []
     for task in context['tasks']:
-        if 'git_pull' not in task['actions']:
-            continue
         if 'upstream' not in task or task['upstream']:
             continue
         task['actions'] = ['git_status', 'git_pull']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
+def checkout(context={}):
+    """Checksout the project repositories."""
+    # filter tasks
+    tasks = []
+    for task in context['tasks']:
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['actions'] = ['git_status', 'git_checkout']
         tasks.append(task)
     context['tasks'] = tasks
 
@@ -1543,8 +1550,6 @@ def commit(context={}):
     # filter tasks
     tasks = []
     for task in context['tasks']:
-        if 'git_pull' not in task['actions']:
-            continue
         if 'upstream' not in task or task['upstream']:
             continue
         task['actions'] = ['git_commit']
@@ -1558,8 +1563,6 @@ def push(context={}):
     # filter tasks
     project_tasks = []
     for task in context['tasks']:
-        if 'git_pull' not in task['actions']:
-            continue
         if 'upstream' not in task or task['upstream']:
             continue
         project_tasks.append(task)
@@ -1719,6 +1722,11 @@ if __name__ == "__main__":
     subcmd_pull = subcmds.add_parser(
         'pull', parents=[subcmd], description=pull.__doc__,
         help=pull.__doc__.strip('.'))
+
+    # checkout command
+    subcmd_checkout = subcmds.add_parser(
+        'checkout', parents=[subcmd], description=checkout.__doc__,
+        help=checkout.__doc__.strip('.'))
 
     # commit command
     subcmd_commit = subcmds.add_parser(

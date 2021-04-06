@@ -955,6 +955,7 @@ update
         diff         Prints the diff of the project repos and the example files
         status       Prints the git status of the project repositories
         pull         Pulls the project repositories
+        checkout     Checksout the project repositories
         commit       Commits changes and untracked files to the project repositories
         push         Pushes commits of the project repos, creates missing remote branches
 
@@ -990,6 +991,19 @@ update
     usage: ./scripts/update pull [-h] [-v] [-d] [--no-color]
 
     Pulls the project repositories.
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output
+      -d, --debug    debug output, implies verbose
+      --no-color     colorless output
+
+::
+
+    ./scripts/update checkout --help
+    usage: ./scripts/update checkout [-h] [-v] [-d] [--no-color]
+
+    Checksout the project repositories.
 
     optional arguments:
       -h, --help     show this help message and exit
