@@ -1199,8 +1199,8 @@ def git_checkout(task, context={}):
 
         # version switched
         msg = {'level': "info", 'description': "branch switched",
-               'data': "\n".join(["old branch/tag: `%s`" % old_version,
-                                  "new branch/tag: `%s`" % version])}
+               'data': "\n".join(["old: `%s`" % old_version,
+                                  "new: `%s`" % version])}
         execute(('git', 'checkout', version), cwd=target, msg=msg)
 
         # if main repo was switched, give control to the other version
