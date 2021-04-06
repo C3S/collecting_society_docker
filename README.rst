@@ -105,7 +105,7 @@ Files
     │   ├── collecting_society_worker/      # (worker) file processing
     │   └── echoprint-server/               # (fingerprint) echoprint server
     │
-    ├── documentation/                      # documentation build
+    ├── docs/                               # documentation build
     │   └── index.html                      # main index file of the built documentation
     │
     ├── services/                           # files for docker services
@@ -245,7 +245,7 @@ Documentation
 
 ======================================= ===============================================================
 ``docs-build``                          `docs-build script`_ to build the `project documentation`_
-``documentation/index.html``            Main index file of the built documentation
+``docs/index.html``                     Main index file of the built documentation
 ======================================= ===============================================================
 
 Tests
@@ -2396,7 +2396,7 @@ folder.
 
 Once built, the docs can be viewed (from outside the container) like this::
 
-    $ firefox documentation/index.html
+    $ firefox docs/index.html
 
 .. seealso:: `Sphinx rst Markup`__
 
