@@ -49,7 +49,7 @@
         // that depends on sales, e.g. sales_statistics, you could enter:
         // execute db-copy --force collecting_society collecting_society_template
         {
-            "name": "Demo Data Import Attach",
+            "name": "ERPServer Attach",
             "type": "python",
             "request": "attach",
             "port": 51005,
