@@ -1156,7 +1156,7 @@ def git_fetch(task, context={}):
 
 @action
 def git_checkout(task, context={}):
-    """Checksout a branch or tag in a repository."""
+    """Checksout a branch or tag in a repository, sets branch/environment."""
     target = task.get('target') or task['name']
     targetpath = task.get('targetpath')
     if targetpath:
@@ -1172,6 +1172,11 @@ def git_checkout(task, context={}):
     if not upstream and branch:
         line_replace({
             'name': ".env", 'after': "^BRANCH=", 'replace': checkout_version})
+
+    # set environment, if needed
+    if not upstream and branch in project.items():
+        line_replace({
+            'name': ".env", 'after': "^ENVIRONMENT=", 'replace': branch})
 
     # get checked out version
     checkedout_version = execute(
@@ -1213,12 +1218,15 @@ def git_checkout(task, context={}):
         return
 
         # if main repo was switched, give control to the other version
-        # if target == ".":
-        #     message({'level': "info",
-        #              'description': "script will be restarted now",
-        #              'data': "REASON: the main repository branch switched"})
-        #     os.execv(__file__, sys.argv)
-        # return
+        if target == ".":
+            print(sys.argv)
+            message({'level': "info",
+                     'description': "script will be restarted now",
+                     'data': "REASON: the main repository branch switched"})
+            with open(__file__) as f:
+                exec(compile(f.read(), __file__, 'exec'))
+            # os.execv(__file__, sys.argv)
+        return
 
     # upstream version does not exist
     if upstream or checkout_version.startswith("tags/"):
