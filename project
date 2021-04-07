@@ -1502,6 +1502,7 @@ def git_merge(task, context={}):
     if not target_branch:
         target_branch = "development"
     push = task.get('push', _merge_push)
+    delete = task.get('delete', True)
     verbose = context['actions']['verbose']
 
     # skip silently for upstream repos
@@ -1536,13 +1537,35 @@ def git_merge(task, context={}):
         git_push({**task, **{'version': target_branch}})
 
     # delete feature branch
-    git_delete({**task, **{'branch': source_branch}})
+    if delete:
+        git_delete({**task, **{'branch': source_branch}})
 
 
 @action
 def git_promote(task, context={}):
-    """Pushes staged commits, creates remote branch for local ones."""
-    raise NotImplementedError
+    """Promotes an environment branch into the next stage."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+    branches = ['development', 'staging', 'production']
+    source_branch = task.get('branch', _promote_branch)
+    if source_branch not in branches:
+        error({'description': "not an environment branch"})
+    target_branch = branches[branches.indexof(source_branch) + 1]
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # promote
+    git_merge({**task, **{
+        'version': source_branch,
+        'branch': target_branch,
+        'push': True,
+        'delete': False,
+    }})
 
 
 @action
@@ -1894,6 +1917,7 @@ def promote(context={}):
     """Merges an environment branch into the next stage environment branch."""
     # action configuration
     context['actions']['git_promote']['verbose'] = _verbose
+    context['actions']['git_status']['stop_all'] = True
     # filter tasks
     project_tasks = []
     for task in deepcopy(context['tasks']):
@@ -2124,6 +2148,7 @@ if __name__ == "__main__":
     _delete_branch = args.get('delete_branch', None)
     _merge_branch = args.get('merge_branch', None)
     _merge_push = not args.get('no_push', False)
+    _promote_branch = args.get('environment', None)
     _branch_delete = not args.get('no_delete', False)
     _branch_delete_local = not args.get('no_local_delete', False)
     _branch_delete_remote = not args.get('no_remote_delete', False)
