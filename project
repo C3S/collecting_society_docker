@@ -1262,7 +1262,7 @@ def git_delete(task, context={}):
     # delete local feature branch
     delete_flag = force and '-D' or '-d'
     output = execute(
-        ('git', 'branch', '-d', delete_flag, delete_branch), cwd=target)
+        ('git', 'branch', delete_flag, delete_branch), cwd=target)
     message({'level': 'info', 'description': 'branch deleted', 'data': output})
 
     # find out, if remote branch exists
