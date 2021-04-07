@@ -1471,7 +1471,8 @@ def git_merge(task, context={}):
     git_pull({**task, **{'version': merge_branch}})
 
     # merge feature branch
-    output = execute(('git', 'merge', '--no-ff', version), cwd=target)
+    output = execute(
+        ('git', 'merge', '--no-edit', '--no-ff', version), cwd=target)
     if 'merging' not in output:
         message({'description': 'up-to-date'})
     else:
