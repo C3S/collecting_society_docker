@@ -1241,6 +1241,8 @@ def git_delete(task, context={}):
     version = task['version']
     upstream = task.get('upstream', True)
     delete_branch = task.get('branch', _delete_branch)
+    delete_local = task.get('delete_local', _branch_delete_local)
+    delete_remote = task.get('delete_remote', _branch_delete_remote)
     if not delete_branch:
         delete_branch = version
     force = task.get('force', _force)
@@ -1277,11 +1279,14 @@ def git_delete(task, context={}):
             local_exists = True
 
     # delete local feature branch
-    if local_exists:
+    if not delete_local:
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'no local deletion flag set',
+                 'data': "branch: %s" % delete_branch})
+    elif local_exists:
         delete_flag = force and '-D' or '-d'
-        # output = execute(
-        #     ('git', 'branch', delete_flag, delete_branch), cwd=target)
-        output = ""
+        output = execute(
+            ('git', 'branch', delete_flag, delete_branch), cwd=target)
         message({'level': 'warning', 'description': 'branch deleted',
                  'data': output})
     else:
@@ -1297,9 +1302,13 @@ def git_delete(task, context={}):
             remote_exists = True
 
     # delete remote feature branch
-    if remote_exists:
-        # output = execute(
-        #     ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
+    if not delete_remote:
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'no remote deletion flag set',
+                 'data': "branch: %s" % delete_branch})
+    elif remote_exists:
+        output = execute(
+            ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
         output = ""
         message({'level': 'warning',
                  'description': 'branch deleted', 'data': output})
@@ -1483,7 +1492,6 @@ def git_merge(task, context={}):
     target_branch = task.get('branch', _merge_branch)
     if not target_branch:
         target_branch = "development"
-    delete = task.get('delete', _merge_delete)
     push = task.get('push', _merge_push)
     verbose = context['actions']['verbose']
 
@@ -1519,8 +1527,7 @@ def git_merge(task, context={}):
         git_push({**task, **{'version': target_branch}})
 
     # delete feature branch
-    if delete and source_branch not in project.items():
-        git_delete({**task, **{'branch': source_branch}})
+    git_delete({**task, **{'branch': source_branch}})
 
 
 @action
@@ -2051,6 +2058,12 @@ if __name__ == "__main__":
     subcmd_delete.add_argument(
         'delete_branch', metavar="BRANCH",
         help="Branch name")
+    subcmd_delete.add_argument(
+        '--no-local-delete', action='store_true',
+        help="Don't delete local branch (default: %(default)s)")
+    subcmd_delete.add_argument(
+        '--no-remote-delete', action='store_true',
+        help="Don't delete remote branch (default: %(default)s)")
 
     # commit command
     subcmd_commit = subcmds.add_parser(
@@ -2080,6 +2093,12 @@ if __name__ == "__main__":
         '--no-delete', action='store_true',
         help="Don't delete branch after merge (default: %(default)s)")
     subcmd_merge.add_argument(
+        '--no-local-delete', action='store_true',
+        help="Don't delete local branch after merge (default: %(default)s)")
+    subcmd_merge.add_argument(
+        '--no-remote-delete', action='store_true',
+        help="Don't delete remote branch after merge (default: %(default)s)")
+    subcmd_merge.add_argument(
         '--no-push', action='store_true',
         help="Don't push branch after merge (default: %(default)s)")
 
@@ -2099,7 +2118,9 @@ if __name__ == "__main__":
     _delete_branch = args.get('delete_branch', None)
     _merge_branch = args.get('merge_branch', None)
     _merge_push = not args.get('no_push', False)
-    _merge_delete = not args.get('no_delete', False)
+    _branch_delete = not args.get('no_delete', False)
+    _branch_delete_local = not args.get('no_local_delete', False)
+    _branch_delete_remote = not args.get('no_remote_delete', False)
     _force = args.get('force', False)
     _restarted = args.get('restarted', "")
     _reset = args.get('reset', False)
@@ -2117,6 +2138,9 @@ if __name__ == "__main__":
     if _debug:
         _verbose = True
         levels['output'].append('debug')
+    if not _branch_delete:
+        _branch_delete_remote = False
+        _branch_delete_local = False
 
     # set workdir
     os.chdir(root)
