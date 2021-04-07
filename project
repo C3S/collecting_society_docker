@@ -1722,7 +1722,7 @@ def diff(context={}):
 
 @command
 def pull(context={}):
-    """Pulls the project repositories."""
+    """Pulls the current branch for all project repositories."""
     # action configuration
     context['actions']['git_pull']['verbose'] = _verbose
     context['actions']['git_status']['stop_action_group'] = True
@@ -1738,7 +1738,7 @@ def pull(context={}):
 
 @command
 def checkout(context={}):
-    """Checksout the project repositories."""
+    """Checksout a branch in all project repositories."""
     # action configuration
     context['actions']['git_checkout']['verbose'] = _verbose
     context['actions']['git_status']['stop_all'] = True
@@ -1760,7 +1760,7 @@ def checkout(context={}):
 
 @command
 def delete(context={}):
-    """Deletes the current or requested local and remote branch."""
+    """Deletes a local and remote branch in all project repos."""
     # action configuration
     context['actions']['git_delete']['verbose'] = _verbose
     context['actions']['git_status']['stop_all'] = True
@@ -1798,7 +1798,7 @@ def commit(context={}):
 
 @command
 def push(context={}):
-    """Pushes commits of the project repos, creates missing remote branches."""
+    """Pushes commits in all project repos, creates missing remote branches."""
     # action configuration
     context['actions']['git_push']['verbose'] = _verbose
     # filter tasks
@@ -1820,7 +1820,7 @@ def push(context={}):
 
 @command
 def merge(context={}):
-    """Merges the current feature branch into the development branch."""
+    """Merges the current branch into another branch in all project repos."""
     # action configuration
     context['actions']['git_merge']['verbose'] = _verbose
     context['actions']['git_status']['stop_all'] = True
@@ -1843,7 +1843,7 @@ def merge(context={}):
 
 @command
 def promote(context={}):
-    """Merges the requested environment branch into the next stage."""
+    """Merges an environment branch into the next stage environment branch."""
     # action configuration
     context['actions']['git_promote']['verbose'] = _verbose
     # filter tasks
