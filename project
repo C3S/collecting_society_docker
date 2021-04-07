@@ -1465,7 +1465,7 @@ def git_push(task, context={}):
     # create remote branch, if repo is local
     if not remote_exists:
         msg = {'level': "warning", 'description': "new remote branch created"}
-        execute(('git', 'push', 'origin', version), cwd=target)
+        execute(('git', 'push', 'origin', version), cwd=target, msg=msg)
         return
 
     # find out, if unpushed commits exist
