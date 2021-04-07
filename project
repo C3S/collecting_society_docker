@@ -1244,6 +1244,7 @@ def git_delete(task, context={}):
     if not delete_branch:
         delete_branch = version
     force = task.get('force', _force)
+    verbose = context['actions']['verbose']
 
     # stop if branch is checked out
     if version == delete_branch:
@@ -1256,7 +1257,8 @@ def git_delete(task, context={}):
 
     # skip environment branches
     if delete_branch in project.items():
-        message({'level': 'info', 'skipped deletion of environment branch'
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'skipped deletion of environment branch',
                  'data': "branch: %s" % delete_branch})
         return
 
@@ -1270,12 +1272,14 @@ def git_delete(task, context={}):
     # delete local feature branch
     if local_exists:
         delete_flag = force and '-D' or '-d'
-        output = execute(
-            ('git', 'branch', delete_flag, delete_branch), cwd=target)
-        message({'level': 'info', 'description': 'branch deleted',
+        # output = execute(
+        #     ('git', 'branch', delete_flag, delete_branch), cwd=target)
+        output = ""
+        message({'level': 'warning', 'description': 'branch deleted',
                  'data': output})
     else:
-        message({'description': 'no local branch -> skipped deletion',
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'no local branch -> skipped deletion',
                  'data': "branch: %s" % delete_branch})
 
     # find out, if remote branch exists
@@ -1287,12 +1291,14 @@ def git_delete(task, context={}):
 
     # delete remote feature branch
     if remote_exists:
-        output = execute(
-            ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
-        message({'level': 'info',
+        # output = execute(
+        #     ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
+        output = ""
+        message({'level': 'warning',
                  'description': 'branch deleted', 'data': output})
     else:
-        message({'description': 'no remote branch -> skipped deletion',
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'no remote branch -> skipped deletion',
                  'data': "branch: %s" % delete_branch})
 
 
@@ -1472,6 +1478,7 @@ def git_merge(task, context={}):
         target_branch = "development"
     delete = task.get('delete', _merge_delete)
     push = task.get('push', _merge_push)
+    verbose = context['actions']['verbose']
 
     # skip silently for upstream repos
     if upstream:
@@ -1495,7 +1502,8 @@ def git_merge(task, context={}):
     output = execute(
         ('git', 'merge', '--no-edit', '--no-ff', source_branch), cwd=target)
     if 'merging' not in output:
-        message({'description': 'up-to-date'})
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'nothing to merge'})
     else:
         message({'level': 'info', 'description': 'merged', 'data': output})
 
