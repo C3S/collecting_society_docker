@@ -1287,7 +1287,7 @@ def git_delete(task, context={}):
         delete_flag = force and '-D' or '-d'
         output = execute(
             ('git', 'branch', delete_flag, delete_branch), cwd=target)
-        message({'level': 'warning', 'description': 'branch deleted',
+        message({'level': 'warning', 'description': 'local branch deleted',
                  'data': output})
     else:
         message({'level': verbose and 'info' or 'debug',
@@ -1310,8 +1310,8 @@ def git_delete(task, context={}):
         output = execute(
             ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
         output = ""
-        message({'level': 'warning',
-                 'description': 'branch deleted', 'data': output})
+        message({'level': 'warning', 'description': 'remote branch deleted',
+                 'data': output})
     else:
         message({'level': verbose and 'info' or 'debug',
                  'description': 'no remote branch -> skipped deletion',
