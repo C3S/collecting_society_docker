@@ -1574,7 +1574,7 @@ def script_restart(task, context={}):
              'data': "REASON: the main repository was updated"}, end="")
     sys.argv += ['--restarted', commit_range]
     with open(__file__) as f:
-        exec(compile(f.read(), __file__, 'exec'))
+        exec(compile(f.read(), __file__, 'exec'), globals(), {})
         sys.exit()
     # os.execv(__file__, sys.argv + ['--restarted', commit_range])
 
