@@ -1252,7 +1252,7 @@ def git_delete(task, context={}):
         return
 
     # skip environment branches
-    if delete_branch in environments.items():
+    if delete_branch in project.items():
         message({'level': 'info', 'skipped deletion of environment branch'
                  'data': "branch: %s" % delete_branch})
         return
@@ -1482,7 +1482,7 @@ def git_merge(task, context={}):
         git_push({**task, **{'version': merge_branch}})
 
     # delete feature branch
-    if version not in environments.items():
+    if version not in project.items():
         git_delete({**task, **{'branch': version}})
 
 
