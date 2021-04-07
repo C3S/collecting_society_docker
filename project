@@ -1243,12 +1243,16 @@ def git_delete(task, context={}):
     if not delete_branch:
         delete_branch = version
 
+    # stop if branch is checked out
+    if version == delete_branch:
+        error({'description': 'cannot delete checked out branch'})
+
     # skip silently for upstream repos
     if upstream:
         return
 
     # skip environment branches
-    if delete_branch in environments.items():
+    if delete_branch in project.items():
         message({'level': 'info', 'skipped deletion of environment branch'
                  'data': "branch: %s" % delete_branch})
         return
@@ -1258,7 +1262,6 @@ def git_delete(task, context={}):
     #                   cwd=target)
     output = ""
     message({'level': 'info', 'description': 'branch deleted', 'data': output})
-
 
     # find out, if remote branch exists
     remote_exists = False
@@ -1479,7 +1482,7 @@ def git_merge(task, context={}):
         git_push({**task, **{'version': merge_branch}})
 
     # delete feature branch
-    if version not in environments.items():
+    if version not in project.items():
         git_delete({**task, **{'branch': version}})
 
 
