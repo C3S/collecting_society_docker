@@ -1967,7 +1967,7 @@ if __name__ == "__main__":
         help="debug output, implies verbose")
     subcmd.add_argument(
         '--no-color', action='store_true',
-        help="colorless output")
+        help=argparse.SUPPRESS)
     subcmd.add_argument(
         '--restarted', metavar="COMMITRANGE",
         help=argparse.SUPPRESS)
@@ -2008,14 +2008,14 @@ if __name__ == "__main__":
 
     # delete command
     subcmd_delete = subcmds.add_parser(
-       'delete', parents=[subcmd], description=delete.__doc__,
-       help=delete.__doc__.strip('.'))
-    subcmd_delete.add_argument(
-        'delete_branch', nargs='?', metavar="BRANCH",
-        help="Branch name")
+        'delete', parents=[subcmd], description=delete.__doc__,
+        help=delete.__doc__.strip('.'))
     subcmd_delete.add_argument(
         '-f', '--force', action='store_true',
         help="Force deletion of not fully merged branches")
+    subcmd_delete.add_argument(
+        'delete_branch', nargs='?', metavar="BRANCH",
+        help="Branch name")
 
     # commit command
     subcmd_commit = subcmds.add_parser(
@@ -2027,32 +2027,32 @@ if __name__ == "__main__":
 
     # push command
     subcmd_push = subcmds.add_parser(
-       'push', parents=[subcmd], description=push.__doc__,
-       help=push.__doc__.strip('.'))
+        'push', parents=[subcmd], description=push.__doc__,
+        help=push.__doc__.strip('.'))
 
     # merge command
     subcmd_merge = subcmds.add_parser(
-       'merge', parents=[subcmd], description=merge.__doc__,
-       help=merge.__doc__.strip('.'))
+        'merge', parents=[subcmd], description=merge.__doc__,
+        help=merge.__doc__.strip('.'))
     subcmd_merge.add_argument(
         'merge_branch', nargs='?', metavar="BRANCH",
         help="Branch name")
     subcmd_merge.add_argument(
-        '--no-delete', action='store_true',
-        help="Don't delete branch after merge")
-    subcmd_merge.add_argument(
         '-f', '--force', action='store_true',
         help="Force deletion of not fully merged branches")
+    subcmd_merge.add_argument(
+        '--no-delete', action='store_true',
+        help="Don't delete branch after merge")
     subcmd_merge.add_argument(
         '--no-push', action='store_true',
         help="Don't push branch after merge")
 
     # promote command
     subcmd_promote = subcmds.add_parser(
-       'merge', parents=[subcmd], description=promote.__doc__,
-       help=promote.__doc__.strip('.'))
+        'promote', parents=[subcmd], description=promote.__doc__,
+        help=promote.__doc__.strip('.'))
     subcmd_promote.add_argument(
-        'environment', nargs='+', metavar="ENVIRONMENT",
+        'environment', nargs='?', metavar="ENVIRONMENT",
         help="Environment to be promoted to the next stage")
 
     # parse
