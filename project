@@ -1220,8 +1220,7 @@ def git_checkout(task, context={}):
         if target == ".":
             message({'level': "info",
                      'description': "script will be restarted now",
-                     'data': "REASON: the main repository branch switched"},
-                    end="")
+                     'data': "REASON: the main repository branch switched"})
             os.execv(__file__, sys.argv)
 
     # upstream version does not exist
@@ -1566,7 +1565,7 @@ def script_restart(task, context={}):
 
     # restart script
     message({'level': "info", 'description': "script will be restarted now",
-             'data': "REASON: the main repository was updated"}, end="")
+             'data': "REASON: the main repository was updated"})
     os.execv(__file__, sys.argv + ['--restarted', commit_range])
 
 
