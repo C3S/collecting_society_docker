@@ -2159,6 +2159,8 @@ if __name__ == "__main__":
     # set workdir
     os.chdir(root)
     print(sys.argv)
+    print(args, _restarted)
+    exit()
 
     # execute command
     getattr(sys.modules[__name__], _command)()
