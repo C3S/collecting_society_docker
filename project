@@ -357,7 +357,7 @@ def color_file_diff(output):
     return data.rstrip()
 
 
-def message(msg, offset=1, pad=10, data=True, add=True, output=True):
+def message(msg, offset=1, pad=10, data=True, add=True, output=True, end="\n"):
     """Prints a message."""
     # default
     default = {'level': "debug"}
@@ -406,7 +406,7 @@ def message(msg, offset=1, pad=10, data=True, add=True, output=True):
         text += color(data, _color + "_data")
     text += "\n"
     if not action.endswith(" ... "):
-        text += "\n"
+        text += end
     # process
     if add:
         _messages.append(msg)
@@ -1201,7 +1201,6 @@ def git_checkout(task, context={}):
             if line[2:].startswith(checkout_version + " "):
                 version_exists = True
 
-    print(sys.argv)
     # just checkout, if remote or local branch exists
     if version_exists:
 
@@ -1221,7 +1220,8 @@ def git_checkout(task, context={}):
         if target == ".":
             message({'level': "info",
                      'description': "script will be restarted now",
-                     'data': "REASON: the main repository branch switched"})
+                     'data': "REASON: the main repository branch switched"},
+                    end="")
             with open(__file__) as f:
                 exec(compile(f.read(), __file__, 'exec'))
                 sys.exit()
@@ -1570,8 +1570,12 @@ def script_restart(task, context={}):
 
     # restart script
     message({'level': "info", 'description': "script will be restarted now",
-             'data': "REASON: the main repository was updated"})
-    os.execv(__file__, sys.argv + ['--restarted', commit_range])
+             'data': "REASON: the main repository was updated"}, end="")
+    sys.argv += ['--restarted', commit_range]
+    with open(__file__) as f:
+        exec(compile(f.read(), __file__, 'exec'))
+        sys.exit()
+    # os.execv(__file__, sys.argv + ['--restarted', commit_range])
 
 
 @action
@@ -2154,6 +2158,7 @@ if __name__ == "__main__":
 
     # set workdir
     os.chdir(root)
+    print(sys.argv)
 
     # execute command
     getattr(sys.modules[__name__], _command)()
