@@ -1281,7 +1281,7 @@ def git_delete(task, context={}):
     # delete local feature branch
     if not delete_local:
         message({'level': verbose and 'info' or 'debug',
-                 'description': 'no local deletion flag set',
+                 'description': 'no deletion for local repos flag set',
                  'data': "branch: %s" % delete_branch})
     elif local_exists:
         delete_flag = force and '-D' or '-d'
@@ -1304,11 +1304,11 @@ def git_delete(task, context={}):
     # delete remote feature branch
     if not delete_remote:
         message({'level': verbose and 'info' or 'debug',
-                 'description': 'no remote deletion flag set',
+                 'description': 'no deletion for remote repos flag set',
                  'data': "branch: %s" % delete_branch})
     elif remote_exists:
-        output = execute(
-            ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
+        # output = execute(
+        #     ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
         output = ""
         message({'level': 'warning', 'description': 'remote branch deleted',
                  'data': output})
@@ -2001,11 +2001,8 @@ if __name__ == "__main__":
     subcmd = argparse.ArgumentParser(
         add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subcmd.add_argument(
-        '-v', '--verbose', action='store_true',
+        '-v', '--verbose', action='count', default=0,
         help="verbose output (default: %(default)s)")
-    subcmd.add_argument(
-        '-d', '--debug', action='store_true',
-        help="debug output, implies verbose (default: %(default)s)")
     subcmd.add_argument(
         '--no-color', action='store_true',
         help=argparse.SUPPRESS)
@@ -2126,8 +2123,8 @@ if __name__ == "__main__":
     _force = args.get('force', False)
     _restarted = args.get('restarted', "")
     _reset = args.get('reset', False)
-    _verbose = args.get('verbose', False)
-    _debug = args.get('debug', False)
+    _verbose = args.get('verbose', 0) >= 1 and True
+    _debug = args.get('verbose', 0) >= 2 and True
     _ci = args.get('ci', False)
     _colorless = args.get('no_color', False)
 
@@ -2138,7 +2135,6 @@ if __name__ == "__main__":
         _verbose = True
         _debug = True
     if _debug:
-        _verbose = True
         levels['output'].append('debug')
     if not _branch_delete:
         _branch_delete_remote = False
