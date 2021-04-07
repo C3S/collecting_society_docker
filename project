@@ -1210,6 +1210,7 @@ def git_checkout(task, context={}):
                'data': "\n".join(["old: `%s`" % old_version,
                                   "new: `%s`" % checkout_version])}
         execute(('git', 'checkout', checkout_version), cwd=target, msg=msg)
+        return
 
         # if main repo was switched, give control to the other version
         # if target == ".":
