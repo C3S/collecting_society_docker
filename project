@@ -1259,7 +1259,6 @@ def git_delete(task, context={}):
     output = ""
     message({'level': 'info', 'description': 'branch deleted', 'data': output})
 
-
     # find out, if remote branch exists
     remote_exists = False
     output = execute(('git', 'branch', '-rvv'), cwd=target)
