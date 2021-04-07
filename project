@@ -457,6 +457,7 @@ def header(output=True):
     if not extended:
         text = "\n"
     # no output after restart
+    print(_restarted)
     if _restarted:
         text = ""
     # process
