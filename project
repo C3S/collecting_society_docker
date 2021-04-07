@@ -1224,7 +1224,7 @@ def git_checkout(task, context={}):
                      'data': "REASON: the main repository branch switched"},
                     end="")
             with open(__file__) as f:
-                exec(compile(f.read(), __file__, 'exec'))
+                exec(compile(f.read(), __file__, 'exec'), globals(), {})
                 sys.exit()
             # os.execv(__file__, sys.argv)
         return
