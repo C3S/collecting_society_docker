@@ -1281,7 +1281,7 @@ def git_delete(task, context={}):
     # delete local feature branch
     if not delete_local:
         message({'level': verbose and 'info' or 'debug',
-                 'description': 'no local deletion flag set',
+                 'description': 'no deletion for local repos flag set',
                  'data': "branch: %s" % delete_branch})
     elif local_exists:
         delete_flag = force and '-D' or '-d'
@@ -1304,11 +1304,11 @@ def git_delete(task, context={}):
     # delete remote feature branch
     if not delete_remote:
         message({'level': verbose and 'info' or 'debug',
-                 'description': 'no remote deletion flag set',
+                 'description': 'no deletion for remote repos flag set',
                  'data': "branch: %s" % delete_branch})
     elif remote_exists:
-        output = execute(
-            ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
+        # output = execute(
+        #     ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
         output = ""
         message({'level': 'warning', 'description': 'remote branch deleted',
                  'data': output})
