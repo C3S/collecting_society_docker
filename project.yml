@@ -167,6 +167,9 @@ production:
     checkout: *update
 
     # pull command
+    delete: *update
+
+    # pull command
     commit: *update
 
     # push command
