@@ -1573,14 +1573,9 @@ def script_restart(task, context={}):
     message({'level': "info", 'description': "script will be restarted now",
              'data': "REASON: the main repository was updated"}, end="")
     sys.argv += ['--restarted', commit_range]
-    glbls = {**globals()}
-    _glbls = {}
-    for k, v in glbls.items():
-        if k.startswith("_") and not k.startswith("__"):
-            continue
-        _glbls[k] = v
+    _globals = dict(locals(), **globals())
     with open(__file__) as f:
-        exec(compile(f.read(), __file__, 'exec'), _glbls)
+        exec(compile(f.read(), __file__, 'exec'), _globals)
         sys.exit()
     # os.execv(__file__, sys.argv + ['--restarted', commit_range])
 
