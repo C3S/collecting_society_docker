@@ -1450,42 +1450,49 @@ def git_merge(task, context={}):
         target = os.path.join(targetpath, target)
     upstream = task.get('upstream', True)
     version = task['version']
-    merge_branch = task.get('branch', _merge_branch)
+    source_branch = version
+    target_branch = task.get('branch', _merge_branch)
     if not branch:
-        merge_branch = "development"
+        target_branch = "development"
+    delete = task.get('delete', _merge_delete)
+    push = task.get('push', _merge_push)
 
     # skip silently for upstream repos
     if upstream:
         return
 
-    # find out, if remote branch exists
-    remote_exists = False
+    # checkout target branch
+    git_checkout({**task, **{'branch': target_branch}})
+
+    # find out, if remote target and source branch exists
+    remote_source_exists = False
+    remote_target_exists = False
     output = execute(('git', 'branch', '-rvv'), cwd=target)
     for line in output.split("\n"):
-        if line[2:].startswith("origin/%s " % version):
-            remote_exists = True
-
-    # checkout development branch
-    git_checkout({**task, **{'branch': merge_branch}})
+        if line[2:].startswith("origin/%s " % target_branch):
+            remote_target_exists = True
+        if line[2:].startswith("origin/%s " % source_branch):
+            remote_source_exists = True
 
     # pull development branch
-    git_pull({**task, **{'version': merge_branch}})
+    if remote_target_exists:
+        git_pull({**task, **{'version': target_branch}})
 
     # merge feature branch
     output = execute(
-        ('git', 'merge', '--no-edit', '--no-ff', version), cwd=target)
+        ('git', 'merge', '--no-edit', '--no-ff', source_branch), cwd=target)
     if 'merging' not in output:
         message({'description': 'up-to-date'})
     else:
         message({'level': 'info', 'description': 'merged', 'data': output})
 
     # push merge to remote branch
-    if remote_exists:
-        git_push({**task, **{'version': merge_branch}})
+    if push and remote_source_exists:
+        git_push({**task, **{'version': target_branch}})
 
     # delete feature branch
-    if version not in project.items():
-        git_delete({**task, **{'branch': version}})
+    if delete and version not in project.items():
+        git_delete({**task, **{'branch': source_branch}})
 
 
 @action
@@ -2033,15 +2040,21 @@ if __name__ == "__main__":
     subcmd_merge = subcmds.add_parser(
        'merge', parents=[subcmd], description=merge.__doc__,
        help=merge.__doc__.strip('.'))
-    subcmd_checkout.add_argument(
+    subcmd_merge.add_argument(
         'merge_branch', nargs='?', metavar="BRANCH",
         help="Branch name")
+    subcmd_merge.add_argument(
+        '--no-delete', action='store_true',
+        help="Don't delete branch after merge")
+    subcmd_merge.add_argument(
+        '--no-push', action='store_true',
+        help="Don't push branch after merge")
 
     # promote command
     subcmd_promote = subcmds.add_parser(
        'merge', parents=[subcmd], description=promote.__doc__,
        help=promote.__doc__.strip('.'))
-    subcmd_commit.add_argument(
+    subcmd_promote.add_argument(
         'environment', nargs='+', metavar="ENVIRONMENT",
         help="Environment to be promoted to the next stage")
 
@@ -2052,6 +2065,8 @@ if __name__ == "__main__":
     _checkout_branch = args.get('checkout_branch', None)
     _delete_branch = args.get('delete_branch', None)
     _merge_branch = args.get('merge_branch', None)
+    _merge_push = not args.get('no_push', False)
+    _merge_delete = not args.get('no_delete', False)
     _restarted = args.get('restarted', "")
     _reset = args.get('reset', False)
     _verbose = args.get('verbose', False)
