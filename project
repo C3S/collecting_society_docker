@@ -1573,9 +1573,9 @@ def script_restart(task, context={}):
     message({'level': "info", 'description': "script will be restarted now",
              'data': "REASON: the main repository was updated"}, end="")
     sys.argv += ['--restarted', commit_range]
-    _globals = dict(locals(), **globals())
     with open(__file__) as f:
-        exec(compile(f.read(), __file__, 'exec'), _globals)
+        exec(compile(f.read(), __file__, 'exec'),
+             {**globals(), **{'_restarted': commit_range}})
         sys.exit()
     # os.execv(__file__, sys.argv + ['--restarted', commit_range])
 
