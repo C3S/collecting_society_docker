@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3 -B
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 """
@@ -457,7 +457,6 @@ def header(output=True):
     if not extended:
         text = "\n"
     # no output after restart
-    print(_restarted)
     if _restarted:
         text = ""
     # process
@@ -1223,11 +1222,7 @@ def git_checkout(task, context={}):
                      'description': "script will be restarted now",
                      'data': "REASON: the main repository branch switched"},
                     end="")
-            with open(__file__) as f:
-                exec(compile(f.read(), __file__, 'exec'), {})
-                sys.exit()
-            # os.execv(__file__, sys.argv)
-        return
+            os.execv(__file__, sys.argv)
 
     # upstream version does not exist
     if upstream or checkout_version.startswith("tags/"):
@@ -1572,12 +1567,7 @@ def script_restart(task, context={}):
     # restart script
     message({'level': "info", 'description': "script will be restarted now",
              'data': "REASON: the main repository was updated"}, end="")
-    sys.argv += ['--restarted', commit_range]
-    with open(__file__) as f:
-        exec(compile(f.read(), __file__, 'exec'),
-             {**globals(), **{'_restarted': commit_range}})
-        sys.exit()
-    # os.execv(__file__, sys.argv + ['--restarted', commit_range])
+    os.execv(__file__, sys.argv + ['--restarted', commit_range])
 
 
 @action
@@ -2160,8 +2150,6 @@ if __name__ == "__main__":
 
     # set workdir
     os.chdir(root)
-    print(sys.argv)
-    print(args, _restarted)
 
     # execute command
     getattr(sys.modules[__name__], _command)()
