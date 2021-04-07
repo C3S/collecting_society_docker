@@ -1452,7 +1452,7 @@ def git_merge(task, context={}):
     version = task['version']
     source_branch = version
     target_branch = task.get('branch', _merge_branch)
-    if not branch:
+    if not target_branch:
         target_branch = "development"
     delete = task.get('delete', _merge_delete)
     push = task.get('push', _merge_push)
@@ -1464,15 +1464,12 @@ def git_merge(task, context={}):
     # checkout target branch
     git_checkout({**task, **{'branch': target_branch}})
 
-    # find out, if remote target and source branch exists
-    remote_source_exists = False
+    # find out, if remote target branch exists
     remote_target_exists = False
     output = execute(('git', 'branch', '-rvv'), cwd=target)
     for line in output.split("\n"):
         if line[2:].startswith("origin/%s " % target_branch):
             remote_target_exists = True
-        if line[2:].startswith("origin/%s " % source_branch):
-            remote_source_exists = True
 
     # pull development branch
     if remote_target_exists:
@@ -1487,11 +1484,11 @@ def git_merge(task, context={}):
         message({'level': 'info', 'description': 'merged', 'data': output})
 
     # push merge to remote branch
-    if push and remote_source_exists:
+    if push and remote_target_exists:
         git_push({**task, **{'version': target_branch}})
 
     # delete feature branch
-    if delete and version not in project.items():
+    if delete and source_branch not in project.items():
         git_delete({**task, **{'branch': source_branch}})
 
 
