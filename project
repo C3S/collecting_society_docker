@@ -1307,8 +1307,8 @@ def git_delete(task, context={}):
                  'description': 'no deletion for remote repos flag set',
                  'data': "branch: %s" % delete_branch})
     elif remote_exists:
-        # output = execute(
-        #     ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
+        output = execute(
+            ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
         output = ""
         message({'level': 'warning', 'description': 'remote branch deleted',
                  'data': output})
