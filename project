@@ -1243,6 +1243,10 @@ def git_delete(task, context={}):
     if not delete_branch:
         delete_branch = version
 
+    # stop if branch is checked out
+    if version == delete_branch:
+        error({'description': 'cannot delete checked out branch'})
+
     # skip silently for upstream repos
     if upstream:
         return
