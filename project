@@ -1245,7 +1245,8 @@ def git_delete(task, context={}):
 
     # stop if branch is checked out
     if version == delete_branch:
-        error({'description': 'cannot delete checked out branch'})
+        error({'title': task['name'],
+               'description': 'cannot delete checked out branch'})
 
     # skip silently for upstream repos
     if upstream:
