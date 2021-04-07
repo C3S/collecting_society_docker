@@ -1465,19 +1465,23 @@ def git_push(task, context={}):
     # create remote branch, if repo is local
     if not remote_exists:
         msg = {'level': "warning", 'description': "new remote branch created"}
-        execute(('git', 'push', 'origin', version), cwd=target)
+        execute(('git', 'push', 'origin', version), cwd=target, msg=msg)
         return
+
+    # ensure remote branch is tracked
+    git_track(task)
 
     # find out, if unpushed commits exist
     unpushed = execute(('git', 'log', '@{u}..'), cwd=target)
 
     # skip repos without commits
     if not unpushed:
+        message({'level': verbose and "info" or "debug",
+                 'description': "no commits to push", 'data': unpushed})
         return
 
     # add performed
-    msg = {'level': verbose and "info" or "debug",
-           'description': "commits pushed", 'data': unpushed}
+    msg = {'level': "info", 'description': "commits pushed", 'data': unpushed}
     execute(('git', 'push'), cwd=target, msg=msg)
 
 
