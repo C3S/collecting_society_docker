@@ -1953,18 +1953,20 @@ if __name__ == "__main__":
     cmd = argparse.ArgumentParser(
         usage="./project",
         description="Performs development and maintainance tasks "
-                    "for the project.")
+                    "for the project.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subcmds = cmd.add_subparsers(
-        title='subcommands', dest="command", metavar="")
+        title='subcommands', dest="command", metavar="(default: status)")
 
     # global flags
-    subcmd = argparse.ArgumentParser(add_help=False)
+    subcmd = argparse.ArgumentParser(
+        add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subcmd.add_argument(
         '-v', '--verbose', action='store_true',
-        help="verbose output")
+        help="verbose output (default: %(default)s)")
     subcmd.add_argument(
         '-d', '--debug', action='store_true',
-        help="debug output, implies verbose")
+        help="debug output, implies verbose (default: %(default)s)")
     subcmd.add_argument(
         '--no-color', action='store_true',
         help=argparse.SUPPRESS)
@@ -1978,10 +1980,12 @@ if __name__ == "__main__":
         help=update.__doc__.strip('.'))
     subcmd_update.add_argument(
         '--reset', action='store_true',
-        help="overwrites the configuration files with example files")
+        help="overwrites the configuration files with example files "
+             "(default: %(default)s)")
     subcmd_update.add_argument(
         '--ci', action='store_true',
-        help="continues integration mode: reset, debug, colorless")
+        help="continues integration mode: reset, debug, colorless "
+             "(default: %(default)s)")
 
     # status command
     subcmd_status = subcmds.add_parser(
@@ -2004,7 +2008,7 @@ if __name__ == "__main__":
         help=checkout.__doc__.strip('.'))
     subcmd_checkout.add_argument(
         'checkout_branch', nargs='?', metavar="BRANCH",
-        help="Branch name")
+        help="Branch name (default: checkedout [%s])" % branch)
 
     # delete command
     subcmd_delete = subcmds.add_parser(
@@ -2012,9 +2016,10 @@ if __name__ == "__main__":
         help=delete.__doc__.strip('.'))
     subcmd_delete.add_argument(
         '-f', '--force', action='store_true',
-        help="Force deletion of not fully merged branches")
+        help="Force deletion of not fully merged branches "
+             "(default: %(default)s)")
     subcmd_delete.add_argument(
-        'delete_branch', nargs='?', metavar="BRANCH",
+        'delete_branch', metavar="BRANCH",
         help="Branch name")
 
     # commit command
@@ -2022,7 +2027,7 @@ if __name__ == "__main__":
         'commit', parents=[subcmd], description=commit.__doc__,
         help=commit.__doc__.strip('.'))
     subcmd_commit.add_argument(
-        'message', nargs='+', metavar="MESSAGE",
+        'message', metavar="MESSAGE",
         help="Commit message")
 
     # push command
@@ -2036,23 +2041,24 @@ if __name__ == "__main__":
         help=merge.__doc__.strip('.'))
     subcmd_merge.add_argument(
         'merge_branch', nargs='?', metavar="BRANCH", default="development",
-        help="Branch name")
+        help="Target branch name (default: %(default)s)")
     subcmd_merge.add_argument(
-        '-f', '--force', action='store_true', default=False,
-        help="Force deletion of not fully merged branches")
+        '-f', '--force', action='store_true',
+        help="Force deletion of not fully merged branches "
+             "(default: %(default)s)")
     subcmd_merge.add_argument(
-        '--no-delete', action='store_false', default=False,
-        help="Don't delete branch after merge")
+        '--no-delete', action='store_true',
+        help="Don't delete branch after merge (default: %(default)s)")
     subcmd_merge.add_argument(
-        '--no-push', action='store_false',
-        help="Don't push branch after merge")
+        '--no-push', action='store_true',
+        help="Don't push branch after merge (default: %(default)s)")
 
     # promote command
     subcmd_promote = subcmds.add_parser(
         'promote', parents=[subcmd], description=promote.__doc__,
         help=promote.__doc__.strip('.'))
     subcmd_promote.add_argument(
-        'environment', nargs='?', metavar="ENVIRONMENT",
+        'environment', metavar="ENVIRONMENT",
         help="Environment to be promoted to the next stage")
 
     # parse
@@ -2062,15 +2068,15 @@ if __name__ == "__main__":
     _checkout_branch = args.get('checkout_branch', None)
     _delete_branch = args.get('delete_branch', None)
     _merge_branch = args.get('merge_branch', None)
-    _merge_push = args.get('no_push', True)
-    _merge_delete = args.get('no_delete', True)
+    _merge_push = not args.get('no_push', False)
+    _merge_delete = not args.get('no_delete', False)
     _force = args.get('force', False)
     _restarted = args.get('restarted', "")
     _reset = args.get('reset', False)
     _verbose = args.get('verbose', False)
     _debug = args.get('debug', False)
     _ci = args.get('ci', False)
-    _colorless = args.get('no_color')
+    _colorless = args.get('no_color', False)
 
     # set implications
     if _ci:
