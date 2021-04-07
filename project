@@ -1782,7 +1782,6 @@ def delete(context={}):
         task['actions'] = ['git_delete']
         tasks.append(task)
     context['tasks'] = tasks
-    debug(tasks)
 
 
 @command
