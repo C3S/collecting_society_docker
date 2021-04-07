@@ -1201,6 +1201,7 @@ def git_checkout(task, context={}):
             if line[2:].startswith(checkout_version + " "):
                 version_exists = True
 
+    print(sys.argv)
     # just checkout, if remote or local branch exists
     if version_exists:
 
@@ -1218,12 +1219,12 @@ def git_checkout(task, context={}):
 
         # if main repo was switched, give control to the other version
         if target == ".":
-            print(sys.argv)
             message({'level': "info",
                      'description': "script will be restarted now",
                      'data': "REASON: the main repository branch switched"})
             with open(__file__) as f:
                 exec(compile(f.read(), __file__, 'exec'))
+                sys.exit()
             # os.execv(__file__, sys.argv)
         return
 
