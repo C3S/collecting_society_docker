@@ -1242,6 +1242,7 @@ def git_delete(task, context={}):
     delete_branch = task.get('branch', _delete_branch)
     if not delete_branch:
         delete_branch = version
+    force = task.get('force', _force)
 
     # stop if branch is checked out
     if version == delete_branch:
@@ -1259,7 +1260,9 @@ def git_delete(task, context={}):
         return
 
     # delete local feature branch
-    output = execute(('git', 'branch', '--delete', delete_branch), cwd=target)
+    delete_flag = force and '-D' or '-d'
+    output = execute(
+        ('git', 'branch', '-d', delete_flag, delete_branch), cwd=target)
     message({'level': 'info', 'description': 'branch deleted', 'data': output})
 
     # find out, if remote branch exists
@@ -2011,6 +2014,9 @@ if __name__ == "__main__":
     subcmd_delete.add_argument(
         'delete_branch', nargs='?', metavar="BRANCH",
         help="Branch name")
+    subcmd_delete.add_argument(
+        '-f', '--force', action='store_true',
+        help="Force deletion of not fully merged branches")
 
     # commit command
     subcmd_commit = subcmds.add_parser(
@@ -2036,6 +2042,9 @@ if __name__ == "__main__":
         '--no-delete', action='store_true',
         help="Don't delete branch after merge")
     subcmd_merge.add_argument(
+        '-f', '--force', action='store_true',
+        help="Force deletion of not fully merged branches")
+    subcmd_merge.add_argument(
         '--no-push', action='store_true',
         help="Don't push branch after merge")
 
@@ -2056,6 +2065,7 @@ if __name__ == "__main__":
     _merge_branch = args.get('merge_branch', None)
     _merge_push = not args.get('no_push', False)
     _merge_delete = not args.get('no_delete', False)
+    _force = args.get('force', False)
     _restarted = args.get('restarted', "")
     _reset = args.get('reset', False)
     _verbose = args.get('verbose', False)
