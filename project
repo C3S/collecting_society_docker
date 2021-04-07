@@ -570,9 +570,11 @@ def execute(cmd, cwd=False, abort=True, msg={},
 
     # execute command
     try:
-        output = subprocess.check_output(
-            cmd, cwd=cwd or root, stderr=stdout
-        ).rstrip().decode('utf-8')
+        output = color("dryrun", 'italic')
+        if not _dryrun:
+            output = subprocess.check_output(
+                cmd, cwd=cwd or root, stderr=stdout
+            ).rstrip().decode('utf-8')
         if _debug:
             debug(output, "$ " + " ".join(cmd))
     except subprocess.CalledProcessError as err:
@@ -1468,6 +1470,9 @@ def git_push(task, context={}):
         execute(('git', 'push', 'origin', version), cwd=target, msg=msg)
         return
 
+    # ensure remote branch is tracked
+    git_track(task)
+
     # find out, if unpushed commits exist
     unpushed = execute(('git', 'log', '@{u}..'), cwd=target)
 
@@ -2125,6 +2130,7 @@ if __name__ == "__main__":
     _reset = args.get('reset', False)
     _verbose = args.get('verbose', 0) >= 1 and True
     _debug = args.get('verbose', 0) >= 2 and True
+    _dryrun = args.get('verbose', 0) >= 3 and True
     _ci = args.get('ci', False)
     _colorless = args.get('no_color', False)
 
