@@ -2035,16 +2035,16 @@ if __name__ == "__main__":
         'merge', parents=[subcmd], description=merge.__doc__,
         help=merge.__doc__.strip('.'))
     subcmd_merge.add_argument(
-        'merge_branch', nargs='?', metavar="BRANCH",
+        'merge_branch', nargs='?', metavar="BRANCH", default="development",
         help="Branch name")
     subcmd_merge.add_argument(
-        '-f', '--force', action='store_true',
+        '-f', '--force', action='store_true', default=False,
         help="Force deletion of not fully merged branches")
     subcmd_merge.add_argument(
-        '--no-delete', action='store_true',
+        '--no-delete', action='store_false', default=False,
         help="Don't delete branch after merge")
     subcmd_merge.add_argument(
-        '--no-push', action='store_true',
+        '--no-push', action='store_false',
         help="Don't push branch after merge")
 
     # promote command
@@ -2062,8 +2062,8 @@ if __name__ == "__main__":
     _checkout_branch = args.get('checkout_branch', None)
     _delete_branch = args.get('delete_branch', None)
     _merge_branch = args.get('merge_branch', None)
-    _merge_push = not args.get('no_push', False)
-    _merge_delete = not args.get('no_delete', False)
+    _merge_push = args.get('no_push', True)
+    _merge_delete = args.get('no_delete', True)
     _force = args.get('force', False)
     _restarted = args.get('restarted', "")
     _reset = args.get('reset', False)
