@@ -219,8 +219,11 @@ Development
 ``project diff``                        diff of all project repositories and example files
 ``project pull``                        pull all project repositories
 ``project checkout BRANCH``             checkout BRANCH in all project repositories
+``project delete BRANCH``               deletes local and remote BRANCH in all project repositories
 ``project commit MESSAGE``              add changed/untracked files, commit them in project repos
-``project push``                        push all commits in all project repositories
+``project push``                        push all commits in all project repos, creates remote branches
+``project merge [BRANCH]``              merges current branch of project repos into BRANCH
+``project promote ENVIRONMENT``         promotes an environment branch to the next environment branch
 ``cli``                                 `CLI`_ script for common tasks (run within the container!)
 ``services/config/``                    `Application Configuration`_ files for the services
 ``code/``                               Symlinks to src repositories for the `application development`_
@@ -880,81 +883,105 @@ project
     $ ./project --help
     usage: ./project
 
-    Updates files, folders, symlinks and repos.
+    Performs development and maintainance tasks for the project.
+
+    optional arguments:
+      -h, --help         show this help message and exit
+
+    subcommands:
+      (default: status)
+        update           Updates files, folders, symlinks and repos
+        status           Prints the git status of the project repositories
+        diff             Prints the diff of the project repos and the example files
+        pull             Pulls the current branch for all project repositories
+        checkout         Checksout a branch in all project repositories
+        delete           Deletes a local and remote branch in all project repos
+        commit           Commits changes and untracked files to the project repositories
+        push             Pushes commits in all project repos, creates missing remote branches
+        merge            Merges the current branch into another branch in all project repos
+        promote          Merges an environment branch into the next stage environment branch
+
+::
+
+    $ ./project update --help
+    usage: ./project update [-h] [-v] [--reset] [--ci]
+
+    Updates files, folders, symlinks and repos
 
     optional arguments:
       -h, --help     show this help message and exit
-      -v, --verbose  verbose output
-      -d, --debug    debug output, implies verbose
-      --no-color     colorless output
-      --reset        overwrites the configuration files with example files
-      --ci           continues integration mode: reset, debug, colorless
-
-    subcommands:
-
-        diff         Prints the diff of the project repos and the example files
-        status       Prints the git status of the project repositories
-        pull         Pulls the project repositories
-        checkout     Checksout the project repositories
-        commit       Commits changes and untracked files to the project repositories
-        push         Pushes commits of the project repos, creates missing remote branches
+      -v, --verbose  verbose output, -vv for debug output
+      --reset        overwrites the configuration files with example files (default: False)
+      --ci           continues integration mode: reset, debug, colorless (default: False)
 
 ::
 
     $ ./project status --help
-    usage: ./project status [-h] [-v] [-d] [--no-color]
+    usage: ./project status [-h] [-v]
 
     Prints the git status of the project repositories.
 
     optional arguments:
       -h, --help     show this help message and exit
-      -v, --verbose  verbose output
-      -d, --debug    debug output, implies verbose
-      --no-color     colorless output
+      -v, --verbose  verbose output, -vv for debug output
 
 ::
 
     $ ./project diff --help
-    usage: ./project diff [-h] [-v] [-d] [--no-color]
+    usage: ./project diff [-h] [-v]
 
     Prints the diff of the project repos and the example files.
 
     optional arguments:
       -h, --help     show this help message and exit
-      -v, --verbose  verbose output
-      -d, --debug    debug output, implies verbose
-      --no-color     colorless output
+      -v, --verbose  verbose output, -vv for debug output
 
 ::
 
     $ ./project pull --help
-    usage: ./project pull [-h] [-v] [-d] [--no-color]
+    usage: ./project pull [-h] [-v]
 
-    Pulls the project repositories.
+    Pulls the current branch for all project repositories.
 
     optional arguments:
       -h, --help     show this help message and exit
-      -v, --verbose  verbose output
-      -d, --debug    debug output, implies verbose
-      --no-color     colorless output
+      -v, --verbose  verbose output, -vv for debug output
 
 ::
 
     $ ./project checkout --help
-    usage: ./project checkout [-h] [-v] [-d] [--no-color]
+    usage: ./project checkout [-h] [-v] [BRANCH]
 
-    Checksout the project repositories.
+    Checksout a branch in all project repositories.
+
+    positional arguments:
+      BRANCH         Branch name (default: checkedout [feature-updatescript])
 
     optional arguments:
       -h, --help     show this help message and exit
-      -v, --verbose  verbose output
-      -d, --debug    debug output, implies verbose
-      --no-color     colorless output
+      -v, --verbose  verbose output, -vv for debug output
+
+::
+
+    $ ./project delete --help
+    usage: ./project delete [-h] [-v] [-f] [--no-local-delete] [--no-remote-delete] BRANCH
+
+    Deletes a local and remote branch in all project repos.
+
+    positional arguments:
+      BRANCH              Branch name
+
+    optional arguments:
+      -h, --help          show this help message and exit
+      -v, --verbose       verbose output, -vv for debug output
+      -f, --force         Force deletion of not fully merged branches (default: False)
+      --no-local-delete   Don't delete local branch (default: False)
+      --no-remote-delete  Don't delete remote branch (default: False)
 
 ::
 
     $ ./project commit --help
-    usage: ./project commit [-h] [-v] [-d] [--no-color] MESSAGE [MESSAGE ...]
+    usage: ./project commit [-h] [-v] MESSAGE
 
     Commits changes and untracked files to the project repositories.
 
@@ -963,22 +990,52 @@ project
 
     optional arguments:
       -h, --help     show this help message and exit
-      -v, --verbose  verbose output
-      -d, --debug    debug output, implies verbose
-      --no-color     colorless output
+      -v, --verbose  verbose output, -vv for debug output
 
 ::
 
     $ ./project push --help
-    usage: ./project push [-h] [-v] [-d] [--no-color]
+    usage: ./project push [-h] [-v]
 
-    Pushes commits of the project repos, creates missing remote branches.
+    Pushes commits in all project repos, creates missing remote branches.
 
     optional arguments:
       -h, --help     show this help message and exit
-      -v, --verbose  verbose output
-      -d, --debug    debug output, implies verbose
-      --no-color     colorless output
+      -v, --verbose  verbose output, -vv for debug output
+
+::
+
+    $ ./project merge --help
+    usage: ./project merge [-h] [-v] [-f] [--no-delete] [--no-local-delete] [--no-remote-delete]
+                           [--no-push] [BRANCH]
+
+    Merges the current branch into another branch in all project repos.
+
+    positional arguments:
+      BRANCH              Target branch name (default: development)
+
+    optional arguments:
+      -h, --help          show this help message and exit
+      -v, --verbose       verbose output, -vv for debug output
+      -f, --force         Force deletion of not fully merged branches (default: False)
+      --no-delete         Don't delete branch after merge (default: False)
+      --no-local-delete   Don't delete local branch after merge (default: False)
+      --no-remote-delete  Don't delete remote branch after merge (default: False)
+      --no-push           Don't push branch after merge (default: False)
+
+::
+
+    $ ./project promote --help
+    usage: ./project promote [-h] [-v] ENVIRONMENT
+
+    Merges an environment branch into the next stage environment branch.
+
+    positional arguments:
+      ENVIRONMENT    Environment to be promoted to the next stage
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output, -vv for debug output
 
 .. _service-test script:
 
@@ -987,8 +1044,7 @@ service-test
 ::
 
     $ ./service-test --help
-    Usage: ./service-test [service] [--down] [--build] [--keep] [--lint] [--ci]
-                                  [--help] [PARAMS]
+    Usage: ./service-test [service] [--down] [--build] [--keep] [--lint] [--ci] [--help] [PARAMS]
 
       This script runs the unit/function/integration tests and linter for the services:
         - erpserver (tryton)
@@ -1531,32 +1587,45 @@ inherited task.
 Branches
 ''''''''
 
-Each project repository has a branch for each environment. To switch a branch,
-the `checkout` command can be used::
+Each project repository has a branch for all `environments`_. To switch a
+branch for all project repositories::
 
     $ ./project checkout BRANCH
 
-The same method can be used to setup a new local feature branch for all project
-repositories::
+.. note:: Switching to an environment branch also sets the ``ENVIRONMENT``
+    `.env`_ variable.
+
+Working with **feature branches** is encouraged. The basic workflow:
+
+1. **Create** a new local feature branch. Remote branches are always prefered
+   during checkout::
 
     $ ./project checkout feature-<FEATURENAME>
 
-Remote branches are always prefered during checkout.
-To share the feature branch, the ``push`` command can be used::
+2. **Develop** the code.
+
+3. **Check** the status of the workdirs::
+
+    $./project status
+    $./project diff [-v]
+
+5. **Commit** the changes and new files::
+
+    $./project commit "commit message"
+
+4. **Push** the branch, if the feature branch should be shared::
 
     $./project push
 
-Other commands will help to perform common git commands to all project
-repositories:
+5. **Delete** the branch, if the feature branch should be **discarded**. Both
+   the local and remote branch will be deleted::
 
-=================================== ==========================================
-``./project status``                ``git status``
-``./project diff``                  ``git status``
-``./project pull``                  ``git pull``
-``./project checkout BRANCH``       ``git checkout``
-``./project commit MESSAGE``        ``git add -A && git commit -m 'MESSAGE'``
-``./project push``                  ``git push``
-=================================== ==========================================
+    $./project delete
+
+6. **Merge** the branch into ``development``, when the feature is finished.
+   This will delete the local and remote branch after the merge::
+
+    $./project merge
 
 Docker
 ------
