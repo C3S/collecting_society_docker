@@ -1169,7 +1169,7 @@ def git_checkout(task, context={}):
         checkout_version = version
 
     # set new branch, if requested
-    if branch:
+    if not upstream and branch:
         line_replace({
             'name': ".env", 'after': "^BRANCH=", 'replace': checkout_version})
 
@@ -1245,7 +1245,7 @@ def git_delete(task, context={}):
 
     # stop if branch is checked out
     if version == delete_branch:
-        error({'title': task['name'],
+        error({'title': target,
                'description': 'cannot delete checked out branch'})
 
     # skip silently for upstream repos
@@ -1775,15 +1775,14 @@ def delete(context={}):
         project_tasks.append(task)
     # perform each action for all repos first
     tasks = []
-    for task in project_tasks:
-        task['name'] = "Ensure clean workdir"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_status']
         tasks.append(task)
-    for task in project_tasks:
-        task['name'] = "Delete branch"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_delete']
         tasks.append(task)
     context['tasks'] = tasks
+    debug(tasks)
 
 
 @command
@@ -1814,12 +1813,10 @@ def push(context={}):
         project_tasks.append(task)
     # perform each action for all repos first
     tasks = []
-    for task in project_tasks:
-        task['name'] = "Ensure no repo has a merge conflict"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_pull']
         tasks.append(task)
-    for task in project_tasks:
-        task['name'] = "Push all repos"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_push']
         tasks.append(task)
     context['tasks'] = tasks
@@ -1839,12 +1836,10 @@ def merge(context={}):
         project_tasks.append(task)
     # perform each action for all repos first
     tasks = []
-    for task in project_tasks:
-        task['name'] = "Ensure clean workdir"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_status']
         tasks.append(task)
-    for task in project_tasks:
-        task['name'] = "Merge all repos"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_merge']
         tasks.append(task)
     context['tasks'] = tasks
@@ -1863,12 +1858,10 @@ def promote(context={}):
         project_tasks.append(task)
     # perform each action for all repos first
     tasks = []
-    for task in project_tasks:
-        task['name'] = "Ensure clean workdir"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_status']
         tasks.append(task)
-    for task in project_tasks:
-        task['name'] = "Elevate all repos"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_promote']
         tasks.append(task)
     context['tasks'] = tasks
