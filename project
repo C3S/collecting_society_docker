@@ -1260,11 +1260,23 @@ def git_delete(task, context={}):
                  'data': "branch: %s" % delete_branch})
         return
 
+    # find out, if local branch exists
+    local_exists = False
+    output = execute(('git', 'branch', '-lvv'), cwd=target)
+    for line in output.split("\n"):
+        if line[2:].startswith(delete_branch + " "):
+            local_exists = True
+
     # delete local feature branch
-    delete_flag = force and '-D' or '-d'
-    output = execute(
-        ('git', 'branch', delete_flag, delete_branch), cwd=target)
-    message({'level': 'info', 'description': 'branch deleted', 'data': output})
+    if local_exists:
+        delete_flag = force and '-D' or '-d'
+        output = execute(
+            ('git', 'branch', delete_flag, delete_branch), cwd=target)
+        message({'level': 'info', 'description': 'branch deleted',
+                 'data': output})
+    else:
+        message({'description': 'no local branch -> skipped deletion',
+                 'data': "branch: %s" % delete_branch})
 
     # find out, if remote branch exists
     remote_exists = False
@@ -1279,6 +1291,9 @@ def git_delete(task, context={}):
             ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
         message({'level': 'info',
                  'description': 'branch deleted', 'data': output})
+    else:
+        message({'description': 'no remote branch -> skipped deletion',
+                 'data': "branch: %s" % delete_branch})
 
 
 @action
