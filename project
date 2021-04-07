@@ -1224,7 +1224,7 @@ def git_checkout(task, context={}):
                      'data': "REASON: the main repository branch switched"},
                     end="")
             with open(__file__) as f:
-                exec(compile(f.read(), __file__, 'exec'), globals(), {})
+                exec(compile(f.read(), __file__, 'exec'), {})
                 sys.exit()
             # os.execv(__file__, sys.argv)
         return
@@ -1574,7 +1574,7 @@ def script_restart(task, context={}):
              'data': "REASON: the main repository was updated"}, end="")
     sys.argv += ['--restarted', commit_range]
     with open(__file__) as f:
-        exec(compile(f.read(), __file__, 'exec'), globals(), {})
+        exec(compile(f.read(), __file__, 'exec'), {})
         sys.exit()
     # os.execv(__file__, sys.argv + ['--restarted', commit_range])
 
