@@ -1226,7 +1226,7 @@ def git_checkout(task, context={}):
                               % checkout_version})
 
     # new branch created
-    msg = {'level': 'warning', 'description': "new branch created",
+    msg = {'level': 'warning', 'description': "new local branch created",
            'data': 'branch name: `%s`' % checkout_version}
     execute(('git', 'checkout', '-b', checkout_version), cwd=target, msg=msg)
 
@@ -1449,6 +1449,7 @@ def git_push(task, context={}):
         target = os.path.join(targetpath, target)
     upstream = task.get('upstream', True)
     version = task['version']
+    verbose = context['actions']['verbose']
 
     # skip silently for upstream repos
     if upstream:
@@ -1463,7 +1464,7 @@ def git_push(task, context={}):
 
     # create remote branch, if repo is local
     if not remote_exists:
-        msg = {'level': "info", 'description': "remote branch created"}
+        msg = {'level': "warning", 'description': "new remote branch created"}
         execute(('git', 'push', 'origin', version), cwd=target)
         return
 
@@ -1475,7 +1476,8 @@ def git_push(task, context={}):
         return
 
     # add performed
-    msg = {'level': "info", 'description': "commits pushed", 'data': unpushed}
+    msg = {'level': verbose and "info" or "debug",
+           'description': "commits pushed", 'data': unpushed}
     execute(('git', 'push'), cwd=target, msg=msg)
 
 
