@@ -1164,12 +1164,14 @@ def git_checkout(task, context={}):
     version = task['version']
     upstream = task.get('upstream', True)
     verbose = context['actions']['verbose']
+    checkout_version = task.get('branch', _checkout_branch)
+    if not checkout_version:
+        checkout_version = version
 
     # set new branch, if requested
-    if _checkout_branch:
-        version = _checkout_branch
+    if not upstream and branch:
         line_replace({
-            'name': ".env", 'after': "^BRANCH=", 'replace': _checkout_branch})
+            'name': ".env", 'after': "^BRANCH=", 'replace': checkout_version})
 
     # get checked out version
     old_version = execute(
@@ -1179,18 +1181,19 @@ def git_checkout(task, context={}):
             ('git', 'name-rev', '--name-only', 'HEAD'), cwd=target)
     if old_version.endswith("^0"):
         old_version = old_version[:-2]
-    checked_out = old_version == version and True or False
+    checked_out = old_version == checkout_version and True or False
 
     # find out, if branch or tag exists locally
     version_exists = False
-    if version.startswith("tags/"):
-        output = execute(('git', 'tag', '-l', version[5:]), cwd=target)
+    if checkout_version.startswith("tags/"):
+        output = execute(
+            ('git', 'tag', '-l', checkout_version[5:]), cwd=target)
         if output:
             version_exists = True
     else:
         output = execute(('git', 'branch', '-lvv'), cwd=target)
         for line in output.split("\n"):
-            if line[2:].startswith(version + " "):
+            if line[2:].startswith(checkout_version + " "):
                 version_exists = True
 
     # just checkout, if remote or local branch exists
@@ -1199,14 +1202,14 @@ def git_checkout(task, context={}):
         # version already checked out
         if checked_out:
             message({'level': verbose and "info" or "debug",
-                    'description': "already on `%s`" % version})
+                    'description': "already on `%s`" % checkout_version})
             return
 
         # version switched
         msg = {'level': "info", 'description': "branch switched",
                'data': "\n".join(["old: `%s`" % old_version,
-                                  "new: `%s`" % version])}
-        execute(('git', 'checkout', version), cwd=target, msg=msg)
+                                  "new: `%s`" % checkout_version])}
+        execute(('git', 'checkout', checkout_version), cwd=target, msg=msg)
 
         # if main repo was switched, give control to the other version
         if target == ".":
@@ -1217,13 +1220,66 @@ def git_checkout(task, context={}):
         return
 
     # upstream version does not exist
-    if upstream or version.startswith("tags/"):
-        error({'description': "no upstream version `%s` found" % version})
+    if upstream or checkout_version.startswith("tags/"):
+        error({'description': "no upstream version `%s` found"
+                              % checkout_version})
 
     # new branch created
     msg = {'level': 'warning', 'description': "new branch created",
-           'data': 'branch name: `%s`' % version}
-    execute(('git', 'checkout', '-b', version), cwd=target, msg=msg)
+           'data': 'branch name: `%s`' % checkout_version}
+    execute(('git', 'checkout', '-b', checkout_version), cwd=target, msg=msg)
+
+
+@action
+def git_delete(task, context={}):
+    """Deletes a branch locally and remote."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    version = task['version']
+    upstream = task.get('upstream', True)
+    delete_branch = task.get('branch', _delete_branch)
+    if not delete_branch:
+        delete_branch = version
+    force = task.get('force', _force)
+
+    # stop if branch is checked out
+    if version == delete_branch:
+        error({'title': target,
+               'description': 'cannot delete checked out branch'})
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # skip environment branches
+    if delete_branch in project.items():
+        message({'level': 'info', 'skipped deletion of environment branch'
+                 'data': "branch: %s" % delete_branch})
+        return
+
+    # delete local feature branch
+    delete_flag = force and '-D' or '-d'
+    # output = execute(
+    #     ('git', 'branch', '-d', delete_flag, delete_branch), cwd=target)
+    output = ""
+    message({'level': 'info', 'description': 'branch deleted', 'data': output})
+
+    # find out, if remote branch exists
+    remote_exists = False
+    output = execute(('git', 'branch', '-rvv'), cwd=target)
+    for line in output.split("\n"):
+        if line[2:].startswith("origin/%s " % delete_branch):
+            remote_exists = True
+
+    # delete remote feature branch
+    if remote_exists:
+        # output = execute(
+        #     ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
+        output = ""
+        message({'level': 'info',
+                 'description': 'branch deleted', 'data': output})
 
 
 @action
@@ -1390,11 +1446,56 @@ def git_push(task, context={}):
 @action
 def git_merge(task, context={}):
     """Merges a branch into another."""
-    raise NotImplementedError
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+    version = task['version']
+    source_branch = version
+    target_branch = task.get('branch', _merge_branch)
+    if not target_branch:
+        target_branch = "development"
+    delete = task.get('delete', _merge_delete)
+    push = task.get('push', _merge_push)
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # checkout target branch
+    git_checkout({**task, **{'branch': target_branch}})
+
+    # find out, if remote target branch exists
+    remote_target_exists = False
+    output = execute(('git', 'branch', '-rvv'), cwd=target)
+    for line in output.split("\n"):
+        if line[2:].startswith("origin/%s " % target_branch):
+            remote_target_exists = True
+
+    # pull development branch
+    if remote_target_exists:
+        git_pull({**task, **{'version': target_branch}})
+
+    # merge feature branch
+    output = execute(
+        ('git', 'merge', '--no-edit', '--no-ff', source_branch), cwd=target)
+    if 'merging' not in output:
+        message({'description': 'up-to-date'})
+    else:
+        message({'level': 'info', 'description': 'merged', 'data': output})
+
+    # push merge to remote branch
+    if push and remote_target_exists:
+        git_push({**task, **{'version': target_branch}})
+
+    # delete feature branch
+    if delete and source_branch not in project.items():
+        git_delete({**task, **{'branch': source_branch}})
 
 
 @action
-def git_elevate(task, context={}):
+def git_promote(task, context={}):
     """Pushes staged commits, creates remote branch for local ones."""
     raise NotImplementedError
 
@@ -1553,8 +1654,6 @@ def command(func):
             error({'data': traceback.format_exc()})
         # print header
         header()
-        # print title
-        # title(_command.capitalize())
         # process tasks
         process(context)
         # print footer
@@ -1625,7 +1724,7 @@ def diff(context={}):
 
 @command
 def pull(context={}):
-    """Pulls the project repositories."""
+    """Pulls the current branch for all project repositories."""
     # action configuration
     context['actions']['git_pull']['verbose'] = _verbose
     context['actions']['git_status']['stop_action_group'] = True
@@ -1641,7 +1740,7 @@ def pull(context={}):
 
 @command
 def checkout(context={}):
-    """Checksout the project repositories."""
+    """Checksout a branch in all project repositories."""
     # action configuration
     context['actions']['git_checkout']['verbose'] = _verbose
     context['actions']['git_status']['stop_all'] = True
@@ -1662,6 +1761,29 @@ def checkout(context={}):
 
 
 @command
+def delete(context={}):
+    """Deletes a local and remote branch in all project repos."""
+    # action configuration
+    context['actions']['git_delete']['verbose'] = _verbose
+    context['actions']['git_status']['stop_all'] = True
+    # filter tasks
+    project_tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        project_tasks.append(task)
+    # perform each action for all repos first
+    tasks = []
+    for task in deepcopy(project_tasks):
+        task['actions'] = ['git_status']
+        tasks.append(task)
+    for task in deepcopy(project_tasks):
+        task['actions'] = ['git_delete']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
 def commit(context={}):
     """Commits changes and untracked files to the project repositories."""
     # action configuration
@@ -1678,7 +1800,7 @@ def commit(context={}):
 
 @command
 def push(context={}):
-    """Pushes commits of the project repos, creates missing remote branches."""
+    """Pushes commits in all project repos, creates missing remote branches."""
     # action configuration
     context['actions']['git_push']['verbose'] = _verbose
     # filter tasks
@@ -1689,12 +1811,10 @@ def push(context={}):
         project_tasks.append(task)
     # perform each action for all repos first
     tasks = []
-    for task in project_tasks:
-        task['name'] = "Ensure no repo has a merge conflict"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_pull']
         tasks.append(task)
-    for task in project_tasks:
-        task['name'] = "Push all repos"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_push']
         tasks.append(task)
     context['tasks'] = tasks
@@ -1702,7 +1822,7 @@ def push(context={}):
 
 @command
 def merge(context={}):
-    """Merges the current feature branch into the development branch."""
+    """Merges the current branch into another branch in all project repos."""
     # action configuration
     context['actions']['git_merge']['verbose'] = _verbose
     context['actions']['git_status']['stop_all'] = True
@@ -1714,12 +1834,10 @@ def merge(context={}):
         project_tasks.append(task)
     # perform each action for all repos first
     tasks = []
-    for task in project_tasks:
-        task['name'] = "Ensure clean workdir"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_status']
         tasks.append(task)
-    for task in project_tasks:
-        task['name'] = "Merge all repos"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_merge']
         tasks.append(task)
     context['tasks'] = tasks
@@ -1727,9 +1845,9 @@ def merge(context={}):
 
 @command
 def promote(context={}):
-    """Merges the requested environment branch into the next stage."""
+    """Merges an environment branch into the next stage environment branch."""
     # action configuration
-    context['actions']['project_promote']['verbose'] = _verbose
+    context['actions']['git_promote']['verbose'] = _verbose
     # filter tasks
     project_tasks = []
     for task in deepcopy(context['tasks']):
@@ -1738,12 +1856,10 @@ def promote(context={}):
         project_tasks.append(task)
     # perform each action for all repos first
     tasks = []
-    for task in project_tasks:
-        task['name'] = "Ensure clean workdir"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_status']
         tasks.append(task)
-    for task in project_tasks:
-        task['name'] = "Elevate all repos"
+    for task in deepcopy(project_tasks):
         task['actions'] = ['git_promote']
         tasks.append(task)
     context['tasks'] = tasks
@@ -1837,21 +1953,23 @@ if __name__ == "__main__":
     cmd = argparse.ArgumentParser(
         usage="./project",
         description="Performs development and maintainance tasks "
-                    "for the project.")
+                    "for the project.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subcmds = cmd.add_subparsers(
-        title='subcommands', dest="command", metavar="")
+        title='subcommands', dest="command", metavar="(default: status)")
 
     # global flags
-    subcmd = argparse.ArgumentParser(add_help=False)
+    subcmd = argparse.ArgumentParser(
+        add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subcmd.add_argument(
         '-v', '--verbose', action='store_true',
-        help="verbose output")
+        help="verbose output (default: %(default)s)")
     subcmd.add_argument(
         '-d', '--debug', action='store_true',
-        help="debug output, implies verbose")
+        help="debug output, implies verbose (default: %(default)s)")
     subcmd.add_argument(
         '--no-color', action='store_true',
-        help="colorless output")
+        help=argparse.SUPPRESS)
     subcmd.add_argument(
         '--restarted', metavar="COMMITRANGE",
         help=argparse.SUPPRESS)
@@ -1862,10 +1980,12 @@ if __name__ == "__main__":
         help=update.__doc__.strip('.'))
     subcmd_update.add_argument(
         '--reset', action='store_true',
-        help="overwrites the configuration files with example files")
+        help="overwrites the configuration files with example files "
+             "(default: %(default)s)")
     subcmd_update.add_argument(
         '--ci', action='store_true',
-        help="continues integration mode: reset, debug, colorless")
+        help="continues integration mode: reset, debug, colorless "
+             "(default: %(default)s)")
 
     # status command
     subcmd_status = subcmds.add_parser(
@@ -1887,7 +2007,19 @@ if __name__ == "__main__":
         'checkout', parents=[subcmd], description=checkout.__doc__,
         help=checkout.__doc__.strip('.'))
     subcmd_checkout.add_argument(
-        'branch', nargs='?', metavar="BRANCH",
+        'checkout_branch', nargs='?', metavar="BRANCH",
+        help="Branch name (default: checkedout [%s])" % branch)
+
+    # delete command
+    subcmd_delete = subcmds.add_parser(
+        'delete', parents=[subcmd], description=delete.__doc__,
+        help=delete.__doc__.strip('.'))
+    subcmd_delete.add_argument(
+        '-f', '--force', action='store_true',
+        help="Force deletion of not fully merged branches "
+             "(default: %(default)s)")
+    subcmd_delete.add_argument(
+        'delete_branch', metavar="BRANCH",
         help="Branch name")
 
     # commit command
@@ -1895,38 +2027,56 @@ if __name__ == "__main__":
         'commit', parents=[subcmd], description=commit.__doc__,
         help=commit.__doc__.strip('.'))
     subcmd_commit.add_argument(
-        'message', nargs='+', metavar="MESSAGE",
+        'message', metavar="MESSAGE",
         help="Commit message")
 
     # push command
     subcmd_push = subcmds.add_parser(
-       'push', parents=[subcmd], description=push.__doc__,
-       help=push.__doc__.strip('.'))
+        'push', parents=[subcmd], description=push.__doc__,
+        help=push.__doc__.strip('.'))
 
     # merge command
     subcmd_merge = subcmds.add_parser(
-       'merge', parents=[subcmd], description=merge.__doc__,
-       help=merge.__doc__.strip('.'))
+        'merge', parents=[subcmd], description=merge.__doc__,
+        help=merge.__doc__.strip('.'))
+    subcmd_merge.add_argument(
+        'merge_branch', nargs='?', metavar="BRANCH", default="development",
+        help="Target branch name (default: %(default)s)")
+    subcmd_merge.add_argument(
+        '-f', '--force', action='store_true',
+        help="Force deletion of not fully merged branches "
+             "(default: %(default)s)")
+    subcmd_merge.add_argument(
+        '--no-delete', action='store_true',
+        help="Don't delete branch after merge (default: %(default)s)")
+    subcmd_merge.add_argument(
+        '--no-push', action='store_true',
+        help="Don't push branch after merge (default: %(default)s)")
 
     # promote command
     subcmd_promote = subcmds.add_parser(
-       'merge', parents=[subcmd], description=promote.__doc__,
-       help=promote.__doc__.strip('.'))
-    subcmd_commit.add_argument(
-        'environment', nargs='+', metavar="ENVIRONMENT",
+        'promote', parents=[subcmd], description=promote.__doc__,
+        help=promote.__doc__.strip('.'))
+    subcmd_promote.add_argument(
+        'environment', metavar="ENVIRONMENT",
         help="Environment to be promoted to the next stage")
 
     # parse
     args = vars(cmd.parse_args())
     _command = args.get('command') or 'diff'
     _commit_message = " ".join(args.get('message', []))
-    _checkout_branch = args.get('branch', None)
+    _checkout_branch = args.get('checkout_branch', None)
+    _delete_branch = args.get('delete_branch', None)
+    _merge_branch = args.get('merge_branch', None)
+    _merge_push = not args.get('no_push', False)
+    _merge_delete = not args.get('no_delete', False)
+    _force = args.get('force', False)
     _restarted = args.get('restarted', "")
     _reset = args.get('reset', False)
     _verbose = args.get('verbose', False)
     _debug = args.get('debug', False)
     _ci = args.get('ci', False)
-    _colorless = args.get('no_color')
+    _colorless = args.get('no_color', False)
 
     # set implications
     if _ci:
