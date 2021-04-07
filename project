@@ -1174,14 +1174,14 @@ def git_checkout(task, context={}):
             'name': ".env", 'after': "^BRANCH=", 'replace': checkout_version})
 
     # get checked out version
-    old_version = execute(
+    checkedout_version = execute(
         ('git', 'rev-parse', '--abbrev-ref', 'HEAD'), cwd=target)
-    if old_version == "HEAD":
-        old_version = execute(
+    if checkedout_version == "HEAD":
+        checkedout_version = execute(
             ('git', 'name-rev', '--name-only', 'HEAD'), cwd=target)
-    if old_version.endswith("^0"):
-        old_version = old_version[:-2]
-    checked_out = old_version == checkout_version and True or False
+    if checkedout_version.endswith("^0"):
+        checkedout_version = checkedout_version[:-2]
+    checkedout = checkedout_version == checkout_version
 
     # find out, if branch or tag exists locally
     version_exists = False
@@ -1200,14 +1200,14 @@ def git_checkout(task, context={}):
     if version_exists:
 
         # version already checked out
-        if checked_out:
+        if checkedout:
             message({'level': verbose and "info" or "debug",
                     'description': "already on `%s`" % checkout_version})
             return
 
         # version switched
         msg = {'level': "info", 'description': "branch switched",
-               'data': "\n".join(["old: `%s`" % old_version,
+               'data': "\n".join(["old: `%s`" % checkedout_version,
                                   "new: `%s`" % checkout_version])}
         execute(('git', 'checkout', checkout_version), cwd=target, msg=msg)
         return
@@ -1246,8 +1246,15 @@ def git_delete(task, context={}):
     force = task.get('force', _force)
     verbose = context['actions']['verbose']
 
+    # get checked out version
+    checkedout_branch = execute(
+        ('git', 'rev-parse', '--abbrev-ref', 'HEAD'), cwd=target)
+    if checkedout_branch.endswith("^0"):
+        checkedout_branch = checkedout_branch[:-2]
+    checkedout = checkedout_branch == delete_branch
+
     # stop if branch is checked out
-    if version == delete_branch:
+    if checkedout:
         error({'title': target,
                'description': 'cannot delete checked out branch'})
 
@@ -1501,7 +1508,7 @@ def git_merge(task, context={}):
     # merge feature branch
     output = execute(
         ('git', 'merge', '--no-edit', '--no-ff', source_branch), cwd=target)
-    if 'merging' not in output:
+    if 'changed' not in output:
         message({'level': verbose and 'info' or 'debug',
                  'description': 'nothing to merge'})
     else:
