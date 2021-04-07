@@ -1476,11 +1476,12 @@ def git_push(task, context={}):
 
     # skip repos without commits
     if not unpushed:
+        message({'level': verbose and "info" or "debug",
+                 'description': "no commits to push", 'data': unpushed})
         return
 
     # add performed
-    msg = {'level': verbose and "info" or "debug",
-           'description': "commits pushed", 'data': unpushed}
+    msg = {'level': "info", 'description': "commits pushed", 'data': unpushed}
     execute(('git', 'push'), cwd=target, msg=msg)
 
 
