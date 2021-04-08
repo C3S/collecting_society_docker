@@ -1038,7 +1038,6 @@ def git_status(task, context={}):
     upstream = task.get('upstream', True)
     stop_all = context['actions'].get('stop_all', False)
     stop_action_group = context['actions'].get('stop_action_group', False)
-    verbose = context['actions']['verbose']
 
     # workdir checked
     cmd = ['git', 'status']
@@ -1206,7 +1205,6 @@ def git_checkout(task, context={}):
                'data': "\n".join(["old: `%s`" % checkedout_version,
                                   "new: `%s`" % checkout_version])}
         execute(('git', 'checkout', checkout_version), cwd=target, msg=msg)
-        git_track({**task, **{'version': checkout_version}})
 
         # if main repo was switched, give control to the other version
         if target == ".":
@@ -1214,6 +1212,7 @@ def git_checkout(task, context={}):
                      'description': "script will be restarted now",
                      'data': "REASON: the main repository branch switched"})
             os.execv(__file__, sys.argv)
+        return
 
     # upstream version does not exist
     if upstream or checkout_version.startswith("tags/"):
