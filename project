@@ -1749,7 +1749,7 @@ def update(context={}):
 def status(context={}):
     """Prints the git status of the project repositories."""
     # action configuration
-    context['actions']['git_status']['verbose'] = _verbose
+    context['actions']['git_status']['verbose'] = True
     context['actions']['git_status']['stop_action_group'] = False
     # filter tasks
     tasks = []
