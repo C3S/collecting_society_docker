@@ -1588,44 +1588,54 @@ Branches
 ''''''''
 
 Each project repository has a branch for all `environments`_. To switch a
-branch for all project repositories::
+branch for all project repositories and set the ``ENVIRONMENT`` `.env`_
+variable to the environment::
 
     $ ./project checkout BRANCH
 
-.. note:: Switching to an environment branch also sets the ``ENVIRONMENT``
-    `.env`_ variable.
+Using **feature branches** is encouraged. To create a new local feature branch
+for all repositories::
 
-Working with **feature branches** is encouraged. The basic workflow:
+    development$ ./project checkout feature-<FEATURENAME>
 
-1. **Create** a new local feature branch. Remote branches are always prefered
-   during checkout::
+The basic workflow:
 
-    $ ./project checkout feature-<FEATURENAME>
+1. **Create** a feature branch. Remote branches are always prefered during
+   checkout::
 
-2. **Develop** the code.
+    development$ ./project checkout feature-branch
 
-3. **Check** the status of the workdirs::
+2. **Develop** the code::
 
-    $./project status
-    $./project diff [-v]
+    feature-branch$ [...]
+
+3. **Test** the code::
+
+    feature-branch$ ./service-test
+
+4. **Check** the status of the workdirs::
+
+    feature-branch$ ./project status
+    feature-branch$ ./project diff [-v]
 
 5. **Commit** the changes and new files::
 
-    $./project commit "commit message"
+    feature-branch$ ./project commit "commit message"
 
-4. **Push** the branch, if the feature branch should be shared::
+6. **Push** the branch, if the feature branch should be shared::
 
-    $./project push
+    feature-branch$ ./project push
 
-5. **Delete** the branch, if the feature branch should be **discarded**. Both
+7. **Delete** the branch, if the feature branch should be discarded. Both
    the local and remote branch will be deleted::
 
-    $./project delete
+    feature-branch$ ./project chechkout development
+    development$ ./project delete feature-branch
 
-6. **Merge** the branch into ``development``, when the feature is finished.
+8. **Merge** the branch into ``development``, when the feature is finished.
    This will delete the local and remote branch after the merge::
 
-    $./project merge
+    feature-branch$ ./project merge
 
 Docker
 ------
