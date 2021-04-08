@@ -22,6 +22,7 @@ from datasets import Datasets
 
 
 log = logging.getLogger(__name__)
+_colorless = False
 
 
 class ProteusStats():
@@ -107,6 +108,8 @@ class ProteusStats():
 
 def color(text, status):
     """Colored output wrapper for stdout text."""
+    if _colorless:
+        return text
     text = str(text)
     if status == 'error':
         text = "\033[1m\033[5m\033[91m" + text
