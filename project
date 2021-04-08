@@ -2182,15 +2182,21 @@ if __name__ == "__main__":
     git_data = "%s <%s> [%s]" % (
         git_name, git_email, git_key or "no signing key")
     git_protocol = int(env.get('GIT_SSH')) and 'ssh' or 'https'
-    global_git_name = subprocess.check_output(
-        ('git', 'config', '--global', 'user.name'), cwd=root
-        ).strip().decode('utf-8')
-    global_git_email = subprocess.check_output(
-        ('git', 'config', '--global', 'user.email'), cwd=root
-        ).strip().decode('utf-8')
-    global_git_key = subprocess.check_output(
-        ('git', 'config', '--global', 'user.signingkey'), cwd=root
-        ).strip().decode('utf-8')
+    global_git_name = ""
+    global_git_email = ""
+    global_git_key = ""
+    try:
+        global_git_name = subprocess.check_output(
+            ('git', 'config', '--global', 'user.name'), cwd=root
+            ).strip().decode('utf-8')
+        global_git_email = subprocess.check_output(
+            ('git', 'config', '--global', 'user.email'), cwd=root
+            ).strip().decode('utf-8')
+        global_git_key = subprocess.check_output(
+            ('git', 'config', '--global', 'user.signingkey'), cwd=root
+            ).strip().decode('utf-8')
+    except Exception:
+        pass
     if not git_name or not git_email:
         git_data = "%s <%s> [%s]" % (
             global_git_name, global_git_email,
