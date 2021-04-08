@@ -1214,7 +1214,8 @@ def git_checkout(task, context={}):
         #              'description': "script will be restarted now",
         #              'data': "REASON: the main repository branch switched"})
         #     os.execv(__file__, sys.argv)
-        # return
+
+        return
 
     # upstream version does not exist
     if upstream or checkout_version.startswith("tags/"):
