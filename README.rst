@@ -904,15 +904,17 @@ project
 ::
 
     $ ./project update --help
-    usage: ./project update [-h] [-v] [--reset] [--ci]
+    usage: ./project update [-h] [-v] [--branch NAME] [--environment NAME] [--reset] [--ci]
 
-    Updates files, folders, symlinks and repos
+    Updates files, folders, symlinks and repos.
 
     optional arguments:
-      -h, --help     show this help message and exit
-      -v, --verbose  verbose output, -vv for debug output
-      --reset        overwrites the configuration files with example files (default: False)
-      --ci           continues integration mode: reset, debug, colorless (default: False)
+      -h, --help          show this help message and exit
+      -v, --verbose       verbose output, -vv for debug output
+      --branch NAME       Branch name (default: .env [feature-updatescript])
+      --environment NAME  Environment name (default: .env [development])
+      --reset             overwrites the configuration files with example files (default: False)
+      --ci                continues integration mode: reset, debug, colorless (default: False)
 
 ::
 

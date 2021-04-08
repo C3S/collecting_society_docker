@@ -378,6 +378,7 @@ def message(msg, offset=1, pad=10, data=True, add=True, output=True, end="\n"):
             title = repo
         text += color(title, _color + "_title") + " "
     # action
+    action = ""
     if 'action' in msg:
         action = msg['action']
         if msg['level'] == "error":
@@ -405,7 +406,7 @@ def message(msg, offset=1, pad=10, data=True, add=True, output=True, end="\n"):
             data += "\n" + "  " * offset + " ".ljust(pad) + line
         text += color(data, _color + "_data")
     text += "\n"
-    if not action.endswith(" ... "):
+    if action and not action.endswith(" ... "):
         text += end
     # process
     if add:
@@ -643,21 +644,23 @@ def action(func):
         # get last context, if empty
         if not context:
             context = get_context()
-        # stop to process stopped action groups or batch groups
-        if context['batch_group'].get("stopped"):
-            return
-        if context['action_group'].get("stopped"):
-            return
-        # set the context
-        actions = project[environment]['actions']
-        if current_action not in actions:
-            actions[current_action] = {}
-        context['actions'] = actions[current_action]
-        context['action'] = current_action
-        if 'output' not in context['task']:
-            context['task']['output'] = {}
-        if 'result' not in context['task']:
-            context['task']['result'] = {}
+        # context might stell be empty, if action is used very early
+        if context:
+            # stop to process stopped action groups or batch groups
+            if context['batch_group'].get("stopped"):
+                return
+            if context['action_group'].get("stopped"):
+                return
+            # set the context
+            actions = project[environment]['actions']
+            if current_action not in actions:
+                actions[current_action] = {}
+            context['actions'] = actions[current_action]
+            context['action'] = current_action
+            if 'output' not in context['task']:
+                context['task']['output'] = {}
+            if 'result' not in context['task']:
+                context['task']['result'] = {}
         # apply the action
         try:
             func(task, context, *args, **kwargs)
@@ -1637,7 +1640,7 @@ def get_context():
     """Returns the current context."""
     if _contexts:
         return _contexts[-1]
-    return
+    return {}
 
 
 def set_context(override={}):
@@ -1937,34 +1940,6 @@ def promote(context={}):
 
 # --- configuration -----------------------------------------------------------
 
-# project
-root = get_root_dir()
-repo = get_repo_name(root)
-env = get_dot_env(root)
-project = get_project_yaml(root, env)
-environments = project.keys()
-
-# environment
-environment = env['ENVIRONMENT']
-branch = env['BRANCH']
-git_name = env.get('GIT_USER_NAME', '')
-git_email = env.get('GIT_USER_EMAIL', '')
-git_key = env.get('GIT_USER_SIGNINGKEY', '')
-git_data = "%s <%s> [%s]" % (git_name, git_email, git_key or "no signing key")
-git_protocol = int(env.get('GIT_SSH')) and 'ssh' or 'https'
-global_git_name = subprocess.check_output(
-    ('git', 'config', '--global', 'user.name'), cwd=root
-    ).strip().decode('utf-8')
-global_git_email = subprocess.check_output(
-    ('git', 'config', '--global', 'user.email'), cwd=root
-    ).strip().decode('utf-8')
-global_git_key = subprocess.check_output(
-    ('git', 'config', '--global', 'user.signingkey'), cwd=root
-    ).strip().decode('utf-8')
-if not git_name or not git_email:
-    git_data = "%s <%s> [%s]" % (
-        global_git_name, global_git_email, global_git_key or "no signing key")
-
 # messages
 levels = {
     'output':  ['error', 'warning', 'info'],
@@ -2019,6 +1994,13 @@ colors = {
 
 if __name__ == "__main__":
 
+    # read env for help output
+    root = get_root_dir()
+    repo = get_repo_name(root)
+    env = get_dot_env(root)
+    environment = env['ENVIRONMENT']
+    branch = env['BRANCH']
+
     # command
     cmd = argparse.ArgumentParser(
         usage="./project",
@@ -2043,8 +2025,15 @@ if __name__ == "__main__":
 
     # update command
     subcmd_update = subcmds.add_parser(
-        'update', parents=[subcmd], description=update.__doc__.strip('.'),
+        'update', parents=[subcmd], description=update.__doc__,
         help=update.__doc__.strip('.'))
+    subcmd_update.add_argument(
+        '--branch', metavar="NAME",
+        help="Branch name (default: .env [%s])" % branch)
+    subcmd_update.add_argument(
+        '--environment', metavar="NAME",
+        choices=['development', 'staging', 'testing', 'production'],
+        help="Environment name (default: .env [%s])" % environment)
     subcmd_update.add_argument(
         '--reset', action='store_true',
         help="overwrites the configuration files with example files "
@@ -2137,18 +2126,21 @@ if __name__ == "__main__":
         'promote', parents=[subcmd], description=promote.__doc__,
         help=promote.__doc__.strip('.'))
     subcmd_promote.add_argument(
-        'environment', metavar="ENVIRONMENT",
+        'promote_environment', metavar="ENVIRONMENT",
+        choices=['development', 'staging', 'production'],
         help="Environment to be promoted to the next stage")
 
     # parse
     args = vars(cmd.parse_args())
     _command = args.get('command') or 'diff'
+    _update_environment = args.get('environment', None)
+    _update_branch = args.get('branch', None)
     _commit_message = args.get('message', "")
     _checkout_branch = args.get('checkout_branch', None)
     _delete_branch = args.get('delete_branch', None)
     _merge_branch = args.get('merge_branch', None)
     _merge_push = not args.get('no_push', False)
-    _promote_branch = args.get('environment', None)
+    _promote_branch = args.get('promote_environment', None)
     _branch_delete = not args.get('no_delete', False)
     _branch_delete_local = not args.get('no_local_delete', False)
     _branch_delete_remote = not args.get('no_remote_delete', False)
@@ -2171,6 +2163,44 @@ if __name__ == "__main__":
     if not _branch_delete:
         _branch_delete_remote = False
         _branch_delete_local = False
+    if _update_environment:
+        line_replace({
+            'name': ".env", 'after': "^ENVIRONMENT=",
+            'replace': _update_environment})
+    if _update_branch:
+        line_replace({
+            'name': ".env", 'after': "^BRANCH=",
+            'replace': _update_branch})
+
+    # project
+    root = get_root_dir()
+    repo = get_repo_name(root)
+    env = get_dot_env(root)
+    project = get_project_yaml(root, env)
+    environments = project.keys()
+
+    # environment
+    environment = env['ENVIRONMENT']
+    branch = env['BRANCH']
+    git_name = env.get('GIT_USER_NAME', '')
+    git_email = env.get('GIT_USER_EMAIL', '')
+    git_key = env.get('GIT_USER_SIGNINGKEY', '')
+    git_data = "%s <%s> [%s]" % (
+        git_name, git_email, git_key or "no signing key")
+    git_protocol = int(env.get('GIT_SSH')) and 'ssh' or 'https'
+    global_git_name = subprocess.check_output(
+        ('git', 'config', '--global', 'user.name'), cwd=root
+        ).strip().decode('utf-8')
+    global_git_email = subprocess.check_output(
+        ('git', 'config', '--global', 'user.email'), cwd=root
+        ).strip().decode('utf-8')
+    global_git_key = subprocess.check_output(
+        ('git', 'config', '--global', 'user.signingkey'), cwd=root
+        ).strip().decode('utf-8')
+    if not git_name or not git_email:
+        git_data = "%s <%s> [%s]" % (
+            global_git_name, global_git_email,
+            global_git_key or "no signing key")
 
     # set workdir
     os.chdir(root)
