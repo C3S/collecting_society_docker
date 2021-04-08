@@ -680,8 +680,8 @@ def path_link(task, context={}):
 
     # source path does not exist
     if not os.path.exists(source):
-        error({'description': "source path not found",
-               'data': "source: %s" % task['source']})
+        message({'level': "info", 'description': "source path not found",
+                 'data': "source: %s" % task['source']})
 
     # new symlink, file does not exist
     source_rel = os.path.relpath(source, os.path.dirname(target))
