@@ -89,7 +89,7 @@ if $CI; then
     echo $ROOT_DIR/project update $CI_PARAMS --ci
 fi
 
-# build docker images
+# build docker images 
 if $CI || $BUILD; then
     echo -e "\n== build images"
     docker-compose $TESTING build
