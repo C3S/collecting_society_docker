@@ -1044,8 +1044,6 @@ def git_status(task, context={}):
     cmd = ['git', 'status']
     if upstream:
         cmd.append('--untracked-files=no')
-    if not verbose:
-        cmd.append('--porcelain')
 
     # status
     output = execute(cmd, cwd=target)
@@ -1054,37 +1052,22 @@ def git_status(task, context={}):
         description += " -> %s aborted" % _command
     elif stop_action_group:
         description += " -> further actions on this repo skipped"
+    data, clean = color_git_status(output)
 
-    # verbose
-    if verbose:
-        data, clean = color_git_status(output)
-        # clean
-        if clean:
-            message({'level': 'info', 'description': "workdir ok"})
-            return
-        # dirty
-        if stop_action_group:
-            context['action_group']['stopped'] = True
-        if stop_all:
-            error({'title': task['name'], 'description': description,
-                   'data': data})
-        message({'level': 'warning', 'description': description,
-                 'data': data})
-        return
-
-    # not verbose dirty
-    if output:
-        if stop_all:
-            error({'title': task['name'], 'description': description,
-                   'output': output})
-        if stop_action_group:
-            context['action_group']['stopped'] = True
-        message({'level': 'warning', 'description': description,
+    # clean
+    if clean:
+        message({'level': 'info', 'description': "workdir ok",
                  'data': output})
         return
 
-    # not verbose clean
-    message({'level': 'debug', 'description': "workdir ok"})
+    # dirty
+    if stop_action_group:
+        context['action_group']['stopped'] = True
+    if stop_all:
+        error({'title': task['name'], 'description': description,
+               'data': data})
+    message({'level': 'warning', 'description': description,
+             'data': data})
 
 
 @action
