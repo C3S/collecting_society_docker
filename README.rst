@@ -1046,7 +1046,9 @@ service-test
 ::
 
     $ ./service-test --help
-    Usage: ./service-test [service] [--down] [--build] [--keep] [--lint] [--ci] [--help] [PARAMS]
+    Usage: ./service-test [service] [--down] [--build] [--keep] [--lint]
+                      [--ci] [--ci-branch NAME] [--ci-environment NAME]
+                      [--help] [PARAMS]
 
       This script runs the unit/function/integration tests and linter for the services:
         - erpserver (tryton)
@@ -1065,6 +1067,8 @@ service-test
             - recreate the test database template
             - run tests and linter
             - stop and remove the container
+      --ci-branch: branch to test
+      --ci-environment: environment to test
       --help: display this help
       PARAMS: are passed to nosetest
 
