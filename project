@@ -1570,6 +1570,10 @@ def script_restart(task, context={}):
     pull = task['result']['git_pull']
     changed = 'changed' in pull
 
+    # return if restarted
+    if _restarted:
+        return
+
     # skip silently for unchanged repo
     if not changed:
         return
