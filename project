@@ -1209,12 +1209,12 @@ def git_checkout(task, context={}):
         execute(('git', 'checkout', checkout_version), cwd=target, msg=msg)
 
         # if main repo was switched, give control to the other version
-        if target == ".":
-            message({'level': "info",
-                     'description': "script will be restarted now",
-                     'data': "REASON: the main repository branch switched"})
-            os.execv(__file__, sys.argv)
-        return
+        # if target == ".":
+        #     message({'level': "info",
+        #              'description': "script will be restarted now",
+        #              'data': "REASON: the main repository branch switched"})
+        #     os.execv(__file__, sys.argv)
+        # return
 
     # upstream version does not exist
     if upstream or checkout_version.startswith("tags/"):
