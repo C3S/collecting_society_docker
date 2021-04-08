@@ -1834,7 +1834,6 @@ def checkout(context={}):
             continue
         task['actions'] = ['git_checkout']
         tasks.append(task)
-    debug(tasks)
     context['tasks'] = tasks
 
 
