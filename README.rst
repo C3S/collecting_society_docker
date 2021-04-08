@@ -92,9 +92,9 @@ Files
 -----
 
 .. note:: Some files and folders are created on the first run of the
-    `update script`_, `docs-build script`_ or `service-test script`_ and many
-    are symlinks into the shared volume, as the files need to be accessible
-    from within the container.
+    `project script`_ update command, `docs-build script`_ or
+    `service-test script`_ and many are symlinks into the shared volume, as the
+    files need to be accessible from within the container.
 
 ::
 
@@ -105,15 +105,8 @@ Files
     │   ├── collecting_society_worker/      # (worker) file processing
     │   └── echoprint-server/               # (fingerprint) echoprint server
     │
-    ├── documentation/                      # documentation build
+    ├── docs/                               # documentation build
     │   └── index.html                      # main index file of the built documentation
-    │
-    ├── scripts/                            # scripts for common tasks
-    │   ├── cli                             # main CLI script for common tasks (run in container!)
-    │   ├── db-rebuild                      # rebuilds the database
-    │   ├── docs-build                      # builds the documentation of the project
-    │   ├── service-test                    # runs the tests of the project
-    │   └── update                          # updates the files/folders/repos of the project
     │
     ├── services/                           # files for docker services
     │   ├── build/                          # build environment for docker images
@@ -177,6 +170,13 @@ Files
     │   └── tryton-files/                   # (erpserver/webgui/webapi) trytond file storage
     │
     ├── .env                                # main environment variable file
+    ├── project.yml                         # main project setup file
+    │
+    ├── project                             # updates the files/folders/repos of the project
+    ├── db-rebuild                          # rebuilds the database
+    ├── docs-build                          # builds the documentation of the project
+    ├── service-test                        # runs the tests of the project
+    ├── cli                                 # main CLI script for common tasks (run in container!)
     │
     ├── docker-compose.yml                  # main docker compose file
     ├── docker-compose.override.yml         # symlink to environment docker override file
@@ -212,8 +212,19 @@ Development
 '''''''''''
 
 ======================================= ===============================================================
-``scripts/update``                      `update script`_ for the files/folders/repos of the project
-``scripts/cli``                         `CLI`_ script for common tasks (run within the container!)
+``project.yml``                         project setup configuration file for file/folder/repo tasks
+``project``                             `project script`_ for project maintainance tasks
+``project update``                      updates the files/folders/repos of the project
+``project status``                      status of all project repositories
+``project diff``                        diff of all project repositories and example files
+``project pull``                        pull all project repositories
+``project checkout BRANCH``             checkout BRANCH in all project repositories
+``project delete BRANCH``               deletes local and remote BRANCH in all project repositories
+``project commit MESSAGE``              add changed/untracked files, commit them in project repos
+``project push``                        push all commits in all project repos, creates remote branches
+``project merge [BRANCH]``              merges current branch of project repos into BRANCH
+``project promote ENVIRONMENT``         promotes an environment branch to the next environment branch
+``cli``                                 `CLI`_ script for common tasks (run within the container!)
 ``services/config/``                    `Application Configuration`_ files for the services
 ``code/``                               Symlinks to src repositories for the `application development`_
 ``volumes/shared/src/``                 Repos of all Tryton and collecting_society modules
@@ -224,7 +235,7 @@ Data
 ''''
 
 ============================================ ==========================================================
-``scripts/db-rebuild``                       `db-rebuild script`_ for the database and demodata
+``db-rebuild``                               `db-rebuild script`_ for the database and demodata
 ``volumes/postgresql-data``                  Files of the postgres database
 ``volumes/echoprint-data``                   Files of the echoprint database
 ``volumes/shared/data/datasets/``            `Demodata`_ generation scripts for each tryton model
@@ -236,15 +247,15 @@ Documentation
 '''''''''''''
 
 ======================================= ===============================================================
-``scripts/docs-build``                  `docs-build script`_ to build the `project documentation`_
-``documentation/index.html``            Main index file of the built documentation
+``docs-build``                          `docs-build script`_ to build the `project documentation`_
+``docs/index.html``                     Main index file of the built documentation
 ======================================= ===============================================================
 
 Tests
 '''''
 
 ======================================= ===============================================================
-``scripts/service-test``                `service-test script`_ to run all service `application tests`_
+``service-test``                        `service-test script`_ to run all service `application tests`_
 ``tests/cover_*/index.html``            Html summary of coverage for webapi/webgui and worker
 ``tests/screenshots/``                  Screenshots of the integration tests
 ======================================= ===============================================================
@@ -261,16 +272,20 @@ Requirements
 
 - Linux or OS X system
 - `git`__
+- `python`__ ``>=3.7``
+- `pyyaml`__
 - `docker`__ ``>= 17.12.0``
 - `docker-compose`__ ``>= 1.28.6``
 
 __ https://git-scm.com/downloads
+__ https://www.python.org/downloads
+__ https://pyyaml.org/wiki/PyYAMLDocumentation
 __ https://docs.docker.com/engine/installation
 __ https://docs.docker.com/compose/install
 
 Summary for Debian/Ubuntu::
 
-    $ sudo apt-get install docker docker-compose git
+    $ sudo apt-get install docker docker-compose git python python-yaml
     $ sudo usermod -aG docker $USER
     $ newgrp docker
 
@@ -304,20 +319,21 @@ Copy the main environment variable example file ``.env.example`` to `.env`_::
 
 Adjust the following variables:
 
-================== ====== ======= =================================================
-Variable           Values Default Description
-================== ====== ======= =================================================
-``DEBUGGER_PTVSD`` 0|1    0       Install ptvsd during build process for debugging
-``GIT_SSH``        0|1    0       Checkout git repositories via ssh
-``GIT_USER_NAME``  string ""      Username for git commits *(optional)*
-``GIT_USER_EMAIL`` string ""      Email for git commits *(optional)*
-================== ====== ======= =================================================
+======================= ====== ======= =================================================
+Variable                Values Default Description
+======================= ====== ======= =================================================
+``DEBUGGER_PTVSD``      0|1    0       Install ptvsd during build process for debugging
+``GIT_SSH``             0|1    0       Checkout git repositories via ssh
+``GIT_USER_NAME``       string ""      Username for git commits *(optional)*
+``GIT_USER_EMAIL``      string ""      Email for git commits *(optional)*
+``GIT_USER_SIGNINGKEY`` string ""      GPG key id for signed commits
+======================= ====== ======= =================================================
 
-Run the `update script`_, which checkouts the service repositories, creates
-the service folders and copies the configuration example files
-*(~5-10 minutes)*::
+Run the `project script`_ update command, which checkouts the service
+repositories, creates the service folders and copies the configuration example
+files *(~5-10 minutes)*::
 
-    $ ./scripts/update
+    $ ./project update
 
 Configuration
 -------------
@@ -476,20 +492,32 @@ Configuration
 
 The services are configured via:
 
-1. Application environment:
+1. Project configuration:
+   ``project.yml``
+2. Application environment:
    ``development``, ``staging``, ``production``, ``testing``
-2. Global and service specific envvar files for the containers:
+3. Global and service specific envvar files for the containers:
    ``.env``, ``service/<SERVICE>.env``
-3. Application specific configuration files:
+4. Application specific configuration files:
    ``*.conf``, ``*.ini``
 
 .. note:: Sane defaults for a development setup are given and should work as
     provided, so this section might be skipped to start with development.
 
-.. warning:: Some files are tracked in git as ``FILE.example`` and are initally
+.. note:: Some files are tracked in git as ``FILE.example`` and are initally
     copied to the untracked ``FILE`` but not overwritten by the
-    `update script`_. After an `project update`_, changes to the ``*.example``
-    files, especially new entries, have to be applied manually.
+    `project script`_ update command. The script will print notifications and
+    diffs, when those files need to be changed manually.
+
+
+Project
+-------
+
+The project configuration file ``project.yml`` describes the tasks to perform
+to setup and update the `environments`_. Tasks may include the the creation
+or copying of files, folders and symlinks and the checkout specific branches
+or tags of upstream and project repositories.
+
 
 Environments
 ------------
@@ -524,7 +552,7 @@ in a service container by the corresponding ``services/<SERVICE>.env``.
 
 The ``.env`` file is also processed by docker-compose by convention and
 contains variables for the build process as well as for the
-`update script`_.
+`project script`_.
 
 .. seealso:: `Compose CLI environment variables`__
 
@@ -540,6 +568,7 @@ Variable                           Values          Description
 ``ENVIRONMENT``                    | "development" environment, switch for config files
                                    | "staging"
                                    | "production"
+``BRANCH``                         string          branch of project repositories
 ``COMPOSE_DOCKER_CLI_BUILD``       0|1             use BuildKit for docker builds
 ``COMPOSE_PROJECT_NAME``           string          prefix for containers
 ``COMPOSE_IGNORE_ORPHANS``         0|1             suppress orphan container warnings
@@ -549,6 +578,7 @@ Variable                           Values          Description
 ``GIT_SSH``                        0|1             use git via ssh
 ``GIT_USER_NAME``                  string          set git username in repositories
 ``GIT_USER_EMAIL``                 string          set git email in repositories
+``GIT_USER_SIGNINGKEY``            string          GPG key for signing commits
 ``POSTGRES_HOSTNAME``              string          hostname of postgres server
 ``POSTGRES_PORT``                  integer         port of postgres server
 ``TRYTON_HOSTNAME``                string          hostname of tryton server
@@ -609,9 +639,9 @@ Applications
 The applications (trytond, proteus, pyramid) provide distinct files for all
 application `environments`_, which are included depending on the value of the
 `.env`_ variable ``ENVIRONMENT``. The applications might use envvars as well
-indicated by the syntax ``${VARIABLE}`` in the configuration file. The
-following sections provide a list of all envvar and configuration files for
-each application.
+indicated by the syntax ``${VARIABLE}`` in the configuration file. The same
+syntax can also be used in ``project.yml``. The following sections provide
+a list of all envvar and configuration files for each application.
 
 .. _Trytond Config:
 
@@ -661,7 +691,7 @@ There are several ways to interact with the services:
 1. The ``docker-compose`` CLI is the prefered general high level docker tool
    for everyday use.
 2. The ``docker`` CLI provides sometimes more useful low level commands.
-3. In the `Scripts`_ folder some scipts are provided for comfort or
+3. The `Scripts`_ in the root folder are provided for comfort or
    automatisation.
 4. The `CLI`_ script provides special maintainance commands for the services
    (for use within the containers).
@@ -674,8 +704,8 @@ List docker-compose commands    ``docker-compose --help``
 Help for docker-compose command ``docker-compose COMMAND --help``
 List docker commands            ``docker --help``
 Help for docker command         ``docker COMMAND --help``
-List scripts                    ``ls scripts``
-Help for scripts                ``./scripts/SCRIPT --help``
+List scripts                    ``ls -F | grep '*$'``
+Help for scripts                ``./SCRIPT --help``
 List CLI command                ``docker-compose [exec|run --rm] erpserver --help``
 Help for CLI command            ``docker-compose [exec|run --rm] erpserver COMMAND --help``
 =============================== ==============================================================
@@ -698,45 +728,46 @@ Run a command on a running|new container    ``docker-compose [exec|run --rm] SER
 Run CLI command on a running|new container  ``docker-compose [exec|run --rm] SERVICE [cli] CMD``
 Open a shell on a running|new container     ``docker-compose [exec|run --rm] SERVICE bash``
 Run CLI command inside a container shell    ``[cli] CMD``
-Build documentation                         ``./scripts/docs-build``
-Run tests                                   ``./scripts/service-test``
+Build documentation                         ``./docs-build``
+Run tests                                   ``./service-test``
 Scale services on demand                    ``docker-compose scale SERVICE=#``
 Stop services                               ``docker-compose stop``
 Stop a certain service                      ``docker-compose stop SERVICE``
 Stop and remove containers/volumes/networks ``docker-compose down``
 =========================================== ====================================================
 
+.. seealso:: ``[SERVICE]``: `Table of Services`_, ``[CMD]``: `CLI`_.
+
 .. note:: Always prefer ``exec`` to ``run --rm``, if containers are already
     running.
-
-.. seealso:: ``SERVICE``: `Table of Services`_, ``CMD``: `CLI`_.
 
 .. _Project Update:
 
 Update
 ------
 
-=================== =======================================================
-Update repositories ``./scripts/update``
-Diff example files  ``./scripts/update --diff``
-Build images        ``docker-compose build``
-Update database     ``docker-compose [exec|run --rm] erpserver db-update``
-=================== =======================================================
+========================= =======================================================
+Update repositories       ``./project update``
+Diff repos/example files  ``./project diff``
+Build images              ``docker-compose build``
+Update database           ``docker-compose [exec|run --rm] erpserver db-update``
+========================= =======================================================
 
 1. Update the repositories/files/folders::
 
-    $ ./scripts/update
+    $ ./project update
 
-   .. warning:: If a repository is not clean, it won't be updated. Watch out
-       for red output lines.
+   The script will print notifications and instruction, if further steps are
+   neccessary.
 
-   .. note:: The `update script`_ will also try to update the collecting_society_docker
-       repository and thus itself first, before updating the subordinate repositories.
+   .. note:: The `project script`_ update command will also try to update the
+       collecting_society_docker repository and thus itself first, before
+       updating the subordinate repositories.
 
 2. If there were changes to the ``*.example`` files, diff the files and
    apply changes manually::
 
-    $ ./scripts/update --diff
+    $ ./project diff
 
 3. If there were changes in the ``Dockerfile``, rebuild all `docker images`_::
 
@@ -758,7 +789,7 @@ Update database     ``docker-compose [exec|run --rm] erpserver db-update``
    If you run into problems and don't care about the data, you can also
    recreate the database::
 
-    $ ./scripts/db-rebuild
+    $ ./db-rebuild
 
 Inspect
 -------
@@ -813,7 +844,7 @@ Backup  ``docker-compose [exec|run --rm] erpserver db-backup [NAME] > /shared/tm
 Delete  ``docker-compose [exec|run --rm] erpserver db-delete [NAME]``
 Setup   ``docker-compose [exec|run --rm] erpserver db-setup [NAME]``
 Rebuild | ``docker-compose [exec|run --rm] erpserver db-rebuild [NAME]``
-        | ``./scripts/rebuild``
+        | ``./db-rebuild``
 Examine ``docker-compose run --rm erpserver db-connect [NAME]``
 ======= =========================================================================================
 
@@ -823,11 +854,10 @@ Examine ``docker-compose run --rm erpserver db-connect [NAME]``
     ``./volumes/shared/running_db_creation.delete_me`` locking file.
 
 The database files are stored in ``./volumes/postgresql-data``. If the postgres
-setup itself seem to be broken, you can always delete and recreate the folder::
+setup itself seem to be broken, you can delete and recreate the folder::
 
     $ docker-compose down
     $ sudo rm -rf ./volumes/postgresql-data/
-    $ mkdir ./volumes/postgresql-data
     $ docker-compose up
 
 .. warning:: All data in this database will be deleted!
@@ -844,39 +874,170 @@ automatisation using a build server (CI). The following sections contain a brief
 synopsis about each of the provided scripts as provided by the ``--help`` option.
 The usual syntax is ``object``-``operation``.
 
-.. _docs-build script:
+.. _project script:
 
-docs-build
-''''''''''
+project
+'''''''
 ::
 
-    $ ./scripts/docs-build --help
-    Usage: ./scripts/docs-build [--down] [--build] [--keep] [--no-autoapi] [--help]
+    $ ./project --help
+    usage: ./project
 
-      This script builds the documentation with sphinx.
+    Performs development and maintainance tasks for the project.
 
-    Options:
-      --down: immediately stop and remove the container and exit
-      --build: build images
-      --keep: keep container running
-      --no-autoapi: don't parse the modules
-      --help: display this help
+    optional arguments:
+      -h, --help         show this help message and exit
 
+    subcommands:
+      (default: status)
+        update           Updates files, folders, symlinks and repos
+        status           Prints the git status of the project repositories
+        diff             Prints the diff of the project repos and the example files
+        pull             Pulls the current branch for all project repositories
+        checkout         Checksout a branch in all project repositories
+        delete           Deletes a local and remote branch in all project repos
+        commit           Commits changes and untracked files to the project repositories
+        push             Pushes commits in all project repos, creates missing remote branches
+        merge            Merges the current branch into another branch in all project repos
+        promote          Merges an environment branch into the next stage environment branch
 
-.. _db-rebuild script:
-
-db-rebuild
-''''''''''
 ::
 
-    $ ./scripts/db-rebuild --help
-    Usage: ./scripts/db-rebuild [--ci] [--help]
+    $ ./project update --help
+    usage: ./project update [-h] [-v] [--branch NAME] [--environment NAME] [--reset] [--ci]
 
-      This script deletes and recreates the database and generates the demodata.
+    Updates files, folders, symlinks and repos.
 
-    Options:
-      --ci: stops the services before, starts the services detached afterwards
-      --help: display this help
+    optional arguments:
+      -h, --help          show this help message and exit
+      -v, --verbose       verbose output, -vv for debug output
+      --branch NAME       Branch name (default: .env [feature-updatescript])
+      --environment NAME  Environment name (default: .env [development])
+      --reset             overwrites the configuration files with example files (default: False)
+      --ci                continues integration mode: reset, debug, colorless (default: False)
+
+::
+
+    $ ./project status --help
+    usage: ./project status [-h] [-v]
+
+    Prints the git status of the project repositories.
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output, -vv for debug output
+
+::
+
+    $ ./project diff --help
+    usage: ./project diff [-h] [-v]
+
+    Prints the diff of the project repos and the example files.
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output, -vv for debug output
+
+::
+
+    $ ./project pull --help
+    usage: ./project pull [-h] [-v]
+
+    Pulls the current branch for all project repositories.
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output, -vv for debug output
+
+::
+
+    $ ./project checkout --help
+    usage: ./project checkout [-h] [-v] [BRANCH]
+
+    Checksout a branch in all project repositories.
+
+    positional arguments:
+      BRANCH         Branch name (default: checkedout [feature-updatescript])
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output, -vv for debug output
+
+::
+
+    $ ./project delete --help
+    usage: ./project delete [-h] [-v] [-f] [--no-local-delete] [--no-remote-delete] BRANCH
+
+    Deletes a local and remote branch in all project repos.
+
+    positional arguments:
+      BRANCH              Branch name
+
+    optional arguments:
+      -h, --help          show this help message and exit
+      -v, --verbose       verbose output, -vv for debug output
+      -f, --force         Force deletion of not fully merged branches (default: False)
+      --no-local-delete   Don't delete local branch (default: False)
+      --no-remote-delete  Don't delete remote branch (default: False)
+
+::
+
+    $ ./project commit --help
+    usage: ./project commit [-h] [-v] MESSAGE
+
+    Commits changes and untracked files to the project repositories.
+
+    positional arguments:
+      MESSAGE        Commit message
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output, -vv for debug output
+
+::
+
+    $ ./project push --help
+    usage: ./project push [-h] [-v]
+
+    Pushes commits in all project repos, creates missing remote branches.
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output, -vv for debug output
+
+::
+
+    $ ./project merge --help
+    usage: ./project merge [-h] [-v] [-f] [--no-delete] [--no-local-delete] [--no-remote-delete]
+                           [--no-push] [BRANCH]
+
+    Merges the current branch into another branch in all project repos.
+
+    positional arguments:
+      BRANCH              Target branch name (default: development)
+
+    optional arguments:
+      -h, --help          show this help message and exit
+      -v, --verbose       verbose output, -vv for debug output
+      -f, --force         Force deletion of not fully merged branches (default: False)
+      --no-delete         Don't delete branch after merge (default: False)
+      --no-local-delete   Don't delete local branch after merge (default: False)
+      --no-remote-delete  Don't delete remote branch after merge (default: False)
+      --no-push           Don't push branch after merge (default: False)
+
+::
+
+    $ ./project promote --help
+    usage: ./project promote [-h] [-v] ENVIRONMENT
+
+    Merges an environment branch into the next stage environment branch.
+
+    positional arguments:
+      ENVIRONMENT    Environment to be promoted to the next stage
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --verbose  verbose output, -vv for debug output
 
 .. _service-test script:
 
@@ -884,9 +1045,10 @@ service-test
 ''''''''''''
 ::
 
-    $ ./scripts/service-test --help
-    Usage: ./scripts/service-test [service] [--down] [--build] [--keep] [--lint] [--ci]
-                                  [--help] [PARAMS]
+    $ ./service-test --help
+    Usage: ./service-test [service] [--down] [--build] [--keep] [--lint]
+                      [--ci] [--ci-branch NAME] [--ci-environment NAME]
+                      [--help] [PARAMS]
 
       This script runs the unit/function/integration tests and linter for the services:
         - erpserver (tryton)
@@ -905,32 +1067,49 @@ service-test
             - recreate the test database template
             - run tests and linter
             - stop and remove the container
+      --ci-branch: branch to test
+      --ci-environment: environment to test
       --help: display this help
       PARAMS: are passed to nosetest
 
-.. _update script:
+.. _docs-build script:
 
-update
-''''''
+docs-build
+''''''''''
 ::
 
-    $ ./scripts/update --help
-    Usage: ./scripts/update [--reset] [--diff] [--help]
+    $ ./docs-build --help
+    Usage: ./docs-build [--down] [--build] [--keep] [--no-autoapi] [--help]
 
-      This script updates the project:
-        - Creation of files and folders
-        - Copy of FILE.example files to FILE
-        - Checkout/Pull of the source repositories (including this one)
-        - Checkout/Pull of the reference repositories
+      This script builds the documentation with sphinx.
 
     Options:
-      --reset: overrides the configuration files with .example
-      --diff: just outputs the diff of .example files, performs no other updates
+      --down: immediately stop and remove the container and exit
+      --build: build images
+      --keep: keep container running
+      --no-autoapi: don't parse the modules
+      --help: display this help
+
+
+.. _db-rebuild script:
+
+db-rebuild
+''''''''''
+::
+
+    $ ./db-rebuild --help
+    Usage: ./db-rebuild [--ci] [--help]
+
+      This script deletes and recreates the database and generates the demodata.
+
+    Options:
+      --ci: stops the services before, starts the services detached afterwards
+      --help: display this help
 
 CLI
 ---
 
-The ``./scripts/cli`` script contains a CLI for special service
+The ``./volumes/shared/cli`` script contains a CLI for special service
 maintainance commands. Within the containers it is available in the working
 directory ``/shared/cli``. For convenience and to ensure the same command
 invokation syntax of ``exec`` and ``run --rm``, the commands of the script are
@@ -1345,6 +1524,125 @@ Other important entries are:
 Development
 ===========
 
+Environment
+-----------
+
+Project
+'''''''
+
+The tasks to setup each environment can be configured in ``./project.yml``:
+
+.. code-block:: yaml
+
+    <ENVIRONMENT>:
+
+      commands:
+        <COMMAND>: {}
+
+      tasks:
+        <COMMAND>:
+
+          - name: <NAME>
+            actions: [<ACTION>, <ACTION>]
+            <KEY>: <VALUE>
+
+          - name: <NAME>
+            actions: [<ACTION>, <ACTION>]
+            <KEY>: <VALUE>
+            batch:
+              - name: <NAME>
+                <KEY>: <VALUE>
+
+      actions:
+        <ACTION>: {}
+        <ACTION>: []
+
+=============== ===============================================================
+Key             Description
+=============== ===============================================================
+``ENVIRONMENT`` | environment, for which the tasks are performed.
+                | inheritance: production -> staging -> testing -> development
+``commands``    configuration variables availbable for each command
+``COMMAND``     | main commands
+                | maps to ``@command`` functions in the `project script`_
+``tasks``       list of tasks to perform consecutively for each command
+``NAME``        name of the task, required for all tasks
+``ACTION``      | actions to perform consecutivky for each task,
+                | maps to ``@action`` functions in the `project script`_
+``actions``     | *[dictionary]* configuration values available in actions
+                | *[list]* action group with actions to perform consecutivley
+=============== ===============================================================
+
+Commands can be invoked via the `project script`_. For available commands, see
+the ``@command`` decorated functions in the script.
+
+Each command processes its task list and for each task the defined actions
+consecutivley. Each action receives the task dictionary and expects the task
+to have the proper key/value pairs (e.g. repos need a source, etc). The
+command/action config dictionary is also available to the actions and might
+configure how the action should be performed. For available actions, see the
+``@action`` decorated functions in the script.
+
+For a list of command/action configuration variables, see the comments in
+``./project.yml``.
+
+Batch tasks will use the key/value pairs of its parent updated with itself.
+In inherited environments, tasks may be changed by using the same name of the
+inherited task.
+
+Branches
+''''''''
+
+Each project repository has a branch for all `environments`_. To switch a
+branch for all project repositories and set the ``ENVIRONMENT`` `.env`_
+variable to the environment::
+
+    $ ./project checkout BRANCH
+
+Using **feature branches** is encouraged. To create a new local feature branch
+for all repositories::
+
+    development$ ./project checkout feature-<FEATURENAME>
+
+The basic workflow:
+
+1. **Create** a feature branch. Remote branches are always prefered during
+   checkout::
+
+    development$ ./project checkout feature-branch
+
+2. **Develop** the code::
+
+    feature-branch$ [...]
+
+3. **Test** the code::
+
+    feature-branch$ ./service-test
+
+4. **Check** the status of the workdirs::
+
+    feature-branch$ ./project status
+    feature-branch$ ./project diff [-v]
+
+5. **Commit** the changes and new files::
+
+    feature-branch$ ./project commit "commit message"
+
+6. **Push** the branch, if the feature branch should be shared::
+
+    feature-branch$ ./project push
+
+7. **Delete** the branch, if the feature branch should be discarded. Both
+   the local and remote branch will be deleted::
+
+    feature-branch$ ./project chechkout development
+    development$ ./project delete feature-branch
+
+8. **Merge** the branch into ``development``, when the feature is finished.
+   This will delete the local and remote branch after the merge::
+
+    feature-branch$ ./project merge
+
 Docker
 ------
 
@@ -1508,14 +1806,19 @@ Dockerfile and are all pinned. For a list of packages, search for
 The source code of those packages can also be found in the folder
 ``./volumes/shared/ref/`` and are provided for reference and for quick lookups
 during development. The source code is not used though. The repositories are
-cloned on the first run of the `update script`_ and can be configured via the
-dictionary ``clone_references`` within the update script::
+cloned on the first run of the `project script`_ update command and can be
+configured in ``./project.yml``:
 
-    {
-        'url': '<URL>',             # https url to git repository
-        'option': '<PARAMETER>',    # parameter for git (e.g. --branch)
-        'path': '<PATH>',           # folder in ./volumes/shared/ref to clone into
-    },
+.. code-block:: yaml
+
+    development:
+      tasks:
+        update:
+          - name: checkout repos of pinned pip packages for reference
+            batch:
+              - name: <REPOFOLDER>
+                source: <REPOSOURCE>
+                version: tags/<TAG>
 
 Repositories
 ''''''''''''
@@ -1526,17 +1829,23 @@ are pip installed during runtime each time a container is started. The list of
 package requirements for each service container can be found in
 ``./services/pip/<SERVICE>.pip``.
 
-The repositories are cloned and updated on each run of the `update script`_
-and can be configured via the dictionary ``clone_sources`` within the update
-script::
+The repositories are cloned and updated on each run of the `project script`_
+update/pull command and can be configured in ``./project.yml``:
 
-    {
-        'url': '<URL>',             # https url to git repository
-        'ssh': '<URL>',             # ssh url to git repository (optional)
-        'option': '<PARAMETER>',    # parameter for git (e.g. --branch)
-        'path': '<PATH>',           # folder in ./volumes/shared/ref to clone into
-        'symlink': True|False,      # add symlink in ./code/
-    },
+.. code-block:: yaml
+
+    production:
+      tasks:
+        update:
+          - name: update project repos
+            batch:
+              - name: <REPOFOLDER>
+                source: <REPOSOURCE>
+          - name: update upstream repos
+            batch:
+              - name: <REPOFOLDER>
+                source: <REPOSOURCE>
+                version: <BRANCH>
 
 Services
 --------
@@ -1767,21 +2076,21 @@ Tests
 The tests are performed on separate containers. To build the images on the
 first run, use the ``--build`` flag of the `service-test script`_::
 
-    $ ./scripts/service-test --build
+    $ ./service-test --build
 
 Run tests for all services (web, erpserver, worker)::
 
-    $ ./scripts/service-test
+    $ ./service-test
 
 If you develop the tests and need to start them more than once, you can
 use the ``--keep`` flag, to keep the container running and use the command
 multiple times::
 
-    $ ./scripts/service-test --keep
+    $ ./service-test --keep
 
 To stop and remove the container, when you have finished, enter ::
 
-    $ ./scripts/service-test --down
+    $ ./service-test --down
 
 .. note:: All commits pushed to all C3S GitHub repositories are automatically CI tested with
     `jenkins`__ (needs authentication) using the same test script.
@@ -1793,15 +2102,15 @@ Trytond
 
 Run all trytond tests (module tests, scenario doctests) once::
 
-    $ ./scripts/service-test erpserver
+    $ ./service-test erpserver
 
 Run all trytond tests and keep the container running for the next test run::
 
-    $ ./scripts/service-test erpserver --keep
+    $ ./service-test erpserver --keep
 
 Stop the container afterwards::
 
-    $ ./scripts/service-test --down
+    $ ./service-test --down
 
 If you prefer, you can also execute the commands above from within the container::
 
@@ -1828,15 +2137,15 @@ Worker
 
 Run all worker tests (module tests, scenario doctests) once::
 
-    $ ./scripts/service-test worker
+    $ ./service-test worker
 
 Run all trytond tests and keep the container running for the next test run::
 
-    $ ./scripts/service-test worker --keep
+    $ ./service-test worker --keep
 
 Stop the container afterwards::
 
-    $ ./scripts/service-test --down
+    $ ./service-test --down
 
 .. note:: The following commands will use the ``--keep`` flag by default. It
     will highly speed up the execution time, if you run the tests more than
@@ -1844,30 +2153,30 @@ Stop the container afterwards::
 
 You can append the normal nosetest parameters::
 
-    $ ./scripts/service-test worker --keep [--path PATH] [PARAMETER]
+    $ ./service-test worker --keep [--path PATH] [PARAMETER]
 
 - Run all tests quietly, drop into pdb on errors::
 
-    $ ./scripts/service-test worker --keep --quiet --pdb
+    $ ./service-test worker --keep --quiet --pdb
 
 - Run a specific set of tests::
 
-    $ ./scripts/service-test worker --keep --path PATH[/FILE[:CLASS[.METHOD]]]
+    $ ./service-test worker --keep --path PATH[/FILE[:CLASS[.METHOD]]]
 
   For example::
 
     $ TESTPATH=src/collecting_society_worker/collecting_society_worker/tests
 
-    $ ./scripts/service-test worker --keep \
+    $ ./service-test worker --keep \
         --path $TESTPATH/integration
-    $ ./scripts/service-test worker --keep \
+    $ ./service-test worker --keep \
         --path $TESTPATH/integration/test_processing.py
-    $ ./scripts/service-test worker --keep \
+    $ ./service-test worker --keep \
         -- path $TESTPATH/integration/test_processing.py:TestProcessing.test_200_checksum
 
 Recreate the database template, if the database has changed::
 
-    $ ./scripts/service-test worker --keep --build
+    $ ./service-test worker --keep --build
 
 If you prefer, you can also execute the commands above from within the container::
 
@@ -1894,15 +2203,15 @@ Pyramid
 
 Run all pyramid tests once::
 
-    $ ./scripts/service-test web
+    $ ./service-test web
 
 Run all pyramid tests and keep the container running for the next test run::
 
-    $ ./scripts/service-test web --keep
+    $ ./service-test web --keep
 
 Stop the container afterwards::
 
-    $ ./scripts/service-test --down
+    $ ./service-test --down
 
 .. note:: The following commands will use the ``--keep`` flag by default. It
     will highly speed up the execution time, if you run the tests more than
@@ -1910,30 +2219,30 @@ Stop the container afterwards::
 
 You can append the normal nosetest parameters::
 
-    $ ./scripts/service-test web --keep [--path PATH] [PARAMETER]
+    $ ./service-test web --keep [--path PATH] [PARAMETER]
 
 - Run all tests quietly, drop into pdb on errors::
 
-    $ ./scripts/service-test web --keep --quiet --pdb
+    $ ./service-test web --keep --quiet --pdb
 
 - Run a specific set of tests::
 
-    $ ./scripts/service-test web --keep --path PATH[/FILE[:CLASS[.METHOD]]]
+    $ ./service-test web --keep --path PATH[/FILE[:CLASS[.METHOD]]]
 
   For example::
 
-    $ ./scripts/service-test web --keep \
+    $ ./service-test web --keep \
         --path src/portal_web/portal_web/tests/unit
-    $ ./scripts/service-test web --keep \
+    $ ./service-test web --keep \
         --path src/portal_web/portal_web/tests/unit/resources.py
-    $ ./scripts/service-test web --keep \
+    $ ./service-test web --keep \
         --path src/portal_web/portal_web/tests/unit/resources.py:TestResources
-    $ ./scripts/service-test web --keep \
+    $ ./service-test web --keep \
         --path src/portal_web/portal_web/tests/unit/resources.py:TestResources.test_add_child
 
 Recreate the database template, if the database has changed::
 
-    $ ./scripts/service-test web --keep --build
+    $ ./service-test web --keep --build
 
 If you prefer, you can also execute the commands above from within the container::
 
@@ -2015,7 +2324,7 @@ database, just use your prefered method:
 
 * via `db-rebuild script`_::
 
-    $ ./scripts/db-rebuild
+    $ ./db-rebuild
 
 * via `db-rebuild CLI`_ command on a running container::
 
@@ -2127,26 +2436,26 @@ The build process runs on a special ``documentation`` service container, because
 container on the first built, use the ``--build`` flag of the
 `docs-build script`_::
 
-    $ ./scripts/docs-build --build
+    $ ./docs-build --build
 
 To build the documentation afterwards, you can then just use::
 
-    $ ./scripts/docs-build
+    $ ./docs-build
 
 If you edit the documentation and need to build it more than once, you can
 use the ``--keep`` flag, to keep the container running and use the command
 successively::
 
-    $ ./scripts/docs-build --keep
+    $ ./docs-build --keep
 
 To stop and remove the container, when you have finished, enter ::
 
-    $ ./scripts/docs-build --down
+    $ ./docs-build --down
 
 If you did not change any ``*.py`` files, you can use the ``--no-autoapi`` flag
 to omit the *autoapi* step and speed up the build::
 
-    $ ./scripts/docs-build --keep --no-autoapi
+    $ ./docs-build --keep --no-autoapi
 
 If you prefer, you can also execute the commands above from within the container::
 
@@ -2172,7 +2481,7 @@ folder.
 
 Once built, the docs can be viewed (from outside the container) like this::
 
-    $ firefox documentation/index.html
+    $ firefox docs/index.html
 
 .. seealso:: `Sphinx rst Markup`__
 

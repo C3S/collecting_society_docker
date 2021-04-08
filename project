@@ -1,0 +1,2203 @@
+#!/usr/bin/env -S python3 -B
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+"""
+Usage: ./scripts/update [--reset] [--diff] [--help]
+
+  This script updates the project:
+    - Creation of files and folders
+    - Copy of FILE.example files to FILE
+    - Checkout/Pull of the source repositories (including this one)
+    - Checkout/Pull of the reference repositories
+
+Options:
+  --reset: overrides the configuration files with .example
+  --diff: just outputs the diff of .example files, performs no other updates
+"""
+
+import os
+import sys
+import shutil
+from fileinput import FileInput
+import traceback
+import subprocess
+import argparse
+from functools import wraps
+import pprint
+from subprocess import STDOUT as stdout
+from pathlib import Path
+import difflib
+import re
+import yaml
+from collections.abc import Mapping
+from collections import OrderedDict
+from copy import deepcopy
+
+# regex
+env_re = re.compile(r'''^([^\s=]+)=(?:[\s"']*)(.+?)(?:[\s"']*)$''')
+envsub_re = re.compile(r'\$\{([A-Z-_]*)\}')
+commit_re = re.compile(r'\s*(\w*\.\.\w*)\s')
+
+# lists
+_contexts = []     # list of contexts
+_messages = []     # list of messages added
+_tasks = []        # list of tasks performed
+_actions = []      # list of valid action names, autofilled
+_commands = []     # list of valid command names, autofilled
+
+
+# --- tools -------------------------------------------------------------------
+
+def get_root_dir():
+    """Returns the root directory of the project."""
+    root = os.path.realpath(os.path.join(os.path.abspath(__file__), ".."))
+    assert os.path.exists(os.path.join(root, '.git'))
+    return root
+
+
+def get_repo_name(path="."):
+    """Returns the repository name of the project."""
+    return os.path.basename(os.path.abspath(path))
+
+
+def get_repo_branch(path="."):
+    return subprocess.check_output(
+        ('git', 'rev-parse', '--abbrev-ref', 'HEAD'),
+        stderr=subprocess.STDOUT).rstrip().decode('utf-8')
+
+
+def replace_env_vars(dictionary, env):
+    """Substitues placeholders in dictionary with environment variables."""
+    for key, val in dictionary.items():
+        if isinstance(val, Mapping):
+            replace_env_vars(val, env)
+        elif isinstance(val, list):
+            for i, item in enumerate(val):
+                if isinstance(item, str):
+                    for (match) in envsub_re.findall(item):
+                        dictionary[key][i] = dictionary[key][i].replace(
+                            '${%s}' % match, env[match])
+                    continue
+                replace_env_vars(item, env)
+        elif isinstance(val, str):
+            for (match) in envsub_re.findall(val):
+                dictionary[key] = dictionary[key].replace(
+                    '${%s}' % match, env[match])
+    return dictionary
+
+
+def get_dot_env(path="."):
+    """Reads the shared environment file and parses it into a dictionary."""
+    path = os.path.join(path, ".env")
+    if not os.path.isfile(path):
+        path += '.example'
+    assert os.path.isfile(path)
+    env = {}
+    with open(path) as _file:
+        for line in _file:
+            match = env_re.match(line)
+            if match is not None:
+                env[match.group(1)] = match.group(2)
+    return replace_env_vars(env, env)
+
+
+def get_project_yaml(path=".", env={}):
+    """Reads the project yaml file and parses it into a dictionary."""
+    with open(os.path.join(path, "project.yml"), 'r') as _file:
+        # load yaml file
+        project = yaml.safe_load(_file)
+        replace_env_vars(project, env)
+        # environment preparation
+        for _e, environment in project.items():
+            for action in _actions:
+                if 'actions' not in environment:
+                    environment['actions'] = {}
+                if action not in environment['actions']:
+                    environment['actions'][action] = {}
+                if 'verbose' not in environment['actions'][action]:
+                    environment['actions'][action]['verbose'] = False
+        # inherit configurations
+        project['staging'] = merge_dicts(
+            deepcopy(project['production']), project['staging'])
+        project['testing'] = merge_dicts(
+            deepcopy(project['staging']), project['testing'])
+        project['development'] = merge_dicts(
+            deepcopy(project['testing']), project['development'])
+        # environment validation
+        for _e, environment in project.items():
+            if not environment:
+                continue
+            # action groups
+            groups = environment.get('actions', {})
+            for _g, group in groups.items():
+                if not isinstance(group, list):
+                    continue
+                # valid actions in action groups
+                for action in group:
+                    assert action in _actions, (
+                        "action `%s` in group `%s` not found.\n\n"
+                        "yaml: %s/actions/%s\n"
+                        "group: %s" % (action, _g, _e, action, group)
+                    )
+                continue
+            # tasks
+            tasks = environment.get('tasks', {})
+            for _c, tasks in environment.get('tasks', {}).items():
+                for task in tasks or []:
+                    # ensure task name
+                    assert task.get('name'), (
+                        "task has no name.\n\n"
+                        "yaml: %s/tasks/%s\n"
+                        "task: %s" % (_e, _c, task)
+                    )
+                    # ensure task action
+                    assert task.get('actions'), (
+                        "task has no action.\n\n"
+                        "yaml: %s/tasks/%s\n"
+                        "task: %s" % (_e, _c, task)
+                    )
+                    # ensure task actions are a list
+                    actions = task.get('actions', [])
+                    if isinstance(actions, str):
+                        task['actions'] = [actions]
+                    # substitue task groups
+                    actions = []
+                    for action in task['actions']:
+                        islist = isinstance(groups.get(action), list)
+                        if action in groups and islist:
+                            actions += groups[action]
+                            continue
+                        actions.append(action)
+                    task['actions'] = actions
+                    # ensure task actions are valid
+                    for action in task.get('actions', []):
+                        assert action in _actions, (
+                            "action `%s` of task with name `%s` not found.\n\n"
+                            "yaml: %s/tasks/%s\n"
+                            "task: %s" % (action, task['name'], _e, _c, task)
+                        )
+                    # batch tasks
+                    if not task.get('batch'):
+                        continue
+                    for batch_task in task['batch']:
+                        # ensure task name
+                        assert batch_task.get('name'), (
+                            "task has no name.\n\n"
+                            "yaml: %s/tasks/%s\n"
+                            "task: %s" % (_e, _c, batch_task)
+                        )
+                        # ensure task actions are valid
+                        for action in batch_task.get('actions', []):
+                            assert action in _actions, (
+                                "action `%s` of batch task with name `%s` "
+                                "in task with name %s not found.\n\n"
+                                "yaml: %s/tasks/%s\n"
+                                "task: %s\n"
+                                "batch_task: %s" % (
+                                    action, batch_task['name'], task['name'],
+                                    _e, _c, task, batch_task)
+                            )
+    return project
+
+
+def merge_dicts(orig_dict, new_dict):
+    """
+    Recursively merges dict-like objects.
+
+    Note:
+        If a value in new_dict is `{}`, the key is removed in orig_dict.
+        Lists of dicts
+        - are merged with key 'name' as identifier.
+        - can be inserted with the key 'before'/'after' and value name.
+
+    Args:
+        orig_dict (dict): Original dictionary to be merged with.
+        new_dict (dict): New dictionary to be merged.
+
+    Returns:
+        dict: Merged dict.
+
+    Examples:
+        >>> orig_dict = {
+        ...     'A': {
+        ...         'A1': 'A1',
+        ...         'A2': 'A2'
+        ...     },
+        ...     'B': 'B'
+        ...     'C': [
+        ...         {'name': 'one', 'item': 'old'},
+        ...         {'name': 'three'},
+        ...     ]
+        ... }
+        >>> new_dict = {
+        ...     'A': {
+        ...         'A2': 'XX'
+        ...     },
+        ...     'B': {},
+        ...     'C': [
+        ...         {'name': 'one', 'item': 'new'},
+        ...         {'name': 'two', 'after': 'one'},
+        ...     'D': 'D'
+        ... }
+        >>> print(cls.merge_dicts(orig_dict, new_dict))
+        {
+            'A': {
+                'A1': 'A1',
+                'A2': 'XX'
+            },
+            'C': [
+                {'name': 'one', 'item': 'new'},
+                {'name': 'two'},
+                {'name': 'three'},
+            ],
+            'D': 'D',
+        }
+    """
+    if not new_dict:
+        return isinstance(new_dict, Mapping) and new_dict or orig_dict
+    for key, val in new_dict.items():
+        # delete key if val == {}
+        if isinstance(val, Mapping) and not val:
+            orig_dict.pop(key, None)
+        # update with OrderedDict
+        if isinstance(val, OrderedDict):
+            r = merge_dicts(OrderedDict(orig_dict.get(key, {})), val)
+            orig_dict[key] = r
+        # update with Mapping
+        elif isinstance(val, Mapping):
+            r = merge_dicts(orig_dict.get(key, {}), val)
+            orig_dict[key] = r
+        # update with Lists of items having all the key 'name'
+        elif isinstance(val, list) and \
+                sum(['name' in v for v in val]) == len(val):
+            for new_item in val:
+                new = True
+                for i, orig_item in enumerate(orig_dict[key]):
+                    if new_item['name'] == orig_item['name']:
+                        new = False
+                        orig_dict[key][i] = merge_dicts(orig_item, new_item)
+                if new:
+                    insert = ''
+                    if 'after' in new_item:
+                        insert = 'after'
+                    if 'before' in new_item:
+                        insert = 'before'
+                    if insert:
+                        for i, orig_item in enumerate(orig_dict[key]):
+                            if new_item[insert] == orig_item['name']:
+                                break
+                        if insert == 'after':
+                            i += 1
+                        new_item.pop('after', None)
+                        new_item.pop('before', None)
+                        orig_dict[key].insert(i, new_item)
+                    else:
+                        orig_dict[key].append(new_item)
+        # update with other objects
+        elif isinstance(orig_dict, Mapping):
+            orig_dict[key] = new_dict[key]
+        else:
+            orig_dict = {key: new_dict[key]}
+    return orig_dict
+
+
+# --- templates ---------------------------------------------------------------
+
+def color(text, status):
+    """Colored output wrapper for stdout text."""
+    if _colorless:
+        return text
+    text = str(text)
+    if isinstance(status, str):
+        status = [status]
+    # start
+    for s in status:
+        s = s.lower()
+        if s.startswith("\033"):
+            text = s + text
+        if s in colors:
+            text = color(text, colors[s])
+    # stop
+    if text.startswith("\033") and not text.endswith("[0m"):
+        text += colors['clear']
+    return text
+
+
+def color_git_status(output):
+    """Colores git status output."""
+    _color = ''
+    clean = True
+    data = colors['clear']
+    for line in output.split("\n"):
+        if line.startswith("  ("):
+            _color = 'remove'
+            if 'reset' in line:
+                _color = 'add'
+        if not line.startswith("\t"):
+            data += color(line, 'dim') + "\n"
+            continue
+        clean = False
+        data += color(line, _color) + "\n"
+    return data.rstrip(), clean
+
+
+def color_file_diff(output):
+    """Colores file diff output."""
+    data = colors['clear']
+    for line in output.split("\n"):
+        if line.startswith('-'):
+            data += colors['remove']
+        elif line.startswith('+'):
+            data += colors['add']
+        elif line.startswith('@'):
+            data += colors['hunk']
+        else:
+            data += colors['dim']
+        data += line + colors['clear'] + "\n"
+    return data.rstrip()
+
+
+def message(msg, offset=1, pad=10, data=True, add=True, output=True, end="\n"):
+    """Prints a message."""
+    # default
+    default = {'level': "debug"}
+    if _tasks:
+        default['action'] = _tasks[-1]['action'].replace("_", " ")
+        default['title'] = _tasks[-1]['name']
+    msg = {**default, **msg}
+    # color
+    _color = msg.get("level", "dim")
+    # level
+    text = "  " * offset
+    level = (msg['level'] + " | ").rjust(pad)
+    text += color(level, _color + "_level")
+    # title
+    if 'title' in msg:
+        title = msg['title']
+        if title == ".":
+            title = repo
+        text += color(title, _color + "_title") + " "
+    # action
+    action = ""
+    if 'action' in msg:
+        action = msg['action']
+        if msg['level'] == "error":
+            action = msg['action']
+        if 'description' in msg:
+            action = msg['action'] + " » "
+        text += color(action, _color + "_action")
+    # description
+    if 'description' in msg:
+        if msg['level'] == 'error':
+            _color = 'info'
+        text += color(msg["description"], [_color + "_description", 'italic'])
+    # data
+    if data and 'data' in msg and msg['data']:
+        raw = msg['data']
+        if isinstance(raw, (bytes, bytearray)):
+            raw = raw.strip().decode('utf-8')
+        lines = raw
+        if isinstance(raw, str):
+            lines = raw.rstrip().split("\n")
+        else:
+            lines = pprint.pformat(raw).split("\n")
+        data = ""
+        for line in lines:
+            data += "\n" + "  " * offset + " ".ljust(pad) + line
+        text += color(data, _color + "_data")
+    text += "\n"
+    if action and not action.endswith(" ... "):
+        text += end
+    # process
+    if add:
+        _messages.append(msg)
+    if output and msg['level'] in levels['output']:
+        print(text, end="")
+    return text
+
+
+def line(length=89, _color="title", end="\n", output=True):
+    """Prints a division line."""
+    text = color("-" * length, _color)
+    # process
+    if output:
+        print(text, end=end)
+    return text
+
+
+def header(output=True):
+    """Prints the project configuration header."""
+    context = get_context()
+    # data
+    data = {
+        "project": env.get('PROJECT'),
+        "environment": environment,
+        "branch": branch,
+        "root": root,
+        "gituser": git_data,
+    }
+    # text
+    pad = 0
+    for key in data:
+        if len(key) > pad:
+            pad = len(key)
+    pad += 1
+    text = "\n"
+    for key, value in data.items():
+        value_color = 'dim'
+        if key in ['environment', 'branch'] and value not in environments:
+            value_color = 'warning'
+        text += (
+            color("  " + key.capitalize().ljust(pad), 'title') +
+            color(value + "\n", value_color)
+        )
+    separator = line(output=False)
+    text = "\n" + separator + "\n" + text + "\n" + separator + "\n\n"
+    # extended mode
+    extended = context['commands'].get('extended')
+    if not extended:
+        text = "\n"
+    # no output after restart
+    if _restarted:
+        text = ""
+    # process
+    if output:
+        print(text, end="")
+    return text
+
+
+def title(string, _color="subtitle", output=True):
+    """Prints a formatted title."""
+    text = color("> ", 'title') + color(string, _color) + "\n\n"
+    # process
+    if output:
+        print(text, end="")
+    return text
+
+
+def footer(string="Success.", _color="success", output=True, summary=True):
+    """Prints the result of the command and a summary of important messages."""
+    context = get_context()
+    # add user note
+    if not git_name or not git_email:
+        message({'level': "info", 'title': ".env", "action": "",
+                 'description': "GIT_USER_NAME/EMAIL not set",
+                 'data': "NOTE: commits will use `%s`" % git_data})
+    # determine what to output
+    had_output = 0
+    has_summary = False
+    for msg in _messages:
+        if msg['level'] in levels['output']:
+            had_output += 1
+            if msg.get('data'):
+                had_output += str(msg['data']).count("\n") + 2
+        if msg['level'] in levels['summary']:
+            has_summary = True
+    if not had_output:
+        print(color("   All fine.", 'dim'))
+    if had_output < 50:
+        summary = False
+    # separator
+    text = line(output=False) + "\n\n"
+    # summary
+    if summary and has_summary:
+        text += title("Summary", _color='title', output=False)
+        for level in levels['summary']:
+            for msg in [m for m in _messages if m['level'] == level]:
+                text += message(msg, data=False, add=False, output=False)
+    # title
+    text += title(string, _color=_color, output=False)
+    # extended mode
+    extended = context['commands'].get('extended')
+    if not extended:
+        text = ""
+    # process
+    if output:
+        print(text, end="")
+    return text
+
+
+def debug(obj=None, title=""):
+    """Prints objects for debugging."""
+    if not _debug:
+        return
+    pad = 12
+    # title
+    if title:
+        print(" " * pad + color(title, ['output', 'bold']))
+    # object
+    if not isinstance(obj, str):
+        obj = pprint.pformat(obj)
+    if not obj:
+        obj = color("output was empty", 'italic')
+    for line in obj.split("\n"):
+        print(" " * pad + color(line, 'output'))
+    print()
+
+
+def error(msg):
+    """Prints an error."""
+    _msg = {
+        'level': "error",
+    }
+    if _tasks:
+        _msg['title'] = "%s: `%s`" % (
+            _tasks[-1]['action'].replace("_", " "), _tasks[-1]['name'])
+    message({**_msg, **msg})
+    footer("Aborted.", _color="info", summary=False)
+    sys.exit(-1)
+
+
+# --- execution ---------------------------------------------------------------
+
+def execute(cmd, cwd=False, abort=True, msg={},
+            stop_batch_group=False, stop_action_group=False):
+    """Executes a command via subprocess check_output."""
+    # print hint for the operation
+    context = get_context()
+    task = None
+    action = "command"
+    title = " ".join(cmd)
+    if _tasks:
+        task = _tasks[-1]
+        action = task['action'].replace("_", " ") or "command"
+        title = task['name'] or " ".join(cmd)
+    waiting = False
+    if msg or _debug:
+        message({'action': action + " ... ", 'title': title}, add=False)
+        waiting = 'debug' in levels['output']
+    output = ""
+    error_msg = {}
+
+    # execute command
+    try:
+        output = subprocess.check_output(
+            cmd, cwd=cwd or root, stderr=stdout
+        ).rstrip().decode('utf-8')
+        if _debug:
+            debug(output, "$ " + " ".join(cmd))
+    except subprocess.CalledProcessError as err:
+        error_msg = {
+            'title': "$ " + cmd[0],
+            'action': len(cmd) > 1 and " ".join(cmd[1:]) or "",
+            'data': err.output,
+        }
+        if abort:
+            error(error_msg)
+
+    # add output to task
+    if context['task']:
+        context['task']['output'][" ".join(cmd)] = output
+        context['task']['result'][context['action']] = output
+
+    # stop batch groups
+    if task and stop_batch_group:
+        stopped = output
+        if callable(stop_batch_group):
+            stopped = stop_batch_group(output)
+        context['batch_group']['stopped'] = stopped
+
+    # stop action groups
+    if task and stop_action_group:
+        stopped = output
+        if callable(stop_action_group):
+            stopped = stop_action_group(output)
+        context['action_group']['stopped'] = stopped
+
+    # return if logging is disabled for this command
+    if not msg:
+        return output
+
+    # create message
+    _msg = {
+        'level': output and "warning" or "info",
+        'action': action,
+        'title': title,
+        'description': output and "not ok" or "ok",
+        'data': output and "$ " + " ".join(cmd) + "\n" + output,
+    }
+    msg = {**_msg, **msg, **error_msg}
+
+    # execute callback functions for messages dependent on the output
+    for key, value in msg.items():
+        if callable(value):
+            msg[key] = value(output)
+
+    # remove line, add and print message
+    if waiting and not _debug:
+        sys.stdout.write("\033[F")
+    message(msg)
+
+    return output
+
+
+# --- actions -----------------------------------------------------------------
+
+def action(func):
+    """Action decorator, registers available functions, skips stopped tasks."""
+    current_action = func.__name__
+    # add action name to list of actions
+    _actions.append(current_action)
+
+    @wraps(func)
+    def wrapper(task, context={}, *args, **kwargs):
+        # get last context, if empty
+        if not context:
+            context = get_context()
+        # context might stell be empty, if action is used very early
+        if context:
+            # stop to process stopped action groups or batch groups
+            if context['batch_group'].get("stopped"):
+                return
+            if context['action_group'].get("stopped"):
+                return
+            # set the context
+            actions = project[environment]['actions']
+            if current_action not in actions:
+                actions[current_action] = {}
+            context['actions'] = actions[current_action]
+            context['action'] = current_action
+            if 'output' not in context['task']:
+                context['task']['output'] = {}
+            if 'result' not in context['task']:
+                context['task']['result'] = {}
+        # apply the action
+        try:
+            func(task, context, *args, **kwargs)
+        except Exception:
+            error({'data': traceback.format_exc()})
+    return wrapper
+
+
+@action
+def path_link(task, context={}):
+    """Symlinks a file or folder."""
+    source = task['source']
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    # source path does not exist
+    if not os.path.exists(source):
+        message({'level': "info", 'description': "source path not found",
+                 'data': "source: %s" % task['source']})
+
+    # new symlink, file does not exist
+    source_rel = os.path.relpath(source, os.path.dirname(target))
+    if not os.path.exists(target):
+        os.symlink(source_rel, target)
+        message({'level': "info", 'description': "symlink created"})
+        return
+
+    # file exists, but is no symlink
+    if not os.path.islink(target):
+        error({'description': "target exists and is not a link"})
+
+    # symlink exists and points already to source
+    old_source = os.readlink(target)
+    if source_rel == old_source:
+        message({'description': "symlink exists"})
+        return
+
+    # symlink exists, but is changed
+    os.unlink(target)
+    os.symlink(source_rel, target)
+    message({'level': "warning", 'description': "symlink overwritten",
+             'data': "\n".join(["old source: `%s`" % old_source,
+                                "new source: `%s`" % source_rel])})
+
+
+@action
+def file_create(task, context={}):
+    """Creates a file."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    target = os.path.join(root, target)
+    target_folder = os.path.dirname(target)
+
+    # folder of file does not exist
+    if not os.path.isdir(target_folder):
+        error({'description': "folder does not exist", 'data': target_folder})
+
+    # file already exists
+    if os.path.exists(target):
+        message({'description': "file exists"})
+        return
+
+    # new file created
+    Path(target).touch()
+    message({'level': "info", 'description': "file created"})
+
+
+@action
+def file_copy(task, context={}):
+    """Copies a file."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    source = task.get('source')
+    if not source:
+        source = target + ".example"
+    target = os.path.join(root, target)
+    source = os.path.join(root, source)
+
+    # source file to copy not found
+    if not os.path.exists(source):
+        error({'description': "source file not found"})
+
+    # file already exists
+    target_exists = os.path.exists(target)
+    if target_exists and not _reset:
+        message({'description': "file_exists"})
+        return
+
+    # file overwritten due to reset switch
+    if target_exists and _reset:
+        shutil.copyfile(source, target)
+        message({'level': "warning", 'description': "file overwritten"})
+        return
+
+    # new file copied
+    shutil.copyfile(source, target)
+    message({'level': "info", 'description': "file copied"})
+
+
+@action
+def file_diff(task, context={}):
+    """Diffs example files, prints output and returns different filenames."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    source = task.get('source')
+    if not source:
+        source = target + ".example"
+    target = os.path.join(root, target)
+    source = os.path.join(root, source)
+    verbose = context['actions']['verbose']
+
+    # source or target not found
+    if not os.path.exists(source):
+        error({'description': "source path not found"})
+    if not os.path.exists(target):
+        error({'description': "target path not found"})
+
+    # create diff
+    with open(source, 'r') as source_file, open(target, 'r') as target_file:
+
+        # get diff
+        source_content = source_file.readlines()
+        target_content = target_file.readlines()
+        diff = difflib.unified_diff(
+            source_content, target_content,
+            fromfile=os.path.basename(source), tofile=task["name"])
+        try:
+            line = next(diff)
+        except StopIteration:
+            message({'description': 'file is identical'})
+            return
+        lines = [line] + [d for d in diff]
+
+        # filter diff
+        ignored = False
+        filtered = []
+        ignore = task.get('ignore')
+        if ignore:
+            if isinstance(ignore, list):
+                ignore = context['actions'].get('ignore', []) + task['ignore']
+                ignore = re.compile(r'(%s)' % "|".join(ignore))
+                task['ignore'] = ignore
+            for line in lines[2:]:
+                if not line[0] in ["+", "-"]:
+                    continue
+                match = ignore.match(line[1:])
+                if match is not None:
+                    ignored = True
+                    continue
+                filtered.append(line)
+            if not verbose:
+                lines = lines[0:3] + filtered
+
+        # color diff
+        data = ""
+        if _ci:
+            data += "--8<-- (ignored lines stripped) --8<--\n"
+            data += "".join(filtered)
+        else:
+            data += color_file_diff("".join(lines))
+
+        # files contains only ignored differences
+        if ignored and not filtered:
+            msg = {'level': 'info',
+                   'description': 'diff contains only ignored lines'}
+            if verbose:
+                msg['data'] = data
+            message(msg)
+            return
+
+        # differences found
+        message({'level': "warning", 'description': "differences found",
+                 'data': data})
+
+
+@action
+def line_replace(task, context={}):
+    """Replaces regex patterns in lines in files"""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    target = os.path.join(root, target)
+    before = task.get('before', '') and '(?=%s)' % task.get('before')
+    after = task.get('after', '') and '(?<=%s)' % task.get('after')
+    regexp = after + task.get('regexp', '.*$') + before
+    replace = task.get('replace')
+
+    # replace pattern
+    linecount = 0
+    filecount = 0
+    try:
+        with FileInput(target, inplace=True, backup=".backup") as input:
+            for line in input:
+                newline, count = re.subn(regexp, replace, line)
+                if count:
+                    linecount += 1
+                    filecount += count
+                print(newline, end="")
+    except Exception:
+        shutil.copyfile(target + ".backup", target)
+        error({'description': "error in line replace",
+               'data': traceback.format_exc()})
+    if linecount:
+        message({'level': "debug", 'description': "lines replaced",
+                 'data': "regexp: %s\n" % regexp +
+                         "replace: %s\n" % replace +
+                         "%s matches in %s lines" % (filecount, linecount)})
+
+
+@action
+def folder_create(task, context={}):
+    """Creates a folder."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    target = os.path.join(root, target)
+
+    # folder already exists
+    if os.path.exists(target):
+        message({'description': "folder exists"})
+        return
+
+    # new folder created
+    os.makedirs(target)
+    message({'level': "info", 'description': "folder created"})
+
+
+@action
+def folder_copy(task, context={}):
+    """Copies a folder."""
+    source = task['source']
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    # folder already exists
+    if os.path.exists(target) and not _reset:
+        message({'description': "folder exists"})
+        return
+
+    # folder overwritten due to reset switch
+    shutil.copytree(source, target)
+    if _reset:
+        shutil.copytree(source, target)
+        message({'level': "info", 'description': "folder copied"})
+        return
+
+    # new folder copied
+    shutil.copytree(source, target)
+    message({'level': "warning", 'description': "folder overwritten"})
+
+
+@action
+def git_clone(task, context={}):
+    """Clones a repository."""
+    source = task['source']
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    # create containing path for repo
+    if context['actions']['create_folder']:
+        folder_create({'name': os.path.dirname(target)})
+
+    # choose ssh or https
+    if git_protocol == 'https' and "@" in source:
+        url = source.split("@", 1)[1]
+        source = "https://" + url.replace(":", "/")
+
+    # repo already exists
+    if os.path.exists(os.path.join(target, '.git')):
+        message({'description': "repo exists"})
+        return
+
+    # new repo cloned
+    execute(('git', 'clone', '--quiet', source, target))
+
+
+@action
+def git_origin(task, context={}):
+    """Sets the origin of a repository."""
+    source = task['source']
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+
+    # choose ssh or https
+    if git_protocol == 'https' and "@" in source:
+        url = source.split("@", 1)[1]
+        source = "https://" + url.replace(":", "/")
+
+    # origin already set
+    old_source = execute(('git', 'remote', 'get-url', 'origin'), cwd=target)
+    if source == old_source:
+        message({'description': "origin already set"})
+        return
+
+    # origin changed
+    msg = {
+        'level': "warning",
+        'description': "origin changed",
+        'data': "\n".join([
+            "old origin: `%s`" % old_source,
+            "new origin: `%s`" % source])}
+    execute(('git', 'remote', 'set-url', 'origin', source),
+            cwd=target, msg=msg)
+
+
+@action
+def git_user(task, context={}):
+    """Sets the username, useremail and signingkey for a repository."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # skip silently, if userdata is not set
+    if not git_name or not git_email:
+        return
+
+    # userdata already set
+    old_name = execute(('git', 'config', 'user.name'), cwd=target).strip('"')
+    old_email = execute(('git', 'config', 'user.email'), cwd=target).strip('"')
+    old_key = execute(
+        ('git', 'config', 'user.signingkey'), cwd=target).strip('"')
+
+    # changed
+    changed = False
+    for k, v in [(git_name, old_name), (git_email, old_email),
+                 (git_key, old_key)]:
+        if k != v:
+            changed = True
+    if not changed:
+        message({'description': "git user aready set"})
+        return
+
+    # userdata set
+    execute(('git', 'config', 'user.name', '"{}"'.format(git_name)),
+            cwd=target)
+    execute(('git', 'config', 'user.email', '"{}"'.format(git_email)),
+            cwd=target)
+    execute(('git', 'config', 'user.signingkey', '"{}"'.format(git_key)),
+            cwd=target)
+    message({'level': "info", 'description': "git user set",
+             'data': "\n".join(["user.name: `%s`" % git_name,
+                                "user.email: `%s`" % git_email,
+                                "user.signingkey: `%s`" % git_key])})
+
+
+@action
+def git_status(task, context={}):
+    """Checks the status of the repository, cancels action group if not ok."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+    stop_all = context['actions'].get('stop_all', False)
+    stop_action_group = context['actions'].get('stop_action_group', False)
+    verbose = context['actions']['verbose']
+
+    # workdir checked
+    cmd = ['git', 'status']
+    if upstream:
+        cmd.append('--untracked-files=no')
+
+    # status
+    output = execute(cmd, cwd=target)
+    description = "workdir dirty"
+    if stop_all:
+        description += " -> %s aborted" % _command
+    elif stop_action_group:
+        description += " -> further actions on this repo skipped"
+    data, clean = color_git_status(output)
+
+    # clean
+    if clean:
+        message({'level': verbose and "info" or "debug",
+                 'description': "workdir ok",
+                 'data': output})
+        return
+
+    # dirty
+    if stop_action_group:
+        context['action_group']['stopped'] = True
+    if stop_all:
+        error({'title': task['name'], 'description': description,
+               'data': data})
+    message({'level': 'warning', 'description': description,
+             'data': data})
+
+
+@action
+def git_diff(task, context={}):
+    """Diffs a repository."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    verbose = context['actions']['verbose']
+
+    # diff repo
+    if verbose:
+        output = execute(('git', 'diff'), cwd=target)
+        data = color_file_diff(output)
+    else:
+        output = execute(('git', 'status', '--porcelain'), cwd=target)
+        data = output
+
+    # no differences
+    if not output:
+        message({'level': 'debug', 'description': 'no differences'})
+        return
+
+    # color diff
+    message({'level': 'warning', 'description': 'differences found',
+             'data': data})
+
+
+@action
+def git_fetch(task, context={}):
+    """Fetches updates for a repository."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    version = task['version']
+
+    # skip silently for tags
+    if version.startswith("tags/"):
+        return
+
+    # find out, if remote branch exists
+    remote_exists = False
+    output = execute(('git', 'branch', '-rvv'), cwd=target)
+    for line in output.split("\n"):
+        if line[2:].startswith("origin/%s " % version):
+            remote_exists = True
+
+    # skip silently for local only branches
+    if not remote_exists:
+        return
+
+    # update branch, check for updates
+    output = execute(('git', 'fetch', 'origin', version), cwd=target)
+    updates = False
+    for line in output:
+        if version + " -> " in line:
+            if "FETCH_HEAD" in line:
+                continue
+            updates = True
+
+    # updates available
+    if updates:
+        message({'level': "info", 'description': "updates available",
+                 'data': output})
+        return
+
+    # uptodate
+    message({'description': "uptodate"})
+
+
+@action
+def git_checkout(task, context={}):
+    """Checksout a branch or tag in a repository, sets branch/environment."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    version = task['version']
+    upstream = task.get('upstream', True)
+    verbose = context['actions']['verbose']
+    checkout_version = task.get('branch', _checkout_branch)
+    if not checkout_version:
+        checkout_version = version
+
+    # set new branch, if requested
+    if not upstream and branch:
+        line_replace({
+            'name': ".env", 'after': "^BRANCH=", 'replace': checkout_version})
+
+    # set environment, if needed
+    if not upstream and branch in project.items():
+        line_replace({
+            'name': ".env", 'after': "^ENVIRONMENT=", 'replace': branch})
+
+    # get checked out version
+    checkedout_version = execute(
+        ('git', 'rev-parse', '--abbrev-ref', 'HEAD'), cwd=target)
+    if checkedout_version == "HEAD":
+        checkedout_version = execute(
+            ('git', 'name-rev', '--name-only', 'HEAD'), cwd=target)
+    if checkedout_version.endswith("^0"):
+        checkedout_version = checkedout_version[:-2]
+    checkedout = checkedout_version == checkout_version
+
+    # find out, if branch or tag exists locally
+    local_exists = False
+    remote_exists = False
+    version_exists = False
+    if checkout_version.startswith("tags/"):
+        output = execute(
+            ('git', 'tag', '-l', checkout_version[5:]), cwd=target)
+        if output:
+            version_exists = True
+    else:
+        output = execute(('git', 'branch', '-avv'), cwd=target)
+        for line in output.split("\n"):
+            if line[2:].startswith(checkout_version + " "):
+                local_exists = True
+            if line[2:].startswith("remotes/origin/%s " % checkout_version):
+                remote_exists = True
+        version_exists = local_exists or remote_exists
+
+    # just checkout, if remote or local branch exists
+    if version_exists:
+
+        # version already checked out
+        if checkedout:
+            message({'level': verbose and "info" or "debug",
+                    'description': "already on `%s`" % checkout_version})
+            return
+
+        # version switched
+        msg = {'level': "info", 'description': "branch switched",
+               'data': "\n".join(["old: `%s`" % checkedout_version,
+                                  "new: `%s`" % checkout_version])}
+        execute(('git', 'checkout', checkout_version), cwd=target, msg=msg)
+
+        # if main repo was switched, give control to the other version
+        # if target == ".":
+        #     message({'level': "info",
+        #              'description': "script will be restarted now",
+        #              'data': "REASON: the main repository branch switched"})
+        #     os.execv(__file__, sys.argv)
+
+        return
+
+    # upstream version does not exist
+    if upstream or checkout_version.startswith("tags/"):
+        error({'description': "no upstream version `%s` found"
+                              % checkout_version})
+
+    # new branch created
+    msg = {'level': 'warning', 'description': "new local branch created",
+           'data': 'branch name: `%s`' % checkout_version}
+    execute(('git', 'checkout', '-b', checkout_version), cwd=target, msg=msg)
+
+
+@action
+def git_delete(task, context={}):
+    """Deletes a branch locally and remote."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    version = task['version']
+    upstream = task.get('upstream', True)
+    delete_branch = task.get('branch', _delete_branch)
+    delete_local = task.get('delete_local', _branch_delete_local)
+    delete_remote = task.get('delete_remote', _branch_delete_remote)
+    if not delete_branch:
+        delete_branch = version
+    force = task.get('force', _force)
+    verbose = context['actions']['verbose']
+
+    # get checked out version
+    checkedout_branch = execute(
+        ('git', 'rev-parse', '--abbrev-ref', 'HEAD'), cwd=target)
+    if checkedout_branch.endswith("^0"):
+        checkedout_branch = checkedout_branch[:-2]
+    checkedout = checkedout_branch == delete_branch
+
+    # stop if branch is checked out
+    if checkedout:
+        error({'title': target,
+               'description': 'cannot delete checked out branch'})
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # skip environment branches
+    if delete_branch in project.items():
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'skipped deletion of environment branch',
+                 'data': "branch: %s" % delete_branch})
+        return
+
+    # find out, if local branch exists
+    local_exists = False
+    output = execute(('git', 'branch', '-lvv'), cwd=target)
+    for line in output.split("\n"):
+        if line[2:].startswith(delete_branch + " "):
+            local_exists = True
+
+    # delete local feature branch
+    if not delete_local:
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'no deletion for local repos flag set',
+                 'data': "branch: %s" % delete_branch})
+    elif local_exists:
+        delete_flag = force and '-D' or '-d'
+        output = execute(
+            ('git', 'branch', delete_flag, delete_branch), cwd=target)
+        message({'level': 'warning', 'description': 'local branch deleted',
+                 'data': output})
+    else:
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'no local branch -> skipped deletion',
+                 'data': "branch: %s" % delete_branch})
+
+    # find out, if remote branch exists
+    remote_exists = False
+    output = execute(('git', 'branch', '-rvv'), cwd=target)
+    for line in output.split("\n"):
+        if line[2:].startswith("origin/%s " % delete_branch):
+            remote_exists = True
+
+    # delete remote feature branch
+    if not delete_remote:
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'no deletion for remote repos flag set',
+                 'data': "branch: %s" % delete_branch})
+    elif remote_exists:
+        output = execute(
+            ('git', 'push', '-d', 'origin', delete_branch), cwd=target)
+        output = ""
+        message({'level': 'warning', 'description': 'remote branch deleted',
+                 'data': output})
+    else:
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'no remote branch -> skipped deletion',
+                 'data': "branch: %s" % delete_branch})
+
+
+@action
+def git_track(task, context={}):
+    """Ensures, that remote branches are followed."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    version = task['version']
+    upstream = task.get('upstream', True)
+
+    # skip silently for upstream repos and tags
+    if upstream or version.startswith("tags/"):
+        return
+
+    # find out, if remote branch exists
+    remote_exists = False
+    output = execute(('git', 'branch', '-rvv'), cwd=target)
+    for line in output.split("\n"):
+        if line[2:].startswith("origin/%s " % version):
+            remote_exists = True
+
+    # skip, if remote brach does not exist
+    if not remote_exists:
+        message({'description':
+                 'upstream branch `%s` does not exist' % version})
+        return
+
+    # get currently tracked branch
+    tracked_branch = execute(
+        ('git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'),
+        cwd=target, abort=False)
+    is_tracked = tracked_branch == "origin/%s" % version
+
+    # remote branch is already tracked
+    if is_tracked:
+        message({'description':
+                 'upstream branch `%s` already tracked' % version})
+        return
+
+    # track remote branch
+    # NOTE: conflicts, if the same branch was created and committed to on
+    # different repositories. this edge case should be rare.
+    msg = {'level': "info",
+           'description':
+               "switched upstream branch from `%s` to `%s`" % (
+                   tracked_branch, "origin/%s" % version)}
+    execute(('git', 'branch', '-u', 'origin/%s' % version, version),
+            cwd=target, msg=msg)
+
+
+@action
+def git_pull(task, context={}):
+    """Pulls updates in a repository branch."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    version = task['version']
+    verbose = context['actions']['verbose']
+
+    # skip pull silently for tags
+    if task['version'].startswith("tags/"):
+        return
+
+    # skip pull for local only branches
+    tracked_branch = execute(
+        ('git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'),
+        cwd=target, abort=False)
+    is_local = not tracked_branch.startswith("origin/%s" % version)
+    if is_local:
+        message({'level': verbose and "info" or "debug",
+                 'description': "no remote branch `%s` -> pull skipped"
+                 % version})
+        return
+
+    # pull performed
+    output = execute(('git', 'pull', '-v', 'origin', version), cwd=target)
+
+    # updated
+    if "changed" in output:
+        message({'level': "info", 'description': "updated", 'data': output})
+        return
+
+    # uptodate
+    message({'level': verbose and "info" or "debug",
+             'description': "uptodate"})
+
+
+@action
+def git_commit(task, context={}):
+    """Commits all changed and untracked files."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+    if not _commit_message:
+        error({'description': "no commit message"})
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # skip repos with clean workdir
+    output = execute(('git', 'status', '--porcelain'), cwd=target)
+    if not output:
+        message({'description': "nothing to commit"})
+        return
+
+    # add performed
+    msg = {'level': "info", 'description': "changes added", 'data': output}
+    execute(('git', 'add', '-A'), cwd=target, msg=msg)
+
+    # commit performed
+    msg = {'level': "info", 'description': "changes commited"}
+    cmd = ['git', 'commit']
+    if git_key:
+        cmd += ['-S']
+    cmd += ['-m', _commit_message]
+    execute(cmd, cwd=target, msg=msg, abort=False)
+
+
+@action
+def git_push(task, context={}):
+    """Pushes staged commits, creates remote branch for local ones."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+    version = task['version']
+    verbose = context['actions']['verbose']
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # find out, if remote branch exists
+    remote_exists = False
+    output = execute(('git', 'branch', '-rvv'), cwd=target)
+    for line in output.split("\n"):
+        if line[2:].startswith("origin/%s " % version):
+            remote_exists = True
+
+    # create remote branch, if repo is local
+    if not remote_exists:
+        msg = {'level': "warning", 'description': "new remote branch created"}
+        execute(('git', 'push', 'origin', version), cwd=target, msg=msg)
+        return
+
+    # ensure remote branch is tracked
+    git_track(task)
+
+    # find out, if unpushed commits exist
+    unpushed = execute(('git', 'log', '@{u}..'), cwd=target)
+
+    # skip repos without commits
+    if not unpushed:
+        message({'level': verbose and "info" or "debug",
+                 'description': "no commits to push", 'data': unpushed})
+        return
+
+    # add performed
+    msg = {'level': "info", 'description': "commits pushed", 'data': unpushed}
+    execute(('git', 'push'), cwd=target, msg=msg)
+
+
+@action
+def git_merge(task, context={}):
+    """Merges a branch into another."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+    version = task['version']
+    source_branch = version
+    target_branch = task.get('branch', _merge_branch)
+    if not target_branch:
+        target_branch = "development"
+    push = task.get('push', _merge_push)
+    delete = task.get('delete', True)
+    verbose = context['actions']['verbose']
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # checkout target branch
+    git_checkout({**task, **{'branch': target_branch}})
+
+    # find out, if remote target branch exists
+    remote_target_exists = False
+    output = execute(('git', 'branch', '-rvv'), cwd=target)
+    for line in output.split("\n"):
+        if line[2:].startswith("origin/%s " % target_branch):
+            remote_target_exists = True
+
+    # pull development branch
+    if remote_target_exists:
+        git_pull({**task, **{'version': target_branch}})
+
+    # merge feature branch
+    output = execute(
+        ('git', 'merge', '--no-edit', '--no-ff', source_branch), cwd=target)
+    if 'changed' not in output:
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'nothing to merge'})
+    else:
+        message({'level': 'info', 'description': 'merged', 'data': output})
+
+    # push merge to remote branch
+    if push and remote_target_exists:
+        git_push({**task, **{'version': target_branch}})
+
+    # delete feature branch
+    if delete:
+        git_delete({**task, **{'branch': source_branch}})
+
+
+@action
+def git_promote(task, context={}):
+    """Promotes an environment branch into the next stage."""
+    target = task.get('target') or task['name']
+    targetpath = task.get('targetpath')
+    if targetpath:
+        target = os.path.join(targetpath, target)
+    upstream = task.get('upstream', True)
+    branches = ['development', 'staging', 'production']
+    source_branch = task.get('branch', _promote_branch)
+    if source_branch not in branches:
+        error({'description': "not an environment branch"})
+    target_branch = branches[branches.indexof(source_branch) + 1]
+
+    # skip silently for upstream repos
+    if upstream:
+        return
+
+    # promote
+    git_merge({**task, **{
+        'version': source_branch,
+        'branch': target_branch,
+        'push': True,
+        'delete': False,
+    }})
+
+
+@action
+def script_restart(task, context={}):
+    """Restarts the update script after update of main repo."""
+    version = task['version']
+    fetch = task['result']['git_fetch']
+    pull = task['result']['git_pull']
+    changed = 'changed' in pull
+
+    # return if restarted
+    if _restarted:
+        return
+
+    # skip silently for unchanged repo
+    if not changed:
+        return
+
+    # find out commit ids
+    for line in fetch.split("\n"):
+        if "%s -> origin/%s" % (version, version) in line:
+            match = commit_re.match(line)
+            commit_range = match.group(1)
+
+    # restart script
+    message({'level': "info", 'description': "script will be restarted now",
+             'data': "REASON: the main repository was updated"})
+    os.execv(__file__, sys.argv + ['--restarted', commit_range])
+
+
+@action
+def changes_notify(task, context={}):
+    """Adds messages dependent on file changes."""
+    changes = task.get('changes')
+    diff = task['result'].get('git_pull')
+    # script was restarted
+    if _restarted:
+        diff = execute(('git', 'diff', '--stat', _restarted))
+
+    # skip silently, if no messages should be added
+    if not changes:
+        return
+
+    # skip silently, if no changes were pulled
+    if not diff:
+        return
+
+    # add messages
+    for change in changes:
+        files = change['files']
+        if isinstance(files, str):
+            files = [files]
+        # search pull output for files
+        changed = False
+        for line in diff.split("\n"):
+            if "|" not in line:
+                continue
+            filename = line.split("|")[0].strip()
+            for pattern in files:
+                if pattern in filename:
+                    changed = True
+                    break
+        # files changed
+        if changed:
+            message({'level': change.get('level', "info"),
+                     'description': change['name'],
+                     'data': "\n".join(change.get('data', []))})
+
+
+# --- tasks -------------------------------------------------------------------
+
+def get_context():
+    """Returns the current context."""
+    if _contexts:
+        return _contexts[-1]
+    return {}
+
+
+def set_context(override={}):
+    """Sets the context for a command, adds it to the stack."""
+    current_env = project[environment]
+    current_cmd = override.get('command', _command)
+    # default context
+    context = {
+        # command config
+        'commands': current_env['commands'].get(current_cmd, {}),
+        # current command
+        'command': current_cmd,
+        # command tasks
+        'tasks': current_env['tasks'].get(current_cmd, []),
+        # action config
+        'actions': current_env['actions'],
+        # current task
+        'task': None,
+        # current batch group
+        'batch_group': {},
+        # current action group
+        'action_group': {},
+        # current action
+        'action': None,
+    }
+    # overrides
+    context.update(override)
+    # add context
+    _contexts.append(context)
+    return context
+
+
+def process(context):
+    """Main loop to process tasks."""
+    # no tasks
+    if not context.get('tasks'):
+        error({'title': "No tasks"})
+    # process tasks
+    for task in context['tasks']:
+        # batch tasks
+        if task.get('batch'):
+            batch_tasks = []
+            for batch_task in task['batch']:
+                batch_tasks.append({**task, **batch_task, **{'batch': False}})
+            batch = set_context({
+                'command': context['command'],
+                'batch_group': task, 'tasks': batch_tasks})
+            process(batch)
+            continue
+        # single tasks
+        context['action_group'] = task
+        context['task'] = task
+        for action in task['actions']:
+            if action not in _actions:
+                error({'description': "action not found", 'data': task})
+            context['action'] = action
+            _tasks.append({**task, **{'action': action}})
+            if action in _actions:
+                getattr(sys.modules[__name__], action)(task, context)
+    # do not remove the main context
+    if len(_contexts) > 1:
+        _contexts.pop()
+
+
+# --- commands ----------------------------------------------------------------
+
+def command(func):
+    """Command decorator, handles context and wrap switch."""
+    current_command = func.__name__
+    # append command name to list of commands
+    _commands.append(current_command)
+
+    @wraps(func)
+    def wrapper(context={}, *args, **kwargs):
+        # set new command context
+        if not context:
+            context = set_context({'command': _command})
+        # apply filters
+        try:
+            func(context, *args, **kwargs)
+        except Exception:
+            error({'data': traceback.format_exc()})
+        # print header
+        header()
+        # process tasks
+        process(context)
+        # print footer
+        footer()
+    return wrapper
+
+
+@command
+def update(context={}):
+    """Updates files, folders, symlinks and repos."""
+    # action configuration
+    context['actions']['file_diff']['verbose'] = _verbose
+    context['actions']['git_diff']['verbose'] = _verbose
+    context['actions']['git_clone']['verbose'] = _verbose
+    context['actions']['git_user']['verbose'] = _verbose
+    context['actions']['git_origin']['verbose'] = _verbose
+    context['actions']['git_status']['verbose'] = _verbose
+    context['actions']['git_fetch']['verbose'] = _verbose
+    context['actions']['git_checkout']['verbose'] = _verbose
+    context['actions']['git_track']['verbose'] = _verbose
+    context['actions']['git_pull']['verbose'] = _verbose
+    # proceed at next task after restart
+    if not _restarted:
+        return
+    for task in deepcopy(context['tasks']):
+        actions = task['actions']
+        if 'script_restart' in actions:
+            task['actions'] = actions[actions.index('script_restart') + 1:]
+
+
+@command
+def status(context={}):
+    """Prints the git status of the project repositories."""
+    # action configuration
+    context['actions']['git_status']['verbose'] = True
+    context['actions']['git_status']['stop_action_group'] = False
+    # filter tasks
+    tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['actions'] = ['git_status']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
+def diff(context={}):
+    """Prints the diff of the project repos and the example files."""
+    # action configuration
+    context['actions']['file_diff']['verbose'] = _verbose
+    context['actions']['git_diff']['verbose'] = _verbose
+    # filter tasks
+    tasks = []
+    # repos
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['actions'] = ['git_diff']
+        tasks.append(task)
+    # files
+    for task in deepcopy(context['tasks']):
+        if 'file_diff' not in task['actions']:
+            continue
+        task['actions'] = ['file_diff']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
+def pull(context={}):
+    """Pulls the current branch for all project repositories."""
+    # action configuration
+    context['actions']['git_pull']['verbose'] = _verbose
+    context['actions']['git_status']['stop_action_group'] = True
+    # filter tasks
+    tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['actions'] = ['git_status', 'git_pull']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
+def checkout(context={}):
+    """Checksout a branch in all project repositories."""
+    # action configuration
+    context['actions']['git_checkout']['verbose'] = _verbose
+    context['actions']['git_status']['stop_all'] = True
+    # filter tasks
+    tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['actions'] = ['git_status']
+        tasks.append(task)
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['actions'] = ['git_checkout']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
+def delete(context={}):
+    """Deletes a local and remote branch in all project repos."""
+    # action configuration
+    context['actions']['git_delete']['verbose'] = _verbose
+    context['actions']['git_status']['stop_all'] = True
+    # filter tasks
+    project_tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        project_tasks.append(task)
+    # perform each action for all repos first
+    tasks = []
+    for task in deepcopy(project_tasks):
+        task['actions'] = ['git_status']
+        tasks.append(task)
+    for task in deepcopy(project_tasks):
+        task['actions'] = ['git_delete']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
+def commit(context={}):
+    """Commits changes and untracked files to the project repositories."""
+    # action configuration
+    context['actions']['git_commit']['verbose'] = _verbose
+    # filter tasks
+    tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        task['actions'] = ['git_commit']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
+def push(context={}):
+    """Pushes commits in all project repos, creates missing remote branches."""
+    # action configuration
+    context['actions']['git_push']['verbose'] = _verbose
+    # filter tasks
+    project_tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        project_tasks.append(task)
+    # perform each action for all repos first
+    tasks = []
+    for task in deepcopy(project_tasks):
+        task['actions'] = ['git_pull']
+        tasks.append(task)
+    for task in deepcopy(project_tasks):
+        task['actions'] = ['git_push']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
+def merge(context={}):
+    """Merges the current branch into another branch in all project repos."""
+    # action configuration
+    context['actions']['git_merge']['verbose'] = _verbose
+    context['actions']['git_status']['stop_all'] = True
+    # filter tasks
+    project_tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        project_tasks.append(task)
+    # perform each action for all repos first
+    tasks = []
+    for task in deepcopy(project_tasks):
+        task['actions'] = ['git_status']
+        tasks.append(task)
+    for task in deepcopy(project_tasks):
+        task['actions'] = ['git_merge']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+@command
+def promote(context={}):
+    """Merges an environment branch into the next stage environment branch."""
+    # action configuration
+    context['actions']['git_promote']['verbose'] = _verbose
+    context['actions']['git_status']['stop_all'] = True
+    # filter tasks
+    project_tasks = []
+    for task in deepcopy(context['tasks']):
+        if 'upstream' not in task or task['upstream']:
+            continue
+        project_tasks.append(task)
+    # perform each action for all repos first
+    tasks = []
+    for task in deepcopy(project_tasks):
+        task['actions'] = ['git_status']
+        tasks.append(task)
+    for task in deepcopy(project_tasks):
+        task['actions'] = ['git_promote']
+        tasks.append(task)
+    context['tasks'] = tasks
+
+
+# --- configuration -----------------------------------------------------------
+
+# messages
+levels = {
+    'output':  ['error', 'warning', 'info'],
+    'summary': ['error', 'warning']
+}
+colors = {
+    # level
+    'error': "\033[91m",
+    'error_level': 'error',
+    'error_title': ['title', 'bold'],
+    'error_action': '',
+    'error_description': ['error', 'bold'],
+    'error_data': 'dim',
+    'warning': "\033[33m",
+    'warning_level': 'warning',
+    'warning_title': ['warning', 'bold'],
+    'warning_action': '',
+    'warning_description': 'warning',
+    'warning_data': 'dim',
+    'info': '',
+    'info_level': 'info',
+    'info_title': ['info', 'bold'],
+    'info_action': 'info',
+    'info_description': 'dim',
+    'info_data': 'dim',
+    'debug': "\033[2m",
+    'debug_level': 'debug',
+    'debug_title': ['debug', 'bold'],
+    'debug_action': 'dim',
+    'debug_description': 'debug',
+    'debug_data': 'dim',
+    # context
+    'title': ['bold', "\033[33m"],
+    'subtitle': "\033[35m",
+    'output': "\033[94m",
+    'success': "\033[32m",
+    # diff
+    'hunk': "\033[36m",
+    'remove': "\033[31m",
+    'add': "\033[32m",
+    # function
+    'clear': "\033[0m",
+    'bold': "\033[1m",
+    'dim': "\033[2m",
+    'italic': "\033[3m",
+    'underline': "\033[4m",
+    'blink': "\033[5m",
+}
+
+
+# --- entrypoint --------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    # read env for help output
+    root = get_root_dir()
+    repo = get_repo_name(root)
+    env = get_dot_env(root)
+    environment = env['ENVIRONMENT']
+    branch = env['BRANCH']
+
+    # command
+    cmd = argparse.ArgumentParser(
+        usage="./project",
+        description="Performs development and maintainance tasks "
+                    "for the project.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    subcmds = cmd.add_subparsers(
+        title='subcommands', dest="command", metavar="(default: status)")
+
+    # global flags
+    subcmd = argparse.ArgumentParser(
+        add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    subcmd.add_argument(
+        '-v', '--verbose', action='count', default=0,
+        help="verbose output, -vv for debug output")
+    subcmd.add_argument(
+        '--no-color', action='store_true',
+        help=argparse.SUPPRESS)
+    subcmd.add_argument(
+        '--restarted', metavar="COMMITRANGE",
+        help=argparse.SUPPRESS)
+
+    # update command
+    subcmd_update = subcmds.add_parser(
+        'update', parents=[subcmd], description=update.__doc__,
+        help=update.__doc__.strip('.'))
+    subcmd_update.add_argument(
+        '--branch', metavar="NAME",
+        help="Branch name (default: .env [%s])" % branch)
+    subcmd_update.add_argument(
+        '--environment', metavar="NAME",
+        choices=['development', 'staging', 'testing', 'production'],
+        help="Environment name (default: .env [%s])" % environment)
+    subcmd_update.add_argument(
+        '--reset', action='store_true',
+        help="overwrites the configuration files with example files "
+             "(default: %(default)s)")
+    subcmd_update.add_argument(
+        '--ci', action='store_true',
+        help="continues integration mode: reset, debug, colorless "
+             "(default: %(default)s)")
+
+    # status command
+    subcmd_status = subcmds.add_parser(
+        'status', parents=[subcmd], description=status.__doc__,
+        help=status.__doc__.strip('.'))
+
+    # diff command
+    subcmd_diff = subcmds.add_parser(
+        'diff', parents=[subcmd], description=diff.__doc__,
+        help=diff.__doc__.strip('.'))
+
+    # pull command
+    subcmd_pull = subcmds.add_parser(
+        'pull', parents=[subcmd], description=pull.__doc__,
+        help=pull.__doc__.strip('.'))
+
+    # checkout command
+    subcmd_checkout = subcmds.add_parser(
+        'checkout', parents=[subcmd], description=checkout.__doc__,
+        help=checkout.__doc__.strip('.'))
+    subcmd_checkout.add_argument(
+        'checkout_branch', nargs='?', metavar="BRANCH",
+        help="Branch name (default: checkedout [%s])" % branch)
+
+    # delete command
+    subcmd_delete = subcmds.add_parser(
+        'delete', parents=[subcmd], description=delete.__doc__,
+        help=delete.__doc__.strip('.'))
+    subcmd_delete.add_argument(
+        '-f', '--force', action='store_true',
+        help="Force deletion of not fully merged branches "
+             "(default: %(default)s)")
+    subcmd_delete.add_argument(
+        'delete_branch', metavar="BRANCH",
+        help="Branch name")
+    subcmd_delete.add_argument(
+        '--no-local-delete', action='store_true',
+        help="Don't delete local branch (default: %(default)s)")
+    subcmd_delete.add_argument(
+        '--no-remote-delete', action='store_true',
+        help="Don't delete remote branch (default: %(default)s)")
+
+    # commit command
+    subcmd_commit = subcmds.add_parser(
+        'commit', parents=[subcmd], description=commit.__doc__,
+        help=commit.__doc__.strip('.'))
+    subcmd_commit.add_argument(
+        'message', metavar="MESSAGE",
+        help="Commit message")
+
+    # push command
+    subcmd_push = subcmds.add_parser(
+        'push', parents=[subcmd], description=push.__doc__,
+        help=push.__doc__.strip('.'))
+
+    # merge command
+    subcmd_merge = subcmds.add_parser(
+        'merge', parents=[subcmd], description=merge.__doc__,
+        help=merge.__doc__.strip('.'))
+    subcmd_merge.add_argument(
+        'merge_branch', nargs='?', metavar="BRANCH", default="development",
+        help="Target branch name (default: %(default)s)")
+    subcmd_merge.add_argument(
+        '-f', '--force', action='store_true',
+        help="Force deletion of not fully merged branches "
+             "(default: %(default)s)")
+    subcmd_merge.add_argument(
+        '--no-delete', action='store_true',
+        help="Don't delete branch after merge (default: %(default)s)")
+    subcmd_merge.add_argument(
+        '--no-local-delete', action='store_true',
+        help="Don't delete local branch after merge (default: %(default)s)")
+    subcmd_merge.add_argument(
+        '--no-remote-delete', action='store_true',
+        help="Don't delete remote branch after merge (default: %(default)s)")
+    subcmd_merge.add_argument(
+        '--no-push', action='store_true',
+        help="Don't push branch after merge (default: %(default)s)")
+
+    # promote command
+    subcmd_promote = subcmds.add_parser(
+        'promote', parents=[subcmd], description=promote.__doc__,
+        help=promote.__doc__.strip('.'))
+    subcmd_promote.add_argument(
+        'promote_environment', metavar="ENVIRONMENT",
+        choices=['development', 'staging', 'production'],
+        help="Environment to be promoted to the next stage")
+
+    # parse
+    args = vars(cmd.parse_args())
+    _command = args.get('command') or 'diff'
+    _update_environment = args.get('environment', None)
+    _update_branch = args.get('branch', None)
+    _commit_message = args.get('message', "")
+    _checkout_branch = args.get('checkout_branch', None)
+    _delete_branch = args.get('delete_branch', None)
+    _merge_branch = args.get('merge_branch', None)
+    _merge_push = not args.get('no_push', False)
+    _promote_branch = args.get('promote_environment', None)
+    _branch_delete = not args.get('no_delete', False)
+    _branch_delete_local = not args.get('no_local_delete', False)
+    _branch_delete_remote = not args.get('no_remote_delete', False)
+    _force = args.get('force', False)
+    _restarted = args.get('restarted', "")
+    _reset = args.get('reset', False)
+    _verbose = args.get('verbose', 0) >= 1 and True
+    _debug = args.get('verbose', 0) >= 2 and True
+    _ci = args.get('ci', False)
+    _colorless = args.get('no_color', False)
+
+    # set implications
+    if _ci:
+        _colorless = True
+        _reset = True
+        _verbose = True
+        _debug = True
+    if _debug:
+        levels['output'].append('debug')
+    if not _branch_delete:
+        _branch_delete_remote = False
+        _branch_delete_local = False
+    if _update_environment:
+        line_replace({
+            'name': ".env", 'after': "^ENVIRONMENT=",
+            'replace': _update_environment})
+    if _update_branch:
+        line_replace({
+            'name': ".env", 'after': "^BRANCH=",
+            'replace': _update_branch})
+
+    # project
+    root = get_root_dir()
+    repo = get_repo_name(root)
+    env = get_dot_env(root)
+    project = get_project_yaml(root, env)
+    environments = project.keys()
+
+    # environment
+    environment = env['ENVIRONMENT']
+    branch = env['BRANCH']
+    git_name = env.get('GIT_USER_NAME', '')
+    git_email = env.get('GIT_USER_EMAIL', '')
+    git_key = env.get('GIT_USER_SIGNINGKEY', '')
+    git_data = "%s <%s> [%s]" % (
+        git_name, git_email, git_key or "no signing key")
+    git_protocol = int(env.get('GIT_SSH')) and 'ssh' or 'https'
+    global_git_name = subprocess.check_output(
+        ('git', 'config', '--global', 'user.name'), cwd=root
+        ).strip().decode('utf-8')
+    global_git_email = subprocess.check_output(
+        ('git', 'config', '--global', 'user.email'), cwd=root
+        ).strip().decode('utf-8')
+    global_git_key = subprocess.check_output(
+        ('git', 'config', '--global', 'user.signingkey'), cwd=root
+        ).strip().decode('utf-8')
+    if not git_name or not git_email:
+        git_data = "%s <%s> [%s]" % (
+            global_git_name, global_git_email,
+            global_git_key or "no signing key")
+
+    # set workdir
+    os.chdir(root)
+
+    # execute command
+    getattr(sys.modules[__name__], _command)()

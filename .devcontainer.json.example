@@ -1,8 +1,3 @@
-// For copyright and license terms, see COPYRIGHT.rst (top level of repository)
-// Repository: https://github.com/C3S/collecting_society_docker
-//
-// See https://aka.ms/vscode-remote/containers for the
-// documentation about the devcontainer.json format
 {
 	"name": "collecting_society",
 	"dockerComposeFile": [ "docker-compose.yml", "docker-compose.override.yml" ],

@@ -49,7 +49,7 @@ coverage.xml
 /volumes/shared/tests
 
 # Translations
-#*.mo   unless we integrate the translation tools into the build process, 
+#*.mo   unless we integrate the translation tools into the build process,
 #*.pot  we need to version these files
 
 # Django stuff:
@@ -66,13 +66,22 @@ tags
 
 # Tmp Files
 /.tmp
+*.backup
 
 # Volumes
 /volumes/*
 !/volumes/shared
 
-# Created foldes
+# Created files and foldes
+/cli
+.flake8
 /code
+/docs
+/tests
+/services/config
+/services/deploy
+/services/healthcheck
+/services/pip
 /volumes/shared/src
 /volumes/shared/ref
 /volumes/shared/tmp
