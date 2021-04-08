@@ -45,22 +45,22 @@ SERVICE="all"
 BUILD=false
 RM=true
 CI=false
-CI_BRANCH=false
-CI_ENVIRONMENT=false
+CI_BRANCH=""
+CI_ENVIRONMENT=""
 DOWN=false
 TESTS=true
 TESTING="-f docker-compose.testing.yml"
 TESTPARAMS=""
 for i in "$@"; do
-    if $CI_BRANCH; then CI_BRANCH=$i; continue; fi
-    if $CI_ENVIRONMENT; then CI_ENVIRONMENT=$i; continue; fi
+    if [ "$CI_BRANCH" == "SET" ]; then CI_BRANCH=$i; continue; fi
+    if [ "$CI_ENVIRONMENT" == "SET" ]; then CI_ENVIRONMENT=$i; continue; fi
     if [ $i = $1 ] && [[ $i =~ ^(erpserver|web|worker)$ ]]; then SERVICE=$i; SERVICES=$SERVICE; continue; fi
     if [ $i = "--down" ]; then DOWN=true; continue; fi
     if [ $i = "--build" ]; then BUILD=true; continue; fi
     if [ $i = "--keep" ]; then RM=false; continue; fi
     if [ $i = "--ci" ]; then CI=true; continue; fi
-    if [ $i = "--ci-branch" ]; then CI_BRANCH=true; continue; fi
-    if [ $i = "--ci-environment" ]; then CI_ENVIRONMENT=true; continue; fi
+    if [ $i = "--ci-branch" ]; then CI_BRANCH="SET"; continue; fi
+    if [ $i = "--ci-environment" ]; then CI_ENVIRONMENT="SET"; continue; fi
     if [ $i = "--lint" ]; then TESTS=false; continue; fi
     if [ $i = "--help" ]; then usage 2>&1; fi
     TESTPARAMS="$TESTPARAMS $i"
