@@ -1192,6 +1192,8 @@ def git_checkout(task, context={}):
     checkedout = checkedout_version == checkout_version
 
     # find out, if branch or tag exists locally
+    local_exists = False
+    remote_exists = False
     version_exists = False
     if checkout_version.startswith("tags/"):
         output = execute(
@@ -1199,10 +1201,13 @@ def git_checkout(task, context={}):
         if output:
             version_exists = True
     else:
-        output = execute(('git', 'branch', '-lvv'), cwd=target)
+        output = execute(('git', 'branch', '-avv'), cwd=target)
         for line in output.split("\n"):
             if line[2:].startswith(checkout_version + " "):
-                version_exists = True
+                local_exists = True
+            if line[2:].startswith("remotes/origin/%s " % checkout_version):
+                remote_exists = True
+        version_exists = local_exists or remote_exists
 
     # just checkout, if remote or local branch exists
     if version_exists:
@@ -1218,6 +1223,7 @@ def git_checkout(task, context={}):
                'data': "\n".join(["old: `%s`" % checkedout_version,
                                   "new: `%s`" % checkout_version])}
         execute(('git', 'checkout', checkout_version), cwd=target, msg=msg)
+        git_track({**task, **{'version': checkout_version}})
 
         # if main repo was switched, give control to the other version
         if target == ".":
