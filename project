@@ -1038,6 +1038,7 @@ def git_status(task, context={}):
     upstream = task.get('upstream', True)
     stop_all = context['actions'].get('stop_all', False)
     stop_action_group = context['actions'].get('stop_action_group', False)
+    verbose = context['actions']['verbose']
 
     # workdir checked
     cmd = ['git', 'status']
@@ -1055,7 +1056,8 @@ def git_status(task, context={}):
 
     # clean
     if clean:
-        message({'level': 'info', 'description': "workdir ok",
+        message({'level': verbose and "info" or "debug",
+                 'description': "workdir ok",
                  'data': output})
         return
 
