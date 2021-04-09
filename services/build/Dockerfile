@@ -223,7 +223,7 @@ RUN pip install \
     nose2==0.9.1 \
     pytest==4.6.5 \
     sphinx==1.8.5 \
-    sphinx_rtd_theme==0.4.3
+    sphinx_rtd_theme==0.4.3 \
     tox==3.14.0
 
 ### development
