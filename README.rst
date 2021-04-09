@@ -1079,7 +1079,9 @@ docs-build
 ::
 
     $ ./docs-build --help
-    Usage: ./docs-build [--down] [--build] [--keep] [--no-autoapi] [--help]
+    Usage: ./docs-build [--down] [--build] [--keep] [--no-autoapi]
+                        [--ci] [--ci-branch NAME] [--ci-environment NAME]
+                        [--help]
 
       This script builds the documentation with sphinx.
 
@@ -1088,8 +1090,14 @@ docs-build
       --build: build images
       --keep: keep container running
       --no-autoapi: don't parse the modules
+      --ci: continous integration mode
+            - update repositories (overrides config files!)
+            - build images
+            - build docs
+            - stop and remove the container
+      --ci-branch: branch to test
+      --ci-environment: environment to test
       --help: display this help
-
 
 .. _db-rebuild script:
 
