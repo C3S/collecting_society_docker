@@ -136,7 +136,8 @@ def pip_install(context, service):
         # Install packages
         print('Install packages for ' + service + ' ... ', end='')
         subprocess.check_call(
-            [sys.executable, '-m', 'pip', 'install', '-qr', pipfile])
+            [sys.executable, '-m', 'pip', '--no-python-version-warning',
+             'install', '-qr', pipfile])
         print('ok')
 
         # Create flagfile
