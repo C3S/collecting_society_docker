@@ -701,7 +701,10 @@ def path_link(task, context={}):
         return
 
     # symlink exists, but is changed
-    os.unlink(target)
+    if os.path.isfile(target):
+        Path.unlink(target)
+    else:
+        Path.rmdir(target)
     os.symlink(source_rel, target)
     message({'level': "warning", 'description': "symlink overwritten",
              'data': "\n".join(["old source: `%s`" % old_source,
