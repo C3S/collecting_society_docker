@@ -4,7 +4,6 @@
 #
 # Healthcheck script for trytond
 
-if netstat -tulpn | grep :$TRYTON_PORT; then
-    exit 0
-fi
-exit 1
+[ -f "running_db_creation.delete_me" ] && exit 0
+! printf "" 2>>/dev/null >>/dev/tcp/127.0.0.1/$TRYTON_PORT && exit 1
+exit 0

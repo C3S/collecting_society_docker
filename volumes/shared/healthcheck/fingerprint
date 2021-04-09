@@ -4,7 +4,7 @@
 #
 # Healthcheck script for echoprint
 
-if [ $(netstat -tulpn | grep -P "(80|8502|1978)" | wc -l) = 3 ]; then
-    exit 0
-fi
-exit 1
+! printf "" 2>>/dev/null >>/dev/tcp/127.0.0.1/80 && exit 1
+! printf "" 2>>/dev/null >>/dev/tcp/127.0.0.1/8502 && exit 1
+! printf "" 2>>/dev/null >>/dev/tcp/127.0.0.1/1978 && exit 1
+exit 0

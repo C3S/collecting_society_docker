@@ -4,7 +4,5 @@
 #
 # Healthcheck script for ngninx
 
-if service nginx status; then
-    exit 0
-fi
-exit 1
+! printf "" 2>>/dev/null >>/dev/tcp/127.0.0.1/80 && exit 1
+exit 0

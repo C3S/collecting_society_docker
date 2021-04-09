@@ -4,7 +4,5 @@
 #
 # Healthcheck script for postgres
 
-if pg_isready -U postgres; then
-    exit 0
-fi
-exit 1
+! pg_isready -U postgres && exit 1
+exit 0

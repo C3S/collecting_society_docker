@@ -4,9 +4,6 @@
 #
 # Healthcheck script for worker
 
-WORKERPATH=/shared/src/collecting_society_worker/collecting_society_worker
-
-if $WORKERPATH/test_connection.py; then
-    exit 0
-fi
-exit 1
+[ -f "running_db_creation.delete_me" ] && exit 0
+! $WORKDIR/src/collecting_society_worker/collecting_society_worker/test_connection.py && exit 1
+exit 0
