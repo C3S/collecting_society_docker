@@ -762,6 +762,13 @@ def file_copy(task, context={}):
     if target_exists and _reset:
         shutil.copyfile(source, target)
         message({'level': "warning", 'description': "file overwritten"})
+        if task['name'] == ".env":
+            line_replace({
+                'name': ".env", 'after': "^ENVIRONMENT=",
+                'replace': environment})
+            line_replace({
+                'name': ".env", 'after': "^BRANCH=",
+                'replace': branch})
         return
 
     # new file copied
