@@ -685,7 +685,7 @@ def path_link(task, context={}):
 
     # new symlink, file does not exist
     source_rel = os.path.relpath(source, os.path.dirname(target))
-    if not os.path.exists(target):
+    if not os.path.exists(target) and not os.path.islink(target):
         os.symlink(source_rel, target)
         message({'level': "info", 'description': "symlink created"})
         return
