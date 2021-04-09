@@ -95,7 +95,7 @@ fi
 
 # build docs
 echo -e "\n== build docs"
-docker-compose $DOCUMENTATION exec documentation docs-build $NOAUTOAPI
+docker-compose $DOCUMENTATION exec -T documentation docs-build $NOAUTOAPI
 EXITCODE=$?
 
 # remove docker container
