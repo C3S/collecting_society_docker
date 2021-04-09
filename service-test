@@ -137,19 +137,19 @@ fi
 EXITCODE=0
 if [[ ! -z "$ERRORS" ]]; then
     EXITCODE=1
-    echo -e "\033[1m\033[5m\033[91m"
+    ! $CI && echo -e "\033[1m\033[5m\033[91m"
     echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     echo -e " WARNING: ERRORS OCCURED WHILE TESTS WERE RUNNING. PLEASE FIX."
     echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    echo -e "\e[25m"
+    ! $CI && echo -e "\e[25m"
     echo -e "Errors:\n$ERRORS"
-    echo -e "\033[0m"
+    ! $CI && echo -e "\033[0m"
 else
-    echo -e "\033[1m\033[32m"
+    ! $CI && echo -e "\033[1m\033[32m"
     echo -e "--------------------------------------------"
     echo -e " ALL TEST RUN SUCCESSFUL. EVEN THE LINTERS."
     echo -e "--------------------------------------------"
-    echo -e "\033[0m"
+    ! $CI && echo -e "\033[0m"
 fi
 echo `date +%Y-%m-%d:%H:%M:%S`
 echo "====================================================================="
