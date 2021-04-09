@@ -525,7 +525,7 @@ def service_deploy(context, service):
             context.invoke(db_setup, template=False)
     # Wait for demodata generation
     if SERVICE in ["webgui", "webapi", "worker"] and os.path.exists(TMP_FILE):
-        waiting = 11
+        waiting = 12
         DEVNULL = open(os.devnull, 'w')
         while os.path.exists(TMP_FILE):
             if service == "webgui":

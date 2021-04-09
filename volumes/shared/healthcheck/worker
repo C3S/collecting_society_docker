@@ -4,6 +4,10 @@
 #
 # Healthcheck script for worker
 
+# ignore dateset creation
 [ -f "running_db_creation.delete_me" ] && exit 0
+
+# test proteus connection
 ! $WORKDIR/src/collecting_society_worker/collecting_society_worker/test_connection.py && exit 1
+
 exit 0

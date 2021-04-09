@@ -4,5 +4,18 @@
 #
 # Healthcheck script for pyramid
 
-! printf "" 2>>/dev/null >>/dev/tcp/127.0.0.1/$VIRTUAL_PORT && exit 1
+port_closed () {
+    ! tail -n +2 /proc/net/tcp \
+         | cut -d":" -f"3" \
+         | cut -d" " -f"1" \
+         | xargs -I {} printf "%d\n" 0x{} \
+         | grep "^$1$" > /dev/null
+}
+
+# ignore dateset creation
+[ -f "running_db_creation.delete_me" ] && exit 0
+
+# check ports
+port_closed $VIRTUAL_PORT && exit 1
+
 exit 0

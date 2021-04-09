@@ -4,7 +4,17 @@
 #
 # Healthcheck script for echoprint
 
-! printf "" 2>>/dev/null >>/dev/tcp/127.0.0.1/80 && exit 1
-! printf "" 2>>/dev/null >>/dev/tcp/127.0.0.1/8502 && exit 1
-! printf "" 2>>/dev/null >>/dev/tcp/127.0.0.1/1978 && exit 1
+port_closed () {
+    ! tail -n +2 /proc/net/tcp \
+         | cut -d":" -f"3" \
+         | cut -d" " -f"1" \
+         | xargs -I {} printf "%d\n" 0x{} \
+         | grep "^$1$" > /dev/null
+}
+
+# check ports
+port_closed 80 && exit 1
+port_closed 8502 && exit 1
+port_closed 1978 && exit 1
+
 exit 0
