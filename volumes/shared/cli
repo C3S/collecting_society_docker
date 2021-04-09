@@ -361,11 +361,9 @@ def db_update(context, modules, trytondconf, dbname):
               help='Force execution (default: no)')
 @click.option('--pdb/--no-pdb', default=False,
               help='Start pdb on error (default: no)')
-@click.option('--color/--no-color', default=True,
-              help='Colored output (default: yes)')
 @click.pass_context
 def db_setup(context, dbname, reclimit, dataset, exclude,
-             template, cache, force, pdb, color):
+             template, cache, force, pdb):
     """
     Creates and sets up the postgres database DBNAME.
 
@@ -378,8 +376,6 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
     execution from different docker containers.
     """
     context.invoke(pip_install, service='erpserver')
-    if not color:
-        data._colorless = True
 
     # Check lockfile, if locked, wait till not locked any more
     while True:
@@ -483,11 +479,9 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
               help='Use/Recreate template db for dataset deps (default: no)')
 @click.option('--pdb/--no-pdb', default=False,
               help='Start pdb on error (default: no)')
-@click.option('--color/--no-color', default=True,
-              help='Colored output (default: yes)')
 @click.pass_context
 def db_rebuild(context, dbname, reclimit, dataset, exclude,
-               template, cache, pdb, color):
+               template, cache, pdb):
     """
     Deletes DBNAME and executes db setup
     """
@@ -502,8 +496,7 @@ def db_rebuild(context, dbname, reclimit, dataset, exclude,
     # Setup database
     context.invoke(
         db_setup, dbname=dbname, reclimit=reclimit, dataset=dataset,
-        exclude=exclude, template=template, cache=cache, force=False, pdb=pdb,
-        color=color)
+        exclude=exclude, template=template, cache=cache, force=False, pdb=pdb)
 
 
 @cli.command('service-deploy')

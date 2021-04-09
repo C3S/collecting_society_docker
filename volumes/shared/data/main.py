@@ -22,7 +22,7 @@ from datasets import Datasets
 
 
 log = logging.getLogger(__name__)
-_colorless = False
+_colorless = os.environ.get('ENVIRONMENT') == "testing"
 
 
 class ProteusStats():
