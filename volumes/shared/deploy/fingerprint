@@ -15,6 +15,8 @@ TOKYOTYRANT_PIDFILE="/tmp/tokyotyrant.pid"
 TOKYOTYRANT_DATAFILE="$DATAPATH/casket.tch"
 TOKYOTYRANT_PORT=1978
 
+SOLR_DATAPATH="$DATAPATH/solr"
+SOLR_LOGPATH="$REPOPATH/solr/solr/logs"
 SOLR_LOGFILE="/var/log/solr.log"
 SOLR_PORT=8502
 
@@ -35,8 +37,10 @@ echo "Tokyotyrant started ..."
 
 # solr
 echo "Solr startup ..."
+! [ -f "$SOLR_DATAPATH" ] && mkdir -p $SOLR_DATAPATH
+! [ -f "$SOLR_LOGPATH" ] && mkdir -p $SOLR_LOGPATH
 cd $REPOPATH/solr/solr/
-java -Dsolr.solr.home=$REPOPATH/solr/solr/solr/ -Djava.awt.headless=true \
+java -Dsolr.data.dir=$SOLR_DATAPATH -Dsolr.solr.home=$REPOPATH/solr/solr/solr/ -Djava.awt.headless=true \
      -jar $REPOPATH/solr/solr/start.jar 2>&1 > $SOLR_LOGFILE &
 cd $WORKDIR
 timeout $WAIT bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 $SOLR_PORT
