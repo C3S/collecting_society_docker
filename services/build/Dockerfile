@@ -304,6 +304,7 @@ RUN pip install \
     hurry.filesize==0.9 \
     pyOpenSSL==17.5.0 \
     pytz==2015.7 \
+    requests==2.18.4 \
     vatnumber==1.2
 
 ### staging
@@ -338,7 +339,6 @@ RUN pip install \
     pyramid-mailer==0.15.1 \
     python-magic==0.4.15 \
     raven==6.10.0 \
-    requests==2.18.4 \
     waitress==1.1.0
 
 ### staging
@@ -374,7 +374,7 @@ RUN pip install  \
     pyechonest==9.0.0  \
     pydub==0.18.0  \
     pytaglib==1.4.1  \
-    requests==2.9.1
+    requests==2.18.4
 
 ### staging
 FROM jessie_worker_production_compiled AS jessie_worker_staging_compiled
