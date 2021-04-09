@@ -27,7 +27,7 @@ ECHOPRINT_PORT=80
 echo "Tokyotyrant startup ..."
 [ -f "$TOKYOTYRANT_PIDFILE" ] && rm $TOKYOTYRANT_PIDFILE
 ttserver -port $TOKYOTYRANT_PORT -dmn -pid $TOKYOTYRANT_PIDFILE \
-         -log $TOKYOTYRANT_LOGFILE $TOKYOTYRANT_DATAFILE#bnum=100000
+         -log $TOKYOTYRANT_LOGFILE -le $TOKYOTYRANT_DATAFILE#bnum=100000
 timeout $WAIT bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 $TOKYOTYRANT_PORT
 if [ $? -ne 0 ]; then
     echo "Tokyotyrant startup error. Exiting."
