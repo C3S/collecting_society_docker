@@ -226,7 +226,7 @@ testing:
         actions: ['folder_create']
       # symlink docker override file
       - name: symlink docker override file
-        source: 'docker-compose.${ENVIRONMENT}.yml'
+        source: 'docker-compose.${BRANCH}.yml'
 
 #==============================================================================
 # development config, inherits from testing
