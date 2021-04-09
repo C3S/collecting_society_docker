@@ -216,20 +216,20 @@ FROM jessie_python_production_compiled AS jessie_python_staging_compiled
 ### testing
 FROM jessie_python_staging_compiled AS jessie_python_testing_compiled
 RUN pip install \
+    autoapi==2.0.0 \
     coverage==4.5.1 \
     flake8==3.9.0 \
     nose==1.3.7 \
     nose2==0.9.1 \
     pytest==4.6.5 \
+    sphinx==1.8.5 \
+    sphinx_rtd_theme==0.4.3
     tox==3.14.0
 
 ### development
 FROM jessie_python_testing_compiled AS jessie_python_development_compiled
 RUN pip install \
-    pdbpp==0.9.2 \
-    sphinx==1.8.5 \
-    autoapi==2.0.0 \
-    sphinx_rtd_theme==0.4.3
+    pdbpp==0.9.2
 
 ARG DEBUGGER_PTVSD
 RUN if [ ${DEBUGGER_PTVSD} -ne 0 ]; then pip install \
