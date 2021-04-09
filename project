@@ -1577,6 +1577,10 @@ def script_restart(task, context={}):
     pull = task['result']['git_pull']
     changed = 'changed' in pull
 
+    # return if testing
+    if environment == "testing":
+        return
+
     # return if restarted
     if _restarted:
         return
@@ -1594,7 +1598,9 @@ def script_restart(task, context={}):
     # restart script
     message({'level': "info", 'description': "script will be restarted now",
              'data': "REASON: the main repository was updated"})
-    os.execv(__file__, sys.argv + ['--restarted', commit_range])
+    # os.execv(__file__, sys.argv + ['--restarted', commit_range])
+    cmd = [__file__, *sys.argv, '--restarted', commit_range]
+    exit(subprocess.call(cmd))
 
 
 @action
