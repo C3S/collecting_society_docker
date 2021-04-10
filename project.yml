@@ -37,8 +37,8 @@ production:
             files: 'services/build/Dockerfile'
             level: 'warning'
             data: [
-              'NOTE: you should update the database:',
-              '$ docker-compose run --rm erpserver db-update'
+              'NOTE: you should rebuild the docker images:',
+              '$ docker-compose build'
             ]
           - name: '∇ EXAMPLE FILES were updated'
             files: '.example'
