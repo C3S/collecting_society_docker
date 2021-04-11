@@ -1554,7 +1554,7 @@ def git_promote(task, context={}):
     source_branch = task.get('branch', _promote_branch)
     if source_branch not in branches:
         error({'description': "not an environment branch"})
-    target_branch = branches[branches.indexof(source_branch) + 1]
+    target_branch = branches[branches.index(source_branch) + 1]
 
     # skip silently for upstream repos
     if upstream:

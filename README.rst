@@ -10,7 +10,7 @@ The main resources can be found here:
 - Issues_
 - Wiki_
 
-.. _Documentation: https://files.c3s.cc/csdoku/html/index.html
+.. _Documentation: https://files.c3s.cc/csdoku/index.html
 .. _Issues: https://redmine.c3s.cc/projects/collecting_society/issues
 .. _Wiki: https://redmine.c3s.cc/projects/collecting_society/wiki
 
@@ -326,7 +326,7 @@ Variable                Values Default Description
 ``GIT_SSH``             0|1    0       Checkout git repositories via ssh
 ``GIT_USER_NAME``       string ""      Username for git commits *(optional)*
 ``GIT_USER_EMAIL``      string ""      Email for git commits *(optional)*
-``GIT_USER_SIGNINGKEY`` string ""      GPG key id for signed commits
+``GIT_USER_SIGNINGKEY`` string ""      16-hex-digit GPG key id for signed commits
 ======================= ====== ======= =================================================
 
 Run the `project script`_ update command, which checkouts the service

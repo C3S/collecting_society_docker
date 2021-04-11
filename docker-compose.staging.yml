@@ -20,17 +20,21 @@ services:
   webserver:
     # entrypoint: ["echo", "Service disabled in docker-compose.staging.yml."]
     ports:
-      - "80:80"  # http
+      - "8080:80"  # http
     volumes:
       - ./volumes/nginx-certs:/etc/nginx/certs
       - ./volumes/nginx-dhparam:/etc/nginx/dhparam
       - ./volumes/nginx-htpasswd:/etc/nginx/htpasswd
 
   webapi:
+    ports:
+      - "127.0.0.1:6544:6543"  # pyramid pserve
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
   webgui:
+    ports:
+      - "127.0.0.1:6543:6543"  # pyramid pserve
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
