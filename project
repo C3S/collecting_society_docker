@@ -2052,7 +2052,7 @@ if __name__ == "__main__":
              "(default: %(default)s)")
     subcmd_update.add_argument(
         '--ci', action='store_true',
-        help="continues integration mode: reset, debug, colorless "
+        help="continues integration mode: debug, colorless, no diff output "
              "(default: %(default)s)")
 
     # status command
@@ -2167,7 +2167,6 @@ if __name__ == "__main__":
     # set implications
     if _ci:
         _colorless = True
-        _reset = True
         _verbose = True
         _debug = True
     if _debug:
