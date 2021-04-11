@@ -1502,7 +1502,6 @@ def git_merge(task, context={}):
     target_branch = task.get('branch', _merge_branch)
     if not target_branch:
         target_branch = "development"
-    checkout = task.get('checkout', True)
     push = task.get('push', _merge_push)
     delete = task.get('delete', True)
     verbose = context['actions']['verbose']
@@ -1512,8 +1511,7 @@ def git_merge(task, context={}):
         return
 
     # checkout target branch
-    if checkout:
-        git_checkout({**task, **{'branch': target_branch}})
+    git_checkout({**task, **{'branch': target_branch}})
 
     # find out, if remote target branch exists
     remote_target_exists = False
@@ -1543,6 +1541,9 @@ def git_merge(task, context={}):
     # delete feature branch
     if delete:
         git_delete({**task, **{'branch': source_branch}})
+
+    # switch back to source branch
+    git_checkout({**task, **{'branch': source_branch}})
 
 
 @action
