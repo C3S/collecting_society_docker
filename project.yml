@@ -178,6 +178,9 @@ production:
     # merge command
     merge: *update
 
+    # promote command
+    promote: *update
+
   # action config -------------------------------------------------------------
   actions:
     # update_repo action group
