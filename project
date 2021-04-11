@@ -1502,6 +1502,7 @@ def git_merge(task, context={}):
     target_branch = task.get('branch', _merge_branch)
     if not target_branch:
         target_branch = "development"
+    checkout = task.get('checkout', True)
     push = task.get('push', _merge_push)
     delete = task.get('delete', True)
     verbose = context['actions']['verbose']
@@ -1511,7 +1512,8 @@ def git_merge(task, context={}):
         return
 
     # checkout target branch
-    git_checkout({**task, **{'branch': target_branch}})
+    if checkout:
+        git_checkout({**task, **{'branch': target_branch}})
 
     # find out, if remote target branch exists
     remote_target_exists = False
@@ -1526,7 +1528,8 @@ def git_merge(task, context={}):
 
     # merge feature branch
     output = execute(
-        ('git', 'merge', '--no-edit', '--no-ff', source_branch), cwd=target)
+        ('git', 'merge', '--no-edit', '--no-ff', source_branch, target_branch),
+        cwd=target)
     if 'changed' not in output:
         message({'level': verbose and 'info' or 'debug',
                  'description': 'nothing to merge'})
@@ -1564,6 +1567,7 @@ def git_promote(task, context={}):
     git_merge({**task, **{
         'version': source_branch,
         'branch': target_branch,
+        'checkout': False,
         'push': True,
         'delete': False,
     }})
