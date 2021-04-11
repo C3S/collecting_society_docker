@@ -1526,7 +1526,8 @@ def git_merge(task, context={}):
 
     # merge feature branch
     output = execute(
-        ('git', 'merge', '--no-edit', '--no-ff', source_branch), cwd=target)
+        ('git', 'merge', '--no-edit', '--no-ff', source_branch, target_branch),
+        cwd=target)
     if 'changed' not in output:
         message({'level': verbose and 'info' or 'debug',
                  'description': 'nothing to merge'})
@@ -1540,6 +1541,9 @@ def git_merge(task, context={}):
     # delete feature branch
     if delete:
         git_delete({**task, **{'branch': source_branch}})
+
+    # switch back to source branch
+    git_checkout({**task, **{'branch': source_branch}})
 
 
 @action
@@ -1564,6 +1568,7 @@ def git_promote(task, context={}):
     git_merge({**task, **{
         'version': source_branch,
         'branch': target_branch,
+        'checkout': False,
         'push': True,
         'delete': False,
     }})
