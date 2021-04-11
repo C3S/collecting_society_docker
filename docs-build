@@ -77,7 +77,7 @@ if $CI; then
     CI_PARAMS=""
     if [ $CI_ENVIRONMENT != "false" ]; then CI_PARAMS="$CI_PARAMS --environment $CI_ENVIRONMENT"; fi
     if [ $CI_BRANCH != "false" ]; then CI_PARAMS="$CI_PARAMS --branch $CI_BRANCH"; fi
-    $ROOT_DIR/project update $CI_PARAMS --ci
+    $ROOT_DIR/project update $CI_PARAMS --ci --reset
 fi
 
 # build docker images
