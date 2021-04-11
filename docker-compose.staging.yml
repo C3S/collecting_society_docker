@@ -13,14 +13,14 @@ services:
   erpserver:
     ports:
       - "8000:8000"  # jsonrpc (tryton client)
-      - "8069:8069"  # xmlrpc (proteus)
+      - "127.0.0.1:8069:8069"  # xmlrpc (proteus)
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
   webserver:
     # entrypoint: ["echo", "Service disabled in docker-compose.staging.yml."]
     ports:
-      - "8080:80"  # http
+      - "127.0.0.1:8080:80"  # http
     volumes:
       - ./volumes/nginx-certs:/etc/nginx/certs
       - ./volumes/nginx-dhparam:/etc/nginx/dhparam
