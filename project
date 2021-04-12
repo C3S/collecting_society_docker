@@ -1037,7 +1037,7 @@ def git_user(task, context={}):
             cwd=target)
     execute(('git', 'config', 'user.signingKey', '"{}"'.format(git_key)),
             cwd=target)
-    execute(('git', 'config', 'commit.gpgSign', '"{}"'.format(git_sign)),
+    execute(('git', 'config', 'commit.gpgSign', '{}'.format(git_sign)),
             cwd=target)
     message({'level': "info", 'description': "git user set",
              'data': "\n".join(["user.name: `%s`" % git_name,
@@ -2207,7 +2207,7 @@ if __name__ == "__main__":
     git_data = "%s <%s> [%s]" % (
         git_name, git_email, git_key or "no signing key")
     git_protocol = int(env.get('GIT_SSH')) and 'ssh' or 'https'
-    git_sign = bool(git_key)
+    git_sign = bool(git_key) and "true" or "false"
     global_git_name = ""
     global_git_email = ""
     global_git_key = ""
