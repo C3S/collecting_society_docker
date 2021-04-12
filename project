@@ -991,7 +991,7 @@ def git_origin(task, context={}):
 
 @action
 def git_user(task, context={}):
-    """Sets the username, useremail and signingkey for a repository."""
+    """Sets username, useremail, signingKey and gpgSign for a repository."""
     target = task.get('target') or task['name']
     targetpath = task.get('targetpath')
     if targetpath:
@@ -1007,16 +1007,20 @@ def git_user(task, context={}):
         return
 
     # userdata already set
-    old_name = execute(('git', 'config', 'user.name'), cwd=target).strip('"')
-    old_email = execute(('git', 'config', 'user.email'), cwd=target).strip('"')
+    old_name = execute(
+        ('git', 'config', 'user.name'), cwd=target).strip('"')
+    old_email = execute(
+        ('git', 'config', 'user.email'), cwd=target).strip('"')
     old_key = execute(
-        ('git', 'config', 'user.signingkey'), cwd=target).strip('"')
+        ('git', 'config', 'user.signingKey'), cwd=target).strip('"')
+    old_sign = execute(
+        ('git', 'config', 'commit.gpgSign'), cwd=target).strip('"')
 
     # changed
     changed = False
-    for k, v in [(git_name, old_name), (git_email, old_email),
-                 (git_key, old_key)]:
-        if k != v:
+    for old, new in [(old_name, git_name), (old_email, git_email),
+                     (old_key, git_key), (old_sign, git_sign)]:
+        if old != new:
             changed = True
     if not changed:
         message({'description': "git user aready set"})
@@ -1027,12 +1031,15 @@ def git_user(task, context={}):
             cwd=target)
     execute(('git', 'config', 'user.email', '"{}"'.format(git_email)),
             cwd=target)
-    execute(('git', 'config', 'user.signingkey', '"{}"'.format(git_key)),
+    execute(('git', 'config', 'user.signingKey', '"{}"'.format(git_key)),
+            cwd=target)
+    execute(('git', 'config', 'commit.gpgSign', '"{}"'.format(git_sign)),
             cwd=target)
     message({'level': "info", 'description': "git user set",
              'data': "\n".join(["user.name: `%s`" % git_name,
                                 "user.email: `%s`" % git_email,
-                                "user.signingkey: `%s`" % git_key])})
+                                "user.signingKey: `%s`" % git_key,
+                                "user.gpgSign: `%s`" % git_sign])})
 
 
 @action
@@ -1437,11 +1444,8 @@ def git_commit(task, context={}):
 
     # commit performed
     msg = {'level': "info", 'description': "changes commited"}
-    cmd = ['git', 'commit']
-    if git_key:
-        cmd += ['-S']
-    cmd += ['-m', '"%s"' % _commit_message]
-    execute(cmd, cwd=target, msg=msg, abort=False)
+    execute(('git', 'commit', '-m', '"%s"' % _commit_message),
+            cwd=target, msg=msg, abort=False)
 
 
 @action
@@ -2199,6 +2203,7 @@ if __name__ == "__main__":
     git_data = "%s <%s> [%s]" % (
         git_name, git_email, git_key or "no signing key")
     git_protocol = int(env.get('GIT_SSH')) and 'ssh' or 'https'
+    git_sign = bool(git_key)
     global_git_name = ""
     global_git_email = ""
     global_git_key = ""
@@ -2210,7 +2215,7 @@ if __name__ == "__main__":
             ('git', 'config', '--global', 'user.email'), cwd=root
             ).strip().decode('utf-8')
         global_git_key = subprocess.check_output(
-            ('git', 'config', '--global', 'user.signingkey'), cwd=root
+            ('git', 'config', '--global', 'user.signingKey'), cwd=root
             ).strip().decode('utf-8')
     except Exception:
         pass
