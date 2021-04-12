@@ -1008,13 +1008,17 @@ def git_user(task, context={}):
 
     # userdata already set
     old_name = execute(
-        ('git', 'config', 'user.name'), cwd=target).strip('"')
+        ('git', 'config', 'user.name'),
+        cwd=target, abort=False).strip('"')
     old_email = execute(
-        ('git', 'config', 'user.email'), cwd=target).strip('"')
+        ('git', 'config', 'user.email'),
+        cwd=target, abort=False).strip('"')
     old_key = execute(
-        ('git', 'config', 'user.signingKey'), cwd=target).strip('"')
+        ('git', 'config', 'user.signingKey'),
+        cwd=target, abort=False).strip('"')
     old_sign = execute(
-        ('git', 'config', 'commit.gpgSign'), cwd=target).strip('"')
+        ('git', 'config', 'commit.gpgSign'),
+        cwd=target, abort=False).strip('"')
 
     # changed
     changed = False
