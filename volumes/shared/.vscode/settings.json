@@ -2,7 +2,8 @@
 // Repository: https://github.com/C3S/collecting_society_docker
 {
     "python.linting.flake8Enabled": true,
-    "editor.rulers": [ 79, 119 ],
     "python.linting.enabled": true,
+    "python.linting.flake8Path": "/opt/venv/bin/flake8",
+    "editor.rulers": [ 79, 119 ],
     "editor.detectIndentation": false
 }

@@ -86,6 +86,7 @@ FROM jessie_python_staging AS jessie_python_testing
 
 ### development
 FROM jessie_python_testing AS jessie_python_development
+RUN pip install flake8
 
 ### result
 FROM jessie_python_${ENVIRONMENT} AS jessie_python

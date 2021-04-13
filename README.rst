@@ -60,6 +60,7 @@ Services
 | erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc | | shared          |
 |             |                     |                            | | 8069: xmlrpc  | | trytond-files   |
 |             |                     |                            | | 51005: ptvsd  |                   |
+|             |                     |                            | | 51006: ptvsd  |                   |
 +-------------+---------------------+----------------------------+-----------------+-------------------+
 | webserver   | Nginx Server        |                            | 80: http        | | shared          |
 |             |                     |                            |                 | | nginx-certs     |
