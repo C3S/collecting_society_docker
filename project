@@ -2221,6 +2221,9 @@ if __name__ == "__main__":
         _colorless = True
         _verbose = True
         _debug = True
+        line_replace({
+            'name': ".env", 'after': "^BUILD=",
+            'replace': os.environ.get("BUILD_DISPLAY_NAME", "")})
     if _debug:
         levels['output'].append('debug')
     if not _branch_delete:

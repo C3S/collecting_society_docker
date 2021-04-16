@@ -570,6 +570,7 @@ Variable                           Values          Description
                                    | "staging"
                                    | "production"
 ``BRANCH``                         string          branch of project repositories
+``BUILD``                          string          build number added by ci
 ``COMPOSE_DOCKER_CLI_BUILD``       0|1             use BuildKit for docker builds
 ``COMPOSE_PROJECT_NAME``           string          prefix for containers
 ``COMPOSE_IGNORE_ORPHANS``         0|1             suppress orphan container warnings
