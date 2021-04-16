@@ -68,8 +68,9 @@ services:
     networks:
       - frontend
     volumes:
-      - ./volumes/shared:/shared
       - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./volumes/shared:/shared
+      - ./services/config/nginx.proxy.conf:/etc/nginx/conf.d/proxy.conf
     environment:
       SERVICE: webserver
 
