@@ -35,16 +35,16 @@ production:
             files: 'scripts/update'
           - name: '∇ DOCKERFILE was updated!'
             files: 'services/build/Dockerfile'
-            level: 'warning'
+            level: 'note'
             data: [
-              'NOTE: you should rebuild the docker images:',
+              'You should rebuild the docker images:',
               '$ docker-compose build'
             ]
           - name: '∇ EXAMPLE FILES were updated'
             files: '.example'
-            level: 'warning'
+            level: 'note'
             data: [
-              'NOTE: you should diff and adjust the example files:',
+              'You should diff and adjust the example files:',
               '$ ./scripts/update diff'
             ]
       # update project repos
@@ -59,9 +59,9 @@ production:
             changes:
               - name: '∇ DATABASE structure has changed'
                 files: ['.py', '.xml']
-                level: 'warning'
+                level: 'note'
                 data: [
-                  'NOTE: you should update the database:',
+                  'You should update the database:',
                   '$ docker-compose run --rm erpserver db-update'
                 ]
           - name: portal_web
