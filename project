@@ -1612,7 +1612,8 @@ def script_restart(task, context={}):
     message({'level': "info", 'description': "script will be restarted now",
              'data': "REASON: the main repository was updated"})
     # os.execv(__file__, sys.argv + ['--restarted', commit_range])
-    cmd = [__file__, *sys.argv, '--restarted', commit_range]
+    cmd = sys.argv + ['--restarted', commit_range]
+    debug("$ " + " ".join(cmd))
     exit(subprocess.call(cmd))
 
 
