@@ -39,11 +39,12 @@ envsub_re = re.compile(r'\$\{([A-Z-_]*)\}')
 commit_re = re.compile(r'\s*(\w*\.\.\w*)\s')
 
 # lists
-_contexts = []     # list of contexts
-_messages = []     # list of messages added
-_tasks = []        # list of tasks performed
-_actions = []      # list of valid action names, autofilled
-_commands = []     # list of valid command names, autofilled
+_contexts = []   # list of contexts
+_messages = []   # list of messages added
+_tasks = []      # list of tasks performed
+_actions = []    # list of valid action names, autofilled
+_commands = []   # list of valid command names, autofilled
+_commitids = {}  # dict of reponame: old commit id, new commit id
 
 
 # --- tools -------------------------------------------------------------------
@@ -483,6 +484,26 @@ def footer(string="Success.", _color="success", output=True, summary=True):
         message({'level': "info", 'title': ".env", "action": "",
                  'description': "GIT_USER_NAME/EMAIL not set",
                  'data': "NOTE: commits will use `%s`" % git_data})
+    # add commit ids
+    if _command == "update" and _commitids:
+        pad = 0
+        for repo in _commitids:
+            if len(repo) > pad:
+                pad = len(repo)
+        data = ""
+        for repo, commitids in _commitids.items():
+            data += (repo + ": ").ljust(pad + 2)
+            old = commitids.get('old')
+            new = commitids.get('new')
+            if new == old:
+                new = False
+            if not new:
+                data += " " * 11 + old
+            else:
+                data += old + " -> " + new
+            data += "\n"
+        message({'level': "note", 'title': "project repos",
+                 'action': "commit ids", 'data': data}, add=False)
     # determine what to output
     had_output = 0
     has_summary = False
@@ -504,7 +525,8 @@ def footer(string="Success.", _color="success", output=True, summary=True):
         text += title("Summary", _color='title', output=False)
         for level in levels['summary']:
             for msg in [m for m in _messages if m['level'] == level]:
-                text += message(msg, data=False, add=False, output=False)
+                text += message(
+                    msg, data=msg['level'] == "note", add=False, output=False)
     # title
     text += title(string, _color=_color, output=False)
     # extended mode
@@ -1058,6 +1080,13 @@ def git_status(task, context={}):
     stop_action_group = context['actions'].get('stop_action_group', False)
     verbose = context['actions']['verbose']
 
+    # current commit id
+    if not upstream:
+        commitid = execute(('git', 'rev-parse', '--short', 'HEAD'), cwd=target)
+        if task['name'] not in _commitids:
+            _commitids[task['name']] = {}
+        _commitids[task['name']]['old'] = commitid
+
     # workdir checked
     cmd = ['git', 'status']
     if upstream:
@@ -1391,6 +1420,7 @@ def git_pull(task, context={}):
     if targetpath:
         target = os.path.join(targetpath, target)
     version = task['version']
+    upstream = task.get('upstream', True)
     verbose = context['actions']['verbose']
 
     # skip pull silently for tags
@@ -1410,6 +1440,13 @@ def git_pull(task, context={}):
 
     # pull performed
     output = execute(('git', 'pull', '-v', 'origin', version), cwd=target)
+
+    # current commit id
+    if not upstream:
+        commitid = execute(('git', 'rev-parse', '--short', 'HEAD'), cwd=target)
+        if task['name'] not in _commitids:
+            _commitids[task['name']] = {}
+        _commitids[task['name']]['new'] = commitid
 
     # updated
     if "changed" in output:
@@ -1612,7 +1649,8 @@ def script_restart(task, context={}):
     message({'level': "info", 'description': "script will be restarted now",
              'data': "REASON: the main repository was updated"})
     # os.execv(__file__, sys.argv + ['--restarted', commit_range])
-    cmd = [__file__, *sys.argv, '--restarted', commit_range]
+    cmd = sys.argv + ['--restarted', commit_range]
+    debug("$ " + " ".join(cmd))
     exit(subprocess.call(cmd))
 
 
@@ -1962,8 +2000,8 @@ def promote(context={}):
 
 # messages
 levels = {
-    'output':  ['error', 'warning', 'info'],
-    'summary': ['error', 'warning']
+    'output':  ['error', 'warning', 'note', 'info'],
+    'summary': ['error', 'warning', 'note']
 }
 colors = {
     # level
@@ -1979,6 +2017,12 @@ colors = {
     'warning_action': '',
     'warning_description': 'warning',
     'warning_data': 'dim',
+    'note': '',
+    'note_level': '\033[36m',
+    'note_title': ['note', 'bold'],
+    'note_action': 'note',
+    'note_description': 'dim',
+    'note_data': 'dim',
     'info': '',
     'info_level': 'info',
     'info_title': ['info', 'bold'],
@@ -2177,6 +2221,9 @@ if __name__ == "__main__":
         _colorless = True
         _verbose = True
         _debug = True
+        line_replace({
+            'name': ".env", 'after': "^BUILD=",
+            'replace': os.environ.get("BUILD_DISPLAY_NAME", "")})
     if _debug:
         levels['output'].append('debug')
     if not _branch_delete:

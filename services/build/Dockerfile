@@ -208,7 +208,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ### production
 FROM jessie_compile AS jessie_python_production_compiled
 RUN pip install \
-    click==4.0
+    click==7.1.2
 
 ### staging
 FROM jessie_python_production_compiled AS jessie_python_staging_compiled
@@ -216,20 +216,20 @@ FROM jessie_python_production_compiled AS jessie_python_staging_compiled
 ### testing
 FROM jessie_python_staging_compiled AS jessie_python_testing_compiled
 RUN pip install \
-    autoapi==2.0.0 \
-    coverage==4.5.1 \
-    flake8==3.9.0 \
+    autoapi==2.0.1 \
+    coverage==5.5 \
+    flake8==3.9.1 \
     nose==1.3.7 \
-    nose2==0.9.1 \
-    pytest==4.6.5 \
+    nose2==0.10.0 \
+    pytest==4.6.11 \
     sphinx==1.8.5 \
-    sphinx_rtd_theme==0.4.3 \
-    tox==3.14.0
+    sphinx_rtd_theme==0.5.2 \
+    tox==3.23.0
 
 ### development
 FROM jessie_python_testing_compiled AS jessie_python_development_compiled
 RUN pip install \
-    pdbpp==0.9.2
+    pdbpp==0.10.2
 
 ARG DEBUGGER_PTVSD
 RUN if [ ${DEBUGGER_PTVSD} -ne 0 ]; then pip install \
@@ -283,28 +283,28 @@ FROM jessie_echoprint_${ENVIRONMENT}_compiled AS jessie_echoprint_compiled
 FROM jessie_python_compiled AS jessie_trytond_production_compiled
 # trytond mandatory
 RUN pip install \
-    lxml==3.4.0 \
-    polib==1.0.5 \
-    python-dateutil==2.2 \
-    python-sql==0.4 \
-    relatorio==0.6.1
+    lxml==4.6.3 \
+    polib==1.1.1 \
+    python-dateutil==2.8.1 \
+    python-sql==1.2.1 \
+    relatorio==0.9.2
 # trytond optional
 RUN pip install \
     "proteus<3.5.0" \
     interlude==1.3.1 \
-    mock==1.0.1 \
+    mock==3.0.5 \
     py-bcrypt==0.4 \
-    psycopg2==2.5.4 \
+    psycopg2==2.8.6 \
     pydot==1.4.1 \
-    python-Levenshtein==0.11.2 \
+    python-Levenshtein==0.12.2 \
     PyWebDAV==0.9.8 \
-    simplejson==3.6.5
+    simplejson==3.17.2
 # additional
 RUN pip install \
     hurry.filesize==0.9 \
-    pyOpenSSL==17.5.0 \
-    pytz==2015.7 \
-    requests==2.18.4 \
+    pyOpenSSL==20.0.1 \
+    pytz==2021.1 \
+    requests==2.25.1 \
     vatnumber==1.2
 
 ### staging
@@ -325,21 +325,19 @@ FROM jessie_trytond_${ENVIRONMENT}_compiled AS jessie_trytond_compiled
 ### production
 FROM jessie_trytond_compiled AS jessie_pyramid_production_compiled
 RUN pip install \
-    colander==1.4 \
-    cornice==3.4.0 \
+    colander==1.8.3 \
+    cornice==4.0.1 \
     cornice-swagger==0.7.0 \
     cryptacular==1.4.1 \
-    Pillow==6.0.0 \
-    deform==2.0.5 \
-        # 29.5.18: requirement of deform 2.0.5 not handled automaticly
-        "iso8601<0.1.12" \
-    pyramid==1.9.2 \
+    Pillow==6.2.2 \
+    deform==2.0.6 \
+    pyramid==1.10.8 \
     pyramid-beaker==0.8 \
     pyramid-chameleon==0.3 \
     pyramid-mailer==0.15.1 \
-    python-magic==0.4.15 \
+    python-magic==0.4.22 \
     raven==6.10.0 \
-    waitress==1.1.0
+    waitress==1.4.4
 
 ### staging
 FROM jessie_pyramid_production_compiled AS jessie_pyramid_staging_compiled
@@ -347,13 +345,13 @@ FROM jessie_pyramid_production_compiled AS jessie_pyramid_staging_compiled
 ### testing
 FROM jessie_pyramid_staging_compiled AS jessie_pyramid_testing_compiled
 RUN pip install \
-    selenium==3.12.0 \
-    WebTest==2.0.29
+    selenium==3.141.0 \
+    WebTest==2.0.35
 
 ### development
 FROM jessie_pyramid_testing_compiled AS jessie_pyramid_development_compiled
 RUN pip install \
-    pyramid-debugtoolbar==4.4
+    pyramid-debugtoolbar==4.9
 
 ### result
 FROM jessie_pyramid_${ENVIRONMENT}_compiled AS jessie_pyramid_compiled
@@ -372,9 +370,9 @@ RUN git clone https://github.com/spotify/echoprint-codegen.git /opt/echoprint-co
 RUN pip install  \
     "proteus<3.5.0" \
     pyechonest==9.0.0  \
-    pydub==0.18.0  \
-    pytaglib==1.4.1  \
-    requests==2.18.4
+    pydub==0.25.1  \
+    pytaglib==1.4.6  \
+    requests==2.25.1
 
 ### staging
 FROM jessie_worker_production_compiled AS jessie_worker_staging_compiled
@@ -401,10 +399,6 @@ FROM postgres:9.6.16 AS database
 #--- WEBSERVER ----------------------------------------------------------------
 
 FROM jwilder/nginx-proxy AS webserver
-RUN { \
-      echo 'client_max_body_size 100m;'; \
-      echo 'error_log off;'; \
-    } > /etc/nginx/conf.d/my_proxy.conf
 
 
 #--- BROWSER ------------------------------------------------------------------

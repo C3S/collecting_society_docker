@@ -37,22 +37,31 @@
             "port": 51004,
             "host": "localhost"
         },
-        // the followint entry is for debugging demo data generation in
-        // volumes/shared/data. To create all dependencies for a so called
-        // 'leaf' dataset, for example 'sales' enter:
-        // $ execute db-rebuild --dataset sales
-        // which will create a Postgres template with a snapshot from before
-        // sales is applied. To debug sales and apply it again to the stored
-        // template use the --cache option:
-        // $ execute db-rebuild --dataset sales --cache
-        // if satisfied with sales, you may want to move on to a new dataset
-        // that depends on sales, e.g. sales_statistics, you could enter:
-        // execute db-copy --force collecting_society collecting_society_template
+        // use this to debug tryton wizards or to explore trytond internals:
         {
             "name": "ERPServer Attach",
             "type": "python",
             "request": "attach",
             "port": 51005,
+            "host": "localhost"
+        },
+        // the followint entry is for debugging demo data generation in
+        // volumes/shared/data. To create all dependencies for a so called
+        // 'leaf' dataset, for example 'sales' enter:
+        // $ docker-compose run --rm erpserver bash
+        // $ db-rebuild --dataset sales
+        // which will create a Postgres template with a snapshot from before
+        // sales is applied. To debug sales and apply it again to the stored
+        // template use the --cache option:
+        // $ db-rebuild --dataset sales --cache
+        // if satisfied with sales, you may want to move on to a new dataset
+        // that depends on sales, e.g. sales_statistics, you could enter:
+        // db-copy --force collecting_society collecting_society_template
+        {
+            "name": "Demodata Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51006,
             "host": "localhost"
         },
         {

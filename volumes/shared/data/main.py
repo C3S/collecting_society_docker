@@ -202,7 +202,7 @@ def generate(datasets=[], excludes=[], reclimit=0,
     if vs_debug:
         try:
             import ptvsd  # unconditional import breaks test coverage
-            ptvsd.enable_attach(address=("0.0.0.0", 51005),
+            ptvsd.enable_attach(address=("0.0.0.0", 51006),
                                 redirect_output=True)
             # uncomment these three lines, and set the debugging_port
             # accordingly, if you need to debug datasets:

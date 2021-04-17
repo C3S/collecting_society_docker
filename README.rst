@@ -60,6 +60,7 @@ Services
 | erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc | | shared          |
 |             |                     |                            | | 8069: xmlrpc  | | trytond-files   |
 |             |                     |                            | | 51005: ptvsd  |                   |
+|             |                     |                            | | 51006: ptvsd  |                   |
 +-------------+---------------------+----------------------------+-----------------+-------------------+
 | webserver   | Nginx Server        |                            | 80: http        | | shared          |
 |             |                     |                            |                 | | nginx-certs     |
@@ -569,6 +570,7 @@ Variable                           Values          Description
                                    | "staging"
                                    | "production"
 ``BRANCH``                         string          branch of project repositories
+``BUILD``                          string          build number added by ci
 ``COMPOSE_DOCKER_CLI_BUILD``       0|1             use BuildKit for docker builds
 ``COMPOSE_PROJECT_NAME``           string          prefix for containers
 ``COMPOSE_IGNORE_ORPHANS``         0|1             suppress orphan container warnings
@@ -1602,8 +1604,7 @@ Branches
 ''''''''
 
 Each project repository has a branch for all `environments`_. To switch a
-branch for all project repositories and set the ``ENVIRONMENT`` `.env`_
-variable to the environment::
+branch for all project repositories::
 
     $ ./project checkout BRANCH
 
