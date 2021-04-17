@@ -1604,8 +1604,7 @@ Branches
 ''''''''
 
 Each project repository has a branch for all `environments`_. To switch a
-branch for all project repositories and set the ``ENVIRONMENT`` `.env`_
-variable to the environment::
+branch for all project repositories::
 
     $ ./project checkout BRANCH
 
