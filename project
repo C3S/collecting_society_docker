@@ -485,7 +485,7 @@ def footer(string="Success.", _color="success", output=True, summary=True):
                  'description': "GIT_USER_NAME/EMAIL not set",
                  'data': "NOTE: commits will use `%s`" % git_data})
     # add commit ids
-    if _commitids:
+    if _command == "update" and _commitids:
         pad = 0
         for repo in _commitids:
             if len(repo) > pad:
