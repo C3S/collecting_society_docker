@@ -503,7 +503,7 @@ def footer(string="Success.", _color="success", output=True, summary=True):
                 data += old + " -> " + new
             data += "\n"
         message({'level': "note", 'title': "project repos",
-                 'action': "commit ids", 'data': data}, output=False)
+                 'action': "commit ids", 'data': data}, add=False)
     # determine what to output
     had_output = 0
     has_summary = False
