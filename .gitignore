@@ -78,7 +78,8 @@ tags
 /code
 /docs
 /tests
-/services/config
+/services/config/*
+!/services/config/nginx.proxy.conf
 /services/deploy
 /services/healthcheck
 /services/pip
