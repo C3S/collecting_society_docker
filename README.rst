@@ -118,7 +118,8 @@ Files
     │   │   ├── collecting_society.*        # (erpserver) trytond config / passfile
     │   │   ├── portal_web.*                # (webapi/gui) pyramid config
     │   │   ├── collecing_society_web.*     # (webapi/gui) pyramid plugin config
-    │   │   └── collecting_society_worker.* # (worker) worker config
+    │   │   ├── collecting_society_worker.* # (worker) worker config
+    │   │   └── nginx.proxy.conf            # (webserver) additional proxy wide nginx config
     │   │
     │   ├── deploy/                         # deployment scripts for services
     │   ├── healthcheck/                    # healthcheck scripts for services
