@@ -325,27 +325,39 @@ development:
             source: 'volumes/shared/docs/build/html'
       # checkout repos of pinned pip packages for reference
       - name: checkout repos of pinned pip packages for reference
-        actions: ['git_clone', 'git_checkout']
+        actions: ['git_clone', 'git_fetch', 'git_checkout']
         targetpath: 'volumes/shared/ref'
         batch:
+          - name: colander
+            source: 'https://github.com/Pylons/colander.git'
+            version: 'tags/1.8.3'
+          - name: cornice
+            source: 'https://github.com/Cornices/cornice.git'
+            version: 'tags/4.0.1'
+          - name: cornice_swagger
+            source: 'https://github.com/Cornices/cornice.ext.swagger.git'
+            version: 'tags/0.7.0'
           - name: click
             source: 'https://github.com/pallets/click.git'
-            version: 'tags/4.0'
-          - name: requests
-            source: 'https://github.com/requests/requests.git'
-            version: 'tags/v2.18.4'
-          - name: psycopg2
-            source: 'https://github.com/psycopg/psycopg2.git'
-            version: 'tags/2_5_4'
+            version: 'tags/7.1.2'
+          - name: deform
+            source: 'https://github.com/Pylons/deform.git'
+            version: 'tags/2.0.6'
+          - name: lxml
+            source: 'https://github.com/lxml/lxml.git'
+            version: 'tags/lxml-4.6.3'
+          - name: Pillow
+            source: 'https://github.com/python-pillow/Pillow.git'
+            version: 'tags/6.2.2'
           - name: proteus
             source: 'https://github.com/tryton/proteus.git'
             version: '${TRYTON_VERSION}'
-          - name: webob
-            source: 'https://github.com/Pylons/webob.git'
-            version: 'tags/1.8.2'
+          - name: psycopg2
+            source: 'https://github.com/psycopg/psycopg2.git'
+            version: 'tags/2_8_6'
           - name: pyramid
             source: 'https://github.com/Pylons/pyramid.git'
-            version: 'tags/1.9.2'
+            version: 'tags/1.10.8'
           - name: pyramid_beaker
             source: 'https://github.com/Pylons/pyramid_beaker.git'
             version: 'tags/0.8'
@@ -355,24 +367,42 @@ development:
           - name: pyramid_mailer
             source: 'https://github.com/Pylons/pyramid_mailer.git'
             version: 'tags/0.15.1'
-          - name: colander
-            source: 'https://github.com/Pylons/colander.git'
-            version: 'tags/1.4'
-          - name: cornice
-            source: 'https://github.com/Cornices/cornice.git'
-            version: 'tags/3.4.0'
-          - name: cornice_swagger
-            source: 'https://github.com/Cornices/cornice.ext.swagger.git'
-            version: 'tags/0.7.0'
-          - name: deform
-            source: 'https://github.com/Pylons/deform.git'
-            version: 'tags/2.0.5'
+          - name: python-magic
+            source: 'https://github.com/ahupp/python-magic.git'
+            version: 'tags/0.4.22'
+          - name: pydot
+            source: 'https://github.com/pydot/pydot.git'
+            version: 'tags/v1.4.1'
           - name: pydub
             source: 'https://github.com/jiaaro/pydub.git'
-            version: 'tags/v0.22.0'
-          - name: pytaglib
-            source: 'https://github.com/supermihi/pytaglib.git'
-            version: 'tags/v1.4.3'
+            version: 'tags/v0.25.1'
+          - name: pyopenssl
+            source: 'https://github.com/pyca/pyopenssl.git'
+            version: 'tags/20.0.1'
           - name: pyechonest
             source: 'https://github.com/echonest/pyechonest.git'
             version: 'tags/9.0.0'
+          - name: pytaglib
+            source: 'https://github.com/supermihi/pytaglib.git'
+            version: 'tags/v1.4.6'
+          - name: pytz
+            source: 'https://github.com/stub42/pytz.git'
+            version: 'tags/release_2021.1'
+          - name: requests
+            source: 'https://github.com/requests/requests.git'
+            version: 'tags/v2.25.1'
+          - name: simplejson
+            source: 'https://github.com/simplejson/simplejson.git'
+            version: 'tags/v3.17.2'
+          - name: vatnumber
+            source: 'https://github.com/chadjlucas/vatnumber.git'
+            version: 'tags/1.2'
+          - name: waitress
+            source: 'https://github.com/Pylons/waitress.git'
+            version: 'tags/v1.4.4'
+          - name: webob
+            source: 'https://github.com/Pylons/webob.git'
+            version: 'tags/1.8.2'
+          - name: webpy
+            source: 'https://github.com/webpy/webpy.git'
+            version: 'tags/0.51'
