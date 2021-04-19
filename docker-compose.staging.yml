@@ -16,6 +16,7 @@ services:
       - "127.0.0.1:8069:8069"  # xmlrpc (proteus)
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
+      - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
 
   webserver:
     # entrypoint: ["echo", "Service disabled in docker-compose.staging.yml."]
@@ -31,12 +32,14 @@ services:
       - "127.0.0.1:6544:6543"  # pyramid pserve
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
+      - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
 
   webgui:
     ports:
       - "127.0.0.1:6543:6543"  # pyramid pserve
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
+      - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
 
   fingerprint:
     volumes:
