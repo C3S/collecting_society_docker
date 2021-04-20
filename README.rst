@@ -10,7 +10,7 @@ The main resources can be found here:
 - Issues_
 - Wiki_
 
-.. _Documentation: https://files.c3s.cc/csdoku/index.html
+.. _Documentation: https://files.c3s.cc/collecting_society
 .. _Issues: https://redmine.c3s.cc/projects/collecting_society/issues
 .. _Wiki: https://redmine.c3s.cc/projects/collecting_society/wiki
 
