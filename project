@@ -1153,9 +1153,21 @@ def git_fetch(task, context={}):
     if targetpath:
         target = os.path.join(targetpath, target)
     version = task['version']
+    is_tag = task['version'].startswith("tags/")
 
-    # skip silently for tags
-    if version.startswith("tags/"):
+    # fetch for tags only if tag is switched
+    if is_tag:
+        checkedout_version = execute(
+            ('git', 'name-rev', '--name-only', 'HEAD'), cwd=target)
+        if checkedout_version.endswith("^0"):
+            checkedout_version = checkedout_version[:-2]
+        checkedout = checkedout_version == version
+        if checkedout:
+            context['action_group']['stopped'] = True
+            message({'description': "already checked out -> checkout skipped"})
+            return
+        execute(('git', 'fetch', 'origin', '+refs/%s:refs/%s' % (
+                 version, version)), cwd=target)
         return
 
     # find out, if remote branch exists
@@ -1422,9 +1434,10 @@ def git_pull(task, context={}):
     version = task['version']
     upstream = task.get('upstream', True)
     verbose = context['actions']['verbose']
+    is_tag = task['version'].startswith("tags/")
 
-    # skip pull silently for tags
-    if task['version'].startswith("tags/"):
+    # skip pull for tags
+    if is_tag:
         return
 
     # skip pull for local only branches

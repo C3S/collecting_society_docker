@@ -336,7 +336,6 @@ RUN pip install \
     pyramid-chameleon==0.3 \
     pyramid-mailer==0.15.1 \
     python-magic==0.4.22 \
-    raven==6.10.0 \
     waitress==1.4.4
 
 ### staging
@@ -345,6 +344,7 @@ FROM jessie_pyramid_production_compiled AS jessie_pyramid_staging_compiled
 ### testing
 FROM jessie_pyramid_staging_compiled AS jessie_pyramid_testing_compiled
 RUN pip install \
+    raven==6.10.0 \
     selenium==3.141.0 \
     WebTest==2.0.35
 

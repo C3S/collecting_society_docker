@@ -10,7 +10,7 @@ The main resources can be found here:
 - Issues_
 - Wiki_
 
-.. _Documentation: https://files.c3s.cc/csdoku/index.html
+.. _Documentation: https://files.c3s.cc/collecting_society
 .. _Issues: https://redmine.c3s.cc/projects/collecting_society/issues
 .. _Wiki: https://redmine.c3s.cc/projects/collecting_society/wiki
 
@@ -118,7 +118,8 @@ Files
     │   │   ├── collecting_society.*        # (erpserver) trytond config / passfile
     │   │   ├── portal_web.*                # (webapi/gui) pyramid config
     │   │   ├── collecing_society_web.*     # (webapi/gui) pyramid plugin config
-    │   │   └── collecting_society_worker.* # (worker) worker config
+    │   │   ├── collecting_society_worker.* # (worker) worker config
+    │   │   └── nginx.proxy.conf            # (webserver) additional proxy wide nginx config
     │   │
     │   ├── deploy/                         # deployment scripts for services
     │   ├── healthcheck/                    # healthcheck scripts for services
