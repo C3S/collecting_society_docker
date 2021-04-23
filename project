@@ -1,19 +1,6 @@
 #!/usr/bin/env -S python3 -B
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
-"""
-Usage: ./scripts/update [--reset] [--diff] [--help]
-
-  This script updates the project:
-    - Creation of files and folders
-    - Copy of FILE.example files to FILE
-    - Checkout/Pull of the source repositories (including this one)
-    - Checkout/Pull of the reference repositories
-
-Options:
-  --reset: overrides the configuration files with .example
-  --diff: just outputs the diff of .example files, performs no other updates
-"""
 
 import os
 import sys
@@ -1057,7 +1044,7 @@ def git_user(task, context={}):
             cwd=target)
     execute(('git', 'config', 'user.email', '"{}"'.format(git_email)),
             cwd=target)
-    execute(('git', 'config', 'user.signingKey', '"{}"'.format(git_key)),
+    execute(('git', 'config', 'user.signingKey', '{}'.format(git_key)),
             cwd=target)
     execute(('git', 'config', 'commit.gpgSign', '{}'.format(git_sign)),
             cwd=target)
