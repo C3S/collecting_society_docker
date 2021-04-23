@@ -27,6 +27,20 @@
             "port": 51002,
             "host": "localhost"
         },
+        // for debugging tests, put "test_web" as service in .devcontainer
+        // and run for example: ./service-test web --keep --path src/collecting_society_web/collecting_society_web/tests/integration/web_user.py:TestWebUser
+        // finally add these lines to your test:
+        // import ptvsd
+        // ptvsd.enable_attach(address=("0.0.0.0", 51003), redirect_output=True)
+        // ptvsd.wait_for_attach()
+        // ptvsd.break_into_debugger()
+        {
+            "name": "Test Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51003,
+            "host": "localhost"
+        },
         // the followint entry is for other cases, e.g.tests; insert this line:
         // import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51004), redirect_output=True); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
         // don't forget to open the resp. port in the docker-compose.yml!
