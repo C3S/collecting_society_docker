@@ -398,7 +398,7 @@ FROM postgres:9.6.16 AS database
 
 #--- WEBSERVER ----------------------------------------------------------------
 
-FROM jwilder/nginx-proxy AS webserver
+FROM jwilder/nginx-proxy:v0.9.0 AS webserver
 
 
 #--- BROWSER ------------------------------------------------------------------
