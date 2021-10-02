@@ -60,7 +60,8 @@
             "host": "localhost"
         },
         // the followint entry is for debugging demo data generation in
-        // volumes/shared/data. To create all dependencies for a so called
+        // volumes/shared/data. Uncomment 'ptvsd.wait_for_attach()' in
+        // shared/data/main.py. To create all dependencies for a so called
         // 'leaf' dataset, for example 'sales' enter:
         // $ docker-compose run --rm erpserver bash
         // $ db-rebuild --dataset sales
@@ -71,6 +72,7 @@
         // if satisfied with sales, you may want to move on to a new dataset
         // that depends on sales, e.g. sales_statistics, you could enter:
         // db-copy --force collecting_society collecting_society_template
+        // for more info: https://files.c3s.cc/collecting_society/development/generated/collecting_society_docker_README.html#id29
         {
             "name": "Demodata Attach",
             "type": "python",

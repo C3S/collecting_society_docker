@@ -204,8 +204,8 @@ def generate(datasets=[], excludes=[], reclimit=0,
             import ptvsd  # unconditional import breaks test coverage
             ptvsd.enable_attach(address=("0.0.0.0", 51006),
                                 redirect_output=True)
-            # uncomment these three lines, and set the debugging_port
-            # accordingly, if you need to debug datasets:
+            # uncomment these  line(s), and select "Demodata Attach" in VS Code
+            # if you need to debug datasets:
             # ptvsd.wait_for_attach()
             # ptvsd.break_into_debugger()
         except Exception as ex:

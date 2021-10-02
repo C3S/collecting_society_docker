@@ -12,8 +12,7 @@ import random
 from proteus import Model
 
 DEPENDS = [
-    'declaration',
-    'distribution_plan'
+    'declaration'
 ]
 
 
@@ -29,7 +28,7 @@ def generate(reclimit=0):
     all_distribution_plans = DistributionPlan.find([])
 
     # create one utilization per declaration -- no longer needed: utilization
-    #                                           gets created with declaration
+    #                                           gets created with declaration!
     #for declaration in all_declarations:
     #    Utilisation(
     #        declaration=declaration,
