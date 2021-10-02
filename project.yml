@@ -131,7 +131,8 @@ production:
         batch:
           - name: .env
             ignore: ['^ENVIRONMENT', '^BRANCH=', '^BUILD=', '^GIT_SSH=',
-                     '^GIT_USER_NAME=', '^GIT_USER_EMAIL=', '^GIT_USER_SIGNINGKEY']
+                     '^GIT_USER_NAME=', '^GIT_USER_EMAIL=', '^GIT_USER_SIGNINGKEY=',
+                     '^DEBUGGER_WINPDB=', '^DEBUGGER_PTVSD=']
           - name: services/webgui.env
             ignore: ['^PYRAMID_AUTHENTICATION_SECRET=', '^PYRAMID_SESSION_SECRET=']
           - name: services/webapi.env
