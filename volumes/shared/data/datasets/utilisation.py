@@ -28,14 +28,17 @@ def generate(reclimit=0):
     all_declarations = Declaration.find([])
     all_distribution_plans = DistributionPlan.find([])
 
-    # create one utilization per declaration
-    for declaration in all_declarations:
-        Utilisation(
-            declaration=declaration,
-            licensee=declaration.licensee,
-            state=declaration.state,
-            start=declaration.creation_time,
-            tariff=declaration.tariff,
-            context=declaration.context,
-            distribution_plan=random.choice(all_distribution_plans)
-        ).save()
+    # create one utilization per declaration -- no longer needed: utilization
+    #                                           gets created with declaration
+    #for declaration in all_declarations:
+    #    Utilisation(
+    #        declaration=declaration,
+    #        licensee=declaration.licensee,
+    #        state=declaration.state,
+    #        start=declaration.creation_time,
+    #        tariff=declaration.tariff,
+    #        context=declaration.context,
+    #        distribution_plan=random.choice(all_distribution_plans)
+    #    ).save()
+
+
