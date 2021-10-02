@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create a chart of the accounts
+Create the account chart for financial bookkeeping
 """
 
 from proteus import Model, Wizard
