@@ -2346,7 +2346,7 @@ database, just use your prefered method:
 
 * via `db-rebuild CLI`_ command inside the *erpserver* container::
 
-    > db-rebuild
+    > ./db-rebuild
 
 The generation script will output some useful information during the run:
 
