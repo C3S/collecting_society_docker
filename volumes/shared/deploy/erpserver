@@ -6,7 +6,7 @@
 
 DEV=""
 if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "staging" ]; then
-    DEV="--dev"
+    DEV="--dev -vv"
 fi
 
 if [ "$DEBUGGER_PTVSD" = "1" ]; then

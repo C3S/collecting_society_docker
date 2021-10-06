@@ -4,10 +4,10 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Import and translate currencies, using import_currencies script
+Import and translate countries and subdivisions, using import_countries script
 """
 
-from trytond.modules.currency.scripts import import_currencies
+from trytond.modules.country.scripts import import_countries
 
 DEPENDS = [
     'language',
@@ -15,4 +15,4 @@ DEPENDS = [
 
 
 def generate(reclimit=0):
-    import_currencies.do_import()
+    import_countries.do_import()

@@ -349,6 +349,9 @@ For ``staging`` and ``production`` environments:
    ========================================================= ===================================
    File                                                      Variable
    ========================================================= ===================================
+   ``sevices/database.env``                                  | ``POSTGRES_PASSWORD``
+   ``sevices/erpserver.env``                                 | ``PGPASSWORD``
+                                                             | ``TRYTON_EMAIL``
    ``sevices/webapi.env``                                    | ``PYRAMID_AUTHENTICATION_SECRET``
                                                              | ``PYRAMID_SESSION_SECRET``
    ``sevices/webgui.env``                                    | ``PYRAMID_AUTHENTICATION_SECRET``
@@ -612,6 +615,21 @@ Variable                           Values          Description
 ``WORKER_DISEMBODY_DROPPED_FILES`` "yes"|"no"      delete upload content to save space
 ================================== =============== =====================================
 
+database
+''''''''
+
+================================= =============== =====================================
+``POSTGRES_PASSWORD``             string          superuser password for postgresql
+================================= =============== =====================================
+
+erpserver
+'''''''''
+
+================================= =============== =====================================
+``PGPASSWORD``                    string          password for postgresql connections
+``TRYTON_EMAIL``                  string          email address of tryton admin user
+================================= =============== =====================================
+
 webapi
 ''''''
 
@@ -849,6 +867,7 @@ Setup   ``docker-compose [exec|run --rm] erpserver db-setup [NAME]``
 Rebuild | ``docker-compose [exec|run --rm] erpserver db-rebuild [NAME]``
         | ``./db-rebuild``
 Examine ``docker-compose run --rm erpserver db-connect [NAME]``
+Console ``docker-compose run --rm erpserver db-console [NAME]``
 ======= =========================================================================================
 
 .. note:: ``[NAME]`` is optional and defaults to ``collecting_society``.
@@ -1175,6 +1194,7 @@ For example::
     Commands:
       db-backup            Dumps the postgres database DBNAME to stdout.
       db-connect           Opens a SQL console for the database DBNAME.
+      db-console           Opens trytond console.
       db-copy              Creates the postrges database DBNAME_DST from...
       db-create            Creates the postrges database DBNAME.
       db-delete            Deletes the postrges database DBNAME.
@@ -1214,6 +1234,21 @@ db-connect
 
     Options:
       --help  Show this message and exit.
+
+.. _db-console CLI:
+
+db-console
+''''''''''
+::
+
+    $ db-console --help
+    Usage: cli [OPTIONS] COMMAND [ARGS]...
+
+      Command line interface to setup and maintain services in docker containers.
+
+    Options:
+      --help  Show this message and exit.
+
 
 .. _db-copy CLI:
 
@@ -1944,6 +1979,10 @@ To connect to Trytond with the Tryton client, see `Tryton Usage`_.
 
 .. note:: Start Tryton with the ``-d/--debug`` flag to disable caching.
 
+To start a trytond console::
+
+    > db-console
+
 You can now start coding:
 
 ======================================== =================================
@@ -2077,6 +2116,15 @@ Install winpdb also outside the container and run it::
 The processing container can be setup for debugging the same way. Make sure to
 only enable either of the both containers for debugging, not both the same
 time.
+
+Trytond Console
+---------------
+
+Tryton can start an interactive python console with all necessary modules
+loaded::
+
+    $ docker-compose run --rm erpserver db-console
+
 
 .. _Application Tests:
 

@@ -30,7 +30,7 @@ def generate(reclimit=0):
         admin = User(
             name="Storehouse Admin %s" % str(number).zfill(3),
             login="storehouse%s" % str(number).zfill(3),
-            password="%s" % number
+            password="storehouseadmin%s" % str(number).zfill(3)
         )
         admin.save()
         # storehouse

@@ -18,7 +18,7 @@ def generate(reclimit=0):
 
     # models
     Release = Model.get('release')
-    ReleaseIdentifierSpace = Model.get('release.identifier.space')
+    ReleaseIdentifierSpace = Model.get('release.cs_identifier.space')
 
     # entries
     releases = Release.find([])
@@ -29,14 +29,14 @@ def generate(reclimit=0):
     for i, release in enumerate(releases, start=1):
 
         # grid
-        grid = release.identifiers.new()
+        grid = release.cs_identifiers.new()
         grid.space = space_grid
         grid.id_code = "%s-%s-%s-%s" % (
             'A1', 'ABCDE', str(i).zfill(10), 'M'
         )
 
         # eanupc
-        eanupc = release.identifiers.new()
+        eanupc = release.cs_identifiers.new()
         eanupc.space = space_grid
         eanupc.id_code = "%s" % str(i).zfill(13)
 

@@ -107,7 +107,7 @@ def generate(reclimit=0):
             ('claim_state', '!=', 'unclaimed'),
             ('group', '=', False)])
         for j in range(0, add_solo_artists_per_group):
-            if solos <= group.solo_artists:
+            if set(solos) <= set(group.solo_artists):
                 continue
             solo = random.choice(solos)
             while solo in group.solo_artists:

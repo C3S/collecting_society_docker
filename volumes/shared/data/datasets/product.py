@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the products
+Modify the products
 """
 
 from proteus import Model
@@ -17,17 +17,14 @@ DEPENDS = [
 def generate(reclimit=0):
 
     # models
-    ProductTemplate = Model.get('product.template')
     Product = Model.get('product.product')
 
     # entries
-    templates = ProductTemplate.find()
+    products = Product.find()
 
-    # create products
-    for template in templates:
-        product = Product()
-        product.template = template
-        product.code = template.name[0]
-        product.description = template.name
+    # modify products
+    for product in products:
+        product.code = product.name[0]
+        product.description = product.name
         product.active = True
         product.save()

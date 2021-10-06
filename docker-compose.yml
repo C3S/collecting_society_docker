@@ -27,6 +27,8 @@ services:
       - ./volumes/shared:/shared
     networks:
       - backend
+    env_file:
+      - services/database.env
     environment:
       SERVICE: database
 
@@ -48,10 +50,11 @@ services:
     depends_on:
       database:
         condition: service_healthy
-      fingerprint:
-        condition: service_started
+      #fingerprint:
+      #  condition: service_started
     env_file:
       - .env
+      - services/erpserver.env
     environment:
       SERVICE: erpserver
 

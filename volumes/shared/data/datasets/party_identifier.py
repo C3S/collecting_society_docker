@@ -21,7 +21,7 @@ def generate(reclimit=0):
 
     # models
     Party = Model.get('party.party')
-    PartyIdentifierSpace = Model.get('party.identifier.space')
+    PartyIdentifierSpace = Model.get('party.cs_identifier.space')
 
     # entries
     parties = Party.find([])
@@ -36,17 +36,17 @@ def generate(reclimit=0):
     for i, party in enumerate(parties, start=1):
 
         # ipi
-        ipi = party.identifiers.new()
+        ipi = party.cs_identifiers.new()
         ipi.space = space_ipi
         ipi.id_code = "%s" % str(i).zfill(11)
 
         # isni
-        isni = party.identifiers.new()
+        isni = party.cs_identifiers.new()
         isni.space = space_isni
         isni.id_code = "%s" % str(i).zfill(16)
 
         # ddexpi
-        ddexpi = party.identifiers.new()
+        ddexpi = party.cs_identifiers.new()
         ddexpi.space = space_ddexpi
         ddexpi.id_code = "%s-%s-%s-%s" % (
             'PA', 'DPIDA', str(i).zfill(10), 'G'

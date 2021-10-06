@@ -49,7 +49,7 @@ def generate(reclimit=0):
             _ = party.addresses.pop()
             party.addresses.new(
                 street='Teststreet %s' % str(number),
-                zip=str(10000+number).zfill(5),
+                postal_code=str(10000+number).zfill(5),
                 city='Testcity',
                 country=germany
             )
@@ -81,7 +81,7 @@ def generate(reclimit=0):
             _ = party.addresses.pop()
             party.addresses.new(
                 street='Teststreet %s' % str(number),
-                zip=str(10000+number).zfill(5),
+                postal_code=str(10000+number).zfill(5),
                 city='Testcity',
                 country=germany
             )

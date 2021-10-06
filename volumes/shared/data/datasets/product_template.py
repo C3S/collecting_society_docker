@@ -12,41 +12,41 @@ from decimal import Decimal
 from proteus import Model
 
 DEPENDS = [
-    'account_chart',
+    'product_category',
 ]
 
 
 def generate(reclimit=0):
 
     # models
-    Account = Model.get('account.account')
-    Tax = Model.get('account.tax')
+    ProductCategory = Model.get('product.category')
     ProductTemplate = Model.get('product.template')
     ProductUom = Model.get('product.uom')
 
     # entries
-    unit, = ProductUom.find(['name', '=', 'Unit'])
-    account8400, = Account.find([('code', '=', "8400")])
-    tax19, = Tax.find([('name', '=', "19% Umsatzsteuer")])
-    tax0, = Tax.find([('name', '=', "nicht steuerbar")])
+    unit, = ProductUom.find(['name', '=', 'Stück'], limit=1)
+    administration_category, = ProductCategory.find(
+        ['name', '=', 'Administration Amount'], limit=1)
+    distribution_category, = ProductCategory.find(
+        ['name', '=', 'Distribution Amount'], limit=1)
 
     # create product templates
     administration = ProductTemplate()
     administration.name = "Administration Amount"
     administration.type = "service"
+    administration.code = "A"
+    administration.account_category = administration_category
     administration.default_uom = unit
     administration.list_price = Decimal(0)
     administration.cost_price = Decimal(0)
-    administration.account_revenue = account8400
-    administration.customer_taxes.extend([tax19])
     administration.save()
 
     distribution = ProductTemplate()
     distribution.name = "Distribution Amount"
     distribution.type = "service"
+    distribution.code = "D"
+    distribution.account_category = distribution_category
     distribution.default_uom = unit
     distribution.list_price = Decimal(0)
     distribution.cost_price = Decimal(0)
-    distribution.account_revenue = account8400
-    distribution.customer_taxes.extend([tax0])
     distribution.save()
