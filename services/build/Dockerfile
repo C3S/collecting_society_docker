@@ -5,7 +5,7 @@ ARG DEBUGGER_PTVSD
 
 
 #==============================================================================
-# Base Images (Jessie)
+# Base Images (Debian)
 #==============================================================================
 
 #--- BASE ---------------------------------------------------------------------
@@ -144,22 +144,21 @@ FROM echoprint_testing AS echoprint_development
 FROM echoprint_${ENVIRONMENT} AS echoprint
 
 
-#--- base -> python -> WORKER -------------------------------------------------
+#--- base -> python -> PROTEUS ------------------------------------------------
 
 ### production
-FROM python AS worker_production
+FROM python AS proteus_production
 RUN apt-get update && apt-get install -y --no-install-recommends \
         cron \
-        libav-tools \
-        libtag1-vanilla \
+        ffmpeg \
+        libtag1v5-vanilla \
     && rm -rf /var/lib/apt/lists/*
-RUN ln -s /usr/bin/avconv /usr/local/bin/ffmpeg
 
 ### staging
-FROM worker_production AS worker_staging
+FROM proteus_production AS proteus_staging
 
 ### testing
-FROM worker_staging AS worker_testing
+FROM proteus_staging AS proteus_testing
 # install database packages
 RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && apt-get update && apt-get install -y --no-install-recommends \
@@ -168,10 +167,10 @@ RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && rm -rf /usr/share/man/*
 
 ### development
-FROM worker_testing AS worker_development
+FROM proteus_testing AS proteus_development
 
 ### result
-FROM worker_${ENVIRONMENT} AS worker
+FROM proteus_${ENVIRONMENT} AS proteus
 
 
 #--- base -> python -> COMPILE ------------------------------------------------
@@ -268,8 +267,8 @@ RUN cd tokyotyrant-1.1.41 && ./configure --prefix=/opt/tokyotyrant/ --with-tc=/o
 
 # install python packages
 RUN pip install \
-    web.py==0.51 \
-    pyechonest==9.0.0
+    web.py \
+    pyechonest
 
 ### staging
 FROM echoprint_production_compiled AS echoprint_staging_compiled
@@ -342,18 +341,18 @@ FROM trytond_${ENVIRONMENT}_compiled AS trytond_compiled
 ### production
 FROM trytond_compiled AS pyramid_production_compiled
 RUN pip install \
-    colander==1.8.3 \
-    cornice==4.0.1 \
-    cornice-swagger==0.7.0 \
-    cryptacular==1.4.1 \
-    Pillow==6.2.2 \
-    deform==2.0.6 \
-    pyramid==1.10.8 \
-    pyramid-beaker==0.8 \
-    pyramid-chameleon==0.3 \
-    pyramid-mailer==0.15.1 \
-    python-magic==0.4.22 \
-    waitress==1.4.4
+    colander \
+    cornice \
+    cornice-swagger \
+    cryptacular \
+    Pillow \
+    deform \
+    pyramid \
+    pyramid-beaker \
+    pyramid-chameleon \
+    pyramid-mailer \
+    python-magic \
+    waitress
 
 ### staging
 FROM pyramid_production_compiled AS pyramid_staging_compiled
@@ -361,23 +360,23 @@ FROM pyramid_production_compiled AS pyramid_staging_compiled
 ### testing
 FROM pyramid_staging_compiled AS pyramid_testing_compiled
 RUN pip install \
-    raven==6.10.0 \
-    selenium==3.141.0 \
-    WebTest==2.0.35
+    raven \
+    selenium \
+    WebTest
 
 ### development
 FROM pyramid_testing_compiled AS pyramid_development_compiled
 RUN pip install \
-    pyramid-debugtoolbar==4.9
+    pyramid-debugtoolbar
 
 ### result
 FROM pyramid_${ENVIRONMENT}_compiled AS pyramid_compiled
 
 
-#--- [COMPILE] python -> WORKER -----------------------------------------------
+#--- [COMPILE] python -> PROTEUS ----------------------------------------------
 
 ### production
-FROM python_compiled AS worker_production_compiled
+FROM python_compiled AS proteus_production_compiled
 # compile echoprint-codegen
 RUN git clone https://github.com/spotify/echoprint-codegen.git /opt/echoprint-codegen \
     && git -C /opt/echoprint-codegen checkout v4.12 \
@@ -385,22 +384,23 @@ RUN git clone https://github.com/spotify/echoprint-codegen.git /opt/echoprint-co
     && chmod 755 /opt/echoprint-codegen/echoprint-codegen
 # install pip packages
 RUN pip install  \
-    pyechonest==9.0.0  \
-    pydub==0.25.1  \
-    pytaglib==1.4.6  \
-    requests==2.25.1
+    pyechonest \
+    pydub  \
+    pytaglib  \
+    python-dateutil \
+    requests
 
 ### staging
-FROM worker_production_compiled AS worker_staging_compiled
+FROM proteus_production_compiled AS proteus_staging_compiled
 
 ### testing
-FROM worker_staging_compiled AS worker_testing_compiled
+FROM proteus_staging_compiled AS proteus_testing_compiled
 
 ### development
-FROM worker_testing_compiled AS worker_development_compiled
+FROM proteus_testing_compiled AS proteus_development_compiled
 
 ### result
-FROM worker_${ENVIRONMENT}_compiled AS worker_compiled
+FROM proteus_${ENVIRONMENT}_compiled AS proteus_compiled
 
 
 #==============================================================================
@@ -422,7 +422,7 @@ FROM jwilder/nginx-proxy AS webserver
 FROM selenium/standalone-firefox AS browser
 
 
-#--- base -> python -> FINGERPRINTING -----------------------------------------
+#--- base -> python -> echoprint -> FINGERPRINT -------------------------------
 
 FROM echoprint AS fingerprint
 COPY --from=echoprint_compiled /opt/tokyocabinet/bin/* /bin/
@@ -433,11 +433,11 @@ COPY --from=echoprint_compiled /opt/tokyotyrant/lib/ttskel* /lib/
 COPY --from=echoprint_compiled /opt/venv /opt/venv
 
 
-#--- base -> python -> WORKER -------------------------------------------------
+#--- base -> python -> proteus -> WORKER --------------------------------------
 
-FROM worker AS worker
-COPY --from=worker_compiled /opt/echoprint-codegen/echoprint-codegen /usr/local/bin/echoprint-codegen
-COPY --from=worker_compiled /opt/venv /opt/venv
+FROM proteus AS worker
+COPY --from=proteus_compiled /opt/echoprint-codegen/echoprint-codegen /usr/local/bin/echoprint-codegen
+COPY --from=proteus_compiled /opt/venv /opt/venv
 COPY worker.cron /etc/cron.d/worker
 
 

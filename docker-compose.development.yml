@@ -3,13 +3,21 @@
 
 version: '2.4'
 
+networks:
+  frontend:
+  backend:
+
 services:
 
   database:
+    networks:
+      - backend
     volumes:
       - ./volumes/postgresql-data:/var/lib/postgresql/data
 
   erpserver:
+    networks:
+      - backend
     ports:
       - "127.0.0.1:8000:8000"  # jsonrpc (tryton client)
       - "127.0.0.1:8069:8069"  # xmlrpc (proteus)
@@ -19,6 +27,8 @@ services:
       - ./volumes/trytond-files:/var/lib/trytond
 
   webserver:
+    networks:
+      - frontend
     ports:
       - "127.0.0.1:80:80"  # http
     volumes:
@@ -29,6 +39,9 @@ services:
       driver: none
 
   webapi:
+    networks:
+      - frontend
+      - backend
     ports:
       - "127.0.0.1:6544:6543"  # pyramid pserve
       - "127.0.0.1:51001:51001"  # debugger
@@ -36,6 +49,9 @@ services:
       - ./volumes/trytond-files:/var/lib/trytond
 
   webgui:
+    networks:
+      - frontend
+      - backend
     ports:
       - "127.0.0.1:6543:6543"  # pyramid pserve
       - "127.0.0.1:51000:51000"  # debugger
@@ -43,10 +59,16 @@ services:
       - ./volumes/trytond-files:/var/lib/trytond
 
   worker:
+    networks:
+      - backend
     ports:
       - "127.0.0.1:51002:51002"  # debugger
+    environment:
+      PGPASSWORD: s0secret!!
 
   fingerprint:
+    networks:
+      - backend
     ports:
       - "127.0.0.1:8080:8080"  # http
       - "127.0.0.1:51004:51004"  # debugger

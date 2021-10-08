@@ -601,7 +601,7 @@ def service_healthcheck(context, service):
               help='Name of database (default: test)')
 @click.option('--reset/--no-reset', default=True,
               help='Reset the database (default: yes)')
-@click.option('--path', default=False,
+@click.option('--path', default='',
               help='Searchpath for tests (see nosetest)')
 @click.argument('service', default=SERVICE)
 @click.argument('nargs', nargs=-1, type=click.UNPROCESSED)
@@ -637,6 +637,9 @@ def service_test(context, service, dbname, reset, path, nargs):
     Additional NARGS will be passed to nosetests.
     """
     # Sanity check
+    if service in ['webgui', 'wepapi']:
+        print("Tests of webgui/webapi need to be started from host.")
+        exit(-1)
     if service not in ['erpserver', 'web', 'worker']:
         print("Service unknown.")
         exit(-1)
@@ -743,6 +746,7 @@ def service_test(context, service, dbname, reset, path, nargs):
         '--cover-inclusive',
         '--cover-package='+','.join(modules),
     ] + list(nargs) + list(paths)
+
     exitcode = subprocess.call(command)
     os.chdir(WORKDIR)
 

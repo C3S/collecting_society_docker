@@ -3,10 +3,6 @@
 
 version: '2.4'
 
-networks:
-  frontend:
-  backend:
-
 services:
 
   database:
@@ -25,8 +21,6 @@ services:
       retries: 5
     volumes:
       - ./volumes/shared:/shared
-    networks:
-      - backend
     env_file:
       - services/database.env
     environment:
@@ -43,15 +37,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - backend
     volumes:
       - ./volumes/shared:/shared
     depends_on:
       database:
         condition: service_healthy
-      #fingerprint:
-      #  condition: service_started
+      fingerprint:
+        condition: service_started
     env_file:
       - .env
       - services/erpserver.env
@@ -68,8 +60,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - frontend
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - ./volumes/shared:/shared
@@ -88,9 +78,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - frontend
-      - backend
     volumes:
       - ./volumes/shared:/shared
     depends_on:
@@ -117,9 +104,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - frontend
-      - backend
     volumes:
       - ./volumes/shared:/shared
     depends_on:
@@ -146,8 +130,6 @@ services:
       interval: 5m
       timeout: 5s
       retries: 5
-    networks:
-      - backend
     volumes:
       - ./volumes/shared:/shared
     depends_on:
@@ -172,8 +154,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - backend
     volumes:
       - ./volumes/shared:/shared
     env_file:

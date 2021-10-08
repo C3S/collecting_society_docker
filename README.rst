@@ -400,6 +400,8 @@ testing domains to localhost, add the following lines to ``/etc/hosts``::
 
 Test the connection by following the instructions in `Webbrowser Usage`_.
 
+.. _Tryton Installation:
+
 Tryton
 ------
 
@@ -1778,52 +1780,52 @@ image setup are:
 - The reason for both the division of compile/service branches as well as the
   substages matching the environment is to have **slimmer** images, **smaller**
   attack surfaces and a **faster** build time.
-- All images based on ``jessie_python`` use
+- All images based on ``python`` use
   ``volumes/shared/docker-entrypoint.sh`` as entrypoint to detect and execute
   `CLI`_ commands provided by the ``volumes/shared/cli`` script.
 
 The tree of the stages of the service branch (without substages)::
 
-                                   jessie_base
-                                        |
-                                  jessie_python
-               _________________________|___________________________
-              |                 |                |                  |
-       jessie_trytond    jessie_worker    jessie_echoprint    jessie_compile
-          |       |             |                |                  |
-    erpserver   webapi        worker        fingerprint       documentation
-                  |
-                webgui
+                               base
+                                |
+                              python
+               _________________|__________________
+              |           |           |            |
+           trytond     proteus    echoprint     compile
+            |   |         |           |            |
+     erpserver webapi   worker   fingerprint  documentation
+                |
+               webgui
 
 The tree of the stages of the compile branch (without substages)::
 
-                                   jessie_base
-                                        |
-                                  jessie_python
-                                        |
-                                  jessie_compile
-                                        |
-                              jessie_python_compiled
-               _________________________|__________________________
-              |                         |                          |
-    jessie_trytond_compiled   jessie_worker_compiled   jessie_echoprint_compiled
-              |
-    jessie_pyramid_compiled
+                            base
+                             |
+                           python
+                             |
+                          compile
+                             |
+                       python_compiled
+            _________________|____________________
+           |                 |                    |
+    trytond_compiled   proteus_compiled   echoprint_compiled
+           |
+    pyramid_compiled
 
 The copy relations:
 
-============= ====================================
+============= ====================
 Image         Copy Sources
-============= ====================================
-erpserver     jessie_trytond_compiled
-webapi        jessie_pyramid_compiled
-webgui        jessie_pyramid_compiled
-worker        jessie_worker_compiled
-fingerprint   jessie_echoprint_compiled
-documentation | jessie_trytond_compiled
-              | jessie_pyramid_compiled
-              | jessie_worker_compiled
-============= ====================================
+============= ====================
+erpserver     trytond_compiled
+webapi        pyramid_compiled
+webgui        pyramid_compiled
+worker        proteus_compiled
+fingerprint   echoprint_compiled
+documentation | trytond_compiled
+              | pyramid_compiled
+              | worker_compiled
+============= ====================
 
 Packages
 --------
@@ -2155,6 +2157,8 @@ To stop and remove the container, when you have finished, enter ::
 
 __ https://jenkins1b.c3s.cc/job/collecting_society/
 
+.. _Trytond Tests:
+
 Trytond
 '''''''
 
@@ -2189,6 +2193,8 @@ If you prefer, you can also execute the commands above from within the container
         > exit
 
     $ docker-compose -f docker-compose.testing.yml down
+
+.. _Worker Tests:
 
 Worker
 ''''''
@@ -2255,6 +2261,8 @@ If you prefer, you can also execute the commands above from within the container
 The rendered HTML output of the coverage can be accessed via::
 
     firefox volumes/shared/cover_worker/index.html
+
+.. _Pyramid Tests:
 
 Pyramid
 '''''''
