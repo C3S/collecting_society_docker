@@ -463,4 +463,4 @@ FROM webapi AS webgui
 FROM compile AS documentation
 COPY --from=trytond_compiled /opt/venv /opt/venv
 COPY --from=pyramid_compiled /opt/venv /opt/venv
-COPY --from=worker_compiled /opt/venv /opt/venv
+COPY --from=proteus_compiled /opt/venv /opt/venv
