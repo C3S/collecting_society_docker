@@ -628,11 +628,24 @@ def service_test(context, service, dbname, reset, path, nargs):
     If no PATH is given, all tests of portal_web and plugins are included.
     The test files should be stored below the following subpaths by convention:
 
-        <portal_web||plugin>/tests/unit (unittest)
+        <module>/tests/unit (unittest)
 
-        <portal_web||plugin>/tests/functional (webtest)
+        <module>/tests/functional (webtest)
 
-        <portal_web||plugin>/tests/integration (selenium)
+        <module>/tests/integration (selenium)
+
+    The PATH should start with `code/`, `volumes/shared/src/` or `src/`, e.g.:
+
+        --path code/portal_web/portal_web/tests
+        --path volumes/shared/src/portal_web/portal_web/tests
+        --path src/portal_web/portal_web/tests
+
+    The PATH may be one of the keywords `unit`, `functional` or `integration`
+    to run all the respective tests of all modules, e.g:
+
+        --path unit
+        --path functional
+        --path integration
 
     Additional NARGS will be passed to nosetests.
     """
@@ -721,11 +734,18 @@ def service_test(context, service, dbname, reset, path, nargs):
         modules.append(module)
         testpaths.append(os.path.join(basepath, module, 'tests'))
     if path:
-        paths = [os.path.join(WORKDIR, path)]
+        if path in ['unit', 'functional', 'integration']:
+            paths = [os.path.join(p, path) for p in testpaths]
+        else:
+            if path.startswith('code/'):
+                path = 'src/' + path[4:]
+            if path.startswith('volumes/shared/src'):
+                path = 'src/' + path[18:]
+            paths = [os.path.join(WORKDIR, path)]
     else:
-        paths = [os.path.join(path, 'unit') for path in testpaths] +\
-                [os.path.join(path, 'functional') for path in testpaths] +\
-                [os.path.join(path, 'integration') for path in testpaths]
+        paths = [os.path.join(p, 'unit') for p in testpaths] +\
+                [os.path.join(p, 'functional') for p in testpaths] +\
+                [os.path.join(p, 'integration') for p in testpaths]
 
     # Start tests
     print("\nSTART TESTS ...\n")
