@@ -3129,6 +3129,11 @@ Wrap-up
 
                 ./project commit "fixes merge conflicts"
 
+        - Run tests
+            ::
+
+                ./service-test --keep
+
     - Merge feature branch into ``development`` branch
         ::
 
