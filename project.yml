@@ -152,9 +152,11 @@ production:
           - name: services/erpserver.env
             ignore: ['^PGPASSWORD=', '^TRYTON_EMAIL=']
           - name: services/webgui.env
-            ignore: ['^PYRAMID_AUTHENTICATION_SECRET=', '^PYRAMID_SESSION_SECRET=']
+            ignore: ['^PGPASSWORD=', '^PYRAMID_AUTHENTICATION_SECRET=',
+                     '^PYRAMID_SESSION_SECRET=']
           - name: services/webapi.env
-            ignore: ['^PYRAMID_AUTHENTICATION_SECRET=', '^PYRAMID_SESSION_SECRET=']
+            ignore: ['^PGPASSWORD=', '^PYRAMID_AUTHENTICATION_SECRET=',
+                     '^PYRAMID_SESSION_SECRET=']
           - name: services/worker.env
             ignore: ['^ECHOPRINT_TOKEN=', '^WORKER_PROTEUS_PASSWORD=']
           - name: volumes/shared/config/trytond/production.conf
@@ -352,76 +354,138 @@ development:
             version: 'tags/1.8.3'
           - name: cornice
             source: 'https://github.com/Cornices/cornice.git'
-            version: 'tags/4.0.1'
+            version: 'tags/6.0.0'
           - name: cornice_swagger
             source: 'https://github.com/Cornices/cornice.ext.swagger.git'
-            version: 'tags/0.7.0'
+            version: 'tags/1.0.1'
           - name: click
             source: 'https://github.com/pallets/click.git'
-            version: 'tags/7.1.2'
+            version: 'tags/8.0.1'
+          - name: cryptacular
+            source: 'https://github.com/dholth/cryptacular.git'
+            version: 'master'
           - name: deform
             source: 'https://github.com/Pylons/deform.git'
-            version: 'tags/2.0.6'
+            version: 'tags/2.0.15'
+          - name: forex-python
+            source: 'https://github.com/MicroPyramid/forex-python.git'
+            version: 'tags/1.6'
+          - name: genshi
+            source: 'https://github.com/edgewall/genshi.git'
+            version: 'tags/0.7.5'
+          - name: gevent
+            source: 'https://github.com/gevent/gevent.git'
+            version: 'tags/21.8.0'
+          - name: html2text
+            source: 'https://github.com/Alir3z4/html2text.git'
+            version: 'tags/2020.1.16'
+          # - name: hurry.filesize
+          #   source: '?'
+          #   version: 'tags/0.9'
+          #   => source not found
           - name: lxml
             source: 'https://github.com/lxml/lxml.git'
             version: 'tags/lxml-4.6.3'
+          # - name: passlib
+          #   source: 'https://foss.heptapod.net/python-libs/passlib'
+          #   version: 'tags/1.7.4'
+          #   => hg only
           - name: Pillow
             source: 'https://github.com/python-pillow/Pillow.git'
-            version: 'tags/6.2.2'
-          - name: proteus
-            source: 'https://github.com/tryton/proteus.git'
-            version: '${TRYTON_VERSION}'
+            version: 'tags/8.3.2'
+          - name: polib
+            source: 'https://github.com/izimobil/polib.git'
+            version: 'tags/1.1.1'
           - name: psycopg2
             source: 'https://github.com/psycopg/psycopg2.git'
-            version: 'tags/2_8_6'
+            version: 'tags/2_9_1'
+          - name: pycountry
+            source: 'https://github.com/flyingcircusio/pycountry.git'
+            version: 'tags/20.7.3'
+          - name: pydot
+            source: 'https://github.com/pydot/pydot.git'
+            version: 'tags/v1.4.2'
+          - name: pydub
+            source: 'https://github.com/jiaaro/pydub.git'
+            version: 'tags/v0.25.1'
+          - name: pyechonest
+            source: 'https://github.com/echonest/pyechonest.git'
+            version: 'tags/9.0.0'
+          - name: pyopenssl
+            source: 'https://github.com/pyca/pyopenssl.git'
+            version: 'tags/21.0.0'
+          - name: pytaglib
+            source: 'https://github.com/supermihi/pytaglib.git'
+            version: 'tags/v1.4.6'
           - name: pyramid
             source: 'https://github.com/Pylons/pyramid.git'
-            version: 'tags/1.10.8'
+            version: 'tags/2.0'
           - name: pyramid_beaker
             source: 'https://github.com/Pylons/pyramid_beaker.git'
             version: 'tags/0.8'
+          - name: pyramid_debugtoolbar
+            source: 'https://github.com/Pylons/pyramid_debugtoolbar.git'
+            version: 'tags/4.9'
           - name: pyramid_chameleon
             source: 'https://github.com/Pylons/pyramid_chameleon.git'
             version: 'tags/0.3'
           - name: pyramid_mailer
             source: 'https://github.com/Pylons/pyramid_mailer.git'
             version: 'tags/0.15.1'
+          - name: python-dateutil
+            source: 'https://github.com/dateutil/dateutil.git'
+            version: 'tags/2.8.2'
+          - name: python-Levenshtein
+            source: 'https://github.com/ztane/python-Levenshtein.git'
+            version: 'master'
           - name: python-magic
             source: 'https://github.com/ahupp/python-magic.git'
-            version: 'tags/0.4.22'
-          - name: pydot
-            source: 'https://github.com/pydot/pydot.git'
-            version: 'tags/v1.4.1'
-          - name: pydub
-            source: 'https://github.com/jiaaro/pydub.git'
-            version: 'tags/v0.25.1'
-          - name: pyopenssl
-            source: 'https://github.com/pyca/pyopenssl.git'
-            version: 'tags/20.0.1'
-          - name: pyechonest
-            source: 'https://github.com/echonest/pyechonest.git'
-            version: 'tags/9.0.0'
-          - name: pytaglib
-            source: 'https://github.com/supermihi/pytaglib.git'
-            version: 'tags/v1.4.6'
+            version: 'tags/0.4.24'
+          # - name: python-sql
+          #   source: 'https://hg.tryton.org/python-sql'
+          #   version: 'tags/1.3.0'
+          #   => hg only
           - name: pytz
             source: 'https://github.com/stub42/pytz.git'
-            version: 'tags/release_2021.1'
+            version: 'tags/release_2021.3'
+          - name: raven-python
+            source: 'https://github.com/getsentry/raven-python.git'
+            version: 'tags/6.10.0'
+          # - name: relatorio
+          #   source: 'https://hg.tryton.org/relatorio'
+          #   version: 'tags/0.10.0'
+          #   => hg only
+          # - name: selenium
+          #   source: 'https://github.com/SeleniumHQ/selenium.git'
+          #   version: 'tags/selenium-3.141.0'
+          #   => > 200 MB
+          - name: simpleeval
+            source: 'https://github.com/danthedeckie/simpleeval.git'
+            version: 'tags/0.9.10'
           - name: requests
             source: 'https://github.com/requests/requests.git'
-            version: 'tags/v2.25.1'
-          - name: simplejson
-            source: 'https://github.com/simplejson/simplejson.git'
-            version: 'tags/v3.17.2'
+            version: 'tags/v2.26.0'
           - name: vatnumber
             source: 'https://github.com/chadjlucas/vatnumber.git'
             version: 'tags/1.2'
           - name: waitress
             source: 'https://github.com/Pylons/waitress.git'
-            version: 'tags/v1.4.4'
+            version: 'tags/v2.0.0'
+          - name: weasyprint
+            source: 'https://github.com/Kozea/WeasyPrint.git'
+            version: 'tags/v53.3'
           - name: webob
             source: 'https://github.com/Pylons/webob.git'
-            version: 'tags/1.8.2'
+            version: 'tags/1.8.7'
           - name: webpy
             source: 'https://github.com/webpy/webpy.git'
-            version: 'tags/0.51'
+            version: 'tags/0.62'
+          - name: webtest
+            source: 'https://github.com/Pylons/webtest.git'
+            version: 'tags/3.0.0'
+          - name: werkzeug
+            source: 'https://github.com/pallets/werkzeug.git'
+            version: 'tags/1.0.1'
+          - name: wrapt
+            source: 'https://github.com/GrahamDumpleton/wrapt.git'
+            version: 'tags/1.12.1'
