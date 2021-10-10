@@ -1602,9 +1602,9 @@ def git_merge(task, context={}):
     # delete feature branch
     if delete:
         git_delete({**task, **{'branch': source_branch}})
-
     # switch back to source branch
-    git_checkout({**task, **{'branch': source_branch}})
+    else:
+        git_checkout({**task, **{'branch': source_branch}})
 
 
 @action
