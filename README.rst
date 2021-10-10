@@ -238,8 +238,8 @@ Data
 
 ============================================ ==========================================================
 ``db-rebuild``                               `db-rebuild script`_ for the database and demodata
-``volumes/postgresql-data``                  Files of the postgres database
-``volumes/echoprint-data``                   Files of the echoprint database
+``volumes/postgresql-data/``                 Files of the postgres database
+``volumes/echoprint-data/``                  Files of the echoprint database
 ``volumes/shared/data/datasets/``            `Demodata`_ generation scripts for each tryton model
 ``volumes/shared/data/fingerprints/``        Ingestable demo fingerprints for echoprint
 ``volumes/shared/data/updloads/generate.sh`` Audiofile generation and compression script
@@ -349,6 +349,9 @@ For ``staging`` and ``production`` environments:
    ========================================================= ===================================
    File                                                      Variable
    ========================================================= ===================================
+   ``sevices/database.env``                                  | ``POSTGRES_PASSWORD``
+   ``sevices/erpserver.env``                                 | ``PGPASSWORD``
+                                                             | ``TRYTON_EMAIL``
    ``sevices/webapi.env``                                    | ``PYRAMID_AUTHENTICATION_SECRET``
                                                              | ``PYRAMID_SESSION_SECRET``
    ``sevices/webgui.env``                                    | ``PYRAMID_AUTHENTICATION_SECRET``
@@ -397,6 +400,8 @@ testing domains to localhost, add the following lines to ``/etc/hosts``::
 
 Test the connection by following the instructions in `Webbrowser Usage`_.
 
+.. _Tryton Installation:
+
 Tryton
 ------
 
@@ -407,65 +412,32 @@ Tryton client is recommended.
 .. note:: The Trytond server and the Tryton client are required to have the
     same version branch.
 
-.. warning:: As the Tryton branch ``3.4`` is quite outdated, some manual
-    installation steps are neccessary including the installation of outdated
-    python packages.
-
-Clone the repository and switch to the ``3.4`` branch::
+Clone the repository and switch to the ``6.0`` branch::
 
     $ cd MY/WORKING/SPACE
     $ git clone https://github.com/tryton/tryton.git
     $ cd tryton
-    $ git checkout 3.4
+    $ git checkout 6.0
 
 Depending on the OS, there might be different ways to install the dependencies
-(see ``doc/installation.rst`` and `tryton-client`__ package of Ubuntu 16)::
+(see ``doc/installation.rst`` and `tryton-client`__ package of Ubuntu 21).
+Summary for Debian/Ubuntu::
 
-    librsvg2-common
-    python >= 2.7
-    python-chardet
-    python-dateutil
-    python-gtk2 >= 2.22
+    apt-get install \
+        librsvg2-common \
+        python3 \
+        python3-cairo \
+        python3-chardet \
+        python3-dateutil \
+        python3-gi \
+        python3-gi-cairo \
+        python3-pkg-resources
 
-__ https://packages.ubuntu.com/xenial/tryton-client
-
-- **Ubuntu < 20.04**
-
-  All dependencies can be installed from the apt repositories::
-
-        $ sudo apt-get install librsvg2-common python python-chardet \
-            python-dateutil python-simplejson python-gtk2
-
-- **Ubuntu >= 20.04**
-
-  .. warning:: This method of installation is untested, so please be careful!
-
-  1. Install the dependencies available in the apt repositories::
-
-          $ sudo apt-get install librsvg2-common python2
-
-  2. As pygtk is not packaged and cannot be built by pip anymore, the only
-     option left is to install the last available pygkt from the `archive`__
-     (see working answer in `askubuntu`__). The other packages could be
-     installed with pip2, but as pip2 is also not packaged anymore, it might
-     be easier to install them via archive as well::
-
-          $ ARCHIVE=http://archive.ubuntu.com/ubuntu/pool/universe
-          $ wget $ARCHIVE/p/pygtk/python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
-          $ wget $ARCHIVE/s/six/python-six_1.15.0-2_all.deb
-          $ wget $ARCHIVE/c/chardet/python-chardet_3.0.4-4build1_all.deb
-          $ wget $ARCHIVE/p/python-dateutil/python-dateutil_2.7.3-3ubuntu1_all.deb
-          $ sudo apt-get install ./python-gtk2_2.24.0-5.1ubuntu2_amd64.deb
-          $ sudo apt-get install ./python-six_1.15.0-2_all.deb
-          $ sudo apt-get install ./python-chardet_3.0.4-4build1_all.deb
-          $ sudo apt-get install ./python-dateutil_2.7.3-3ubuntu1_all.deb
-
-__ http://archive.ubuntu.com/ubuntu/pool/universe/
-__ https://askubuntu.com/questions/1235271/pygtk-not-available-on-focal-fossa-20-04/1235347#1235347
+__ https://packages.ubuntu.com/hirsute/tryton-client
 
 Test, if Tryton is running::
 
-    $ python2 bin/tryton
+    $ python3 bin/tryton
 
 For easy startup create a startup script:
 
@@ -478,11 +450,15 @@ For easy startup create a startup script:
 
     #!/bin/bash
     TRYTONPATH=~/MY/WORKING/SPACE/tryton
-    python2 $TRYTONPATH/bin/tryton -d
+    python3 $TRYTONPATH/bin/tryton -d -v -l DEBUG
 
 3. Set the execution flag of the script::
 
     $ sudo chmod u+x /usr/local/bin/tryton
+
+4. Test the script::
+
+    $ tryton
 
 Test the connection by following the instructions in `Tryton Usage`_.
 
@@ -611,6 +587,21 @@ Variable                           Values          Description
 ``WORKER_PROTEUS_USER``            string          tryton username for proteus client
 ``WORKER_DISEMBODY_DROPPED_FILES`` "yes"|"no"      delete upload content to save space
 ================================== =============== =====================================
+
+database
+''''''''
+
+================================= =============== =====================================
+``POSTGRES_PASSWORD``             string          superuser password for postgresql
+================================= =============== =====================================
+
+erpserver
+'''''''''
+
+================================= =============== =====================================
+``PGPASSWORD``                    string          password for postgresql connections
+``TRYTON_EMAIL``                  string          email address of tryton admin user
+================================= =============== =====================================
 
 webapi
 ''''''
@@ -849,6 +840,7 @@ Setup   ``docker-compose [exec|run --rm] erpserver db-setup [NAME]``
 Rebuild | ``docker-compose [exec|run --rm] erpserver db-rebuild [NAME]``
         | ``./db-rebuild``
 Examine ``docker-compose run --rm erpserver db-connect [NAME]``
+Console ``docker-compose run --rm erpserver db-console [NAME]``
 ======= =========================================================================================
 
 .. note:: ``[NAME]`` is optional and defaults to ``collecting_society``.
@@ -1175,6 +1167,7 @@ For example::
     Commands:
       db-backup            Dumps the postgres database DBNAME to stdout.
       db-connect           Opens a SQL console for the database DBNAME.
+      db-console           Opens trytond console.
       db-copy              Creates the postrges database DBNAME_DST from...
       db-create            Creates the postrges database DBNAME.
       db-delete            Deletes the postrges database DBNAME.
@@ -1214,6 +1207,21 @@ db-connect
 
     Options:
       --help  Show this message and exit.
+
+.. _db-console CLI:
+
+db-console
+''''''''''
+::
+
+    $ db-console --help
+    Usage: cli [OPTIONS] COMMAND [ARGS]...
+
+      Command line interface to setup and maintain services in docker containers.
+
+    Options:
+      --help  Show this message and exit.
+
 
 .. _db-copy CLI:
 
@@ -1499,7 +1507,7 @@ Start Tryton::
     $ tryton
 
 .. note:: The Tryton client configuration files are stored in
-    ``~/.config/tryton/3.4/``.
+    ``~/.config/tryton/6.0/``.
 
 Open a connection to Trytond:
 
@@ -1512,7 +1520,7 @@ password   ``admin``
 
 .. seealso:: `Tryton Usage Documentation`__
 
-__ https://das-do.readthedocs.io/en/3.4/usage.html
+__ https://docs.tryton.org/projects/client-desktop/en/6.0/usage.html
 
 The database entries can be found in the navigation tree:
 
@@ -1743,52 +1751,52 @@ image setup are:
 - The reason for both the division of compile/service branches as well as the
   substages matching the environment is to have **slimmer** images, **smaller**
   attack surfaces and a **faster** build time.
-- All images based on ``jessie_python`` use
+- All images based on ``python`` use
   ``volumes/shared/docker-entrypoint.sh`` as entrypoint to detect and execute
   `CLI`_ commands provided by the ``volumes/shared/cli`` script.
 
-The tree of the stages of the service branch (without substages)::
+The tree of the stages of the **service branch** (without substages)::
 
-                                   jessie_base
-                                        |
-                                  jessie_python
-               _________________________|___________________________
-              |                 |                |                  |
-       jessie_trytond    jessie_worker    jessie_echoprint    jessie_compile
-          |       |             |                |                  |
-    erpserver   webapi        worker        fingerprint       documentation
-                  |
-                webgui
+                               base
+                                |
+                              python
+               _________________|__________________
+              |           |           |            |
+           trytond     proteus    echoprint     compile
+            |   |         |           |            |
+     erpserver webapi   worker   fingerprint  documentation
+                |
+               webgui
 
-The tree of the stages of the compile branch (without substages)::
+The tree of the stages of the **compile branch** (without substages)::
 
-                                   jessie_base
-                                        |
-                                  jessie_python
-                                        |
-                                  jessie_compile
-                                        |
-                              jessie_python_compiled
-               _________________________|__________________________
-              |                         |                          |
-    jessie_trytond_compiled   jessie_worker_compiled   jessie_echoprint_compiled
-              |
-    jessie_pyramid_compiled
+                            base
+                             |
+                           python
+                             |
+                          compile
+                             |
+                       python_compiled
+            _________________|____________________
+           |                 |                    |
+    trytond_compiled   proteus_compiled   echoprint_compiled
+           |
+    pyramid_compiled
 
 The copy relations:
 
-============= ====================================
+============= ====================
 Image         Copy Sources
-============= ====================================
-erpserver     jessie_trytond_compiled
-webapi        jessie_pyramid_compiled
-webgui        jessie_pyramid_compiled
-worker        jessie_worker_compiled
-fingerprint   jessie_echoprint_compiled
-documentation | jessie_trytond_compiled
-              | jessie_pyramid_compiled
-              | jessie_worker_compiled
-============= ====================================
+============= ====================
+erpserver     trytond_compiled
+webapi        pyramid_compiled
+webgui        pyramid_compiled
+worker        proteus_compiled
+fingerprint   echoprint_compiled
+documentation | trytond_compiled
+              | pyramid_compiled
+              | worker_compiled
+============= ====================
 
 Packages
 --------
@@ -1930,7 +1938,7 @@ within the erpserver:
 
 2. Start the second terminal, open another bash in the running container::
 
-    $ docker exec -it $(docker ps -a | grep ":8000" | cut -d' ' -f1) bash
+    $ docker-compose exec erpserver bash
 
    To update the collecting_society module for the database::
 
@@ -1940,27 +1948,34 @@ within the erpserver:
 
     > db-update -m all
 
+To start a trytond console (interactive python console with pool initialized)::
+
+    > db-console
+
 To connect to Trytond with the Tryton client, see `Tryton Usage`_.
 
-.. note:: Start Tryton with the ``-d/--debug`` flag to disable caching.
+.. note:: Start Tryton with the ``-d/--debug`` flag to disable caching and
+    ``-v`` and ``-l DEBUG`` for more verbose output.
 
 You can now start coding:
 
 ======================================== =================================
 ``code/collecting_society/``             trytond main module
 ``services/config/collecting_society.*`` trytond server config files
-``~/.config/tryton/3.4/``                tyton client config files
+``~/.config/tryton/6.0/``                tyton client config files
 ``volumes/shared/src/``                  all trytond module repositories
 ``volumes/trytond-files/``               trytond file storage
 ======================================== =================================
 
-.. seealso:: `Trytond Config`_ and `C3S Redmine Wiki: Tryton HowTo`__
+.. seealso:: `Trytond Config`_, `C3S Redmine Wiki: Tryton HowTo`__ and
+   `C3S Redmine Wiki: References`__
 
 __ https://redmine.c3s.cc/projects/collecting_society/wiki/HowTo#Tryton
+__ https://redmine.c3s.cc/projects/collecting_society/wiki#References
 
 Lint the code::
 
-    docker-compose exec erpserver flake8 src/collecting_society
+    docker-compose exec erpserver service-lint
 
 Pyramid
 '''''''
@@ -1984,11 +1999,13 @@ You can now start coding:
 ``volumes/shared/tmp/upload``                upload folder for audio/pdfs
 ============================================ =========================================
 
-.. seealso:: `Pyramid Config`_
+.. seealso:: `Pyramid Config`_ and `C3S Redmine Wiki: References`__
+
+__ https://redmine.c3s.cc/projects/collecting_society/wiki#References
 
 Lint the code::
 
-    docker-compose exec webgui flake8 src/portal_web src/collecting_society_web
+    docker-compose exec webgui service-lint
 
 Debugging
 ---------
@@ -2078,6 +2095,14 @@ The processing container can be setup for debugging the same way. Make sure to
 only enable either of the both containers for debugging, not both the same
 time.
 
+Trytond Console
+```````````````
+
+Tryton can start an interactive python console with the pool initialized::
+
+    $ docker-compose run --rm erpserver db-console
+
+
 .. _Application Tests:
 
 Tests
@@ -2107,6 +2132,8 @@ To stop and remove the container, when you have finished, enter ::
 
 __ https://jenkins1b.c3s.cc/job/collecting_society/
 
+.. _Trytond Tests:
+
 Trytond
 '''''''
 
@@ -2129,7 +2156,6 @@ If you prefer, you can also execute the commands above from within the container
 
         # setup container
         > pip-install
-        > export DB_NAME=:memory:
 
         # run tests
         > service-test
@@ -2141,6 +2167,8 @@ If you prefer, you can also execute the commands above from within the container
         > exit
 
     $ docker-compose -f docker-compose.testing.yml down
+
+.. _Worker Tests:
 
 Worker
 ''''''
@@ -2175,7 +2203,7 @@ You can append the normal nosetest parameters::
 
   For example::
 
-    $ TESTPATH=src/collecting_society_worker/collecting_society_worker/tests
+    $ TESTPATH=code/collecting_society_worker/collecting_society_worker/tests
 
     $ ./service-test worker --keep \
         --path $TESTPATH/integration
@@ -2206,7 +2234,9 @@ If you prefer, you can also execute the commands above from within the container
 
 The rendered HTML output of the coverage can be accessed via::
 
-    firefox volumes/shared/cover_worker/index.html
+    xdg-open volumes/shared/cover_worker/index.html
+
+.. _Pyramid Tests:
 
 Pyramid
 '''''''
@@ -2242,13 +2272,23 @@ You can append the normal nosetest parameters::
   For example::
 
     $ ./service-test web --keep \
-        --path src/portal_web/portal_web/tests/unit
+        --path code/portal_web/portal_web/tests/unit
     $ ./service-test web --keep \
-        --path src/portal_web/portal_web/tests/unit/resources.py
+        --path code/portal_web/portal_web/tests/unit/resources.py
     $ ./service-test web --keep \
-        --path src/portal_web/portal_web/tests/unit/resources.py:TestResources
+        --path code/portal_web/portal_web/tests/unit/resources.py:TestResources
     $ ./service-test web --keep \
-        --path src/portal_web/portal_web/tests/unit/resources.py:TestResources.test_add_child
+        --path code/portal_web/portal_web/tests/unit/resources.py:TestResources.test_add_child
+
+- Run a specific type of tests::
+
+    $ ./service-test web --keep --path (unit|functional|integration)
+
+  For example::
+
+    $ ./service-test web --keep --path unit
+    $ ./service-test web --keep --path functional
+    $ ./service-test web --keep --path integration
 
 Recreate the database template, if the database has changed::
 
@@ -2276,7 +2316,7 @@ If you prefer, you can also execute the commands above from within the container
 
 The rendered HTML output of the coverage can be accessed via::
 
-    firefox volumes/shared/cover_web/index.html
+    xdg-open volumes/shared/cover_web/index.html
 
 The screenshots of the selenium integration tests can be found in the folder::
 
@@ -2287,7 +2327,7 @@ Linting
 
 Lint the code for the scripts in this repository::
 
-    python2 -m flake8 scripts
+    python -m flake8 scripts
 
 Lint the code for application repositories via container::
 
@@ -2346,7 +2386,7 @@ database, just use your prefered method:
 
 * via `db-rebuild CLI`_ command inside the *erpserver* container::
 
-    > ./db-rebuild
+    > db-rebuild
 
 The generation script will output some useful information during the run:
 
@@ -2359,8 +2399,8 @@ The generation script will output some useful information during the run:
 Update
 ''''''
 
-If you want to change a certain dataset for a model without constantly generating
-the demo data from scratch, this workflow is highly recommended:
+If you want to **change a certain dataset** for a model without constantly
+generating the demo data from scratch, this workflow is highly recommended:
 
 1. Apply the changes to ``datasets/MODEL.py``.
 2. Test your changes by generating the MODEL dataset using the
@@ -2379,7 +2419,7 @@ the demo data from scratch, this workflow is highly recommended:
 
 5. Commit the changes.
 
-If you want to change several datasets, you can prepare a template for the
+If you want to **change several datasets**, you can prepare a template for the
 most time consuming master dataset and start the data generation from it with
 the ``-e/--exclude`` flag::
 
@@ -2491,12 +2531,654 @@ folder.
 
 Once built, the docs can be viewed (from outside the container) like this::
 
-    $ firefox docs/index.html
+    $ xdg-open docs/index.html
 
 .. seealso:: `Sphinx rst Markup`__
 
 __ https://www.sphinx-doc.org/en/1.5/markup/inline.html
 
+
+Upgrade
+-------
+
+These instructions perform a full upgrade of the
+
+    - docker debian base image
+    - docker upstream images
+    - pip packages
+    - repositories
+
+.. note:: Follow the instructions consecutivly.
+
+Preperations
+''''''''''''
+
+1. Create feature branch
+    ::
+
+        ./project checkout feature-upgrade
+
+2. Update Dockerfile
+    ::
+
+        vi ./services/build/Dockerfile
+
+    - Update image version tags
+        - ``base_production``: Current debian `stable version`__
+        - ``database``: Current postgres package `major version`__
+        - ``browser``: Latest `selenium/standalone-firefox`__ tag
+        - ``webserver``: Latest `nginx-proxy`__ tag
+    - Update debian `package names/versions`__
+      (search for ``apt-get`` in Dockerfile)
+    - Remove version pinnings of pip packages
+      (search for ``pip install`` in Dockerfile)
+
+__ https://www.debian.org/releases/stable
+__ https://packages.debian.org/search?keywords=postgresql
+__ https://hub.docker.com/r/selenium/standalone-firefox/tags
+__ https://hub.docker.com/r/jwilder/nginx-proxy/tags
+__ https://packages.debian.org
+
+Browser
+'''''''
+
+1. Update docker image
+    ::
+
+        docker compose -f docker-compose.testing.yml build test_browser
+
+2. Run service
+    ::
+
+        docker compose -f docker-compose.testing.yml up test_browser
+
+    - Fix startup errors
+    - Update ``.env(.example)`` files and document changes in ``README.rst``
+
+Webserver
+'''''''''
+
+1. Update docker image
+    ::
+
+        docker compose build webserver
+
+2. Run service
+    ::
+
+        docker compose up webserver
+
+    - Fix startup errors
+    - Update ``.env(.example)`` files and document changes in ``README.rst``
+
+3. Run healthcheck
+    ::
+
+        docker compose up webserver -d
+        docker compose exec webserver bash
+        > /shared/healthcheck/webserver && echo $?
+
+    - Fix healthcheck script errors
+
+Database
+''''''''
+
+1. Update docker image
+    ::
+
+        docker-compose build database
+
+2. Update environment
+    ::
+
+        docker compose up database
+
+    - Fix startup errors
+    - Update ``.env(.example)`` files and document changes in ``README.rst``
+
+3. Run healthcheck
+    ::
+
+        docker compose up database -d
+        docker compose exec database bash
+        > /shared/healthcheck/database && echo $?
+
+    - Fix healthcheck script errors
+
+Fingerprint
+'''''''''''
+
+1. Update docker image
+
+    - Update Dockerfile
+        ::
+
+            vi ./services/build/Dockerfile
+
+        - Update version of `tokyocabinet`__
+        - Update version of `tokyotyrant`__
+        - Update version of `echoprint-codegen`__
+
+    - Build docker image
+        ::
+
+            docker-compose build fingerprint
+
+        - Fix build errors
+
+    - Start docker container
+        ::
+
+            docker compose run --rm fingerprint bash
+
+        - Fix startup errors
+
+2. Run service
+    ::
+
+        docker compose up fingerprint
+
+    - Fix cli script
+    - Fix runtime errors
+    - Fix ``echoprint-server`` errors
+
+3. Run healthcheck
+    ::
+
+        docker compose up fingerprint -d
+        docker compose exec fingerprint bash
+        > /shared/healthcheck/fingerprint && echo $?
+
+    - Fix healthcheck script errors
+
+__ https://dbmx.net/tokyocabinet
+__ https://dbmx.net/tokyotyrant
+__ https://github.com/spotify/echoprint-codegen)
+
+Erpserver
+'''''''''
+
+1. Update docker image
+
+    - Build docker image
+        ::
+
+            docker-compose build erpserver
+
+        - Fix build errors
+
+    - Start docker container
+        ::
+
+            docker compose run --rm erpserver bash
+
+        - Fix startup errors
+
+2. Update tryton version
+
+    - Change ``TRYTON_VERSION`` in ``.env[.example]``
+        ::
+
+            vi .env
+            vi .env.example
+
+    - Change ``version`` in ``tryton.cfg`` of tryton modules
+        ::
+
+            vi ./code/collecting_society/tryton.cfg
+
+    - Ensure clean src repositories und update them
+        ::
+
+            ./project status
+            ./project update
+
+3. Update ``collecting_society`` tryton module
+
+    - Delete ``*.pyc`` files (always on ``bad magic number`` import error)
+        ::
+
+            find ./volumes/shared/src -name \*.pyc -delete
+
+    - Run service
+        ::
+
+            docker compose run --rm erpserver bash
+
+        - Install pip packages
+            ::
+
+                > pip install -r /shared/config/pip/erpserver.pip
+
+            - Fix cli script
+            - Fix pip dependencies
+
+        - Upgrade module files (see `Migration Forum`__)
+
+        - Run tests
+
+            - Adjust test file
+                ::
+
+                    vi ./code/collecting_society/tests/test_collecting_society.py
+
+                - Comment out ``scenario_collecting_society.rst`` test
+
+            - Run trytond tests
+                ::
+
+                    > service-test
+
+                - Fix trytond tests
+
+            - Adjust test file
+                ::
+
+                    vi ./code/collecting_society/tests/test_collecting_society.py
+
+                - Comment in ``scenario_collecting_society.rst`` test
+                - Comment out ``CollectingSocietyTestCase``
+
+            - Run scenario tests
+                ::
+
+                    > service-test
+
+                - Fix scenario tests
+
+            - Adjust test file
+                ::
+
+                    vi ./code/collecting_society/tests/test_collecting_society.py
+
+                - Comment in ``CollectingSocietyTestCase``
+
+            - Run all tests
+                ::
+
+                    > service-test
+
+        - Run demodata import
+
+            - Import until dataset ``upgrade``
+                ::
+
+                    > db-rebuild -d upgrade --reclimit 1 --pdb
+
+                - Fix demodata import script: ``./volumes/shared/data/main.py``
+                - Fix proteus stats: ``./volumes/shared/data/main.py:ProteusStats``
+                - Fix upgrade problems
+
+            - Import from dataset ``upgrade`` until dataset ``production``
+                ::
+
+                    > db-copy --force collecting_society collecting_society_test
+                    > db-rebuild -e upgrade -d production --reclimit 1 --pdb
+
+                - Fix datasets (see ``<module>/tests/scenario_*.txt`` for examples)
+
+            - Import from dataset ``production`` all remaining datasets
+                ::
+
+                    > db-copy --force collecting_society collecting_society_test
+                    > db-rebuild -e production --reclimit 1 --pdb
+
+                - Fix datasets (see ``<module>/tests/scenario_*.txt`` for examples)
+
+            - Test a full database rebuild
+                ::
+
+                    > db-rebuild
+
+        - Run linter
+            ::
+
+                > service-lint
+
+            - Fix linter errors
+
+        - Ensure, that the server is running
+            ::
+
+                > service-deploy
+
+4. Run healthcheck
+    ::
+
+        docker-compose up erpserver -d
+        docker compose exec erpserver bash
+        > /shared/healthcheck/fingerprint && echo $?
+
+    - Fix healthcheck script errors
+
+5. Connect tryton client
+
+    - Install the new tryton client and connect it to the server
+      (see `Tryton Installation`_ and `Tryton Usage`_)
+    - Test the client and operations (list, show, write, etc.)
+        - Fix methods
+
+__ https://discuss.tryton.org/c/migration
+
+Worker
+''''''
+
+1. Update docker images
+
+    - Build docker image
+        ::
+
+            docker-compose build worker
+
+        - Fix build errors
+
+    - Start docker container
+        ::
+
+            docker compose run --rm worker bash
+
+        - Fix startup errors
+
+2. Update proteus version
+
+    - Change proteus version in ``setup.py``
+        ::
+
+            vi ./code/collecting_society_worker/setup.py
+
+3. Update ``collecting_society_worker`` files
+    ::
+
+        docker compose run --rm worker bash
+
+    - Install pip packages
+        ::
+
+            > pip install -r /shared/config/pip/worker.pip
+
+        - Fix pip dependencies
+
+    - Run service
+        ::
+
+            > service-deploy
+
+        - Fix ``echoprint-server`` errors
+        - Fix runtime errors
+
+    - Run tests
+        ::
+
+            > service-test
+
+        - Fix runtime errors
+        - Fix test errors
+
+    - Run linter
+        ::
+
+            > service-lint
+
+        - Fix linter errors
+
+4. Run healthcheck
+    ::
+
+        docker-compose up worker -d
+        docker compose exec worker bash
+        > /shared/healthcheck/worker && echo $?
+
+    - Fix healthcheck script errors
+
+Web
+'''
+
+1. Update docker images
+
+    - Build docker images
+        ::
+
+            docker-compose build webgui webapi
+
+        - Fix build errors
+
+    - Run docker container
+        ::
+
+            docker compose run --rm webgui bash
+
+        - Fix startup errors
+
+2. Update tryton version
+    - Change tryton version in ``setup.py``
+        ::
+
+            vi ./code/portal_web/setup.py
+
+3. Update ``*_web`` files
+
+    - Run service
+        ::
+
+            docker compose run --rm webgui bash
+
+        - Install pip packages
+            ::
+
+                > pip install -r /shared/config/pip/webgui.pip
+
+            - Fix pip dependencies
+
+        - Upgrade ``*_web`` files (see `Upgrading`__, `Changes`__, `Change History`__)
+
+        - Start service
+            ::
+
+                > service-deploy
+
+            - Fix changes of tryton api, especially in
+                - ``portal_web/__init__.py``
+                - ``portal_web/models/base.py:Tbd``
+                - ``portal_web/config.py``
+            - Fix changes of pyramid api
+            - Test frontend / backend (login, show, write, etc)
+            - Fix deprecation warnings
+
+    - Run tests (on host)
+
+        - Remove docker volumes
+            ::
+
+                docker volume rm \
+                    collecting_society_test_echoprint_data \
+                    collecting_society_test_postgresql_data \
+                    collecting_society_test_trytond_files
+
+        - Build test images
+            ::
+
+                service-test --build
+
+            - Fix build errors
+
+        - Run tests (see `Pyramid Tests`_)
+            ::
+
+                service-test web --keep --path unit
+                service-test web --keep --path functional
+                service-test web --keep --path integration
+                service-test web --keep
+
+            - Fix test wrapper errors: ``./code/portal_web/tests/base.py``
+            - Fix startup errors
+            - Fix test errors
+            - View screenshots of integration tests: ``./tests/screenshots``
+            - Fix linter errors
+
+__ https://docs.pylonsproject.org/projects/pyramid/en/latest/narr/upgrading.html
+__ https://docs.pylonsproject.org/projects/pyramid/en/latest/changes.html
+__ https://docs.pylonsproject.org/projects/pyramid/en/latest/index.html#change-history
+
+Documentation
+'''''''''''''
+
+1. Update docker image
+    ::
+
+        docker compose -f docker-compose.documentation.yml build documentation
+
+2. Build documentation
+    ::
+
+        docker compose -f docker-compose.documentation.yml run --rm documentation bash
+        > docs-build
+
+    - Fix build errors
+    - Check documentation build
+        ::
+
+            xdg-open docs/index.html
+
+Wrap-up
+'''''''
+
+1. Run all tests with build flag (on host)
+::
+
+    ./service-test --build --keep
+
+2. Update versions
+
+    - Update Dockerfile
+
+        - List upgraded pip versions
+            ::
+
+                docker-compose -f docker-compose.documentation.yml \
+                    run --rm documentation pip freeze
+                docker-compose -f docker-compose.documentation.yml \
+                    run --rm documentation pip freeze
+
+        - Add version pinnings of pip packages
+            ::
+
+                vi ./services/build/Dockerfile
+
+            - Ensure matching versions of selenium pip package
+              and docker image version tag
+
+        - Build docker images
+            ::
+
+                docker-compose build
+                docker-compose -f docker-compose.testing.yml build
+                docker-compose -f docker-compose.documentation.yml build
+
+        - Run all tests with build flag (on host)
+            ::
+
+                ./service-test --build
+
+    - Update ``project.yml``
+        ::
+
+            vi ./project.yml
+
+        - Update reference repository tags of task
+          ``checkout repos of pinned pip packages for reference``
+        - Update repositories
+            ::
+
+                ./project update
+
+            - Fix checkout errors
+            - Fix unwanted diff lines
+            - Ensure all envars are present in ``*.env`` and ``*.env.example``
+
+    - Update links in Reference section of `wiki`__
+
+3. Update documentation
+
+    - Enhance the documentation, where possible
+    - Build documentation
+        ::
+
+            ./docs-build --keep --no-autoapi
+
+        - Check all changes
+
+4. Push changes to remote feature branch
+    ::
+
+        ./project status
+        ./project diff
+        ./project commit "updates <SERVICE>: <SOURCEVERSION> -> <TARGETVERSION>"
+        ./project push
+
+5. Request tests by other team members
+
+6. Merge the feature branch
+
+    - Merge changes of ``development`` branch into the feature branch first
+        ::
+
+            ./project checkout development
+            ./project pull
+            ./project merge --no-delete --no-push feature-upgrade
+
+        - Fix merge conflicts and commit
+            ::
+
+                ./project commit "fixes merge conflicts"
+
+        - Run tests
+            ::
+
+                ./project checkout feature-upgrade
+                ./service-test --build --keep
+
+        - Commit and push
+            ::
+
+                ./project commit "fixes stuff"
+                ./project push
+
+    - Merge feature branch into ``development`` branch
+        ::
+
+            ./project merge feature-upgrade development
+
+        - Wait for the result of the `Jenkins build`__
+        - Fix the Jenkins job environment, if neccessary
+        - Fix/commit/push the code, until it runs successfully
+        - Check the documentation built
+
+    - Consider to merge the ``development`` branch into the ``staging`` branch
+        ::
+
+            ./project promote development
+
+        - Wait for the result of the `Jenkins build`__
+        - Fix the Jenkins job environment, if neccessary
+        - Fix/commit/push the code, until it runs successfully
+        - Check the documentation built
+
+    - Update the `online documentation`__ for ``development`` and ``staging``
+
+7. Notify team members
+
+    - Write a `news entry`__ with instructions how to upgrade and a link to the
+      diff of the changes, note that the changes to ``Dockerfile`` contain all
+      relevant version changes
+        ::
+
+            https://github.com/c3s/collecting_society_docker/compare/<OLD_COMMIT_ID>..<NEW_COMMIT_ID>
+
+__ https://redmine.c3s.cc/projects/collecting_society/wiki/Overview#References
+__ https://jenkins1b.c3s.cc/job/collecting_society/job/development
+__ https://jenkins1b.c3s.cc/job/collecting_society/job/staging
+__ https://files.c3s.cc/collecting_society
+__ https://redmine.c3s.cc/projects/collecting_society/news
 
 Problems
 --------
@@ -2537,17 +3219,17 @@ client.
 Ask the server administrator if the certificate has changed.
 
 Close the Tryton client.
-Check the problematic host entry in ``~/.config/tryton/3.4/known_hosts``.
+Check the problematic host entry in ``~/.config/tryton/6.0/known_hosts``.
 Add a new fingerprint provided by the server administrator or
 simply remove the whole file, if the setup is not in production use::
 
-    rm ~/.config/tryton/3.4/known_hosts
+    rm ~/.config/tryton/6.0/known_hosts
 
 **Incompatible Server Version**
 
 If the tryton client shows an "incompatible server version" error on login try::
 
-    rm ~/.config/tryton/3.4/known_hosts
+    rm ~/.config/tryton/6.0/known_hosts
 
 License
 =======

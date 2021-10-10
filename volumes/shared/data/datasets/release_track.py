@@ -47,7 +47,7 @@ def generate(reclimit=0):
     ])
 
     # create artist release tracks
-    creations_per_release = len(creations) / len(artist_releases)
+    creations_per_release = int(len(creations) / len(artist_releases))
     for i, release in enumerate(artist_releases):
         start = i * creations_per_release
         tracks = creations[start:start+creations_per_release]

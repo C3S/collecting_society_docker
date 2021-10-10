@@ -18,7 +18,7 @@ def generate(reclimit=0):
 
     # models
     Creation = Model.get('creation')
-    CreationIdentifierSpace = Model.get('creation.identifier.space')
+    CreationIdentifierSpace = Model.get('creation.cs_identifier.space')
 
     # entries
     creations = Creation.find([])
@@ -31,19 +31,19 @@ def generate(reclimit=0):
     for i, creation in enumerate(creations, start=1):
 
         # hfa
-        hfa = creation.identifiers.new()
+        hfa = creation.cs_identifiers.new()
         hfa.space = space_hfa
         hfa.id_code = "%s" % str(i).zfill(6)
 
         # isrc
-        isrc = creation.identifiers.new()
+        isrc = creation.cs_identifiers.new()
         isrc.space = space_isrc
         isrc.id_code = "%s-%s-%s-%s" % (
             'DE', 'A00', '20', str(i).zfill(5)
         )
 
         # iswc
-        iswc = creation.identifiers.new()
+        iswc = creation.cs_identifiers.new()
         iswc.space = space_iswc
         iswc.id_code = "%s-%s.%s.%s-%s" % (
             'T',
@@ -54,7 +54,7 @@ def generate(reclimit=0):
         )
 
         # cwr
-        cwr = creation.identifiers.new()
+        cwr = creation.cs_identifiers.new()
         cwr.space = space_hfa
         cwr.id_code = "%s%s%s%s_%s.V%s" % (
             'CW', 20, str(i).zfill(4), 'SSS', 'RRR', 21

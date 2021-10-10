@@ -31,29 +31,34 @@ def generate(reclimit=0):
     # entries
     company = Company(1)
     receivable, = Account.find([
-        ('kind', '=', 'receivable'),
-        ('company', '=', company.id),
-        ])
+            ('type.receivable', '=', True),
+            ('party_required', '=', True),
+            ('company', '=', company.id),
+            ], limit=1)
     payable, = Account.find([
-        ('kind', '=', 'payable'),
-        ('company', '=', company.id),
-        ])
+            ('type.payable', '=', True),
+            ('party_required', '=', True),
+            ('company', '=', company.id),
+            ], limit=1)
 
     # create party (first row of collecting_socity.csv)
     path = os.path.join('data', 'csv', 'collecting_society.csv')
     with open(path, 'r') as f:
         reader = csv.DictReader(
             f, delimiter=csv_delimiter, quotechar=csv_quotechar)
-        row = reader.next()
+        row = next(reader)
         country, = Country.find([('code', '=', row['country'])])
         party = Party(name="Employee")
         _ = party.addresses.pop()
         party.addresses.new(
             street=row['street'],
-            zip=row['zip'],
+            postal_code=row['postal_code'],
             city=row['city'],
             country=country
         )
+        tax_identifier = party.identifiers.new()
+        tax_identifier.type = 'eu_vat'
+        tax_identifier.code = 'BE0897290877'
         party.account_receivable = receivable
         party.account_payable = payable
         party.save()

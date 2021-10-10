@@ -10,10 +10,12 @@ Finish minimal setup without demo data, tick config wizards
 from proteus import Model
 
 DEPENDS = [
-    'install',
+    'activate',
     'upgrade',
     'language',
     'currency',
+    'country',
+    'postal_code',
     'payment_term',
     'company',
     'company_employee',
@@ -29,7 +31,7 @@ DEPENDS = [
 def generate(reclimit=0):
 
     # models
-    Item = Model.get('ir.module.module.config_wizard.item')
+    Item = Model.get('ir.module.config_wizard.item')
 
     # entries
     items = Item.find()

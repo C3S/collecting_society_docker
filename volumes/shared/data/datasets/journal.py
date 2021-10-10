@@ -21,7 +21,8 @@ def generate(reclimit=0):
     AccountJournal = Model.get('account.journal')
 
     # entries
-    sequence, = Sequence.find([('code', '=', 'account.journal')])
+    sequence, = Sequence.find(
+        [('sequence_type.name', '=', "Buchhaltung Journal")], limit=1)
 
     # create journal
     journal = AccountJournal(

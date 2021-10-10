@@ -20,7 +20,7 @@ def generate(reclimit=0):
     Language = Model.get('ir.lang')
 
     # entries
-    german_language, = Language.find([('code', '=', 'de_DE')])
+    german_language, = Language.find([('code', '=', 'de')], limit=1)
 
     # configure language
     german_language.translatable = True

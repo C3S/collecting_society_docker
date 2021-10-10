@@ -5,8 +5,10 @@
 # Deploy script for worker
 
 WORKERPATH=/shared/src/collecting_society_worker/collecting_society_worker
+SLEEP=60
 
+echo "Starting worker, running every $SLEEP seconds."
 while true; do
     $WORKERPATH/repro.py all
-    sleep 60
+    sleep $SLEEP
 done

@@ -1,4 +1,4 @@
-"name","street","zip","city","country","copyright","ancillary_copyright"
+"name","street","postal_code","city","country","copyright","ancillary_copyright"
 "C3S SCE","Rochusstraße 44","40479","Düsseldorf","DE","1","1"
 "GEMA","Bayreuther Straße 37","10787","Berlin","DE","1","0"
 "GVL","Podbielskiallee 64","14195","Berlin","DE","0","1"

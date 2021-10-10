@@ -48,7 +48,7 @@ def generate(reclimit=0):
                 _ = party.addresses.pop()
                 party.addresses.new(
                     street=row['street'],
-                    zip=row['zip'],
+                    postal_code=row['postal_code'],
                     city=row['city'],
                     country=country
                 )

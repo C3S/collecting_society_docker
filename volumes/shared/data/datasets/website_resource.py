@@ -42,7 +42,7 @@ def generate(reclimit=0):
     for i, website in enumerate(radio_websites):
         for j in range(1, channels_per_radio_website + 1):
             number = j
-            resource = website.resources.new()
+            resource = website.website_resources.new()
             resource.category = category_channel
             resource.name = 'Webradio %s Channel %s' % (
                 website.name[-3:],
@@ -58,7 +58,7 @@ def generate(reclimit=0):
     for i, website in enumerate(podcast_websites):
         for j in range(1, episodes_per_podcast_website + 1):
             number = j
-            resource = website.resources.new()
+            resource = website.website_resources.new()
             resource.category = category_episode
             resource.name = 'Podcast %s Episode %s' % (
                 website.name[-3:],
@@ -75,7 +75,7 @@ def generate(reclimit=0):
     # create websites resources for dsps
     for i, website in enumerate(dsp_websites):
         number = i
-        resource = website.resources.new()
+        resource = website.website_resources.new()
         resource.category = category_ugc
         resource.name = 'UGC %s' % str(number).zfill(3)
         website.save()

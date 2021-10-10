@@ -3,6 +3,10 @@
 
 version: '2.4'
 
+networks:
+  frontend:
+  backend:
+
 volumes:
   collecting_society_postgresql_data:
   collecting_society_echoprint_data:
@@ -13,10 +17,14 @@ volumes:
 services:
 
   database:
+    networks:
+      - backend
     volumes:
       - collecting_society_postgresql_data:/var/lib/postgresql/data
 
   erpserver:
+    networks:
+      - backend
     ports:
       - "8000:8000"  # jsonrpc (tryton client)
       - "8069:8069"  # xmlrpc (proteus)
@@ -24,6 +32,8 @@ services:
       - collecting_society_trytond_files:/var/lib/trytond
 
   webserver:
+    networks:
+      - frontend
     ports:
       - "80:80"  # http
     volumes:
@@ -31,13 +41,21 @@ services:
       - collecting_society_nginx_dhparam:/etc/nginx/dhparam
 
   webapi:
+    networks:
+      - frontend
+      - backend
     volumes:
       - collecting_society_trytond_files:/var/lib/trytond
 
   webgui:
+    networks:
+      - frontend
+      - backend
     volumes:
       - collecting_society_trytond_files:/var/lib/trytond
 
   fingerprint:
+    networks:
+      - backend
     volumes:
       - collecting_society_echoprint_data:/opt/echoprint-data

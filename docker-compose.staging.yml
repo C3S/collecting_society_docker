@@ -3,14 +3,22 @@
 
 version: '2.4'
 
+networks:
+  frontend:
+  backend:
+
 services:
 
   database:
     # entrypoint: ["echo", "Service disabled in docker-compose.staging.yml."]
+    networks:
+      - backend
     volumes:
       - ./volumes/postgresql-data:/var/lib/postgresql/data
 
   erpserver:
+    networks:
+      - backend
     ports:
       - "8000:8000"  # jsonrpc (tryton client)
       - "127.0.0.1:8069:8069"  # xmlrpc (proteus)
@@ -20,6 +28,8 @@ services:
 
   webserver:
     # entrypoint: ["echo", "Service disabled in docker-compose.staging.yml."]
+    networks:
+      - frontend
     ports:
       - "127.0.0.1:8080:80"  # http
     volumes:
@@ -28,6 +38,9 @@ services:
       - ./volumes/nginx-htpasswd:/etc/nginx/htpasswd
 
   webapi:
+    networks:
+      - frontend
+      - backend
     ports:
       - "127.0.0.1:6544:6543"  # pyramid pserve
     volumes:
@@ -35,12 +48,21 @@ services:
       - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
 
   webgui:
+    networks:
+      - frontend
+      - backend
     ports:
       - "127.0.0.1:6543:6543"  # pyramid pserve
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
       - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
 
+  worker:
+    networks:
+      - backend
+
   fingerprint:
+    networks:
+      - backend
     volumes:
       - ./volumes/echoprint-data:/opt/echoprint-data

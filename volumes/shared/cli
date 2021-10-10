@@ -37,11 +37,6 @@ import glob
 import fcntl
 import click
 
-try:  # needs protues
-    import data
-except ImportError:
-    pass
-
 PROJECT = str(os.environ.get('PROJECT'))
 ENVIRONMENT = str(os.environ.get('ENVIRONMENT'))
 SERVICE = str(os.environ.get('SERVICE'))
@@ -50,6 +45,7 @@ POSTGRES_HOSTNAME = str(os.environ.get('POSTGRES_HOSTNAME'))
 POSTGRES_PORT = str(os.environ.get('POSTGRES_PORT'))
 TRYTON_DATABASE = str(os.environ.get('TRYTON_DATABASE'))
 TMP_FILE = 'running_db_creation.delete_me'
+LOCKFILES = []
 
 
 def _db_disconnect(dbname):
@@ -136,8 +132,7 @@ def pip_install(context, service):
         # Install packages
         print('Install packages for ' + service + ' ... ', end='')
         subprocess.check_call(
-            [sys.executable, '-m', 'pip', '--no-python-version-warning',
-             'install', '-qr', pipfile])
+            [sys.executable, '-m', 'pip', 'install', '-qr', pipfile])
         print('ok')
 
         # Create flagfile
@@ -150,8 +145,9 @@ def pip_install(context, service):
         subprocess.check_call(sys.argv)
         sys.exit()
 
+    from importlib import reload
     import site
-    reload(site)  # noqa: F821
+    reload(site)
 
 
 @cli.command('db-create')
@@ -304,6 +300,31 @@ def db_backup(context, dbname):
     )
 
 
+@cli.command('db-console')
+@click.argument('trytondconf', default=ENVIRONMENT + '.conf')
+@click.argument('dbname', default=TRYTON_DATABASE)
+@click.pass_context
+def db_console(context, trytondconf, dbname):
+    """
+    Opens trytond console.
+    """
+    # Install dependencies
+    context.invoke(pip_install, service='erpserver')
+
+    # Configure command
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        WORKDIR, 'config', 'trytond', trytondconf
+    )
+    command = [
+        'trytond-console',
+        '-d', dbname,
+        '-c', os.environ['TRYTOND_CONFIG']
+    ]
+
+    # Execute command
+    subprocess.call(command)
+
+
 @cli.command('db-update')
 @click.option(
     '--modules', '-m', default='collecting_society',
@@ -311,8 +332,10 @@ def db_backup(context, dbname):
     'Whitspace not allowed!')
 @click.argument('trytondconf', default=ENVIRONMENT + '.conf')
 @click.argument('dbname', default=TRYTON_DATABASE)
+@click.option('--init/--no-init', default=False,
+              help='Run static data imports on initial update (default: no)')
 @click.pass_context
-def db_update(context, modules, trytondconf, dbname):
+def db_update(context, modules, trytondconf, dbname, init):
     """
     Updates tryton modules for database DBNAME.
 
@@ -321,6 +344,8 @@ def db_update(context, modules, trytondconf, dbname):
     """
     # Install dependencies
     context.invoke(pip_install, service='erpserver')
+    if not modules:
+        modules = "all"
     print('Update trytond modules: %s ...' % modules)
 
     # Configure command
@@ -329,7 +354,7 @@ def db_update(context, modules, trytondconf, dbname):
         WORKDIR, 'config', 'trytond', trytondconf
     )
     command = [
-        'trytond',
+        'trytond-admin',
         '-d', dbname,
         '-c', os.environ['TRYTOND_CONFIG']
     ]
@@ -339,6 +364,8 @@ def db_update(context, modules, trytondconf, dbname):
         modules = modules.split(',')
         command.append('-u')
         command.extend(modules)
+    if init:
+        command.extend(['--email', os.environ.get("TRYTON_EMAIL")])
 
     # Execute command
     subprocess.call(command)
@@ -377,20 +404,22 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
     execution from different docker containers.
     """
     context.invoke(pip_install, service='erpserver')
+    import data
 
     # Check lockfile, if locked, wait till not locked any more
     while True:
         try:
-            lockfile = open(TMP_FILE, 'w+')
-            fcntl.flock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            LOCKFILE = open(TMP_FILE, 'w+')
+            LOCKFILES.append(LOCKFILE)
+            fcntl.flock(LOCKFILE, fcntl.LOCK_EX | fcntl.LOCK_NB)
             print("Database creation commencing.")
             break
         except IOError:
             time.sleep(3)
             print("Waiting for the other process to finish db creation...")
         except KeyboardInterrupt:
-            fcntl.flock(lockfile, fcntl.LOCK_UN)
-            lockfile.close()
+            fcntl.flock(LOCKFILE, fcntl.LOCK_UN)
+            LOCKFILE.close()
             try:
                 os.remove(TMP_FILE)
             except OSError:
@@ -419,7 +448,8 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
                 # Create template database
                 context.invoke(db_create, dbname=template_dbname)
                 # Update template database
-                context.invoke(db_update, modules=None, dbname=template_dbname)
+                context.invoke(
+                    db_update, modules=None, dbname=template_dbname, init=True)
                 # Generate dependent datasets
                 data.generate(
                     dataset, exclude, reclimit=reclimit,
@@ -444,7 +474,8 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
             # Create database
             if not _db_exist(dbname):
                 context.invoke(db_create, dbname=dbname)
-                context.invoke(db_update, modules=None, dbname=dbname)
+                context.invoke(
+                    db_update, modules=None, dbname=dbname, init=True)
             # Generate datasets
             data.generate(
                 dataset, exclude, reclimit=reclimit,
@@ -455,9 +486,9 @@ def db_setup(context, dbname, reclimit, dataset, exclude,
         print('Setup database, but database "%s" exists: Skip!' % dbname)
 
     # Unlock file
-    if lockfile:
-        fcntl.flock(lockfile, fcntl.LOCK_UN)
-        lockfile.close()
+    if LOCKFILE:
+        fcntl.flock(LOCKFILE, fcntl.LOCK_UN)
+        LOCKFILE.close()
         try:
             os.remove(TMP_FILE)
         except OSError:
@@ -570,7 +601,7 @@ def service_healthcheck(context, service):
               help='Name of database (default: test)')
 @click.option('--reset/--no-reset', default=True,
               help='Reset the database (default: yes)')
-@click.option('--path', default=False,
+@click.option('--path', default='',
               help='Searchpath for tests (see nosetest)')
 @click.argument('service', default=SERVICE)
 @click.argument('nargs', nargs=-1, type=click.UNPROCESSED)
@@ -597,15 +628,31 @@ def service_test(context, service, dbname, reset, path, nargs):
     If no PATH is given, all tests of portal_web and plugins are included.
     The test files should be stored below the following subpaths by convention:
 
-        <portal_web||plugin>/tests/unit (unittest)
+        <module>/tests/unit (unittest)
 
-        <portal_web||plugin>/tests/functional (webtest)
+        <module>/tests/functional (webtest)
 
-        <portal_web||plugin>/tests/integration (selenium)
+        <module>/tests/integration (selenium)
+
+    The PATH should start with `code/`, `volumes/shared/src/` or `src/`, e.g.:
+
+        --path code/portal_web/portal_web/tests
+        --path volumes/shared/src/portal_web/portal_web/tests
+        --path src/portal_web/portal_web/tests
+
+    The PATH may be one of the keywords `unit`, `functional` or `integration`
+    to run all the respective tests of all modules, e.g:
+
+        --path unit
+        --path functional
+        --path integration
 
     Additional NARGS will be passed to nosetests.
     """
     # Sanity check
+    if service in ['webgui', 'wepapi']:
+        print("Tests of webgui/webapi need to be started from host.")
+        exit(-1)
     if service not in ['erpserver', 'web', 'worker']:
         print("Service unknown.")
         exit(-1)
@@ -687,11 +734,18 @@ def service_test(context, service, dbname, reset, path, nargs):
         modules.append(module)
         testpaths.append(os.path.join(basepath, module, 'tests'))
     if path:
-        paths = [os.path.join(WORKDIR, path)]
+        if path in ['unit', 'functional', 'integration']:
+            paths = [os.path.join(p, path) for p in testpaths]
+        else:
+            if path.startswith('code/'):
+                path = 'src/' + path[4:]
+            if path.startswith('volumes/shared/src'):
+                path = 'src/' + path[18:]
+            paths = [os.path.join(WORKDIR, path)]
     else:
-        paths = [os.path.join(path, 'unit') for path in testpaths] +\
-                [os.path.join(path, 'functional') for path in testpaths] +\
-                [os.path.join(path, 'integration') for path in testpaths]
+        paths = [os.path.join(p, 'unit') for p in testpaths] +\
+                [os.path.join(p, 'functional') for p in testpaths] +\
+                [os.path.join(p, 'integration') for p in testpaths]
 
     # Start tests
     print("\nSTART TESTS ...\n")
@@ -712,6 +766,7 @@ def service_test(context, service, dbname, reset, path, nargs):
         '--cover-inclusive',
         '--cover-package='+','.join(modules),
     ] + list(nargs) + list(paths)
+
     exitcode = subprocess.call(command)
     os.chdir(WORKDIR)
 
@@ -791,4 +846,16 @@ if __name__ == '__main__':
             "Please do not try to execute it on the host."
         )
     # Run CLI
-    cli()
+    try:
+        cli()
+    finally:
+        for LOCKFILE in LOCKFILES:
+            try:
+                fcntl.flock(LOCKFILE, fcntl.LOCK_UN)
+                LOCKFILE.close()
+                os.remove(TMP_FILE)
+            except ValueError:
+                pass
+            except OSError:
+                print("Couldn't remove lock file %s, something has gone wrong"
+                      % LOCKFILE)

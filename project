@@ -1161,9 +1161,16 @@ def git_fetch(task, context={}):
 
     # find out, if remote branch exists
     remote_exists = False
+    # find out, if remote branch exists locally
     output = execute(('git', 'branch', '-rvv'), cwd=target)
     for line in output.split("\n"):
         if line[2:].startswith("origin/%s " % version):
+            remote_exists = True
+    # find out, if remote branch exists remote
+    if not remote_exists:
+        output = execute(
+            ('git', 'ls-remote', task['source'], version), cwd=target)
+        if output:
             remote_exists = True
 
     # skip silently for local only branches
