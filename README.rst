@@ -3137,12 +3137,11 @@ Wrap-up
                 ./project checkout feature-upgrade
                 ./service-test --build --keep
 
-        - Commit again
+        - Commit and push
             ::
 
-                ./project status
-                ./project diff
-                ./project commit "fixes merge conflicts"
+                ./project commit "fixes stuff"
+                ./project push
 
     - Merge feature branch into ``development`` branch
         ::
