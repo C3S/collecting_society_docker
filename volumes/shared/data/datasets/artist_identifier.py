@@ -18,7 +18,7 @@ def generate(reclimit=0):
 
     # models
     Artist = Model.get('artist')
-    ArtistIdentifierSpace = Model.get('artist.identifier.space')
+    ArtistIdentifierSpace = Model.get('artist.cs_identifier.space')
 
     # entries
     artists = Artist.find([])
@@ -28,7 +28,7 @@ def generate(reclimit=0):
     for i, artist in enumerate(artists, start=1):
 
         # ipn
-        ipn = artist.identifiers.new()
+        ipn = artist.cs_identifiers.new()
         ipn.space = space_ipn
         ipn.id_code = "%s" % str(i).zfill(11)
 

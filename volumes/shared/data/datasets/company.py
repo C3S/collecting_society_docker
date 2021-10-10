@@ -15,7 +15,8 @@ from proteus import config, Model, Wizard
 from . import csv_delimiter, csv_quotechar
 
 DEPENDS = [
-    'upgrade',
+    'country',
+    'currency',
 ]
 
 
@@ -32,23 +33,26 @@ def generate(reclimit=0):
     company_config = Wizard('company.company.config')
 
     # entries
-    euro, = Currency.find([('code', '=', 'EUR')])
+    euro, = Currency.find([('code', '=', 'EUR')], limit=1)
 
     # create party (first row of collecting_socity.csv)
     path = os.path.join('data', 'csv', 'collecting_society.csv')
     with open(path, 'r') as f:
         reader = csv.DictReader(
             f, delimiter=csv_delimiter, quotechar=csv_quotechar)
-        row = reader.next()
+        row = next(reader)
         country, = Country.find([('code', '=', row['country'])])
         party = Party(name=row['name'])
         _ = party.addresses.pop()
         party.addresses.new(
             street=row['street'],
-            zip=row['zip'],
+            postal_code=row['postal_code'],
             city=row['city'],
             country=country
         )
+        tax_identifier = party.identifiers.new()
+        tax_identifier.type = 'eu_vat'
+        tax_identifier.code = 'BE0897290877'
         party.save()
 
     # create company

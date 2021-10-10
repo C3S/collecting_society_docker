@@ -31,7 +31,7 @@ def generate(reclimit=0):
     devices = Device.find(['software_name', 'like', '%Tracker'])
 
     # content
-    chars_fingerprint = string.digits + string.letters
+    chars_fingerprint = string.digits + string.ascii_letters
 
     # create device message fingerprints
     for device in devices:

@@ -10,14 +10,14 @@ Execute the upgrade wizard
 from proteus import Wizard
 
 DEPENDS = [
-    'install',
+    'activate',
 ]
 
 
 def generate(reclimit=0):
 
     # wizards
-    install_upgrade = Wizard('ir.module.module.install_upgrade')
+    activate_upgrade = Wizard('ir.module.activate_upgrade')
 
     # upgrade
-    install_upgrade.execute('upgrade')
+    activate_upgrade.execute('upgrade')

@@ -34,13 +34,15 @@ def generate(reclimit=0):
     # entries
     company = Company(1)
     receivable, = Account.find([
-        ('kind', '=', 'receivable'),
-        ('company', '=', company.id),
-        ])
+            ('type.receivable', '=', True),
+            ('party_required', '=', True),
+            ('company', '=', company.id),
+            ], limit=1)
     payable, = Account.find([
-        ('kind', '=', 'payable'),
-        ('company', '=', company.id),
-        ])
+            ('type.payable', '=', True),
+            ('party_required', '=', True),
+            ('company', '=', company.id),
+            ], limit=1)
 
     # Role: Licenser
     for i in range(1, group_artists * new_solo_artists_per_group + 1):

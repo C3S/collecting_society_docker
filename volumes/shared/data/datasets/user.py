@@ -24,10 +24,10 @@ def generate(reclimit=0):
     User = Model.get('res.user')
 
     # entries
-    german_language, = Language.find([('code', '=', 'de_DE')])
+    german_language, = Language.find([('code', '=', 'de')], limit=1)
     company = Company(1)
     employee = Employee(1)
-    user, = User.find([('login', '=', 'admin')])
+    user, = User.find([('login', '=', 'admin')], limit=1)
 
     # configure user
     user.language = german_language

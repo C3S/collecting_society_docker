@@ -40,7 +40,8 @@ def generate(reclimit=0):
 
     # create usagereports for podcasts
     for device in podcast_devices:
-        for episode in device.assignments[0].assignment.resources:
+        resources = device.assignments[0].assignment.website_resources
+        for episode in resources:
             timestamp = now - datetime.timedelta(
                 days=7*usagereports_per_episode)
             messages = DeviceMessage.find([
@@ -57,19 +58,20 @@ def generate(reclimit=0):
                     timestamp=timestamp,
                     reported_streams=streams,
                     reported_downloads=downloads,
-                    reported_turnover_ads=decimal.Decimal(
+                    reported_turnover_ads=round(decimal.Decimal(
                         streams / random.randint(100, 10000)
-                    ),
-                    reported_turnover_sale=decimal.Decimal(
+                    ), 2),
+                    reported_turnover_sale=round(decimal.Decimal(
                         downloads / random.randint(1, 100)
-                    )
+                    ), 2)
                 ).save()
 
     # create usagereports for dsps
     for device in dsp_devices:
         timestamp = now - datetime.timedelta(
             days=7*usagereports_per_dsp)
-        context = device.assignments[0].assignment.resources[0]
+        resources = device.assignments[0].assignment.website_resources
+        context = resources[0]
         messages = DeviceMessage.find([
             ('device', '=', device.id),
             ('context', '=', "website.resource,%s" % context.id),
@@ -85,10 +87,10 @@ def generate(reclimit=0):
                 creation=random.choice(creations),
                 reported_streams=streams,
                 reported_downloads=downloads,
-                reported_turnover_ads=decimal.Decimal(
+                reported_turnover_ads=round(decimal.Decimal(
                     streams / random.randint(100, 10000)
-                ),
-                reported_turnover_sale=decimal.Decimal(
+                ), 2),
+                reported_turnover_sale=round(decimal.Decimal(
                     downloads / random.randint(1, 100)
-                )
+                ), 2)
             ).save()

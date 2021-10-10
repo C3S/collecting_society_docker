@@ -14,11 +14,11 @@ import sys
 import pdb as pdbpp
 import traceback
 import logging
-from StringIO import StringIO
+from io import StringIO
 from time import time
 from proteus import config, Model, Wizard, ModelList
 
-from datasets import Datasets
+from .datasets import Datasets
 
 
 log = logging.getLogger(__name__)
@@ -74,36 +74,46 @@ class ProteusStats():
         cls.stats[mode][model] += 1
 
     @staticmethod
-    def new(self, *args, **kwargs):
+    def new(self, **kwargs):
         """Track entries created created by ModelList.new()."""
-        new_record = ModelList._original_new(self, *args, **kwargs)
+        new_record = ModelList._original_new(self, **kwargs)
         ProteusStats.track('created', new_record.__class__.__name__)
         return new_record
 
     @staticmethod
-    def save(self):
+    def save(records):
         """Track entries created/updated by Model.save()."""
-        mode = self.id > 0 and 'updated' or 'created'
-        Model._original_save(self)
-        ProteusStats.track(mode, self.__class__.__name__)
+        if not isinstance(records, list):
+            records = [records]
+        for record in records:
+            mode = record.id > 0 and 'updated' or 'created'
+            ProteusStats.track(mode, record.__class__.__name__)
+        Model._original_save(records)
 
     @staticmethod
-    def delete(self):
+    def delete(records):
         """Track entries deleted by Model.delete()."""
-        Model._original_delete(self)
-        ProteusStats.track('deleted', self.__class__.__name__)
+        if not isinstance(records, list):
+            records = [records]
+        for record in records:
+            ProteusStats.track('deleted', record.__class__.__name__)
+        Model._original_delete(records)
 
     @staticmethod
-    def duplicate(self):
+    def duplicate(records, default=None):
         """Track entries duplicated by Model.duplicate()."""
-        Model._original_duplicate(self)
-        ProteusStats.track('duplicated', self.__class__.__name__)
+        if not isinstance(records, list):
+            records = [records]
+        for record in records:
+            ProteusStats.track('duplicated', record.__class__.__name__)
+        ids = Model._original_duplicate(records, default)
+        return ids
 
     @staticmethod
     def execute(self, state):
         """Track wizards executed by Wizard.execute()."""
-        Wizard._original_execute(self, state)
         ProteusStats.track('executed', '%s -> %s' % (self.name, state))
+        Wizard._original_execute(self, state)
 
 
 def color(text, status):
@@ -153,13 +163,16 @@ class Capturing(list):
     def __enter__(self):
         self.debugged = False
         self.stdout = sys.stdout
+        self.stderr = sys.stderr
         sys.stdout = self.stringio = DebuggerAwareStringIO(self)
+        sys.stderr = sys.stdout
         return self
 
     def __exit__(self, *args):
         self.extend(self.stringio.getvalue().splitlines())
         del self.stringio
         sys.stdout = self.stdout
+        sys.stderr = self.stderr
 
 
 def generate(datasets=[], excludes=[], reclimit=0,
@@ -198,21 +211,18 @@ def generate(datasets=[], excludes=[], reclimit=0,
         pass
 
     # setup ptvsd debugging
-    vs_debug = os.environ.get('DEBUGGER_PTVSD')
+    vs_debug = int(os.environ.get('DEBUGGER_PTVSD'))
     if vs_debug:
         try:
             import ptvsd  # unconditional import breaks test coverage
             ptvsd.enable_attach(address=("0.0.0.0", 51006),
                                 redirect_output=True)
-            # uncomment these three lines, and set the debugging_port
-            # accordingly, if you need to debug datasets:
+            # uncomment these  line(s), and select "Demodata Attach" in VS Code
+            # if you need to debug datasets:
             # ptvsd.wait_for_attach()
             # ptvsd.break_into_debugger()
         except Exception as ex:
-            if hasattr(ex, 'message'):
-                log.debug(ex.message)
-            else:
-                log.debug('ptvsd debugging not possible: ' + ex.message)
+            log.debug('ptvsd debugging not possible: %s' % ex)
 
     # configure output
     width = 100
@@ -244,6 +254,7 @@ def generate(datasets=[], excludes=[], reclimit=0,
 
     # generate datasets
     error = ""
+    exception = None
     total_start = time()
     if not datasets:
         print(color("Nothing to do.", "dim"))
@@ -275,8 +286,9 @@ def generate(datasets=[], excludes=[], reclimit=0,
         try:
             with Capturing() as output:
                 dataset.generate(reclimit)
-        except Exception:
+        except Exception as e:
             error = "Error in dataset '%s':" % dataset
+            exception = e
             if pdb:
                 print("\n")
                 output.debugged = True
@@ -313,7 +325,7 @@ def generate(datasets=[], excludes=[], reclimit=0,
     total_dur = " {:.0f} s".format(total_end - total_start)
     if error:
         print(color(error, "error"))
-        raise
+        raise exception
     msg = "Success."
     line = " " * (width - len(msg) - len(total_dur))
     print(color("-" * width, "title"))

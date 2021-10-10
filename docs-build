@@ -40,6 +40,7 @@ BUILD=false
 CI=false
 CI_BRANCH=""
 CI_ENVIRONMENT=""
+TERMINAL=""
 NOAUTOAPI=""
 for i in "$@"; do
     if [ "$CI_BRANCH" == "SET" ]; then CI_BRANCH=$i; continue; fi
@@ -48,7 +49,7 @@ for i in "$@"; do
     if [ $i = "--build" ]; then BUILD=true; continue; fi
     if [ $i = "--keep" ]; then RM=false; continue; fi
     if [ $i = "--no-autoapi" ]; then NOAUTOAPI="--no-autoapi"; continue; fi
-    if [ $i = "--ci" ]; then CI=true; continue; fi
+    if [ $i = "--ci" ]; then CI=true; TERMINAL="-T"; continue; fi
     if [ $i = "--ci-branch" ]; then CI_BRANCH="SET"; continue; fi
     if [ $i = "--ci-environment" ]; then CI_ENVIRONMENT="SET"; continue; fi
     if [ $i = "--help" ]; then usage 2>&1; fi
@@ -95,7 +96,7 @@ fi
 
 # build docs
 echo -e "\n== build docs"
-docker-compose $DOCUMENTATION exec -T documentation docs-build $NOAUTOAPI
+docker-compose $DOCUMENTATION exec $TERMINAL documentation docs-build $NOAUTOAPI
 EXITCODE=$?
 
 # remove docker container

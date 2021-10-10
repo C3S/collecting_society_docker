@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create a chart of the accounts
+Create the account chart for financial bookkeeping
 """
 
 from proteus import Model, Wizard
@@ -27,7 +27,7 @@ def generate(reclimit=0):
     # entries
     company = Company(1)
     account_template, = AccountTemplate.find([(
-        'name', '=', "Kontenplan SKR03 (Germany)")])
+        'name', '=', "Kontenplan SKR03 (Germany)")], limit=1)
 
     # create chart
     create_chart.execute('account')
@@ -37,13 +37,15 @@ def generate(reclimit=0):
 
     # get accounts
     receivable, = Account.find([
-        ('kind', '=', 'receivable'),
-        ('company', '=', company.id),
-        ])
+            ('type.receivable', '=', True),
+            ('party_required', '=', True),
+            ('company', '=', company.id),
+            ], limit=1)
     payable, = Account.find([
-        ('kind', '=', 'payable'),
-        ('company', '=', company.id),
-        ])
+            ('type.payable', '=', True),
+            ('party_required', '=', True),
+            ('company', '=', company.id),
+            ], limit=1)
 
     # assign accounts to chart
     create_chart.form.account_receivable = receivable
