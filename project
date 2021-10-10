@@ -559,7 +559,7 @@ def error(msg):
 
 # --- execution ---------------------------------------------------------------
 
-def execute(cmd, cwd=False, abort=True, msg={},
+def execute(cmd, cwd=False, abort=True, reraise=False, msg={},
             stop_batch_group=False, stop_action_group=False):
     """Executes a command via subprocess check_output."""
     # print hint for the operation
@@ -591,6 +591,8 @@ def execute(cmd, cwd=False, abort=True, msg={},
             'action': len(cmd) > 1 and " ".join(cmd[1:]) or "",
             'data': err.output,
         }
+        if reraise:
+            raise err
         if abort:
             error(error_msg)
 
@@ -1577,9 +1579,16 @@ def git_merge(task, context={}):
         git_pull({**task, **{'version': target_branch}})
 
     # merge feature branch
-    output = execute(
-        ('git', 'merge', '--no-edit', '--no-ff', source_branch, target_branch),
-        cwd=target)
+    try:
+        output = execute(
+            ('git', 'merge', '--no-edit', '--no-ff',
+             source_branch, target_branch),
+            cwd=target, reraise=True)
+    except subprocess.CalledProcessError as err:
+        message(
+            {'level': 'warning', 'description': 'merge error',
+             'data': err.output})
+        return
     if 'changed' not in output:
         message({'level': verbose and 'info' or 'debug',
                  'description': 'nothing to merge'})

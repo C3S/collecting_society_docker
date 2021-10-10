@@ -3126,16 +3126,23 @@ Wrap-up
             ./project pull
             ./project merge --no-delete --no-push feature-upgrade
 
-        - Fix merge conflicts and commit again
+        - Fix merge conflicts and commit
             ::
 
-                ./project checkout feature-upgrade
                 ./project commit "fixes merge conflicts"
 
         - Run tests
             ::
 
-                ./service-test --keep
+                ./project checkout feature-upgrade
+                ./service-test --build --keep
+
+        - Commit again
+            ::
+
+                ./project status
+                ./project diff
+                ./project commit "fixes merge conflicts"
 
     - Merge feature branch into ``development`` branch
         ::

@@ -18,6 +18,7 @@ DEPENDS = [
     'event',
     'release',
     'website',
+    'distribution_plan'
 ]
 
 
