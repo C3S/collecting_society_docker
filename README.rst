@@ -3150,6 +3150,7 @@ Wrap-up
 
         - Wait for the result of the `Jenkins build`__
         - Fix the Jenkins job environment, if neccessary
+        - Note the upgrade procedure for the news entry instructions
         - Fix/commit/push the code, until it runs successfully
         - Check the documentation built
 
@@ -3158,10 +3159,8 @@ Wrap-up
 
             ./project promote development
 
-        - Wait for the result of the `Jenkins build`__
         - Fix the Jenkins job environment, if neccessary
-        - Fix/commit/push the code, until it runs successfully
-        - Check the documentation built
+        - Adjust all ``.env`` and config files manually, if neccessary
 
     - Update the `online documentation`__ for ``development`` and ``staging``
 
