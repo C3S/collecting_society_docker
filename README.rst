@@ -3122,11 +3122,13 @@ Wrap-up
     - Merge changes of ``development`` branch into the feature branch first
         ::
 
-            ./project merge development feature-upgrade
+            ./project checkout development
+            ./project merge --no-delete --no-push feature-upgrade
 
         - Fix merge conflicts and commit again
             ::
 
+                ./project checkout feature-upgrade
                 ./project commit "fixes merge conflicts"
 
         - Run tests
