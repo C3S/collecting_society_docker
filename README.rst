@@ -3123,6 +3123,7 @@ Wrap-up
         ::
 
             ./project checkout development
+            ./project pull
             ./project merge --no-delete --no-push feature-upgrade
 
         - Fix merge conflicts and commit again
