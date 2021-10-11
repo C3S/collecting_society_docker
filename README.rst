@@ -3175,7 +3175,6 @@ Wrap-up
 
 __ https://redmine.c3s.cc/projects/collecting_society/wiki/Overview#References
 __ https://jenkins1b.c3s.cc/job/collecting_society/job/development
-__ https://jenkins1b.c3s.cc/job/collecting_society/job/staging
 __ https://files.c3s.cc/collecting_society
 __ https://redmine.c3s.cc/projects/collecting_society/news
 
