@@ -17,12 +17,14 @@ volumes:
 services:
 
   database:
+    restart: always
     networks:
       - backend
     volumes:
       - collecting_society_postgresql_data:/var/lib/postgresql/data
 
   erpserver:
+    restart: always
     networks:
       - backend
     ports:
@@ -32,6 +34,7 @@ services:
       - collecting_society_trytond_files:/var/lib/trytond
 
   webserver:
+    restart: always
     networks:
       - frontend
     ports:
@@ -41,6 +44,7 @@ services:
       - collecting_society_nginx_dhparam:/etc/nginx/dhparam
 
   webapi:
+    restart: always
     networks:
       - frontend
       - backend
@@ -48,13 +52,20 @@ services:
       - collecting_society_trytond_files:/var/lib/trytond
 
   webgui:
+    restart: always
     networks:
       - frontend
       - backend
     volumes:
       - collecting_society_trytond_files:/var/lib/trytond
 
+  worker:
+    restart: always
+    networks:
+      - backend
+
   fingerprint:
+    restart: always
     networks:
       - backend
     volumes:

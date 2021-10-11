@@ -11,12 +11,14 @@ services:
 
   database:
     # entrypoint: ["echo", "Service disabled in docker-compose.staging.yml."]
+    restart: always
     networks:
       - backend
     volumes:
       - ./volumes/postgresql-data:/var/lib/postgresql/data
 
   erpserver:
+    restart: always
     networks:
       - backend
     ports:
@@ -28,6 +30,7 @@ services:
 
   webserver:
     # entrypoint: ["echo", "Service disabled in docker-compose.staging.yml."]
+    restart: always
     networks:
       - frontend
     ports:
@@ -38,6 +41,7 @@ services:
       - ./volumes/nginx-htpasswd:/etc/nginx/htpasswd
 
   webapi:
+    restart: always
     networks:
       - frontend
       - backend
@@ -48,6 +52,7 @@ services:
       - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
 
   webgui:
+    restart: always
     networks:
       - frontend
       - backend
@@ -58,10 +63,12 @@ services:
       - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
 
   worker:
+    restart: always
     networks:
       - backend
 
   fingerprint:
+    restart: always
     networks:
       - backend
     volumes:
