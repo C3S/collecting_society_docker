@@ -15,17 +15,6 @@ services:
     volumes:
       - ./volumes/postgresql-data:/var/lib/postgresql/data
 
-  erpserver:
-    networks:
-      - backend
-    ports:
-      - "127.0.0.1:8000:8000"  # jsonrpc (tryton client)
-      - "127.0.0.1:8069:8069"  # xmlrpc (proteus)
-      - "127.0.0.1:51005:51005"  # debugger for trytond
-      - "127.0.0.1:51006:51006"  # debugger for import script
-    volumes:
-      - ./volumes/trytond-files:/var/lib/trytond
-
   webserver:
     networks:
       - frontend
@@ -35,8 +24,19 @@ services:
       - ./volumes/nginx-certs:/etc/nginx/certs
       - ./volumes/nginx-dhparam:/etc/nginx/dhparam
       - ./volumes/nginx-htpasswd:/etc/nginx/htpasswd
-    logging:
-      driver: none
+    environment:
+      DISABLE_ACCESS_LOGS: 1
+
+  erpserver:
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "127.0.0.1:8000:8000"  # jsonrpc (tryton client)
+      - "127.0.0.1:51005:51005"  # debugger for trytond
+      - "127.0.0.1:51006:51006"  # debugger for import script
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
 
   webapi:
     networks:
