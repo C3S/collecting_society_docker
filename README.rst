@@ -58,8 +58,7 @@ Services
 |             |                     |                            |                 | | postgresql-data |
 +-------------+---------------------+----------------------------+-----------------+-------------------+
 | erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc | | shared          |
-|             |                     |                            | | 8069: xmlrpc  | | trytond-files   |
-|             |                     |                            | | 51005: ptvsd  |                   |
+|             |                     |                            | | 51005: ptvsd  | | trytond-files   |
 |             |                     |                            | | 51006: ptvsd  |                   |
 +-------------+---------------------+----------------------------+-----------------+-------------------+
 | webserver   | Nginx Server        |                            | 80: http        | | shared          |
@@ -407,18 +406,23 @@ Tryton
 ------
 
 To connect to Trytond, you can use one of the several Tryton client
-applications or APIs. For back-office use of the application, the Gtk2 based
-Tryton client is recommended.
+applications or APIs:
 
-.. note:: The Trytond server and the Tryton client are required to have the
-    same version branch.
+- The `Tryton Web Client`_ is installed by default and ready for use.
+- For back-office use the Gtk based `Tryton Desktop Client`__ is recommended.
 
-Clone the repository and switch to the ``6.0`` branch::
+__ 
+
+To install the desktop client, clone the repository and switch to the
+``6.0`` branch::
 
     $ cd MY/WORKING/SPACE
     $ git clone https://github.com/tryton/tryton.git
     $ cd tryton
     $ git checkout 6.0
+
+.. note:: The Trytond server and the Tryton client are required to have the
+    same version branch.
 
 Depending on the OS, there might be different ways to install the dependencies
 (see ``doc/installation.rst`` and `tryton-client`__ package of Ubuntu 21).
@@ -1495,15 +1499,31 @@ Login as demo user:
 ===================================== ============ ===================
 Username                              Password     Roles
 ===================================== ============ ===================
-``allroles1@collecting-society.test`` ``password`` licenser, licensee
-``licenser1@collecting-society.test`` ``password`` licenser
-``licensee1@collecting-society.test`` ``password`` licensee
+``allroles1@collecting-society.test`` ``password`` Licenser, Licensee
+``licenser1@collecting-society.test`` ``password`` Licenser
+``licensee1@collecting-society.test`` ``password`` Licensee
+===================================== ============ ===================
+
+Tryton Web Client
+-----------------
+
+Open the webbrowser and point it to the
+
+- tryton web client: http://erp.collecting_society.test
+
+Choose the database ``collecting_society`` and login as user:
+
+===================================== ============ ===================
+Username                              Password     Roles
+===================================== ============ ===================
+``admin``                             ``password`` Admin
+``storehouse1``                       ``password`` Storehouse Admin
 ===================================== ============ ===================
 
 .. _Tryton Usage:
 
-Tryton
-------
+Tryton Desktop Client
+---------------------
 
 Start Tryton::
 
@@ -1514,12 +1534,19 @@ Start Tryton::
 
 Open a connection to Trytond:
 
-========== ================================
-host       ``collecting_society.test:8000``
+========== ==================================
+host       ``erp.collecting_society.test:80``
 database   ``collecting_society``
-user       ``admin``
-password   ``admin``
-========== ================================
+========== ==================================
+
+Login as user:
+
+===================================== ============ ===================
+Username                              Password     Roles
+===================================== ============ ===================
+``admin``                             ``password`` Admin
+``storehouse1``                       ``password`` Storehouse Admin
+===================================== ============ ===================
 
 .. seealso:: `Tryton Usage Documentation`__
 
@@ -1539,7 +1566,6 @@ Other important entries are:
 * **Party**: Parties, Addresses
 * **Administration / Users**: Users, Web Users
 * **Administration / Sequences**: Sequences
-
 
 .. _Application Development:
 
@@ -1773,9 +1799,9 @@ The tree of the stages of the **service branch** (without substages)::
 
 The tree of the stages of the **compile branch** (without substages)::
 
-                            base
-                             |
-                           python
+                            base                       node
+                             |                          |
+                           python                   sao_compiled
                              |
                           compile
                              |
@@ -1791,7 +1817,8 @@ The copy relations:
 ============= ====================
 Image         Copy Sources
 ============= ====================
-erpserver     trytond_compiled
+erpserver     | trytond_compiled
+              | sao_compiled
 webapi        pyramid_compiled
 webgui        pyramid_compiled
 worker        proteus_compiled
@@ -2571,6 +2598,7 @@ Preperations
         - ``database``: Current postgres package `major version`__
         - ``browser``: Latest `selenium/standalone-firefox`__ tag
         - ``webserver``: Latest `nginx-proxy`__ tag
+        - ``sao_compiled``: Latest `node`__ tag
     - Update debian `package names/versions`__
       (search for ``apt-get`` in Dockerfile)
     - Remove version pinnings of pip packages
@@ -2580,6 +2608,7 @@ __ https://www.debian.org/releases/stable
 __ https://packages.debian.org/search?keywords=postgresql
 __ https://hub.docker.com/r/selenium/standalone-firefox/tags
 __ https://hub.docker.com/r/jwilder/nginx-proxy/tags
+__ https://hub.docker.com/_/node?tab=tags
 __ https://packages.debian.org
 
 Browser
@@ -2844,6 +2873,8 @@ Erpserver
             ::
 
                 > service-deploy
+
+            - Test `Tryton Web Client`_ interface
 
 4. Run healthcheck
     ::
