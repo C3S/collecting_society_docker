@@ -3,11 +3,11 @@
 
 [web]
 listen = 0.0.0.0:8000
-root = ../sao
+root = src/sao
 
 [ssl]
-# privatekey = /etc/ssl/private/ssl-cert-snakeoil.key
-# certificate = /etc/ssl/certs/ssl-cert-snakeoil.pem
+privatekey = /certs/privkey.pem
+certificate = /certs/fullchain.pem
 
 [database]
 uri = postgresql://postgres@database:5432/

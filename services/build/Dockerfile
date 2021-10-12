@@ -403,6 +403,24 @@ FROM proteus_testing_compiled AS proteus_development_compiled
 FROM proteus_${ENVIRONMENT}_compiled AS proteus_compiled
 
 
+#--- [COMPILE] NODEJS ---------------------------------------------------------
+
+### production
+FROM node:bullseye-slim AS nodejs_production_compiled
+
+### staging
+FROM nodejs_production_compiled AS nodejs_staging_compiled
+
+### testing
+FROM nodejs_staging_compiled AS nodejs_testing_compiled
+
+### development
+FROM nodejs_testing_compiled AS nodejs_development_compiled
+
+### result
+FROM nodejs_development_compiled AS nodejs_compiled
+
+
 #==============================================================================
 # Service Images
 #==============================================================================

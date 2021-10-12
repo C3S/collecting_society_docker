@@ -23,16 +23,6 @@ services:
     volumes:
       - collecting_society_postgresql_data:/var/lib/postgresql/data
 
-  erpserver:
-    restart: always
-    networks:
-      - backend
-    ports:
-      - "8000:8000"  # jsonrpc (tryton client)
-      - "8069:8069"  # xmlrpc (proteus)
-    volumes:
-      - collecting_society_trytond_files:/var/lib/trytond
-
   webserver:
     restart: always
     networks:
@@ -42,6 +32,17 @@ services:
     volumes:
       - collecting_society_nginx_certs:/etc/nginx/certs
       - collecting_society_nginx_dhparam:/etc/nginx/dhparam
+
+  erpserver:
+    restart: always
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "8000:8000"  # jsonrpc (tryton client)
+    volumes:
+      - collecting_society_trytond_files:/var/lib/trytond
+      - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
 
   webapi:
     restart: always

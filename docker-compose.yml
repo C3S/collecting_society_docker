@@ -26,30 +26,6 @@ services:
     environment:
       SERVICE: database
 
-  erpserver:
-    build:
-      context: ./services/build
-      target: erpserver
-      args: *buildargs
-    command: service-deploy
-    healthcheck:
-      test: /shared/healthcheck/erpserver
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - ./volumes/shared:/shared
-    depends_on:
-      database:
-        condition: service_healthy
-      fingerprint:
-        condition: service_started
-    env_file:
-      - .env
-      - services/erpserver.env
-    environment:
-      SERVICE: erpserver
-
   webserver:
     build:
       context: ./services/build
@@ -66,6 +42,34 @@ services:
       - ./services/config/nginx.proxy.conf:/etc/nginx/conf.d/proxy.conf
     environment:
       SERVICE: webserver
+
+  erpserver:
+    build:
+      context: ./services/build
+      target: erpserver
+      args: *buildargs
+    command: service-deploy
+    healthcheck:
+      test: /shared/healthcheck/erpserver
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./volumes/shared:/shared
+    depends_on:
+      database:
+        condition: service_healthy
+      webserver:
+        condition: service_healthy
+      fingerprint:
+        condition: service_started
+    env_file:
+      - .env
+      - services/erpserver.env
+    environment:
+      SERVICE: erpserver
+      VIRTUAL_HOST: ${VIRTUAL_HOST_ERPSERVER}
+      VIRTUAL_PORT: ${VIRTUAL_PORT_ERPSERVER}
 
   webapi:
     build:

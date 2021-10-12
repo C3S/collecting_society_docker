@@ -397,6 +397,7 @@ testing domains to localhost, add the following lines to ``/etc/hosts``::
 
     127.0.0.1   collecting_society.test
     127.0.0.1   api.collecting_society.test
+    127.0.0.1   erp.collecting_society.test
 
 Test the connection by following the instructions in `Webbrowser Usage`_.
 
@@ -568,6 +569,8 @@ Variable                           Values          Description
 ``VIRTUAL_PORT_WEBGUI``            integer         nginx reverse port for webgui
 ``VIRTUAL_HOST_WEBAPI``            URI             nginx URI for the webapi service
 ``VIRTUAL_PORT_WEBAPI``            integer         nginx reverse port for webapi
+``VIRTUAL_HOST_ERPSERVER``         URI             nginx URI for the erpserver service
+``VIRTUAL_PORT_ERPSERVER``         integer         nginx reverse port for erpserver
 ``MAIL_HOST``                      string          hostname of the mail server
 ``MAIL_PORT``                      integer         port of the mail server
 ``MAIL_DEFAULT_SENDER``            EMAIL           default sender email address

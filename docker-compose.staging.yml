@@ -17,17 +17,6 @@ services:
     volumes:
       - ./volumes/postgresql-data:/var/lib/postgresql/data
 
-  erpserver:
-    restart: always
-    networks:
-      - backend
-    ports:
-      - "8000:8000"  # jsonrpc (tryton client)
-      - "127.0.0.1:8069:8069"  # xmlrpc (proteus)
-    volumes:
-      - ./volumes/trytond-files:/var/lib/trytond
-      - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
-
   webserver:
     # entrypoint: ["echo", "Service disabled in docker-compose.staging.yml."]
     restart: always
@@ -39,6 +28,17 @@ services:
       - ./volumes/nginx-certs:/etc/nginx/certs
       - ./volumes/nginx-dhparam:/etc/nginx/dhparam
       - ./volumes/nginx-htpasswd:/etc/nginx/htpasswd
+
+  erpserver:
+    restart: always
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "8000:8000"  # jsonrpc (tryton client)
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
+      - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
 
   webapi:
     restart: always
