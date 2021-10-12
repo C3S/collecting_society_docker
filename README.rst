@@ -388,8 +388,8 @@ the database and `demodata`_ is created *(takes about 10 to 15 minutes)*::
 
 The services should now be running and ready for clients to connect.
 
-Webbrowser
-----------
+Domains
+-------
 
 The webserver uses domain based routing of requests. In order to resolve the
 testing domains to localhost, add the following lines to ``/etc/hosts``::
@@ -411,7 +411,7 @@ applications or APIs:
 - The `Tryton Web Client`_ is installed by default and ready for use.
 - For back-office use the Gtk based `Tryton Desktop Client`__ is recommended.
 
-__ 
+__ https://en.wikipedia.org/wiki/Tryton#/media/File:Tryton_sale_form.png
 
 To install the desktop client, clone the repository and switch to the
 ``6.0`` branch::
@@ -1484,28 +1484,15 @@ service-lint
       --path TEXT  Custom path with files to lint
       --help       Show this message and exit.
 
-.. _Webbrowser Usage:
+.. _Tryton Usage:
 
-Webbrowser
-----------
+Tryton
+------
 
-Open the webbrowser and point it to the
+.. _Tryton Web Client:
 
-- webgui: http://collecting_society.test
-- webapi: http://api.collecting_society.test
-
-Login as demo user:
-
-===================================== ============ ===================
-Username                              Password     Roles
-===================================== ============ ===================
-``allroles1@collecting-society.test`` ``password`` Licenser, Licensee
-``licenser1@collecting-society.test`` ``password`` Licenser
-``licensee1@collecting-society.test`` ``password`` Licensee
-===================================== ============ ===================
-
-Tryton Web Client
------------------
+Web Client
+''''''''''
 
 Open the webbrowser and point it to the
 
@@ -1520,10 +1507,10 @@ Username                              Password     Roles
 ``storehouse1``                       ``password`` Storehouse Admin
 ===================================== ============ ===================
 
-.. _Tryton Usage:
+.. _Tryton Desktop Client:
 
-Tryton Desktop Client
----------------------
+Desktop Client
+''''''''''''''
 
 Start Tryton::
 
@@ -1566,6 +1553,27 @@ Other important entries are:
 * **Party**: Parties, Addresses
 * **Administration / Users**: Users, Web Users
 * **Administration / Sequences**: Sequences
+
+.. _Webbrowser Usage:
+
+Webbrowser
+----------
+
+Open the webbrowser and point it to the
+
+- webgui: http://collecting_society.test
+- webapi: http://api.collecting_society.test
+
+Login as demo user:
+
+===================================== ============ ===================
+Username                              Password     Roles
+===================================== ============ ===================
+``allroles1@collecting-society.test`` ``password`` Licenser, Licensee
+``licenser1@collecting-society.test`` ``password`` Licenser
+``licensee1@collecting-society.test`` ``password`` Licensee
+===================================== ============ ===================
+
 
 .. _Application Development:
 
