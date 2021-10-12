@@ -406,19 +406,38 @@ FROM proteus_${ENVIRONMENT}_compiled AS proteus_compiled
 #--- [COMPILE] NODEJS ---------------------------------------------------------
 
 ### production
-FROM node:bullseye-slim AS nodejs_production_compiled
+FROM node:bullseye-slim AS sao_production_compiled
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+ARG TRYTON_VERSION
+RUN git clone -b ${TRYTON_VERSION} --single-branch https://github.com/tryton/sao.git /opt/sao \
+    && chown -R node:node /opt/sao
+USER node
+RUN cd /opt/sao \
+    && npm install --legacy-peer-deps \
+    && node_modules/.bin/grunt
+RUN cd /opt/sao && rm -rf \
+    .??* \
+    *.json \
+    *.js \
+    *.md \
+    node_modules \
+    src \
+    tests
 
 ### staging
-FROM nodejs_production_compiled AS nodejs_staging_compiled
+FROM sao_production_compiled AS sao_staging_compiled
 
 ### testing
-FROM nodejs_staging_compiled AS nodejs_testing_compiled
+FROM sao_staging_compiled AS sao_testing_compiled
 
 ### development
-FROM nodejs_testing_compiled AS nodejs_development_compiled
+FROM sao_testing_compiled AS sao_development_compiled
 
 ### result
-FROM nodejs_development_compiled AS nodejs_compiled
+FROM sao_development_compiled AS sao_compiled
 
 
 #==============================================================================
@@ -463,6 +482,7 @@ COPY worker.cron /etc/cron.d/worker
 
 FROM trytond AS erpserver
 COPY --from=trytond_compiled /opt/venv /opt/venv
+COPY --from=sao_compiled /opt/sao /sao
 
 
 #--- base -> python -> trytond -> WEBAPI --------------------------------------

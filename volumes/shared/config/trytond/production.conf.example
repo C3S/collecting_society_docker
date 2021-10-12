@@ -3,7 +3,7 @@
 
 [web]
 listen = 0.0.0.0:8000
-root = src/sao
+root = ../sao
 
 [ssl]
 privatekey = /certs/privkey.pem

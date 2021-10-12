@@ -12,6 +12,7 @@ services:
       args: &buildargs
         ENVIRONMENT: ${ENVIRONMENT}
         WORKDIR: ${WORKDIR}
+        TRYTON_VERSION: ${TRYTON_VERSION}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
     healthcheck:

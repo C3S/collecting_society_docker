@@ -122,10 +122,6 @@ production:
           - name: echoprint-codegen
             source: 'https://github.com/spotify/echoprint-codegen.git'
             version: 'master'
-          - name: sao
-            source: 'https://github.com/tryton/sao.git'
-            version: '${TRYTON_VERSION}'
-            targetpath: 'services/build'
       # link tryton modules
       - name: link tryton modules
         actions: ['path_link']
