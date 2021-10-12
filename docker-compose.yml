@@ -142,6 +142,8 @@ services:
         condition: service_healthy
       fingerprint:
         condition: service_started
+    links:
+      - "erpserver:${VIRTUAL_HOST_ERPSERVER}"
     env_file:
       - .env
       - services/worker.env
