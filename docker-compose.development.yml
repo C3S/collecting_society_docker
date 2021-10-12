@@ -24,8 +24,8 @@ services:
       - ./volumes/nginx-certs:/etc/nginx/certs
       - ./volumes/nginx-dhparam:/etc/nginx/dhparam
       - ./volumes/nginx-htpasswd:/etc/nginx/htpasswd
-    logging:
-      driver: none
+    environment:
+      DISABLE_ACCESS_LOGS: 1
 
   erpserver:
     networks:
