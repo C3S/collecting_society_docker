@@ -1504,7 +1504,7 @@ Choose the database ``collecting_society`` and login as user:
 Username                              Password     Roles
 ===================================== ============ ===================
 ``admin``                             ``password`` Admin
-``storehouse1``                       ``password`` Storehouse Admin
+``storehouse001``                     ``password`` Storehouse Admin
 ===================================== ============ ===================
 
 .. _Tryton Desktop Client:
@@ -1532,7 +1532,7 @@ Login as user:
 Username                              Password     Roles
 ===================================== ============ ===================
 ``admin``                             ``password`` Admin
-``storehouse1``                       ``password`` Storehouse Admin
+``storehouse001``                     ``password`` Storehouse Admin
 ===================================== ============ ===================
 
 .. seealso:: `Tryton Usage Documentation`__
