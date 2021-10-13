@@ -31,7 +31,7 @@
         // and run for example: ./service-test web --keep --path src/collecting_society_web/collecting_society_web/tests/integration/web_user.py:TestWebUser
         // finally add these lines to your test:
         // import ptvsd
-        // ptvsd.enable_attach(address=("0.0.0.0", 51003), redirect_output=True)
+        // ptvsd.enable_attach(address=("0.0.0.0", 51003))
         // ptvsd.wait_for_attach()
         // ptvsd.break_into_debugger()
         {
@@ -42,7 +42,7 @@
             "host": "localhost"
         },
         // the followint entry is for other cases, e.g.tests; insert this line:
-        // import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51004), redirect_output=True); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
+        // import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51004)); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
         // don't forget to open the resp. port in the docker-compose.yml!
         {
             "name": "Casual Debugging Attach",
@@ -63,7 +63,8 @@
         // volumes/shared/data. Uncomment 'ptvsd.wait_for_attach()' in
         // shared/data/main.py. To create all dependencies for a so called
         // 'leaf' dataset, for example 'sales' enter:
-        // $ docker-compose run --rm erpserver bash
+        // $ docker-compose run --rm  --service-ports erpserver bash
+        // $ deploy-service
         // $ db-rebuild --dataset sales
         // which will create a Postgres template with a snapshot from before
         // sales is applied. To debug sales and apply it again to the stored

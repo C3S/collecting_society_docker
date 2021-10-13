@@ -2,7 +2,7 @@
 	"name": "collecting_society",
 	"dockerComposeFile": [ "docker-compose.yml", "docker-compose.override.yml" ],
 	"runArgs": ["--projectname", "collecting_society"],
-	"service": "test_web",
+	"service": "web_test",
 	"workspaceFolder": "/shared",
 	"shutdownAction": "none",
 	"extensions": [
