@@ -120,7 +120,7 @@ production:
             source: 'https://github.com/tryton/proteus.git'
             version: '${TRYTON_VERSION}'
           - name: echoprint-codegen
-            source: 'https://github.com/spotify/echoprint-codegen.git'
+            source: 'https://github.com/C3S/echoprint-codegen.git'
             version: 'master'
       # link tryton modules
       - name: link tryton modules
