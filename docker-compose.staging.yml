@@ -35,7 +35,7 @@ services:
       - frontend
       - backend
     ports:
-      - "127.0.0.1:8000:8000"  # http
+      - "8000:8000"  # http
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
       - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
