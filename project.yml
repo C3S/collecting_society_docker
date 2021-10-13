@@ -113,9 +113,6 @@ production:
           - name: account_de_skr03
             source: 'https://github.com/tryton/account_de_skr03.git'
             version: '${TRYTON_VERSION}'
-          - name: sao
-            source: 'https://github.com/tryton/sao.git'
-            version: '${TRYTON_VERSION}'
           - name: web_user
             source: 'https://github.com/tryton/web_user.git'
             version: '${TRYTON_VERSION}'

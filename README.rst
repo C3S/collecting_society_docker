@@ -58,8 +58,7 @@ Services
 |             |                     |                            |                 | | postgresql-data |
 +-------------+---------------------+----------------------------+-----------------+-------------------+
 | erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc | | shared          |
-|             |                     |                            | | 8069: xmlrpc  | | trytond-files   |
-|             |                     |                            | | 51005: ptvsd  |                   |
+|             |                     |                            | | 51005: ptvsd  | | trytond-files   |
 |             |                     |                            | | 51006: ptvsd  |                   |
 +-------------+---------------------+----------------------------+-----------------+-------------------+
 | webserver   | Nginx Server        |                            | 80: http        | | shared          |
@@ -389,14 +388,15 @@ the database and `demodata`_ is created *(takes about 10 to 15 minutes)*::
 
 The services should now be running and ready for clients to connect.
 
-Webbrowser
-----------
+Domains
+-------
 
 The webserver uses domain based routing of requests. In order to resolve the
 testing domains to localhost, add the following lines to ``/etc/hosts``::
 
     127.0.0.1   collecting_society.test
     127.0.0.1   api.collecting_society.test
+    127.0.0.1   erp.collecting_society.test
 
 Test the connection by following the instructions in `Webbrowser Usage`_.
 
@@ -406,18 +406,23 @@ Tryton
 ------
 
 To connect to Trytond, you can use one of the several Tryton client
-applications or APIs. For back-office use of the application, the Gtk2 based
-Tryton client is recommended.
+applications or APIs:
 
-.. note:: The Trytond server and the Tryton client are required to have the
-    same version branch.
+- The `Tryton Web Client`_ is installed by default and ready for use.
+- For back-office use the Gtk based `Tryton Desktop Client`__ is recommended.
 
-Clone the repository and switch to the ``6.0`` branch::
+__ https://en.wikipedia.org/wiki/Tryton#/media/File:Tryton_sale_form.png
+
+To install the desktop client, clone the repository and switch to the
+``6.0`` branch::
 
     $ cd MY/WORKING/SPACE
     $ git clone https://github.com/tryton/tryton.git
     $ cd tryton
     $ git checkout 6.0
+
+.. note:: The Trytond server and the Tryton client are required to have the
+    same version branch.
 
 Depending on the OS, there might be different ways to install the dependencies
 (see ``doc/installation.rst`` and `tryton-client`__ package of Ubuntu 21).
@@ -568,6 +573,8 @@ Variable                           Values          Description
 ``VIRTUAL_PORT_WEBGUI``            integer         nginx reverse port for webgui
 ``VIRTUAL_HOST_WEBAPI``            URI             nginx URI for the webapi service
 ``VIRTUAL_PORT_WEBAPI``            integer         nginx reverse port for webapi
+``VIRTUAL_HOST_ERPSERVER``         URI             nginx URI for the erpserver service
+``VIRTUAL_PORT_ERPSERVER``         integer         nginx reverse port for erpserver
 ``MAIL_HOST``                      string          hostname of the mail server
 ``MAIL_PORT``                      integer         port of the mail server
 ``MAIL_DEFAULT_SENDER``            EMAIL           default sender email address
@@ -1477,30 +1484,33 @@ service-lint
       --path TEXT  Custom path with files to lint
       --help       Show this message and exit.
 
-.. _Webbrowser Usage:
-
-Webbrowser
-----------
-
-Open the webbrowser and point it to the
-
-- webgui: http://collecting_society.test
-- webapi: http://api.collecting_society.test
-
-Login as demo user:
-
-===================================== ============ ===================
-Username                              Password     Roles
-===================================== ============ ===================
-``allroles1@collecting-society.test`` ``password`` licenser, licensee
-``licenser1@collecting-society.test`` ``password`` licenser
-``licensee1@collecting-society.test`` ``password`` licensee
-===================================== ============ ===================
-
 .. _Tryton Usage:
 
 Tryton
 ------
+
+.. _Tryton Web Client:
+
+Web Client
+''''''''''
+
+Open the webbrowser and point it to the
+
+- tryton web client: http://erp.collecting_society.test
+
+Choose the database ``collecting_society`` and login as user:
+
+===================================== ============ ===================
+Username                              Password     Roles
+===================================== ============ ===================
+``admin``                             ``password`` Admin
+``storehouse001``                     ``password`` Storehouse Admin
+===================================== ============ ===================
+
+.. _Tryton Desktop Client:
+
+Desktop Client
+''''''''''''''
 
 Start Tryton::
 
@@ -1511,12 +1521,19 @@ Start Tryton::
 
 Open a connection to Trytond:
 
-========== ================================
-host       ``collecting_society.test:8000``
+========== ==================================
+host       ``erp.collecting_society.test:80``
 database   ``collecting_society``
-user       ``admin``
-password   ``admin``
-========== ================================
+========== ==================================
+
+Login as user:
+
+===================================== ============ ===================
+Username                              Password     Roles
+===================================== ============ ===================
+``admin``                             ``password`` Admin
+``storehouse001``                     ``password`` Storehouse Admin
+===================================== ============ ===================
 
 .. seealso:: `Tryton Usage Documentation`__
 
@@ -1536,6 +1553,26 @@ Other important entries are:
 * **Party**: Parties, Addresses
 * **Administration / Users**: Users, Web Users
 * **Administration / Sequences**: Sequences
+
+.. _Webbrowser Usage:
+
+Webbrowser
+----------
+
+Open the webbrowser and point it to the
+
+- webgui: http://collecting_society.test
+- webapi: http://api.collecting_society.test
+
+Login as demo user:
+
+===================================== ============ ===================
+Username                              Password     Roles
+===================================== ============ ===================
+``allroles1@collecting-society.test`` ``password`` Licenser, Licensee
+``licenser1@collecting-society.test`` ``password`` Licenser
+``licensee1@collecting-society.test`` ``password`` Licensee
+===================================== ============ ===================
 
 
 .. _Application Development:
@@ -1770,9 +1807,9 @@ The tree of the stages of the **service branch** (without substages)::
 
 The tree of the stages of the **compile branch** (without substages)::
 
-                            base
-                             |
-                           python
+                            base                       node
+                             |                          |
+                           python                   sao_compiled
                              |
                           compile
                              |
@@ -1788,7 +1825,8 @@ The copy relations:
 ============= ====================
 Image         Copy Sources
 ============= ====================
-erpserver     trytond_compiled
+erpserver     | trytond_compiled
+              | sao_compiled
 webapi        pyramid_compiled
 webgui        pyramid_compiled
 worker        proteus_compiled
@@ -2568,6 +2606,7 @@ Preperations
         - ``database``: Current postgres package `major version`__
         - ``browser``: Latest `selenium/standalone-firefox`__ tag
         - ``webserver``: Latest `nginx-proxy`__ tag
+        - ``sao_compiled``: Latest `node`__ tag
     - Update debian `package names/versions`__
       (search for ``apt-get`` in Dockerfile)
     - Remove version pinnings of pip packages
@@ -2577,6 +2616,7 @@ __ https://www.debian.org/releases/stable
 __ https://packages.debian.org/search?keywords=postgresql
 __ https://hub.docker.com/r/selenium/standalone-firefox/tags
 __ https://hub.docker.com/r/jwilder/nginx-proxy/tags
+__ https://hub.docker.com/_/node?tab=tags
 __ https://packages.debian.org
 
 Browser
@@ -2841,6 +2881,8 @@ Erpserver
             ::
 
                 > service-deploy
+
+            - Test `Tryton Web Client`_ interface
 
 4. Run healthcheck
     ::
