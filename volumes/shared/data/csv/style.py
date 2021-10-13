@@ -37,13 +37,13 @@ ignored = 0
 with open('import_styles.csv', 'w') as f:
     f.write('"name","description\n"')
     for s in styles:
-        if s[:9] != u'Browsing ':
+        if s[:9] != 'Browsing ':
             style = s.encode('UTF-8')
             f.write('"%s","%s"\n' % (style, "Description of " + style))
             n += 1
-print "Imported " + str(n) + " styles from discogs."
+print("Imported %s styles from discogs." % s)
 if len(dupes) > 0:
-    print "The following duplicate styles where found and only imported once:"
+    print("The following duplicate styles where found and only imported once:")
     for d in dupes:
-        if s[:9] != u'Browsing ':
-            print " - " + d
+        if s[:9] != 'Browsing ':
+            print(" - %s" % d)

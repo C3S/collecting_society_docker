@@ -89,8 +89,7 @@ class Datasets(list):
                 if name not in register:
                     unknown.append(name)
             if unknown:
-                raise(LookupError(
-                    "Dataset not found: %s" % ", ".join(unknown)))
+                raise LookupError("Dataset not found: %s" % ", ".join(unknown))
             # add modules
             for name in datasets:
                 if leaves:
@@ -109,8 +108,7 @@ class Datasets(list):
                 if name not in register:
                     unknown.append(name)
             if unknown:
-                raise(LookupError(
-                    "Dataset not found: %s" % ", ".join(unknown)))
+                raise LookupError("Dataset not found: %s" % ", ".join(unknown))
             # remove modules
             for name in excludes:
                 if register[name] in self:
