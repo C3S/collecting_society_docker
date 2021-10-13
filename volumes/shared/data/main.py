@@ -214,7 +214,7 @@ def generate(datasets=[], excludes=[], reclimit=0,
             ptvsd.enable_attach(address=("0.0.0.0", 51006))
             # uncomment these  line(s), and select "Demodata Attach" in VS Code
             # if you need to debug datasets:
-            ptvsd.wait_for_attach()
+            # ptvsd.wait_for_attach()
             # ptvsd.break_into_debugger()
         except Exception as ex:
             log.debug('ptvsd debugging not possible: %s' % ex)
