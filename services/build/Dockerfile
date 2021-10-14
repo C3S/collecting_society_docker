@@ -361,7 +361,7 @@ FROM pyramid_production_compiled AS pyramid_staging_compiled
 FROM pyramid_staging_compiled AS pyramid_testing_compiled
 RUN pip install \
     raven==6.10.0 \
-    selenium==3.141.0 \
+    selenium==4.0.0 \
     WebTest==3.0.0
 
 ### development
@@ -456,7 +456,7 @@ FROM jwilder/nginx-proxy:0.9.3 AS webserver
 
 #--- BROWSER ------------------------------------------------------------------
 
-FROM selenium/standalone-firefox:3.141 AS browser
+FROM selenium/standalone-firefox:4.0.0 AS browser
 
 
 #--- base -> python -> echoprint -> FINGERPRINT -------------------------------

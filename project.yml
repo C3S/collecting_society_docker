@@ -455,7 +455,7 @@ development:
           #   => hg only
           # - name: selenium
           #   source: 'https://github.com/SeleniumHQ/selenium.git'
-          #   version: 'tags/selenium-3.141.0'
+          #   version: 'tags/selenium-4.0.0'
           #   => > 200 MB
           - name: simpleeval
             source: 'https://github.com/danthedeckie/simpleeval.git'
