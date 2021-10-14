@@ -40,4 +40,6 @@ def generate(reclimit=0):
     #        distribution_plan=random.choice(all_distribution_plans)
     #    ).save()
 
+    # TODO: add some more utilisations for declarations with recurring period
+
 

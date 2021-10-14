@@ -6,9 +6,6 @@
 Demo data generation script.
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import sys
 import pdb as pdbpp
@@ -19,7 +16,6 @@ from time import time
 from proteus import config, Model, Wizard, ModelList
 
 from .datasets import Datasets
-
 
 log = logging.getLogger(__name__)
 _colorless = os.environ.get('ENVIRONMENT') == "testing"
@@ -215,8 +211,7 @@ def generate(datasets=[], excludes=[], reclimit=0,
     if vs_debug:
         try:
             import ptvsd  # unconditional import breaks test coverage
-            ptvsd.enable_attach(address=("0.0.0.0", 51006),
-                                redirect_output=True)
+            ptvsd.enable_attach(address=("0.0.0.0", 51006))
             # uncomment these  line(s), and select "Demodata Attach" in VS Code
             # if you need to debug datasets:
             # ptvsd.wait_for_attach()
