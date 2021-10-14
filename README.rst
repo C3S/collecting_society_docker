@@ -2231,9 +2231,9 @@ You can append the normal nosetest parameters::
 
     $ ./service-test worker --keep [--path PATH] [PARAMETER]
 
-- Run all tests quietly, drop into pdb on errors::
+- Run all tests quietly, drop into pdb on errors, don't suppress output::
 
-    $ ./service-test worker --keep --quiet --pdb
+    $ ./service-test worker --keep --quiet --pdb --nocapture
 
 - Run a specific set of tests::
 
@@ -2299,9 +2299,9 @@ You can append the normal nosetest parameters::
 
     $ ./service-test web --keep [--path PATH] [PARAMETER]
 
-- Run all tests quietly, drop into pdb on errors::
+- Run all tests quietly, drop into pdb on errors, don't suppress output::
 
-    $ ./service-test web --keep --quiet --pdb
+    $ ./service-test web --keep --quiet --pdb --nocapture
 
 - Run a specific set of tests::
 
