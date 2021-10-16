@@ -23,7 +23,7 @@ services:
         WORKDIR: ${WORKDIR}
         TRYTON_VERSION: ${TRYTON_VERSION}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
-        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+        DEBUGGER_DEBUGPY: ${DEBUGGER_DEBUGPY}
     networks:
       - test_backend
     healthcheck:
@@ -132,7 +132,7 @@ services:
       PGPASSWORD: s0secret!!
       ECHOPRINT_HOSTNAME: test_${ECHOPRINT_HOSTNAME}
       DEBUGGER_WINPDB: 0
-      DEBUGGER_PTVSD: 0
+      DEBUGGER_DEBUGPY: 0
 
   test_browser:
     build:
@@ -142,7 +142,7 @@ services:
         ENVIRONMENT: ${ENVIRONMENT}
         WORKDIR: ${WORKDIR}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
-        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+        DEBUGGER_DEBUGPY: ${DEBUGGER_DEBUGPY}
     volumes:
       - /dev/shm:/dev/shm
     networks:

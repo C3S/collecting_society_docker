@@ -206,18 +206,15 @@ def generate(datasets=[], excludes=[], reclimit=0,
     except Exception:
         pass
 
-    # setup ptvsd debugging
-    vs_debug = int(os.environ.get('DEBUGGER_PTVSD'))
+    # setup debugpy debugging
+    vs_debug = int(os.environ.get('DEBUGGER_DEBUGPY'))
     if vs_debug:
-        try:
-            import ptvsd  # unconditional import breaks test coverage
-            ptvsd.enable_attach(address=("0.0.0.0", 51006))
-            # uncomment these line(s), and select "Demodata Attach" in VS Code
-            # if you need to debug datasets:
-            # ptvsd.wait_for_attach()
-            # ptvsd.break_into_debugger()
-        except Exception as ex:
-            log.debug('ptvsd debugging not possible: %s' % ex)
+        import debugpy  # unconditional import breaks test coverage
+        debugpy.listen(("0.0.0.0", 51006))
+        # for use with "Demodata Attach" debugging in VS Code
+        # if you need to debug datasets, set DEBUGGER_DEMODATA_WAIT=1:
+        if int(os.environ.get('DEBUGGER_DEMODATA_WAIT')):
+            debugpy.wait_for_client()
 
     # configure output
     width = 100
