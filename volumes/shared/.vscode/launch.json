@@ -57,20 +57,24 @@
             "type": "python",
             "request": "attach",
             "port": 51005,
-            "host": "localhost"
+            "host": "localhost",
+            "subProcess": true
         },
         // the followint entry is for debugging demo data generation in
-        // volumes/shared/data. Uncomment 'ptvsd.wait_for_attach()' in
-        // shared/data/main.py. To create all dependencies for a so called
+        // volumes/shared/data. To create all dependencies for a so called
         // 'leaf' dataset, for example 'sales' enter:
         // $ docker-compose run --rm  --service-ports erpserver bash
         // $ deploy-service
         // $ db-rebuild --dataset sales
         // which will create a Postgres template with a snapshot from before
         // sales is applied. To debug sales and apply it again to the stored
-        // template use the --cache option:
+        // template use the --cache option (repeat step as long as you like):
         // $ db-rebuild --dataset sales --cache
-        // if satisfied with sales, you may want to move on to a new dataset
+        // Uncomment 'ptvsd.wait_for_attach()' in shared/data/main.py if you
+        // want to debug the dataset launching pdvsd with "Demodata Attach".
+        // (Note: If you are not able to connect using ptvsd, try to restart
+        // the VS Code container instance.)
+        // If satisfied with sales, you may want to move on to a new dataset
         // that depends on sales, e.g. sales_statistics, you could enter:
         // db-copy --force collecting_society collecting_society_template
         // for more info: https://files.c3s.cc/collecting_society/development/generated/collecting_society_docker_README.html#id29
