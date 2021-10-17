@@ -10,7 +10,7 @@ The main resources can be found here:
 - Issues_
 - Wiki_
 
-.. _Documentation: https://files.c3s.cc/collecting_society
+.. _Documentation: http://docs.c3s.cc/collecting_society
 .. _Issues: https://redmine.c3s.cc/projects/collecting_society/issues
 .. _Wiki: https://redmine.c3s.cc/projects/collecting_society/wiki
 
@@ -3217,7 +3217,7 @@ Wrap-up
 
 __ https://redmine.c3s.cc/projects/collecting_society/wiki/Overview#References
 __ https://jenkins1b.c3s.cc/job/collecting_society/job/development
-__ https://files.c3s.cc/collecting_society
+__ http://docs.c3s.cc/collecting_society
 __ https://redmine.c3s.cc/projects/collecting_society/news
 
 Problems
