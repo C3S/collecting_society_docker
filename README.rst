@@ -402,6 +402,47 @@ Test the connection by following the instructions in `Webbrowser Usage`_.
 
 .. _Tryton Installation:
 
+Email
+-----
+
+For staging ``staging`` and ``production`` environments:
+
+1. Find out the docker host ip of the docker0 interface (usually ``172.17.0.1``)
+   and the docker subnet (usually ``172.0.0.0/8``)::
+
+        $ ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+'
+        172.17.0.1
+
+        $ docker network inspect collecting_society_frontend | grep -Po '(?<=Subnet": ").*(?=")'
+        172.25.0.0/16
+
+2. Adjust the following `.env`_ variables::
+
+        # docker host ip
+        MAIL_HOST=172.17.0.1
+
+        # MTA port on host
+        MAIL_PORT=25
+
+        # activate mails
+        MAIL_TO_REAL_WORLD=1
+
+3. Configure your MTA to listen to the docker host ip and to accept mails from
+   the docker subnet. If you use ``exim4`` for example, adjust
+   ``/etc/exim4/update-exim4.conf.conf`` and restart the MTA::
+
+        # add docker host ip
+        dc_local_interfaces='127.0.0.1 ; ::1 ; 172.17.0.1'
+
+        # add docker subnet
+        dc_relay_nets='172.0.0.0/8'
+
+4. Add an ``iptable`` rule to allow packages from the docker subnet to reach the
+   host MTA service::
+
+        # iptables -A INPUT -s <SUBNET> -d <HOSTIP> -p tcp --dport 25 -j ACCEPT
+        iptables -A INPUT -s 172.0.0.0/8 -d 172.17.0.1 -p tcp --dport 25 -j ACCEPT
+
 Tryton
 ------
 
