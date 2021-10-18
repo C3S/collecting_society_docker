@@ -589,11 +589,12 @@ __ https://docs.docker.com/compose/reference/envvars/
 Variable                           Values          Description
 ================================== =============== =====================================
 ``PROJECT``                        string          project name
+``BRANCH``                         string          branch of project repositories
 ``ENVIRONMENT``                    | "development" environment, switch for config files
                                    | "staging"
                                    | "production"
-``BRANCH``                         string          branch of project repositories
 ``BUILD``                          string          build number added by ci
+``CHECKOUT_REFERENCES``            0|1             checkout pip packages for reference
 ``COMPOSE_DOCKER_CLI_BUILD``       0|1             use BuildKit for docker builds
 ``COMPOSE_PROJECT_NAME``           string          prefix for containers
 ``COMPOSE_IGNORE_ORPHANS``         0|1             suppress orphan container warnings
@@ -1900,11 +1901,11 @@ The pip packages installed for the applications also can be found in the
 Dockerfile and are all pinned. For a list of packages, search for
 ``pip install`` in ``./services/build/Dockerfile``.
 
-The source code of those packages can also be found in the folder
-``./volumes/shared/ref/`` and are provided for reference and for quick lookups
-during development. The source code is not used though. The repositories are
-cloned on the first run of the `project script`_ update command and can be
-configured in ``./project.yml``:
+If ``CHECKOUT_REFERENCES`` is set to ``1`` in `.env`_, the source code of those
+packages can also be found in the folder ``./volumes/shared/ref/`` and are
+provided for reference and for quick lookups during development. The source
+code is not used though. The repositories are cloned on the `project script`_
+update command and can be configured in ``./project.yml``:
 
 .. code-block:: yaml
 
