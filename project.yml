@@ -346,6 +346,7 @@ development:
       - name: checkout repos of pinned pip packages for reference
         actions: ['git_clone', 'git_fetch', 'git_checkout']
         targetpath: 'volumes/shared/ref'
+        condition: '${CHECKOUT_REFERENCES}'
         batch:
           - name: colander
             source: 'https://github.com/Pylons/colander.git'
