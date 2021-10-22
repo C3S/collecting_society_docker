@@ -2105,6 +2105,11 @@ the debug config drop-down box and a debug toolbar should appear.
     ``.devcontainer.json`` will determine which container is being selected by
     the *Remote-Containers* plugin.
 
+To debug demodata creation, you would want the debugger to wait until you
+attach. Use this env var:
+
+    DEBUGGER_DEMODATA_WAIT=1
+
 Winpdb
 ''''''
 
