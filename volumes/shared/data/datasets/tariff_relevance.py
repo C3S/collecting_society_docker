@@ -44,16 +44,16 @@ def generate(reclimit=0):
     tariff_categories = TariffCategory.find([])
     utilisations = Utilisation.find([])
 
-    # for utilisation in utilisations:
-    #     utiltarcat = utilisation.tariff.category.code
-    #     tariff_relevances = Tariff.find(
-    #         [('category.code', '=', utiltarcat)])[-1]
-    #     random_relevance_cat = random.choice(
-    #         tariff_relevances.category.relevance_categories)
-    #     if tariff_relevances.category:
-    #         relevance = TariffRelevance()
-    #         relevance.category = random_relevance_cat
-    #         relevance.value = random_relevance_cat.value_default
-    #         relevance.save()
-    #         utilisation.estimated_relevance = relevance.id
-    #         utilisation.save()
+    for utilisation in utilisations:
+        utiltarcat = utilisation.tariff.category.code
+        tariff_relevances = Tariff.find(
+            [('category.code', '=', utiltarcat)])[-1]
+        random_relevance_cat = random.choice(
+            tariff_relevances.category.relevance_categories)
+        if tariff_relevances.category:
+            relevance = TariffRelevance()
+            relevance.category = random_relevance_cat
+            relevance.value = random_relevance_cat.value_default
+            relevance.save()
+            utilisation.estimated_relevance = relevance
+            utilisation.save()

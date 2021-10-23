@@ -10,7 +10,7 @@ if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "staging" ]; then
 fi
 
 if [ "$DEBUGGER_DEBUGPY" = "1" ]; then
-    $WORKDIR/deploy/erpserver.py $DEV -vv -c $WORKDIR/config/trytond/$ENVIRONMENT.conf
+    $WORKDIR/deploy/erpserver.py $DEV -c $WORKDIR/config/trytond/$ENVIRONMENT.conf
 else
     trytond $DEV -c $WORKDIR/config/trytond/$ENVIRONMENT.conf
 fi
