@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the tariff relevance of context objects
+Create the tariff relevance of utilisations
 """
 
 import random
