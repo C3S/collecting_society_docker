@@ -19,33 +19,15 @@ DEPENDS = [
 
 def generate(reclimit=0):
 
-    # models
-    # DistributionPlan = Model.get('distribution.plan')
-    # Declaration = Model.get('declaration')
+    # model
     Utilisation = Model.get('utilisation')
 
-    # prepare datasets we depend upon
-    # all_declarations = Declaration.find([])
-    # all_distribution_plans = DistributionPlan.find([])
+    # prepare dataset we depend upon
     all_utilisations = Utilisation.find([])
 
-    # create one utilization per declaration -- no longer needed: utilization
-    #                                           gets created with declaration!
-    # for declaration in all_declarations:
-    #     Utilisation(
-    #         declaration=declaration,
-    #         licensee=declaration.licensee,
-    #         state=declaration.state,
-    #         start=declaration.creation_time,
-    #         tariff=declaration.tariff,
-    #         context=declaration.context,
-    #         distribution_plan=random.choice(all_distribution_plans)
-    #     ).save()
-
-    # add some calculation base amounts
     for each_util in all_utilisations:
         each_util.estimated_base = decimal.Decimal(round(
-            random.randint(100, 10000)))
+            random.randint(100, 10000)))  # add some calculation base amounts
         each_util.save()
 
     # TODO: add some more utilisations for declarations with recurring period

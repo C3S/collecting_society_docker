@@ -8,6 +8,7 @@ Demo data generation script.
 
 import os
 import sys
+import socket
 import pdb as pdbpp
 import traceback
 import logging
@@ -210,7 +211,12 @@ def generate(datasets=[], excludes=[], reclimit=0,
     vs_debug = int(os.environ.get('DEBUGGER_DEBUGPY'))
     if vs_debug:
         import debugpy  # unconditional import breaks test coverage
-        debugpy.listen(("0.0.0.0", 51006))
+        try:
+            debugpy.listen(("0.0.0.0", 51006))
+            print("debugpy started and listening to port 51006.")
+        except (RuntimeError, socket.error) as err:
+            print("debugpy could not be started (port 51006 already used "
+                  "by debug session?): " + str(err))
         # for use with "Demodata Attach" debugging in VS Code
         # if you need to debug datasets, set DEBUGGER_DEMODATA_WAIT=1:
         if int(os.environ.get('DEBUGGER_DEMODATA_WAIT')):

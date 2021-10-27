@@ -21,7 +21,8 @@ def make_server(*args, **kwargs):
         debugpy.listen(("0.0.0.0", 51005))
         print("debugpy started.")
     except (RuntimeError, socket.error) as err:
-        print("debugpy could not be started: " + err)
+        print("debugpy could not be started (port 51005 already used "
+              "by debug session?): " + str(err))
     return serving._make_server(*args, **kwargs)
 
 
