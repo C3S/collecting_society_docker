@@ -209,7 +209,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ### production
 FROM compile AS python_production_compiled
 RUN pip install \
-    click==8.0.1
+    click
 
 ### staging
 FROM python_production_compiled AS python_staging_compiled
@@ -217,20 +217,20 @@ FROM python_production_compiled AS python_staging_compiled
 ### testing
 FROM python_staging_compiled AS python_testing_compiled
 RUN pip install \
-    autoapi==2.0.1 \
-    coverage==5.5 \
-    flake8==3.9.2 \
-    nose==1.3.7 \
-    nose2==0.10.0 \
-    pytest==6.2.5 \
-    sphinx==4.2.0 \
-    sphinx_rtd_theme==1.0.0 \
-    tox==3.24.4
+    autoapi \
+    coverage \
+    flake8 \
+    nose \
+    nose2 \
+    pytest \
+    sphinx \
+    sphinx_rtd_theme \
+    tox
 
 ### development
 FROM python_testing_compiled AS python_development_compiled
 RUN pip install \
-    pdbpp==0.10.3
+    pdbpp
 
 ARG DEBUGGER_PTVSD
 RUN if [ ${DEBUGGER_PTVSD} -ne 0 ]; then pip install \
@@ -267,8 +267,8 @@ RUN cd tokyotyrant-1.1.41 && ./configure --prefix=/opt/tokyotyrant/ --with-tc=/o
 
 # install python packages
 RUN pip install \
-    web.py==0.62 \
-    pyechonest==9.0.0
+    web.py \
+    pyechonest
 
 ### staging
 FROM echoprint_production_compiled AS echoprint_staging_compiled
@@ -288,40 +288,43 @@ FROM echoprint_${ENVIRONMENT}_compiled AS echoprint_compiled
 FROM python_compiled AS trytond_production_compiled
 # trytond mandatory
 RUN pip install \
-    Genshi==0.7.5 \
-    lxml==4.6.3 \
-    passlib[bcrypt]==1.7.4 \
-    polib==1.1.1 \
-    python-dateutil==2.8.2 \
-    python-sql==1.3.0 \
-    relatorio[fodt]==0.10.0 \
-    werkzeug==1.0.1 \
-    wrapt==1.12.1
+    Genshi \
+    lxml \
+    passlib[bcrypt] \
+    polib \
+    python-dateutil \
+    python-sql \
+    relatorio[fodt] \
+    werkzeug \
+    wrapt
 # trytond optional
 RUN pip install \
-    gevent==21.8.0 \
-    html2text==2020.1.16 \
-    pillow==8.3.2 \
-    psycopg2==2.9.1 \
-    pydot==1.4.2 \
-    python-Levenshtein==0.12.2 \
-    weasyprint==53.3
+    gevent \
+    html2text \
+    pillow \
+    psycopg2 \
+    pydot \
+    python-Levenshtein \
+    weasyprint
 # additional
 RUN pip install \
-    hurry.filesize==0.9 \
-    interlude==1.3.1 \
-    mock==4.0.3 \
-    pyOpenSSL==21.0.0 \
-    pytz==2021.3 \
-    requests==2.26.0 \
-    vatnumber==1.2
-# trytond currency
-RUN pip install \
-    forex-python==1.6 \
-    pycountry==20.7.3
+    hurry.filesize \
+    interlude \
+    mock \
+    pyOpenSSL \
+    pytz \
+    requests \
+    vatnumber
 # trytond account
 RUN pip install \
-    simpleeval==0.9.10
+    simpleeval
+# trytond currency
+RUN pip install \
+    forex-python \
+    pycountry
+# proteus
+RUN pip install \
+    defusedxml
 
 ### staging
 FROM trytond_production_compiled AS trytond_staging_compiled
@@ -341,18 +344,18 @@ FROM trytond_${ENVIRONMENT}_compiled AS trytond_compiled
 ### production
 FROM trytond_compiled AS pyramid_production_compiled
 RUN pip install \
-    colander==1.8.3 \
-    cornice==6.0.0 \
-    cornice-swagger==1.0.1 \
-    cryptacular==1.6.2 \
-    Pillow==8.3.2 \
-    deform==2.0.15 \
-    pyramid==2.0 \
-    pyramid-beaker==0.8 \
-    pyramid-chameleon==0.3 \
-    pyramid-mailer==0.15.1 \
-    python-magic==0.4.24 \
-    waitress==2.0.0
+    colander \
+    cornice \
+    cornice-swagger \
+    cryptacular \
+    Pillow \
+    deform \
+    pyramid \
+    pyramid-beaker \
+    pyramid-chameleon \
+    pyramid-mailer \
+    python-magic \
+    waitress
 
 ### staging
 FROM pyramid_production_compiled AS pyramid_staging_compiled
@@ -360,14 +363,14 @@ FROM pyramid_production_compiled AS pyramid_staging_compiled
 ### testing
 FROM pyramid_staging_compiled AS pyramid_testing_compiled
 RUN pip install \
-    raven==6.10.0 \
-    selenium==4.0.0 \
-    WebTest==3.0.0
+    raven \
+    selenium \
+    WebTest
 
 ### development
 FROM pyramid_testing_compiled AS pyramid_development_compiled
 RUN pip install \
-    pyramid-debugtoolbar==4.9
+    pyramid-debugtoolbar
 
 ### result
 FROM pyramid_${ENVIRONMENT}_compiled AS pyramid_compiled
@@ -384,11 +387,12 @@ RUN git clone https://github.com/spotify/echoprint-codegen.git /opt/echoprint-co
     && chmod 755 /opt/echoprint-codegen/echoprint-codegen
 # install pip packages
 RUN pip install  \
-    pyechonest==9.0.0 \
-    pydub==0.25.1  \
-    pytaglib==1.4.6  \
-    python-dateutil==2.8.2 \
-    requests==2.26.0
+    defusedxml \
+    pyechonest \
+    pydub \
+    pytaglib \
+    python-dateutil \
+    requests
 
 ### staging
 FROM proteus_production_compiled AS proteus_staging_compiled
@@ -451,12 +455,12 @@ FROM postgres:13 AS database
 
 #--- WEBSERVER ----------------------------------------------------------------
 
-FROM jwilder/nginx-proxy:0.9.3 AS webserver
+FROM jwilder/nginx-proxy:1.2.1 AS webserver
 
 
 #--- BROWSER ------------------------------------------------------------------
 
-FROM selenium/standalone-firefox:4.0.0 AS browser
+FROM selenium/standalone-firefox:4.8.0 AS browser
 
 
 #--- base -> python -> echoprint -> FINGERPRINT -------------------------------
