@@ -312,6 +312,8 @@ development:
             source: 'volumes/shared/config/trytond/testing.conf'
           - name: collecting_society.production.conf
             source: 'volumes/shared/config/trytond/production.conf'
+          - name: collecting_society.passfile
+            source: 'volumes/shared/config/trytond/passfile'
           # pyramid
           - name: portal_web.development.ini
             source: 'volumes/shared/src/portal_web/development.ini'
