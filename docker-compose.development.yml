@@ -1,0 +1,76 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
+version: '2.4'
+
+networks:
+  frontend:
+  backend:
+
+services:
+
+  database:
+    networks:
+      - backend
+    volumes:
+      - ./volumes/postgresql-data:/var/lib/postgresql/data
+
+  webserver:
+    networks:
+      - frontend
+    ports:
+      - "127.0.0.1:80:80"  # http
+    volumes:
+      - ./volumes/nginx-certs:/etc/nginx/certs
+      - ./volumes/nginx-dhparam:/etc/nginx/dhparam
+      - ./volumes/nginx-htpasswd:/etc/nginx/htpasswd
+    environment:
+      DISABLE_ACCESS_LOGS: 1
+
+  erpserver:
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "127.0.0.1:8000:8000"  # jsonrpc (tryton client)
+      - "127.0.0.1:51005:51005"  # debugger for trytond
+      - "127.0.0.1:51006:51006"  # debugger for import script
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
+
+  webapi:
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "127.0.0.1:6544:6543"  # pyramid pserve
+      - "127.0.0.1:51001:51001"  # debugger
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
+
+  webgui:
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "127.0.0.1:6543:6543"  # pyramid pserve
+      - "127.0.0.1:51000:51000"  # debugger
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
+
+  worker:
+    networks:
+      - backend
+    ports:
+      - "127.0.0.1:51002:51002"  # debugger
+    environment:
+      PGPASSWORD: s0secret!!
+
+  fingerprint:
+    networks:
+      - backend
+    ports:
+      - "127.0.0.1:8080:8080"  # http
+      - "127.0.0.1:51004:51004"  # debugger
+    volumes:
+      - ./volumes/echoprint-data:/opt/echoprint-data

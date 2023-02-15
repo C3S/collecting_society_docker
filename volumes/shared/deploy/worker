@@ -1,0 +1,14 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Deploy script for worker
+
+WORKERPATH=/shared/src/collecting_society_worker/collecting_society_worker
+SLEEP=60
+
+echo "Starting worker, running every $SLEEP seconds."
+while true; do
+    $WORKERPATH/repro.py all
+    sleep $SLEEP
+done

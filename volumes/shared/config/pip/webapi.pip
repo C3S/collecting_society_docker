@@ -1,0 +1,5 @@
+--no-index
+
+-r erpserver.pip
+-e src/portal_web
+-e src/collecting_society_web

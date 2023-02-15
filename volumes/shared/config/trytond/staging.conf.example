@@ -1,0 +1,27 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
+[web]
+listen = 0.0.0.0:8000
+root = ../sao
+
+[ssl]
+privatekey = /certs/privkey.pem
+certificate = /certs/fullchain.pem
+
+[database]
+uri = postgresql://postgres@database:5432/
+list = True
+retry = 5
+language = de
+path = /trytond-files
+
+[email]
+uri = smtp://localhost:25
+
+[session]
+timeout = 3600
+super_pwd = admin
+
+[report]
+unoconv = pipe,name=trytond;urp;StarOffice.ComponentContext

@@ -1,0 +1,21 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Healthcheck script for pyramid
+
+port_closed () {
+    ! tail -n +2 /proc/net/tcp \
+         | cut -d":" -f"3" \
+         | cut -d" " -f"1" \
+         | xargs -I {} printf "%d\n" 0x{} \
+         | grep "^$1$" > /dev/null
+}
+
+# ignore dateset creation
+[ -f "running_db_creation.delete_me" ] && exit 0
+
+# check ports
+port_closed $VIRTUAL_PORT && exit 1
+
+exit 0

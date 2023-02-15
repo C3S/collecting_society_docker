@@ -1,0 +1,26 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
+version: '2.4'
+
+services:
+
+  documentation:
+    build:
+      context: ./services/build
+      target: documentation
+      args:
+        ENVIRONMENT: ${ENVIRONMENT}
+        WORKDIR: ${WORKDIR}
+        TRYTON_VERSION: ${TRYTON_VERSION}
+        DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
+        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+    command: tail -f /dev/null
+    volumes:
+      - ./volumes/shared:/shared
+      - .:/collecting_society_docker
+    env_file:
+      - .env
+      - services/webgui.env
+    environment:
+      SERVICE: documentation

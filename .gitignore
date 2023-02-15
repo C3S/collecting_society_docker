@@ -1,3 +1,6 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
 # Swap files
 *~
 
@@ -41,11 +44,12 @@ htmlcov/
 .coverage
 .cache
 nosetests.xml
+nosetests_*.xml
 coverage.xml
-ado/cover
+/volumes/shared/tests
 
 # Translations
-#*.mo   unless we integrate the translation tools into the build process, 
+#*.mo   unless we integrate the translation tools into the build process,
 #*.pot  we need to version these files
 
 # Django stuff:
@@ -57,16 +61,58 @@ docs/_build/
 # PyBuilder
 target/
 
-# Ado
-ado/etc/*.sqlite
-ado/src
-ado/ref
-ado/tmp
-postgresql-data
+# Ctags
+tags
+
+# Tmp Files
+/.tmp
+*.backup
+
+# Volumes
+/volumes/*
+!/volumes/shared
+
+# Created files and foldes
+/cli
+.flake8
+/code
+/docs
+/tests
+/services/config/*
+!/services/config/nginx.proxy.conf
+/services/deploy
+/services/healthcheck
+/services/pip
+/volumes/shared/src
+/volumes/shared/ref
+/volumes/shared/tmp
+/volumes/shared/running_db_creation.delete_me
+/volumes/shared/pyramid_debugtoolbar_templates_exception_summary_dbtmako
 
 # pyramid_mailer.debug
-ado/mail
+/volumes/shared/mail
 
 # Configuration files for docker container
-/*.env
-/ado/etc/trytonpassfile
+/docker-compose.*.yml
+!/docker-compose.development.yml
+!/docker-compose.staging.yml
+!/docker-compose.production.yml
+!/docker-compose.testing.yml
+!/docker-compose.documentation.yml
+/.env
+/services/*.env
+!/services/build
+/volumes/shared/config/trytond/passfile
+/volumes/shared/config/trytond/staging.conf
+/volumes/shared/config/trytond/production.conf
+
+# VS Code
+/.devcontainer.json
+/.vscode/*
+
+# Sphinx Documentation
+/volumes/shared/docs/source/generated
+/volumes/shared/docs/source/collecting_society
+
+# Tryton data development
+/volumes/shared/data/develop.txt

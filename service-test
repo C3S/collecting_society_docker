@@ -1,0 +1,191 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+#% Usage: ./service-test [service] [--down] [--build] [--keep] [--lint]
+#%                       [--ci] [--ci-branch NAME] [--ci-environment NAME]
+#%                       [--help] [PARAMS]
+#%
+#%   This script runs the unit/function/integration tests and linter for the services:
+#%     - erpserver (tryton)
+#%     - web (pyramid)
+#%     - worker (echoprint)
+#%
+#% Options:
+#%   service: web|worker|erpserver|all (default: all)
+#%   --down: immediately stop, remove the container and exit
+#%   --build: build images and recreate the test database template
+#%   --keep: keep container running
+#%   --lint: only lint the code, don't run the tests
+#%   --ci: continous integration mode
+#%         - update repositories (overrides config files!)
+#%         - build images
+#%         - recreate the test database template
+#%         - run tests and linter
+#%         - stop and remove the container
+#%   --ci-branch: branch to test
+#%   --ci-environment: environment to test
+#%   --help: display this help
+#%   PARAMS: are passed to nosetest
+
+# print usage
+usage() {
+  [ "$*" ] && echo "$0: $*"
+  sed -n '/^#%/,/^$/s/^#% \{0,1\}//p' "$0"
+  exit 2
+} 2>/dev/null
+
+# get directories
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd $ROOT_DIR
+
+# get options
+SERVICES="erpserver web worker"
+SERVICE="all"
+BUILD=false
+RM=true
+CI=false
+CI_BRANCH=""
+CI_ENVIRONMENT=""
+TERMINAL=""
+DOWN=false
+TESTS=true
+TESTPARAMS=""
+for i in "$@"; do
+    if [ "$CI_BRANCH" == "SET" ]; then CI_BRANCH=$i; continue; fi
+    if [ "$CI_ENVIRONMENT" == "SET" ]; then CI_ENVIRONMENT=$i; continue; fi
+    if [ $i = $1 ] && [[ $i =~ ^(erpserver|web|worker)$ ]]; then SERVICE=$i; SERVICES=$SERVICE; continue; fi
+    if [ $i = "--down" ]; then DOWN=true; continue; fi
+    if [ $i = "--build" ]; then BUILD=true; continue; fi
+    if [ $i = "--keep" ]; then RM=false; continue; fi
+    if [ $i = "--lint" ]; then TESTS=false; continue; fi
+    if [ $i = "--ci" ]; then CI=true; TERMINAL="-T"; continue; fi
+    if [ $i = "--ci-branch" ]; then CI_BRANCH="SET"; continue; fi
+    if [ $i = "--ci-environment" ]; then CI_ENVIRONMENT="SET"; continue; fi
+    if [ $i = "--help" ]; then usage 2>&1; fi
+    TESTPARAMS="$TESTPARAMS $i"
+done
+
+# use testing compose file
+TESTING="-f docker-compose.testing.yml"
+
+# print header
+echo "====================================================================="
+echo "====================================================================="
+echo "= this script runs the application tests for the services setup     ="
+echo "====================================================================="
+echo `date +%Y-%m-%d:%H:%M:%S`
+
+# declare associative array for timings
+declare -A timings
+
+# immediately stop and remove the container and exit
+if $DOWN; then
+    echo -e "\n== immediately stop and remove the container and exit"
+    docker-compose $TESTING down
+    exit $?
+fi
+
+# update repositories
+if $CI; then
+    echo -e "\n== update repositories"
+    CI_PARAMS=""
+    if [ $CI_ENVIRONMENT != "false" ]; then CI_PARAMS="$CI_PARAMS --environment $CI_ENVIRONMENT"; fi
+    if [ $CI_BRANCH != "false" ]; then CI_PARAMS="$CI_PARAMS --branch $CI_BRANCH"; fi
+    update_start=`date +%s`
+    $ROOT_DIR/project update $CI_PARAMS --ci --reset
+    update_end=`date +%s`
+    timings[update]=$((update_end - update_start))
+fi
+
+# build docker images
+if $CI || $BUILD; then
+    echo -e "\n== build images"
+    build_start=`date +%s`
+    docker-compose $TESTING build
+    build_end=`date +%s`
+    timings[build]=$((build_end - build_start))
+fi
+
+# create and start docker container
+echo -e "\n== create and start docker container"
+up_start=`date +%s`
+docker-compose $TESTING up -d
+if [ $? -ne 0 ]; then
+    echo -e "\n... if the images are missing or need to be updated, use './service-test --build'"
+fi
+up_end=`date +%s`
+timings[up]=$((up_end - up_start))
+
+# recreate test database template
+if $CI || $BUILD; then
+    echo -e "\n== recreate test database template"
+    db_start=`date +%s`
+    docker-compose $TESTING exec $TERMINAL test_erpserver db-rebuild --no-template -d production collecting_society_test_template
+    db_end=`date +%s`
+    timings[db]=$((db_end - db_start))
+fi
+
+# run tests and linter
+ERRORS=""
+for SERVICE in $SERVICES; do
+    test_start=`date +%s`
+    # run tests
+    if $TESTS; then
+        echo -e "\n== run tests for $SERVICE"
+        docker-compose $TESTING exec $TERMINAL test_$SERVICE service-test $SERVICE $TESTPARAMS
+        [ $? -ne 0 ] && ERRORS="$ERRORS\n- $SERVICE tests"
+    fi
+    # run linter
+    echo -e "\n== run linter for $SERVICE"
+    docker-compose $TESTING exec $TERMINAL test_$SERVICE service-lint
+    if [ $? -ne 0 ]; then
+        ERRORS="$ERRORS\n- $SERVICE linter"
+    else
+        echo -e "All fine."
+    fi
+    test_end=`date +%s`
+    timings["$SERVICE"]=$((test_end - test_start))
+done
+
+# remove docker container
+if $CI || $RM; then
+    echo -e "\n== remove docker container"
+    docker-compose $TESTING rm -fs
+fi
+
+# print footer
+! $CI && echo -e "\033[1m\033[5m\033[33m"
+echo -e "\n\nTimings:\n"
+[[ -v "timings[update]" ]] && echo "- Update Project: ${timings[update]}s"
+[[ -v "timings[build]" ]] && echo "- Build Images: ${timings[build]}s"
+[[ -v "timings[up]" ]] && echo "- Start Services: ${timings[up]}s"
+[[ -v "timings[db]" ]] && echo "- Create Database: ${timings[db]}s"
+for SERVICE in $SERVICES; do
+    [[ -v "timings[$SERVICE]" ]] && echo -e "- Test Service '$SERVICE': ${timings[$SERVICE]}s"
+done
+! $CI && echo -e "\033[0m"
+
+EXITCODE=0
+if [[ ! -z "$ERRORS" ]]; then
+    EXITCODE=1
+    ! $CI && echo -e "\033[1m\033[5m\033[91m"
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo -e " WARNING: ERRORS OCCURED WHILE TESTS WERE RUNNING. PLEASE FIX."
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    ! $CI && echo -e "\e[25m"
+    echo -e "Errors:\n$ERRORS"
+    ! $CI && echo -e "\033[0m"
+else
+    ! $CI && echo -e "\033[1m\033[32m"
+    echo -e "--------------------------------------------"
+    echo -e " ALL TEST RUN SUCCESSFUL. EVEN THE LINTERS."
+    echo -e "--------------------------------------------"
+    ! $CI && echo -e "\033[0m"
+fi
+
+echo `date +%Y-%m-%d:%H:%M:%S`
+echo "====================================================================="
+echo "====================================================================="
+
+exit $EXITCODE

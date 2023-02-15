@@ -1,0 +1,75 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
+version: '2.4'
+
+networks:
+  frontend:
+  backend:
+
+services:
+
+  database:
+    # entrypoint: ["echo", "Service disabled in docker-compose.staging.yml."]
+    restart: always
+    networks:
+      - backend
+    volumes:
+      - ./volumes/postgresql-data:/var/lib/postgresql/data
+
+  webserver:
+    # entrypoint: ["echo", "Service disabled in docker-compose.staging.yml."]
+    restart: always
+    networks:
+      - frontend
+    ports:
+      - "127.0.0.1:8080:80"  # http
+    volumes:
+      - ./volumes/nginx-certs:/etc/nginx/certs
+      - ./volumes/nginx-dhparam:/etc/nginx/dhparam
+      - ./volumes/nginx-htpasswd:/etc/nginx/htpasswd
+
+  erpserver:
+    restart: always
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "127.0.0.1:8008:8000"  # https
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
+      - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
+
+  webapi:
+    restart: always
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "127.0.0.1:6544:6543"  # pyramid pserve
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
+      - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
+
+  webgui:
+    restart: always
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "127.0.0.1:6543:6543"  # pyramid pserve
+    volumes:
+      - ./volumes/trytond-files:/var/lib/trytond
+      - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
+
+  worker:
+    restart: always
+    networks:
+      - backend
+
+  fingerprint:
+    restart: always
+    networks:
+      - backend
+    volumes:
+      - ./volumes/echoprint-data:/opt/echoprint-data

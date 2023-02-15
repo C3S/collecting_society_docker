@@ -1,0 +1,494 @@
+---
+#==============================================================================
+# production config
+#==============================================================================
+production:
+
+  # command config ------------------------------------------------------------
+  commands:
+    # update command
+    update:
+      # pull project container
+      self: false
+      # build images on changes
+      images: false
+      # migrate database on changes
+      database: false
+      # print header and footer
+      extended: true
+
+
+  # task config ---------------------------------------------------------------
+  tasks:
+    # update command
+    update: &update
+      # update main repository
+      - name: ${PROJECT}_docker
+        actions: ['repo_update', 'script_restart', 'changes_notify']
+        target: '.'
+        source: 'git@github.com:C3S/collecting_society_docker.git'
+        version: '${BRANCH}'
+        upstream: false
+        # notifications added, when files were changed
+        changes:
+          - name: 'update script was updated'
+            files: 'scripts/update'
+          - name: '∇ DOCKERFILE was updated!'
+            files: 'services/build/Dockerfile'
+            level: 'note'
+            data: [
+              'You should rebuild the docker images:',
+              '$ docker-compose build'
+            ]
+          - name: '∇ EXAMPLE FILES were updated'
+            files: '.example'
+            level: 'note'
+            data: [
+              'You should diff and adjust the example files:',
+              '$ ./scripts/update diff'
+            ]
+      # update project repos
+      - name: update project repos
+        actions: ['repo_update', 'changes_notify']
+        targetpath: 'volumes/shared/src'
+        upstream: false
+        version: '${BRANCH}'
+        batch:
+          - name: collecting_society
+            source: 'git@github.com:C3S/collecting_society.git'
+            changes:
+              - name: '∇ DATABASE structure has changed'
+                files: ['.py', '.xml']
+                level: 'note'
+                data: [
+                  'You should update the database:',
+                  '$ docker-compose run --rm erpserver db-update'
+                ]
+          - name: portal_web
+            source: 'git@github.com:C3S/portal_web.git'
+          - name: collecting_society_web
+            source: 'git@github.com:C3S/collecting_society_web.git'
+          - name: collecting_society_worker
+            source: 'git@github.com:C3S/collecting_society_worker.git'
+          - name: echoprint-server
+            source: 'git@github.com:C3S/echoprint-server.git'
+      # update upstream repos
+      - name: update upstream repos
+        actions: ['repo_update']
+        targetpath: 'volumes/shared/src'
+        batch:
+          - name: trytond
+            source: 'https://github.com/tryton/trytond.git'
+            version: '${TRYTON_VERSION}'
+          - name: country
+            source: 'https://github.com/tryton/country.git'
+            version: '${TRYTON_VERSION}'
+          - name: currency
+            source: 'https://github.com/tryton/currency.git'
+            version: '${TRYTON_VERSION}'
+          - name: party
+            source: 'https://github.com/tryton/party.git'
+            version: '${TRYTON_VERSION}'
+          - name: company
+            source: 'https://github.com/tryton/company.git'
+            version: '${TRYTON_VERSION}'
+          - name: product
+            source: 'https://github.com/tryton/product.git'
+            version: '${TRYTON_VERSION}'
+          - name: account
+            source: 'https://github.com/tryton/account.git'
+            version: '${TRYTON_VERSION}'
+          - name: account_product
+            source: 'https://github.com/tryton/account_product.git'
+            version: '${TRYTON_VERSION}'
+          - name: account_invoice
+            source: 'https://github.com/tryton/account_invoice.git'
+            version: '${TRYTON_VERSION}'
+          - name: account_invoice_line_standalone
+            source: 'https://github.com/tryton/account_invoice_line_standalone.git'
+            version: '${TRYTON_VERSION}'
+          - name: bank
+            source: 'https://github.com/tryton/bank.git'
+            version: '${TRYTON_VERSION}'
+          - name: account_de_skr03
+            source: 'https://github.com/tryton/account_de_skr03.git'
+            version: '${TRYTON_VERSION}'
+          - name: web_user
+            source: 'https://github.com/tryton/web_user.git'
+            version: '${TRYTON_VERSION}'
+          - name: proteus
+            source: 'https://github.com/tryton/proteus.git'
+            version: '${TRYTON_VERSION}'
+          - name: echoprint-codegen
+            source: 'https://github.com/C3S/echoprint-codegen.git'
+            version: 'master'
+      # link tryton modules
+      - name: link tryton modules
+        actions: ['path_link']
+        targetpath: 'volumes/shared/src/trytond/trytond/modules'
+        batch:
+          - name: country
+            source: 'volumes/shared/src/country'
+          - name: currency
+            source: 'volumes/shared/src/currency'
+          - name: collecting_society
+            source: 'volumes/shared/src/collecting_society'
+      # create basic folder structure
+      - name: create basic folder structure
+        actions: ['folder_create']
+        batch:
+          - name: 'volumes/shared/tmp'
+          - name: 'volumes/shared/tmp/logs'
+      # copy and diff example files
+      - name: copy and diff example files
+        actions: ['file_copy', 'file_diff']
+        batch:
+          - name: .env
+            ignore: ['^ENVIRONMENT', '^BRANCH=', '^BUILD=', '^GIT_SSH=',
+                     '^GIT_USER_NAME=', '^GIT_USER_EMAIL=', '^GIT_USER_SIGNINGKEY',
+                     '^DEBUGGER_WINPDB=', '^DEBUGGER_PTVSD=']
+          - name: services/database.env
+            ignore: ['^POSTGRES_PASSWORD=']
+          - name: services/erpserver.env
+            ignore: ['^PGPASSWORD=', '^TRYTON_EMAIL=']
+          - name: services/webgui.env
+            ignore: ['^PGPASSWORD=', '^PYRAMID_AUTHENTICATION_SECRET=',
+                     '^PYRAMID_SESSION_SECRET=']
+          - name: services/webapi.env
+            ignore: ['^PGPASSWORD=', '^PYRAMID_AUTHENTICATION_SECRET=',
+                     '^PYRAMID_SESSION_SECRET=']
+          - name: services/worker.env
+            ignore: ['^ECHOPRINT_TOKEN=', '^WORKER_PROTEUS_PASSWORD=']
+          - name: volumes/shared/config/trytond/production.conf
+            ignore: ['^privatekey =', '^certificate =', '^super_pwd =']
+          - name: volumes/shared/config/trytond/staging.conf
+            ignore: ['^privatekey =', '^certificate =', '^super_pwd =']
+          - name: volumes/shared/src/collecting_society_worker/config.ini
+            ignore: ['^srcpw =', '^destpw =']
+      # copy tryton admin password example file
+      - name: copy trytond admin password example file
+        actions: ['file_copy']
+        target: 'volumes/shared/config/trytond/passfile'
+      # symlink docker override file
+      - name: symlink docker override file
+        actions: ['path_link']
+        target: 'docker-compose.override.yml'
+        source: 'docker-compose.production.yml'
+
+    # status command
+    status: *update
+
+    # diff command
+    diff: *update
+
+    # pull command
+    pull: *update
+
+    # pull command
+    checkout: *update
+
+    # pull command
+    delete: *update
+
+    # pull command
+    commit: *update
+
+    # push command
+    push: *update
+
+    # merge command
+    merge: *update
+
+    # promote command
+    promote: *update
+
+  # action config -------------------------------------------------------------
+  actions:
+    # update_repo action group
+    repo_update: [
+      git_clone, git_user, git_origin, git_status,
+      git_fetch, git_checkout, git_track, git_pull
+    ]
+    # diff_file action
+    file_diff:
+      # regex for lines to be ignored in diffs
+      ignore: [^#, ^\/\/, ^\n$]
+    # git status action
+    git_status:
+      # stop all tasks on error
+      stop_all: false
+      # stop further actions on error
+      stop_action_group: true
+    # git clone action
+    git_clone:
+      # create the conaining folder of the repo
+      create_folder: true
+
+#==============================================================================
+# staging config, inherits from production
+#==============================================================================
+staging:
+  tasks:
+    update:
+      # symlink docker override file
+      - name: symlink docker override file
+        source: 'docker-compose.staging.yml'
+
+#==============================================================================
+# testing config, inherits from staging
+#==============================================================================
+testing:
+  config:
+    update:
+      images: true
+      database: true
+  tasks:
+    update:
+      # create folder for tests output
+      - name: create folder for tests output
+        target: 'volumes/shared/tests'
+        actions: ['folder_create']
+      # symlink docker override file
+      - name: symlink docker override file
+        source: 'docker-compose.${ENVIRONMENT}.yml'
+
+#==============================================================================
+# development config, inherits from testing
+#==============================================================================
+development:
+  config:
+    update:
+      self: true
+  tasks:
+    update:
+      # copy and diff example files
+      - name: copy and diff example files
+        batch:
+          - name: '.devcontainer.json'
+            ignore: ['^\s*"service":', '^\s*"dockerComposeFile":']
+      # create development folder structure
+      - name: create development folder structure
+        actions: ['folder_create']
+        batch:
+          - name: 'code'
+          - name: 'services/config'
+      # symlink project repos
+      - name: symlink project repos
+        actions: ['path_link']
+        targetpath: 'code'
+        batch:
+          - name: collecting_society
+            source: 'volumes/shared/src/collecting_society'
+          - name: portal_web
+            source: 'volumes/shared/src/portal_web'
+          - name: collecting_society_web
+            source: 'volumes/shared/src/collecting_society_web'
+          - name: echoprint-server
+            source: 'volumes/shared/src/echoprint-server'
+          - name: collecting_society_worker
+            source: 'volumes/shared/src/collecting_society_worker'
+      # symlink script folders for services
+      - name: symlink script folders for services
+        actions: ['path_link']
+        targetpath: 'services'
+        batch:
+          - name: deploy
+            source: 'volumes/shared/deploy'
+          - name: healthcheck
+            source: 'volumes/shared/healthcheck'
+          - name: pip
+            source: 'volumes/shared/config/pip'
+      # symlink configuration files for applications
+      - name: symlink configuration files for applications
+        actions: ['path_link']
+        targetpath: 'services/config'
+        batch:
+          # tryton
+          - name: collecting_society.development.conf
+            source: 'volumes/shared/config/trytond/development.conf'
+          - name: collecting_society.staging.conf
+            source: 'volumes/shared/config/trytond/staging.conf'
+          - name: collecting_society.testing.conf
+            source: 'volumes/shared/config/trytond/testing.conf'
+          - name: collecting_society.production.conf
+            source: 'volumes/shared/config/trytond/production.conf'
+          - name: collecting_society.passfile
+            source: 'volumes/shared/config/trytond/passfile'
+          # pyramid
+          - name: portal_web.development.ini
+            source: 'volumes/shared/src/portal_web/development.ini'
+          - name: portal_web.staging.ini
+            source: 'volumes/shared/src/portal_web/staging.ini'
+          - name: portal_web.staging.ini
+            source: 'volumes/shared/src/portal_web/staging.ini'
+          - name: portal_web.testing.ini
+            source: 'volumes/shared/src/portal_web/testing.ini'
+          - name: collecting_society_web.development.ini
+            source: 'volumes/shared/src/collecting_society_web/development.ini'
+          - name: collecting_society_web.staging.ini
+            source: 'volumes/shared/src/collecting_society_web/staging.ini'
+          - name: collecting_society_web.staging.ini
+            source: 'volumes/shared/src/collecting_society_web/staging.ini'
+          - name: collecting_society_web.testing.ini
+            source: 'volumes/shared/src/collecting_society_web/testing.ini'
+          # worker
+          - name: collecting_society_worker.config.ini
+            source: 'volumes/shared/src/collecting_society_worker/config.ini'
+      # symlink paths and scripts for easy access
+      - name: symlink paths and scripts for easy access
+        actions: ['path_link']
+        batch:
+          - name: cli
+            source: 'volumes/shared/cli'
+          - name: .flake8
+            source: 'volumes/shared/.flake8'
+          - name: tests
+            source: 'volumes/shared/tests'
+          - name: docs
+            source: 'volumes/shared/docs/build/html'
+      # checkout repos of pinned pip packages for reference
+      - name: checkout repos of pinned pip packages for reference
+        actions: ['git_clone', 'git_fetch', 'git_checkout']
+        targetpath: 'volumes/shared/ref'
+        condition: '${CHECKOUT_REFERENCES}'
+        batch:
+          - name: colander
+            source: 'https://github.com/Pylons/colander.git'
+            version: 'tags/2.0'
+          - name: cornice
+            source: 'https://github.com/Cornices/cornice.git'
+            version: 'tags/6.0.1'
+          - name: cornice_swagger
+            source: 'https://github.com/Cornices/cornice.ext.swagger.git'
+            version: 'tags/1.0.1'
+          - name: click
+            source: 'https://github.com/pallets/click.git'
+            version: 'tags/8.1.3'
+          - name: cryptacular
+            source: 'https://github.com/dholth/cryptacular.git'
+            version: 'master'
+          - name: deform
+            source: 'https://github.com/Pylons/deform.git'
+            version: 'tags/2.0.15'
+          - name: forex-python
+            source: 'https://github.com/MicroPyramid/forex-python.git'
+            version: 'tags/v1.8'
+          - name: genshi
+            source: 'https://github.com/edgewall/genshi.git'
+            version: 'tags/0.7.7'
+          - name: gevent
+            source: 'https://github.com/gevent/gevent.git'
+            version: 'tags/22.10.2'
+          - name: html2text
+            source: 'https://github.com/Alir3z4/html2text.git'
+            version: 'tags/2020.1.16'
+          # - name: hurry.filesize
+          #   source: '?'
+          #   version: 'tags/0.9'
+          #   => source not found
+          - name: lxml
+            source: 'https://github.com/lxml/lxml.git'
+            version: 'tags/lxml-4.9.2'
+          # - name: passlib
+          #   source: 'https://foss.heptapod.net/python-libs/passlib'
+          #   version: 'tags/1.7.4'
+          #   => hg only
+          - name: Pillow
+            source: 'https://github.com/python-pillow/Pillow.git'
+            version: 'tags/9.4.0'
+          - name: polib
+            source: 'https://github.com/izimobil/polib.git'
+            version: 'tags/1.1.1'
+          - name: psycopg2
+            source: 'https://github.com/psycopg/psycopg2.git'
+            version: 'tags/2_9_5'
+          - name: pycountry
+            source: 'https://github.com/flyingcircusio/pycountry.git'
+            version: 'tags/22.3.5'
+          - name: pydot
+            source: 'https://github.com/pydot/pydot.git'
+            version: 'tags/v1.4.2'
+          - name: pydub
+            source: 'https://github.com/jiaaro/pydub.git'
+            version: 'tags/v0.25.1'
+          - name: pyechonest
+            source: 'https://github.com/echonest/pyechonest.git'
+            version: 'tags/9.0.0'
+          - name: pyopenssl
+            source: 'https://github.com/pyca/pyopenssl.git'
+            version: 'tags/23.0.0'
+          - name: pytaglib
+            source: 'https://github.com/supermihi/pytaglib.git'
+            version: 'tags/v1.5.0'
+          - name: pyramid
+            source: 'https://github.com/Pylons/pyramid.git'
+            version: 'tags/2.0.1'
+          - name: pyramid_beaker
+            source: 'https://github.com/Pylons/pyramid_beaker.git'
+            version: 'tags/0.8'
+          - name: pyramid_debugtoolbar
+            source: 'https://github.com/Pylons/pyramid_debugtoolbar.git'
+            version: 'tags/4.10'
+          - name: pyramid_chameleon
+            source: 'https://github.com/Pylons/pyramid_chameleon.git'
+            version: 'tags/0.3'
+          - name: pyramid_mailer
+            source: 'https://github.com/Pylons/pyramid_mailer.git'
+            version: 'tags/0.15.1'
+          - name: python-dateutil
+            source: 'https://github.com/dateutil/dateutil.git'
+            version: 'tags/2.8.2'
+          - name: python-Levenshtein
+            source: 'https://github.com/ztane/python-Levenshtein.git'
+            version: 'master'
+          - name: python-magic
+            source: 'https://github.com/ahupp/python-magic.git'
+            version: 'tags/0.4.27'
+          # - name: python-sql
+          #   source: 'https://hg.tryton.org/python-sql'
+          #   version: 'tags/1.3.0'
+          #   => hg only
+          - name: pytz
+            source: 'https://github.com/stub42/pytz.git'
+            version: 'tags/release_2022.7.1'
+          - name: raven-python
+            source: 'https://github.com/getsentry/raven-python.git'
+            version: 'tags/6.10.0'
+          # - name: relatorio
+          #   source: 'https://hg.tryton.org/relatorio'
+          #   version: 'tags/0.10.0'
+          #   => hg only
+          - name: requests
+            source: 'https://github.com/requests/requests.git'
+            version: 'tags/v2.28.2'
+          # - name: selenium
+          #   source: 'https://github.com/SeleniumHQ/selenium.git'
+          #   version: 'tags/selenium-4.0.0'
+          #   => > 200 MB
+          - name: simpleeval
+            source: 'https://github.com/danthedeckie/simpleeval.git'
+            version: 'tags/0.9.12'
+          - name: vatnumber
+            source: 'https://github.com/chadjlucas/vatnumber.git'
+            version: 'tags/1.2'
+          - name: waitress
+            source: 'https://github.com/Pylons/waitress.git'
+            version: 'tags/v2.1.2'
+          - name: weasyprint
+            source: 'https://github.com/Kozea/WeasyPrint.git'
+            version: 'tags/v57.2'
+          - name: webob
+            source: 'https://github.com/Pylons/webob.git'
+            version: 'tags/1.8.7'
+          - name: webpy
+            source: 'https://github.com/webpy/webpy.git'
+            version: 'tags/0.62'
+          - name: webtest
+            source: 'https://github.com/Pylons/webtest.git'
+            version: 'tags/3.0.0'
+          - name: werkzeug
+            source: 'https://github.com/pallets/werkzeug.git'
+            version: 'tags/2.2.2'
+          - name: wrapt
+            source: 'https://github.com/GrahamDumpleton/wrapt.git'
+            version: 'tags/1.14.1'

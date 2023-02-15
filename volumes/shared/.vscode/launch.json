@@ -1,0 +1,97 @@
+// For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+// Repository: https://github.com/C3S/collecting_society_docker
+{
+    // IMPORTANT: If you get a "ECONNREFUSED" error when you debug one of the
+    // configurations, make sure that the selected configuration corresponds
+    // with the service set in .devcontainer.json, e.g. 'webgui' = 'Webgui Attach'
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Webgui Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51000,
+            "host": "localhost"
+        },
+        {
+            "name": "WebAPI Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51001,
+            "host": "localhost"
+        },
+        {
+            "name": "Processing Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51002,
+            "host": "localhost"
+        },
+        // for debugging tests, put "test_web" as service in .devcontainer
+        // and run for example: ./service-test web --keep --path src/collecting_society_web/collecting_society_web/tests/integration/web_user.py:TestWebUser
+        // finally add these lines to your test:
+        // import ptvsd
+        // ptvsd.enable_attach(address=("0.0.0.0", 51003))
+        // ptvsd.wait_for_attach()
+        // ptvsd.break_into_debugger()
+        {
+            "name": "Test Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51003,
+            "host": "localhost"
+        },
+        // the followint entry is for other cases, e.g.tests; insert this line:
+        // import ptvsd; ptvsd.enable_attach(address=("0.0.0.0", 51004)); ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
+        // don't forget to open the resp. port in the docker-compose.yml!
+        {
+            "name": "Casual Debugging Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51004,
+            "host": "localhost"
+        },
+        // use this to debug tryton wizards or to explore trytond internals:
+        {
+            "name": "ERPServer Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51005,
+            "host": "localhost"
+        },
+        // the followint entry is for debugging demo data generation in
+        // volumes/shared/data. Uncomment 'ptvsd.wait_for_attach()' in
+        // shared/data/main.py. To create all dependencies for a so called
+        // 'leaf' dataset, for example 'sales' enter:
+        // $ docker-compose run --rm  --service-ports erpserver bash
+        // $ deploy-service
+        // $ db-rebuild --dataset sales
+        // which will create a Postgres template with a snapshot from before
+        // sales is applied. To debug sales and apply it again to the stored
+        // template use the --cache option:
+        // $ db-rebuild --dataset sales --cache
+        // if satisfied with sales, you may want to move on to a new dataset
+        // that depends on sales, e.g. sales_statistics, you could enter:
+        // db-copy --force collecting_society collecting_society_template
+        // for more info: http://docs.c3s.cc/collecting_society/development/generated/collecting_society_docker_README.html#id29
+        {
+            "name": "Demodata Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 51006,
+            "host": "localhost"
+        },
+        {
+            "name": "JavaScript attach",
+            "type": "firefox",
+            "request": "attach",
+            "url": "http://collecting_society.test/repertoire/creations/C0000000019/edit",
+            "pathMappings": [
+                {
+                    "url": "http://collecting_society.test/static/portal",
+                    "path": "${workspaceFolder}/src/portal_web/portal_web/static"
+                }
+            ]
+        }
+    ]
+}

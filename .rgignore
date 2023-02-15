@@ -1,0 +1,14 @@
+!.env
+!/services/*.env
+!/volumes/shared/src
+/volumes/shared/src/*
+!/volumes/shared/src/archiving
+!/volumes/shared/src/portal
+!/volumes/shared/src/portal_web
+!/volumes/shared/src/collecting_society
+!/volumes/shared/src/collecting_society_web
+!/volumes/shared/src/collecting_society_worker
+!/volumes/shared/src/echoprint-server
+!/volumes/shared/tmp
+
+.git

@@ -1,13 +1,20 @@
+// For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+// Repository: https://github.com/C3S/collecting_society_docker
 {
     "python.linting.pylintEnabled": false,
     "python.linting.pylintArgs": [
         "--disable=E0401"
     ],
-    "python.linting.pep8Enabled": true,
-    "python.linting.flake8Enabled": false,
+    "python.linting.pycodestyleEnabled": false,
+    "python.linting.flake8Enabled": true,
     "python.linting.flake8Args": [
         "--disable=F401"
     ],    "python.linting.flake8Path": "/usr/bin/flake8",
     "editor.rulers": [ 79, 119 ],
-    "python.linting.enabled": true
+    "python.linting.enabled": true,
+    "search.exclude": {
+        "**/shared/docs/build": true,
+        "**/shared/docs/source/generated": true,
+        "**/shared/ref": true
+    }
 }

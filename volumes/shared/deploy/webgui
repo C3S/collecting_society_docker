@@ -1,0 +1,7 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Deploy script for pyramid
+
+pserve $WORKDIR/src/portal_web/$ENVIRONMENT.ini trusted_proxy=$PYRAMID_TRUSTED_PROXY --reload

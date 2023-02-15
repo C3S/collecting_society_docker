@@ -1,0 +1,73 @@
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
+version: '2.4'
+
+networks:
+  frontend:
+  backend:
+
+volumes:
+  collecting_society_postgresql_data:
+  collecting_society_echoprint_data:
+  collecting_society_trytond_files:
+  collecting_society_nginx_certs:
+  collecting_society_nginx_dhparam:
+
+services:
+
+  database:
+    restart: always
+    networks:
+      - backend
+    volumes:
+      - collecting_society_postgresql_data:/var/lib/postgresql/data
+
+  webserver:
+    restart: always
+    networks:
+      - frontend
+    ports:
+      - "127.0.0.1:8080:80"  # http
+    volumes:
+      - collecting_society_nginx_certs:/etc/nginx/certs
+      - collecting_society_nginx_dhparam:/etc/nginx/dhparam
+
+  erpserver:
+    restart: always
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "127.0.0.1:8008:80"  # https
+    volumes:
+      - collecting_society_trytond_files:/var/lib/trytond
+      - /var/lib/dehydrated/certs/${VIRTUAL_HOST_WEBGUI}:/certs
+
+  webapi:
+    restart: always
+    networks:
+      - frontend
+      - backend
+    volumes:
+      - collecting_society_trytond_files:/var/lib/trytond
+
+  webgui:
+    restart: always
+    networks:
+      - frontend
+      - backend
+    volumes:
+      - collecting_society_trytond_files:/var/lib/trytond
+
+  worker:
+    restart: always
+    networks:
+      - backend
+
+  fingerprint:
+    restart: always
+    networks:
+      - backend
+    volumes:
+      - collecting_society_echoprint_data:/opt/echoprint-data

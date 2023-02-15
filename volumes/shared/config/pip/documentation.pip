@@ -1,0 +1,6 @@
+--no-index
+
+-r erpserver.pip
+-r webapi.pip
+-r webgui.pip
+-r worker.pip

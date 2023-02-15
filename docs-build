@@ -1,0 +1,120 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+#% Usage: ./docs-build [--down] [--build] [--keep] [--no-autoapi]
+#%                     [--ci] [--ci-branch NAME] [--ci-environment NAME]
+#%                     [--help]
+#%
+#%   This script builds the documentation with sphinx.
+#%
+#% Options:
+#%   --down: immediately stop and remove the container and exit
+#%   --build: build images
+#%   --keep: keep container running
+#%   --no-autoapi: don't parse the modules
+#%   --ci: continous integration mode
+#%         - update repositories (overrides config files!)
+#%         - build images
+#%         - build docs
+#%         - stop and remove the container
+#%   --ci-branch: branch to test
+#%   --ci-environment: environment to test
+#%   --help: display this help
+
+# print usage
+usage() {
+  [ "$*" ] && echo "$0: $*"
+  sed -n '/^#%/,/^$/s/^#% \{0,1\}//p' "$0"
+  exit 2
+} 2>/dev/null
+
+# get directories
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd $ROOT_DIR
+
+# get options
+RM=true
+DOWN=false
+BUILD=false
+CI=false
+CI_BRANCH=""
+CI_ENVIRONMENT=""
+TERMINAL=""
+NOAUTOAPI=""
+for i in "$@"; do
+    if [ "$CI_BRANCH" == "SET" ]; then CI_BRANCH=$i; continue; fi
+    if [ "$CI_ENVIRONMENT" == "SET" ]; then CI_ENVIRONMENT=$i; continue; fi
+    if [ $i = "--down" ]; then DOWN=true; continue; fi
+    if [ $i = "--build" ]; then BUILD=true; continue; fi
+    if [ $i = "--keep" ]; then RM=false; continue; fi
+    if [ $i = "--no-autoapi" ]; then NOAUTOAPI="--no-autoapi"; continue; fi
+    if [ $i = "--ci" ]; then CI=true; TERMINAL="-T"; continue; fi
+    if [ $i = "--ci-branch" ]; then CI_BRANCH="SET"; continue; fi
+    if [ $i = "--ci-environment" ]; then CI_ENVIRONMENT="SET"; continue; fi
+    if [ $i = "--help" ]; then usage 2>&1; fi
+done
+
+# use documentation compose file
+DOCUMENTATION="-f docker-compose.documentation.yml"
+
+# print header
+echo "====================================================================="
+echo "====================================================================="
+echo "=                   this script builds the docs                     ="
+echo "====================================================================="
+echo `date +%Y-%m-%d:%H:%M:%S`
+
+# immediately stop and remove the container and exit
+if $DOWN; then
+    echo -e "\n== immediately stop and remove the container and exit"
+    docker-compose $DOCUMENTATION down
+    exit $?
+fi
+
+# update repositories
+if $CI; then
+    echo -e "\n== update repositories"
+    CI_PARAMS=""
+    if [ $CI_ENVIRONMENT != "false" ]; then CI_PARAMS="$CI_PARAMS --environment $CI_ENVIRONMENT"; fi
+    if [ $CI_BRANCH != "false" ]; then CI_PARAMS="$CI_PARAMS --branch $CI_BRANCH"; fi
+    $ROOT_DIR/project update $CI_PARAMS --ci --reset
+fi
+
+# build docker images
+if $CI || $BUILD; then
+    echo -e "\n== build images"
+    docker-compose $DOCUMENTATION build
+fi
+
+# create and start docker container
+echo -e "\n== create and start docker container"
+docker-compose $DOCUMENTATION up -d
+if [ $? -ne 0 ]; then
+    echo -e "\n... if the images are missing or need to be updated, use 'scripts/docs --build'"
+fi
+
+# build docs
+echo -e "\n== build docs"
+docker-compose $DOCUMENTATION exec $TERMINAL documentation docs-build $NOAUTOAPI
+EXITCODE=$?
+
+# remove docker container
+if $CI || $RM; then
+    echo -e "\n== remove docker container"
+    docker-compose $DOCUMENTATION rm -fs
+fi
+
+# print footer
+if [ "$EXITCODE" -ne "0" ]; then
+    ! $CI && echo -e "\n\n\033[91;5m"
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    echo -e "   WARNING: ERRORS OCCURED WHILE BUILDING THE DOCUMENTATION.\n"
+    echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    ! $CI && echo -e "\033[0m"
+fi
+echo `date +%Y-%m-%d:%H:%M:%S`
+echo "====================================================================="
+echo "====================================================================="
+
+exit $EXITCODE

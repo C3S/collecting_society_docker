@@ -3,9 +3,18 @@
 
 version: '2.4'
 
+networks:
+  test_frontend:
+  test_backend:
+
+volumes:
+  test_postgresql_data:
+  test_echoprint_data:
+  test_trytond_files:
+
 services:
 
-  database:
+  test_database:
     build:
       context: ./services/build
       target: database
@@ -15,6 +24,8 @@ services:
         TRYTON_VERSION: ${TRYTON_VERSION}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+    networks:
+      - test_backend
     healthcheck:
       test: /shared/healthcheck/database
       interval: 10s
@@ -22,34 +33,20 @@ services:
       retries: 5
     volumes:
       - ./volumes/shared:/shared
+      - test_postgresql_data:/var/lib/postgresql/data
     env_file:
       - services/database.env
     environment:
       SERVICE: database
 
-  webserver:
-    build:
-      context: ./services/build
-      target: webserver
-      args: *buildargs
-    healthcheck:
-      test: /shared/healthcheck/webserver
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-      - ./volumes/shared:/shared
-      - ./services/config/nginx.proxy.conf:/etc/nginx/conf.d/proxy.conf
-    environment:
-      SERVICE: webserver
-
-  erpserver:
+  test_erpserver:
     build:
       context: ./services/build
       target: erpserver
       args: *buildargs
     command: service-deploy
+    networks:
+      - test_backend
     healthcheck:
       test: /shared/healthcheck/erpserver
       interval: 10s
@@ -58,99 +55,105 @@ services:
     volumes:
       - ./volumes/shared:/shared
     depends_on:
-      database:
+      test_database:
         condition: service_healthy
-      webserver:
-        condition: service_healthy
-      fingerprint:
+      test_fingerprint:
         condition: service_started
     env_file:
       - .env
       - services/erpserver.env
     environment:
       SERVICE: erpserver
-      VIRTUAL_HOST: ${VIRTUAL_HOST_ERPSERVER}
-      VIRTUAL_PORT: ${VIRTUAL_PORT_ERPSERVER}
+      ENVIRONMENT: testing
+      POSTGRES_HOSTNAME: test_${POSTGRES_HOSTNAME}
+      TRYTON_DATABASE: ${TRYTON_DATABASE}_test
 
-  webapi:
-    build:
-      context: ./services/build
-      target: webapi
-      args: *buildargs
-    command: service-deploy
-    healthcheck:
-      test: /shared/healthcheck/webapi
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - ./volumes/shared:/shared
-    depends_on:
-      database:
-        condition: service_healthy
-      webserver:
-        condition: service_started
-    env_file:
-      - .env
-      - services/webapi.env
-    environment:
-      SERVICE: webapi
-      VIRTUAL_HOST: ${VIRTUAL_HOST_WEBAPI}
-      VIRTUAL_PORT: ${VIRTUAL_PORT_WEBAPI}
-
-  webgui:
+  test_web:
     build:
       context: ./services/build
       target: webgui
       args: *buildargs
-    command: service-deploy
-    healthcheck:
-      test: /shared/healthcheck/webgui
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    command: tail -f /dev/null
+    networks:
+      - test_frontend
+      - test_backend
+    ports:
+      - "127.0.0.1:51003:51003"  # debugger
     volumes:
       - ./volumes/shared:/shared
+      - test_trytond_files:/var/lib/trytond
     depends_on:
-      webapi:
-        condition: service_started
+      test_database:
+        condition: service_healthy
     env_file:
       - .env
+      - services/webapi.env
       - services/webgui.env
     environment:
       SERVICE: webgui
-      VIRTUAL_HOST: ${VIRTUAL_HOST_WEBGUI}
-      VIRTUAL_PORT: ${VIRTUAL_PORT_WEBGUI}
+      ENVIRONMENT: testing
+      TRYTON_HOSTNAME: test_${TRYTON_HOSTNAME}
+      TRYTON_DATABASE: ${TRYTON_DATABASE}_test
+      POSTGRES_HOSTNAME: test_${POSTGRES_HOSTNAME}
+      WEBAPI_URL: http://test_web:6545
+      WEBAPI_CORS: http://test_web:6544
 
-  worker:
+  test_worker:
     build:
       context: ./services/build
       target: worker
       args: *buildargs
     cpu_percent: 50
     mem_limit: 500m
-    command: service-deploy
+    command: tail -f /dev/null
     healthcheck:
       test: /shared/healthcheck/worker
       interval: 5m
       timeout: 5s
       retries: 5
+    networks:
+      - test_backend
     volumes:
       - ./volumes/shared:/shared
     depends_on:
-      erpserver:
+      test_erpserver:
         condition: service_healthy
-      fingerprint:
+      test_fingerprint:
         condition: service_started
-    links:
-      - "erpserver:${VIRTUAL_HOST_ERPSERVER}"
     env_file:
       - .env
       - services/worker.env
     environment:
       SERVICE: worker
+      ENVIRONMENT: testing
+      TRYTON_HOSTNAME: test_${TRYTON_HOSTNAME}
+      TRYTON_DATABASE: ${TRYTON_DATABASE}_test
+      POSTGRES_HOSTNAME: test_${POSTGRES_HOSTNAME}
+      PGPASSWORD: s0secret!!
+      ECHOPRINT_HOSTNAME: test_${ECHOPRINT_HOSTNAME}
+      DEBUGGER_WINPDB: 0
+      DEBUGGER_PTVSD: 0
 
-  fingerprint:
+  test_browser:
+    build:
+      context: ./services/build
+      target: browser
+      args:
+        ENVIRONMENT: ${ENVIRONMENT}
+        WORKDIR: ${WORKDIR}
+        DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
+        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - test_frontend
+    depends_on:
+      test_web:
+        condition: service_started
+    environment:
+      SERVICE: browser
+
+  test_fingerprint:
     build:
       context: ./services/build
       target: fingerprint
@@ -163,7 +166,11 @@ services:
       retries: 5
     volumes:
       - ./volumes/shared:/shared
+      - test_echoprint_data:/opt/echoprint-data
+    networks:
+      - test_backend
     env_file:
       - .env
     environment:
       SERVICE: fingerprint
+      ENVIRONMENT: testing

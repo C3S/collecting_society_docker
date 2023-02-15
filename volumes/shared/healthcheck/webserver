@@ -1,0 +1,18 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Healthcheck script for ngninx
+
+port_closed () {
+    ! tail -n +2 /proc/net/tcp \
+         | cut -d":" -f"3" \
+         | cut -d" " -f"1" \
+         | xargs -I {} printf "%d\n" 0x{} \
+         | grep "^$1$" > /dev/null
+}
+
+# check ports
+port_closed 80 && exit 1
+
+exit 0

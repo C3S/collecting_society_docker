@@ -1,0 +1,6 @@
+[flake8]
+per-file-ignores =
+    __init__.py: F403,F405
+exclude =
+    src/portal_web/portal_web/static,
+    src/collecting_society_web/collecting_society_web/static

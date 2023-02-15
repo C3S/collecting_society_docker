@@ -1,0 +1,863 @@
+#!/usr/bin/env python
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+
+"""
+Command line interface to setup and maintain services in docker containers.
+
+The commands may be executed by `docker-compose` or within a container.
+For convenience, the `cli` command might be omitted.
+
+Examples:
+
+    Execution by `docker-compose`:
+    >>> docker-compose [exec|run --rm] SERVICE cli --help
+    >>> docker-compose [exec|run --rm] SERVICE cli COMMAND --help
+
+    >>> docker-compose [exec|run --rm] SERVICE --help
+    >>> docker-compose [exec|run --rm] SERVICE COMMAND --help
+
+    Execution within a container:
+    >>> docker-compose [exec|run --rm] SERVICE bash
+
+    >>> cli --help
+    >>> cli COMMAND --help
+
+    >>> --help
+    >>> COMMAND --help
+"""
+
+import os
+import sys
+import shutil
+import time
+import subprocess
+import glob
+import fcntl
+import click
+
+PROJECT = str(os.environ.get('PROJECT'))
+ENVIRONMENT = str(os.environ.get('ENVIRONMENT'))
+SERVICE = str(os.environ.get('SERVICE'))
+WORKDIR = str(os.environ.get('WORKDIR'))
+POSTGRES_HOSTNAME = str(os.environ.get('POSTGRES_HOSTNAME'))
+POSTGRES_PORT = str(os.environ.get('POSTGRES_PORT'))
+TRYTON_DATABASE = str(os.environ.get('TRYTON_DATABASE'))
+TMP_FILE = 'running_db_creation.delete_me'
+LOCKFILES = []
+
+
+def _db_disconnect(dbname):
+    """
+    Cut off all database connections to allow delete.
+
+    Args:
+        dbname (str): Name of database.
+    """
+    # Neccessary due to bug, see collecting_society_worker:repro.py:connect_db
+    try:
+        _db_execute_sql(
+            "SELECT pg_terminate_backend(pg_stat_activity.pid) "
+            "FROM pg_stat_activity "
+            "WHERE pg_stat_activity.datname = '" + dbname + "' "
+            "AND pid <> pg_backend_pid();")
+    except subprocess.CalledProcessError as e:
+        print(e)
+
+
+def _db_exist(dbname):
+    """
+    Checks if database exists.
+
+    Args:
+        dbname (str): Name of database.
+    """
+    return subprocess.check_output(
+        [
+            "psql",
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
+            '-U', 'postgres',
+            "-tAc",
+            "SELECT 1 FROM pg_database WHERE datname='" + dbname + "'"
+        ]
+    )
+
+
+def _db_execute_sql(sql):
+    """
+    Applies sql statements to the database.
+
+    Args:
+        sql (str): sql statement
+    """
+    return subprocess.check_output(
+        [
+            "psql",
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
+            '-U', 'postgres',
+            "-tAc",
+            sql
+        ]
+    )
+
+
+@click.group()
+def cli():
+    """
+    Command line interface to setup and maintain services in docker containers.
+    """
+
+
+@cli.command('pip-install')
+@click.argument('service', default=SERVICE)
+@click.pass_context
+def pip_install(context, service):
+    """
+    Installs required packages for a SERVICE with pip.
+
+    Requirements have to be defined in
+    `./shared/config/pip/SERVICE.pip`.
+
+    After installation a flag file is created within the container to avoid
+    multiple execution during its lifespan.
+    """
+    # Check flagfile and pipfile
+    pipfile = os.path.join(WORKDIR, 'config', 'pip', '%s.pip' % service)
+    flagfile = os.path.join('/', 'tmp', 'pip_install_%s' % service)
+    if os.path.exists(pipfile) and not os.path.exists(flagfile):
+
+        # Install packages
+        print('Install packages for ' + service + ' ... ', end='')
+        subprocess.check_call(
+            [sys.executable, '-m', 'pip', 'install', '-qr', pipfile])
+        print('ok')
+
+        # Create flagfile
+        open(flagfile, 'w').close()
+        if service in ['webgui', 'webapi']:
+            flagfile = os.path.join('/', 'tmp', 'pip_install_erpserver')
+            open(flagfile, 'w').close()
+
+        # Restart process with new modules installed
+        subprocess.check_call(sys.argv)
+        sys.exit()
+
+    from importlib import reload
+    import site
+    reload(site)
+
+
+@cli.command('db-create')
+@click.argument('dbname', default=TRYTON_DATABASE)
+@click.pass_context
+def db_create(context, dbname):
+    """
+    Creates the postrges database DBNAME.
+
+    The execution is skipped if the database already exists.
+    """
+    print('Create database "%s" ... ' % dbname, end='')
+
+    # Check database
+    if _db_exist(dbname):
+        print('Create, but database "%s" exists: Skip!' % dbname)
+        return
+
+    # Create database
+    subprocess.call(
+        [
+            'createdb',
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
+            '-U', 'postgres',
+            '-O', 'postgres',
+            '-E UTF-8',
+            dbname
+        ]
+    )
+
+    print('ok')
+
+
+@cli.command('db-delete')
+@click.argument('dbname', default=TRYTON_DATABASE)
+@click.pass_context
+def db_delete(context, dbname):
+    """
+    Deletes the postrges database DBNAME.
+
+    On error the deletion is retried several times.
+    """
+    print('Delete database "%s" ...' % dbname, end='')
+
+    # Check database
+    if not _db_exist(dbname):
+        print(' database does not exist')
+        return
+
+    # Disconnect users
+    _db_disconnect(dbname)
+
+    # Retry to delete the database
+    tries = 0
+    max_tries = 2
+    while tries < max_tries:
+        if tries > 0:
+            print('...', end='')
+        try:
+            subprocess.check_output(
+                [
+                    'dropdb',
+                    '-h', POSTGRES_HOSTNAME,
+                    '-p', POSTGRES_PORT,
+                    '-U', 'postgres',
+                    dbname
+                ], stderr=subprocess.STDOUT
+            )
+        except subprocess.CalledProcessError as e:
+            tries += 1
+            if tries == max_tries:
+                print("error: \n\033[91m{}\033[0m".format(e.output.rstrip()))
+                return
+            continue
+        print(" ok")
+        return
+
+
+@cli.command('db-copy')
+@click.argument('dbname-src')
+@click.argument('dbname-dst')
+@click.option('--force/--no-force', default=False,
+              help='Force execution (default: no)')
+@click.pass_context
+def db_copy(context, dbname_src, dbname_dst, force):
+    """
+    Creates the postrges database DBNAME_DST from template DBNAME_SRC.
+    """
+    print('Copy database "%s" to "%s" ... ' % (dbname_src, dbname_dst), end='')
+
+    # Disconnect users
+    _db_disconnect(dbname_src)
+
+    # Force copy
+    if force:
+        context.invoke(db_delete, dbname=dbname_dst)
+
+    # Copy database
+    subprocess.call(
+        [
+            'createdb',
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
+            '-U', 'postgres',
+            '-O', 'postgres',
+            '-T', dbname_src,
+            '-E UTF-8',
+            dbname_dst
+        ]
+    )
+
+    print('ok')
+
+
+@cli.command('db-connect')
+@click.argument('dbname', default=TRYTON_DATABASE)
+@click.pass_context
+def db_connect(context, dbname):
+    """
+    Opens a SQL console for the database DBNAME.
+    """
+    print('Use ctrl-d or \\q to quit ...')
+    subprocess.call(
+        [
+            'psql',
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
+            '-U', 'postgres',
+            dbname
+        ]
+    )
+
+
+@cli.command('db-backup')
+@click.argument('dbname', default=TRYTON_DATABASE)
+@click.pass_context
+def db_backup(context, dbname):
+    """
+    Dumps the postgres database DBNAME to stdout.
+    """
+    subprocess.call(
+        [
+            'pg_dump',
+            '-h', POSTGRES_HOSTNAME,
+            '-p', POSTGRES_PORT,
+            '-U', 'postgres',
+            dbname
+        ]
+    )
+
+
+@cli.command('db-console')
+@click.argument('trytondconf', default=ENVIRONMENT + '.conf')
+@click.argument('dbname', default=TRYTON_DATABASE)
+@click.pass_context
+def db_console(context, trytondconf, dbname):
+    """
+    Opens trytond console.
+    """
+    # Install dependencies
+    context.invoke(pip_install, service='erpserver')
+
+    # Configure command
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        WORKDIR, 'config', 'trytond', trytondconf
+    )
+    command = [
+        'trytond-console',
+        '-d', dbname,
+        '-c', os.environ['TRYTOND_CONFIG']
+    ]
+
+    # Execute command
+    subprocess.call(command)
+
+
+@cli.command('db-update')
+@click.option(
+    '--modules', '-m', default='collecting_society',
+    help='Single module or comma separated list of modules to update. '
+    'Whitspace not allowed!')
+@click.argument('trytondconf', default=ENVIRONMENT + '.conf')
+@click.argument('dbname', default=TRYTON_DATABASE)
+@click.option('--init/--no-init', default=False,
+              help='Run static data imports on initial update (default: no)')
+@click.pass_context
+def db_update(context, modules, trytondconf, dbname, init):
+    """
+    Updates tryton modules for database DBNAME.
+
+    Modules can be provided, default is 'collecting_society'.
+    If modules are 'all', all modules are updated.
+    """
+    # Install dependencies
+    context.invoke(pip_install, service='erpserver')
+    if not modules:
+        modules = "all"
+    print('Update trytond modules: %s ...' % modules)
+
+    # Configure command
+    os.environ['TRYTONPASSFILE'] = 'config/trytond/passfile'
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        WORKDIR, 'config', 'trytond', trytondconf
+    )
+    command = [
+        'trytond-admin',
+        '-d', dbname,
+        '-c', os.environ['TRYTOND_CONFIG']
+    ]
+    if not modules or modules == 'all':
+        command.append('--all')
+    else:
+        modules = modules.split(',')
+        command.append('-u')
+        command.extend(modules)
+    if init:
+        command.extend(['--email', os.environ.get("TRYTON_EMAIL")])
+
+    # Execute command
+    subprocess.call(command)
+
+
+@cli.command('db-setup')
+@click.argument('dbname', default=TRYTON_DATABASE)
+@click.option('--reclimit', '-r', type=int, default=-1,
+              help='Maximum numbers of objects (default: 0 = all)')
+@click.option('--dataset', '-d', type=str, default=[], multiple=True,
+              help='dataset in ./data/datasets/ to generate (default: all)\n'
+                   'can be used multiple times')
+@click.option('--exclude', '-e', type=str, default=[], multiple=True,
+              help='datasets in ./data/datasets/ to exclude (default: none)\n'
+                   'can be used multiple times')
+@click.option('--template/--no-template', default=True,
+              help='Use template db for dataset deps (default: yes)')
+@click.option('--cache/--no-cache', default=False,
+              help='Regenerate template db for dataset deps (default: no)')
+@click.option('--force/--no-force', default=False,
+              help='Force execution (default: no)')
+@click.option('--pdb/--no-pdb', default=False,
+              help='Start pdb on error (default: no)')
+@click.pass_context
+def db_setup(context, dbname, reclimit, dataset, exclude,
+             template, cache, force, pdb):
+    """
+    Creates and sets up the postgres database DBNAME.
+
+    The execution is skipped if the database already exists.
+    The execution might be forced (omits the db creation, if it exists).
+
+    Generates production and demodata.
+
+    During installation a lockfile is created on the host to prevent multiple
+    execution from different docker containers.
+    """
+    context.invoke(pip_install, service='erpserver')
+    import data
+
+    # Check lockfile, if locked, wait till not locked any more
+    while True:
+        try:
+            LOCKFILE = open(TMP_FILE, 'w+')
+            LOCKFILES.append(LOCKFILE)
+            fcntl.flock(LOCKFILE, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            print("Database creation commencing.")
+            break
+        except IOError:
+            time.sleep(3)
+            print("Waiting for the other process to finish db creation...")
+        except KeyboardInterrupt:
+            fcntl.flock(LOCKFILE, fcntl.LOCK_UN)
+            LOCKFILE.close()
+            try:
+                os.remove(TMP_FILE)
+            except OSError:
+                pass
+            sys.exit()
+
+    # Check database
+    if not _db_exist(dbname) or force:
+
+        # Cofigure trytond
+        os.environ['DB_NAME'] = dbname
+        os.environ['TRYTOND_CONFIG'] = os.path.join(
+            WORKDIR, 'config', 'trytond', ENVIRONMENT + '.conf'
+        )
+
+        # With template
+        if template:
+            print("Setup database with template database.")
+            template_dbname = dbname + "_template"
+            # Delete template database
+            if not cache and not exclude:
+                context.invoke(db_delete, dbname=template_dbname)
+            # Create template
+            if not _db_exist(template_dbname):
+                os.environ['DB_NAME'] = template_dbname
+                # Create template database
+                context.invoke(db_create, dbname=template_dbname)
+                # Update template database
+                context.invoke(
+                    db_update, modules=None, dbname=template_dbname, init=True)
+                # Generate dependent datasets
+                data.generate(
+                    dataset, exclude, reclimit=reclimit,
+                    dependencies=True, leaves=False, pdb=pdb)
+            # Copy template
+            context.invoke(
+                db_copy, dbname_src=template_dbname, dbname_dst=dbname)
+            # Generate leave datasets
+            os.environ['DB_NAME'] = dbname
+            if exclude:
+                data.generate(
+                    dataset, exclude, reclimit=reclimit,
+                    dependencies=True, leaves=True, pdb=pdb)
+            elif dataset:
+                data.generate(
+                    dataset, exclude, reclimit=reclimit,
+                    dependencies=False, leaves=True, pdb=pdb)
+
+        # Without template
+        else:
+            print("Setup database without template database.")
+            # Create database
+            if not _db_exist(dbname):
+                context.invoke(db_create, dbname=dbname)
+                context.invoke(
+                    db_update, modules=None, dbname=dbname, init=True)
+            # Generate datasets
+            data.generate(
+                dataset, exclude, reclimit=reclimit,
+                dependencies=True, leaves=True, pdb=pdb)
+
+    # Skip setup
+    else:
+        print('Setup database, but database "%s" exists: Skip!' % dbname)
+
+    # Unlock file
+    if LOCKFILE:
+        fcntl.flock(LOCKFILE, fcntl.LOCK_UN)
+        LOCKFILE.close()
+        try:
+            os.remove(TMP_FILE)
+        except OSError:
+            print("Couldn't remove lock file, something has gone wrong")
+
+
+@cli.command('db-rebuild')
+@click.argument('dbname', default=TRYTON_DATABASE)
+@click.option('--reclimit', '-r', type=int, default=-1,
+              help='Maximum numbers of objects (default: 0 = all)')
+@click.option('--dataset', '-d', type=str, default=[], multiple=True,
+              help='dataset in ./data/datasets/ to generate (default: all)\n'
+                   'can be used multiple times')
+@click.option('--exclude', '-e', type=str, default=[], multiple=True,
+              help='datasets in ./data/datasets/ to exclude (default: none)\n'
+                   'can be used multiple times')
+@click.option('--template/--no-template', default=True,
+              help='Use template db for dataset deps (default: yes)')
+@click.option('--cache/--no-cache', default=False,
+              help='Use/Recreate template db for dataset deps (default: no)')
+@click.option('--pdb/--no-pdb', default=False,
+              help='Start pdb on error (default: no)')
+@click.pass_context
+def db_rebuild(context, dbname, reclimit, dataset, exclude,
+               template, cache, pdb):
+    """
+    Deletes DBNAME and executes db setup
+    """
+    print("-" * 100 + "\n  Rebuild database\n" + "-" * 100)
+
+    # Install dependencies
+    context.invoke(pip_install, service='erpserver')
+
+    # Delete database
+    context.invoke(db_delete, dbname=dbname)
+
+    # Setup database
+    context.invoke(
+        db_setup, dbname=dbname, reclimit=reclimit, dataset=dataset,
+        exclude=exclude, template=template, cache=cache, force=False, pdb=pdb)
+
+
+@cli.command('service-deploy')
+@click.argument('service', default=SERVICE)
+@click.pass_context
+def service_deploy(context, service):
+    """
+    Deploys the services (erpserver, webgui, webapi, worker, fingerprint).
+
+    Installs pip packages, creates and sets up database and runs the
+    application.
+    """
+    # Check file
+    script = os.path.join(WORKDIR, 'deploy', SERVICE)
+    if not os.path.exists(script):
+        sys.exit("No deployment file for service %s. Exiting." % SERVICE)
+
+    # Install dependencies
+    context.invoke(pip_install, service=SERVICE)
+
+    # Generate demodata
+    if SERVICE == "erpserver":
+        if ENVIRONMENT == "production":
+            context.invoke(db_setup, dataset="master", template=False)
+        if ENVIRONMENT in ["development", "staging"]:
+            context.invoke(db_setup, template=False)
+    # Wait for demodata generation
+    if SERVICE in ["webgui", "webapi", "worker"] and os.path.exists(TMP_FILE):
+        waiting = 12
+        DEVNULL = open(os.devnull, 'w')
+        while os.path.exists(TMP_FILE):
+            if service == "webgui":
+                print("Waiting for datasets to be generated by erpserver. "
+                      "Finishes in: ~%s minutes" % waiting)
+                waiting -= 1
+            ping = subprocess.call(
+                ('ping', '-c', '1', os.environ["TRYTON_HOSTNAME"]),
+                stdout=DEVNULL, stderr=DEVNULL) == 0
+            if not ping:
+                if os.path.exists(TMP_FILE):
+                    os.remove(TMP_FILE)
+                sys.exit("Erpserver seems to have crashed. Exiting")
+            time.sleep(60)
+
+    # Deploy service
+    exitcode = subprocess.call([script])
+    sys.exit(exitcode)
+
+
+@cli.command('service-healthcheck')
+@click.argument('service', default=SERVICE)
+@click.pass_context
+def service_healthcheck(context, service):
+    """
+    Healthcheck for the services.
+    """
+    # Sanity check
+    script = os.path.join(WORKDIR, 'healthcheck', SERVICE)
+    if not os.path.exists(script):
+        sys.exit("No healthcheck file for service %s. Exiting." % SERVICE)
+
+    # Run healthcheck
+    exitcode = subprocess.call([script])
+    sys.exit(exitcode)
+
+
+@cli.command('service-test', context_settings=dict(
+                 ignore_unknown_options=True))
+@click.option('--dbname', default=TRYTON_DATABASE,
+              help='Name of database (default: test)')
+@click.option('--reset/--no-reset', default=True,
+              help='Reset the database (default: yes)')
+@click.option('--path', default='',
+              help='Searchpath for tests (see nosetest)')
+@click.argument('service', default=SERVICE)
+@click.argument('nargs', nargs=-1, type=click.UNPROCESSED)
+@click.pass_context
+def service_test(context, service, dbname, reset, path, nargs):
+    """
+    Runs all tests for a service (erpserver, web, worker).
+
+    Starts nosetests and prints output to stdout.
+
+    Creates the test database template DBNAME_template, if not existant.
+    On RESET, the database DBNAME will be recreated from this template and
+    the temporary tryton file folder will be deleted.
+
+    The location of the temporary tryton upload folder is configured in
+    `./shared/config/trytond/testing_DBTYPE.conf`
+    (currently `./shared/tmp/files`).
+
+    The location of the screenshots of integration tests is configured within
+    `<portal_web>/tests/config.py` (currenty `./shared/tmp/screenshots).
+
+    The PATH to tests may be defined to test certain testfiles, testclasses or
+    test methods (see nosetests for the syntax).
+    If no PATH is given, all tests of portal_web and plugins are included.
+    The test files should be stored below the following subpaths by convention:
+
+        <module>/tests/unit (unittest)
+
+        <module>/tests/functional (webtest)
+
+        <module>/tests/integration (selenium)
+
+    The PATH should start with `code/`, `volumes/shared/src/` or `src/`, e.g.:
+
+        --path code/portal_web/portal_web/tests
+        --path volumes/shared/src/portal_web/portal_web/tests
+        --path src/portal_web/portal_web/tests
+
+    The PATH may be one of the keywords `unit`, `functional` or `integration`
+    to run all the respective tests of all modules, e.g:
+
+        --path unit
+        --path functional
+        --path integration
+
+    Additional NARGS will be passed to nosetests.
+    """
+    # Sanity check
+    if service in ['webgui', 'wepapi']:
+        print("Tests of webgui/webapi need to be started from host.")
+        exit(-1)
+    if service not in ['erpserver', 'web', 'worker']:
+        print("Service unknown.")
+        exit(-1)
+
+    # Tests for erpserver
+    if service == 'erpserver':
+        context.invoke(pip_install, service='erpserver')
+        os.environ['DB_NAME'] = ":memory:"
+        exitcode = subprocess.call(
+            [
+                'python',
+                '-m',
+                'unittest',
+                'discover',
+                '-s',
+                'trytond.modules.collecting_society',
+            ]
+        )
+        sys.exit(exitcode)
+
+    # Tests for webgui/webapi/worker
+    _db_name = dbname
+    _db_tpl = _db_name + "_template"
+    _file_path = os.path.join(WORKDIR, 'tmp', 'files')
+    _trytond_conf = 'testing.conf'
+    os.environ['DB_NAME'] = _db_name
+    os.environ['TRYTOND_CONFIG'] = os.path.join(
+        WORKDIR, 'config', 'trytond', _trytond_conf
+    )
+
+    # Install packages
+    if service == "web":
+        context.invoke(pip_install, service='webgui')
+    if service == "worker":
+        context.invoke(pip_install, service='worker')
+
+    # Setup containers
+    print("\nCONFIGURE TESTS ...\n")
+    print("- service: %s" % service)
+    print("- testpath: %s" % (path or 'all'))
+    print("- parameter: %s" % list(nargs))
+    print("- dbname: %s" % _db_name)
+    print("- reset: %s" % bool(reset))
+    print("- trytondconf: %s" % os.environ['TRYTOND_CONFIG'])
+    print("- filepath: %s" % _file_path)
+    print("\nPREPARE TESTS ...\n")
+    if reset:
+
+        # Delete files
+        if os.path.exists(_file_path):
+            shutil.rmtree(_file_path)
+        os.makedirs(_file_path)
+
+        # Recreate database
+        if not _db_exist(_db_tpl):
+            if service == "worker":
+                sys.exit(
+                    "The worker service cannot build the test database "
+                    "template. Please create it first by another container.\n"
+                    "If you started the service-test script, just add the "
+                    "'--build' flag:\n\n"
+                    "    $ ./scripts/service-test worker --build"
+                )
+            context.invoke(
+                db_setup, dbname=_db_tpl,
+                dataset=['production'], template=False
+            )
+        context.invoke(
+            db_copy, dbname_src=_db_tpl, dbname_dst=_db_name, force=True
+        )
+
+    # Prepare paths
+    if service == "web":
+        basepaths = glob.glob(os.path.join(WORKDIR, 'src', '*_web'))
+    elif service == "worker":
+        basepaths = [os.path.join(WORKDIR, 'src', 'collecting_society_worker')]
+    modules = []
+    testpaths = []
+    for basepath in basepaths:
+        module = os.path.basename(os.path.normpath(basepath)).replace('.', '_')
+        modules.append(module)
+        testpaths.append(os.path.join(basepath, module, 'tests'))
+    if path:
+        if path in ['unit', 'functional', 'integration']:
+            paths = [os.path.join(p, path) for p in testpaths]
+        else:
+            if path.startswith('code/'):
+                path = 'src/' + path[4:]
+            if path.startswith('volumes/shared/src'):
+                path = 'src/' + path[18:]
+            paths = [os.path.join(WORKDIR, path)]
+    else:
+        paths = [os.path.join(p, 'unit') for p in testpaths] +\
+                [os.path.join(p, 'functional') for p in testpaths] +\
+                [os.path.join(p, 'integration') for p in testpaths]
+
+    # Start tests
+    print("\nSTART TESTS ...\n")
+    os.chdir(os.path.join(WORKDIR, 'tests'))
+    command = [
+        'nosetests',
+        '--verbose',
+        '--logging-level=CRITICAL',
+        '--all-modules',
+        '--with-coverage',
+        '--cover-html',
+        '--cover-html-dir=cover_' + service,
+        '--cover-xml',
+        '--cover-xml-file=cover_' + service + '.xml',
+        '--with-xunit',
+        '--xunit-file=nosetests_' + service + '.xml',
+        '--cover-erase',
+        '--cover-inclusive',
+        '--cover-package='+','.join(modules),
+    ] + list(nargs) + list(paths)
+    print("Command: $" + " ".join(command) + "\n")
+
+    exitcode = subprocess.call(command)
+    os.chdir(WORKDIR)
+
+    # Return exitcode
+    sys.exit(exitcode)
+
+
+@cli.command('service-lint')
+@click.option('--path', default=None, help='Custom path with files to lint')
+@click.argument('service', default=SERVICE)
+@click.pass_context
+def service_lint(context, path, service):
+    """
+    Runs linter for a service (erpserver, web/webgui/webapi, worker).
+
+    If PATH is provided, only the path is linted, not the service.
+    If SERVICE is 'all', all services are linted.
+    """
+    # Define service paths
+    service_paths = {
+        'erpserver': ['collecting_society'],
+        'web': ['portal_web', 'collecting_society_web'],
+        'worker': ['collecting_society_worker']
+    }
+    service_paths['webgui'] = service_paths['web']
+    service_paths['webapi'] = service_paths['web']
+
+    # Select lint path
+    lint_paths = []
+    if path:
+        lint_paths.append(path)
+    elif service == 'all':
+        for _, paths in service_paths.items():
+            lint_paths.extend(paths)
+    else:
+        lint_paths.extend(service_paths[service])
+    lint_paths = list(set(lint_paths))
+    lint_paths = [os.path.join(WORKDIR, 'src', path) for path in lint_paths]
+
+    # Lint paths
+    command = ['flake8'] + lint_paths
+    exitcode = subprocess.call(command)
+
+    # Return exitcode
+    sys.exit(exitcode)
+
+
+@cli.command('docs-build')
+@click.option('--autoapi/--no-autoapi', default=True,
+              help='Activate autoapi (default: yes)')
+@click.pass_context
+def docs_build(context, autoapi):
+    """
+    Builds the Sphinx documentation.
+
+    Installs pip packages of all modules so they can be found by Sphinx.
+    autoapi and Sphinx are started with docs/build.sh.
+    """
+    # Install dependencies
+    context.invoke(pip_install, service='documentation')
+
+    # Build docs
+    wd = os.getcwd()
+    os.chdir(os.path.join(WORKDIR, 'docs'))
+    if autoapi:
+        subprocess.call(['./build.sh'])
+    else:
+        subprocess.call(['make', 'html'])
+    os.chdir(wd)
+
+
+if __name__ == '__main__':
+    # Check, if the script is executed in a service environment
+    if "None" in [PROJECT, ENVIRONMENT, SERVICE, WORKDIR]:
+        sys.exit(
+            "This script is intended to run within a service container. "
+            "Please do not try to execute it on the host."
+        )
+    # Run CLI
+    try:
+        cli()
+    finally:
+        for LOCKFILE in LOCKFILES:
+            try:
+                fcntl.flock(LOCKFILE, fcntl.LOCK_UN)
+                LOCKFILE.close()
+                os.remove(TMP_FILE)
+            except ValueError:
+                pass
+            except OSError:
+                print("Couldn't remove lock file %s, something has gone wrong"
+                      % LOCKFILE)

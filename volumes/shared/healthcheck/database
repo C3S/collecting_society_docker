@@ -1,0 +1,8 @@
+#!/bin/bash
+# For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+# Repository: https://github.com/C3S/collecting_society_docker
+#
+# Healthcheck script for postgres
+
+! pg_isready -U postgres && exit 1
+exit 0

@@ -1,0 +1,4 @@
+--no-index
+
+-e src/proteus
+-e src/collecting_society_worker
