@@ -40,10 +40,11 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
-#    'sphinxcontrib.trydoc',
-    ]
+    # 'sphinx_rtd_theme',
+    # 'sphinxcontrib.trydoc',
+]
 
-# TODO: check https://pythonhosted.org/trydoc and 
+# TODO: check https://pythonhosted.org/trydoc and
 #       https://sphinxcontrib-tryton.readthedocs.io/en/latest/
 #       to access the tryton models like this: .. model:: party.party
 # import proteus
@@ -65,7 +66,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Collecting Society Project'
-copyright = u'2020, C3S Dev Team'
+copyright = u'2023, C3S Dev Team'
 author = u'C3S Dev Team'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -82,7 +83,7 @@ release = u'0.1'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -113,6 +114,13 @@ html_theme = 'alabaster'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+# inclusion should be handled by rtd theme or sphinxcontrib.jquery, but adding
+# them to extensions doesn't make a difference, so the files from
+# sphinxcontrib.jquery have been added to the repo and are included here
+html_js_files = [
+    'js/jquery.js',
+    'js/_sphinx_javascript_frameworks_compat.js',
+]
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
