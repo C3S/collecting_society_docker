@@ -663,9 +663,11 @@ def service_test(context, service, dbname, reset, path, nargs):
         exitcode = subprocess.call(
             [
                 'python',
-                '/shared/src/trytond/trytond/tests/run-tests.py',
-                '-vvvm',
-                'collecting_society',
+                '-m',
+                'unittest',
+                'discover',
+                '-s',
+                'trytond.modules.collecting_society',
             ]
         )
         sys.exit(exitcode)
@@ -765,6 +767,7 @@ def service_test(context, service, dbname, reset, path, nargs):
         '--cover-inclusive',
         '--cover-package='+','.join(modules),
     ] + list(nargs) + list(paths)
+    print("Command: $" + " ".join(command) + "\n")
 
     exitcode = subprocess.call(command)
     os.chdir(WORKDIR)

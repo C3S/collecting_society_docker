@@ -284,11 +284,6 @@ __ https://pyyaml.org/wiki/PyYAMLDocumentation
 __ https://docs.docker.com/engine/installation
 __ https://docs.docker.com/compose/install
 
-Summary for Debian/Ubuntu::
-
-    $ sudo apt-get install docker docker-compose git python python-yaml
-    $ sudo usermod -aG docker $USER
-    $ newgrp docker
 
 Repositories
 ------------
@@ -374,9 +369,9 @@ Each service runs on a separate docker container. A docker container is
 a running instance of a prebuilt docker image. The `docker images`_ for all
 services need to be built first.
 
-The initial build of the containers will take some time *(around 30-60 minutes)*::
+The initial build of the containers will take some time *(around 15-30 minutes)*::
 
-    $ docker-compose build
+    $ docker compose build
 
 Database
 --------
@@ -384,7 +379,7 @@ Database
 After building the images, the services can be started. On the first `run`_,
 the database and `demodata`_ is created *(takes about 10 to 15 minutes)*::
 
-    $ docker-compose up
+    $ docker compose up
 
 The services should now be running and ready for clients to connect.
 
@@ -455,12 +450,12 @@ applications or APIs:
 __ https://en.wikipedia.org/wiki/Tryton#/media/File:Tryton_sale_form.png
 
 To install the desktop client, clone the repository and switch to the
-``6.0`` branch::
+``6.6`` branch::
 
     $ cd MY/WORKING/SPACE
-    $ git clone https://github.com/tryton/tryton.git
+    $ hg clone https://hg.tryton.org/tryton
     $ cd tryton
-    $ git checkout 6.0
+    $ hg up 6.6
 
 .. note:: The Trytond server and the Tryton client are required to have the
     same version branch.
@@ -483,7 +478,10 @@ __ https://packages.ubuntu.com/hirsute/tryton-client
 
 Test, if Tryton is running::
 
-    $ python3 bin/tryton
+    $ ./bin/tryton
+
+.. note:: To get rid of the update check, click on the arrow down symbol in the
+    upper right corner and uncheck "Check Version".
 
 For easy startup create a startup script:
 
@@ -495,8 +493,7 @@ For easy startup create a startup script:
    tryton repository::
 
     #!/bin/bash
-    TRYTONPATH=~/MY/WORKING/SPACE/tryton
-    python3 $TRYTONPATH/bin/tryton -d -v -l DEBUG
+    ./MY/WORKING/SPACE/tryton/bin/tryton
 
 3. Set the execution flag of the script::
 
@@ -574,7 +571,7 @@ and prefered place to specify configuration variables for all services. It
 is included in all main service containers. The variables might be overridden
 in a service container by the corresponding ``services/<SERVICE>.env``.
 
-The ``.env`` file is also processed by docker-compose by convention and
+The ``.env`` file is also processed by docker compose by convention and
 contains variables for the build process as well as for the
 `project script`_.
 
@@ -731,7 +728,7 @@ Usage
 
 There are several ways to interact with the services:
 
-1. The ``docker-compose`` CLI is the prefered general high level docker tool
+1. The ``docker compose`` CLI is the prefered general high level docker tool
    for everyday use.
 2. The ``docker`` CLI provides sometimes more useful low level commands.
 3. The `Scripts`_ in the root folder are provided for comfort or
@@ -743,14 +740,14 @@ If you tend to forget the commands or syntax, try getting used to the help
 commands:
 
 =============================== ==============================================================
-List docker-compose commands    ``docker-compose --help``
-Help for docker-compose command ``docker-compose COMMAND --help``
+List docker compose commands    ``docker compose --help``
+Help for docker compose command ``docker compose COMMAND --help``
 List docker commands            ``docker --help``
 Help for docker command         ``docker COMMAND --help``
 List scripts                    ``ls -F | grep '*$'``
 Help for scripts                ``./SCRIPT --help``
-List CLI command                ``docker-compose [exec|run --rm] erpserver --help``
-Help for CLI command            ``docker-compose [exec|run --rm] erpserver COMMAND --help``
+List CLI command                ``docker compose [exec|run --rm] erpserver --help``
+Help for CLI command            ``docker compose [exec|run --rm] erpserver COMMAND --help``
 =============================== ==============================================================
 
 .. seealso:: `Docker-compose command line reference`__ and
@@ -764,19 +761,19 @@ Run
 ---
 
 =========================================== ====================================================
-Start services                              ``docker-compose up``
-Start services in the background            ``docker-compose up -d``
-Start a certain service (in the background) ``docker-compose up SERVICE [-d]``
-Run a command on a running|new container    ``docker-compose [exec|run --rm] SERVICE CMD``
-Run CLI command on a running|new container  ``docker-compose [exec|run --rm] SERVICE [cli] CMD``
-Open a shell on a running|new container     ``docker-compose [exec|run --rm] SERVICE bash``
+Start services                              ``docker compose up``
+Start services in the background            ``docker compose up -d``
+Start a certain service (in the background) ``docker compose up SERVICE [-d]``
+Run a command on a running|new container    ``docker compose [exec|run --rm] SERVICE CMD``
+Run CLI command on a running|new container  ``docker compose [exec|run --rm] SERVICE [cli] CMD``
+Open a shell on a running|new container     ``docker compose [exec|run --rm] SERVICE bash``
 Run CLI command inside a container shell    ``[cli] CMD``
 Build documentation                         ``./docs-build``
 Run tests                                   ``./service-test``
-Scale services on demand                    ``docker-compose scale SERVICE=#``
-Stop services                               ``docker-compose stop``
-Stop a certain service                      ``docker-compose stop SERVICE``
-Stop and remove containers/volumes/networks ``docker-compose down``
+Scale services on demand                    ``docker compose scale SERVICE=#``
+Stop services                               ``docker compose stop``
+Stop a certain service                      ``docker compose stop SERVICE``
+Stop and remove containers/volumes/networks ``docker compose down``
 =========================================== ====================================================
 
 .. seealso:: ``[SERVICE]``: `Table of Services`_, ``[CMD]``: `CLI`_.
@@ -792,8 +789,8 @@ Update
 ========================= =======================================================
 Update repositories       ``./project update``
 Diff repos/example files  ``./project diff``
-Build images              ``docker-compose build``
-Update database           ``docker-compose [exec|run --rm] erpserver db-update``
+Build images              ``docker compose build``
+Update database           ``docker compose [exec|run --rm] erpserver db-update``
 ========================= =======================================================
 
 1. Update the repositories/files/folders::
@@ -814,7 +811,7 @@ Update database           ``docker-compose [exec|run --rm] erpserver db-update``
 
 3. If there were changes in the ``Dockerfile``, rebuild all `docker images`_::
 
-    $ docker-compose build
+    $ docker compose build
 
    If you run into problems, you can also rebuild all `docker images`_ without
    cache. Just `remove`_ all project images (also the dangling ones) before the
@@ -827,7 +824,7 @@ Update database           ``docker-compose [exec|run --rm] erpserver db-update``
 4. If there were changes in the ``collection_society`` repository, update the
    database::
 
-    $ docker-compose run --rm erpserver db-update
+    $ docker compose run --rm erpserver db-update
 
    If you run into problems and don't care about the data, you can also
    recreate the database::
@@ -838,13 +835,13 @@ Inspect
 -------
 
 ============================================ ===================================================
-Attach to the logs of a certain service      ``docker-compose logs [-f] SERVICE``
-Open a shell on a service container          ``docker-compose run --rm SERVICE bash``
-Open a shell on a running container          ``docker-compose exec bash``
-List project docker containers               ``docker-compose ps``
-List project docker images                   ``docker-compose images``
-List project docker containers               ``docker-compose ps [-a]``
-List processes of project container          ``docker-compose top``
+Attach to the logs of a certain service      ``docker compose logs [-f] SERVICE``
+Open a shell on a service container          ``docker compose run --rm SERVICE bash``
+Open a shell on a running container          ``docker compose exec bash``
+List project docker containers               ``docker compose ps``
+List project docker images                   ``docker compose images``
+List project docker containers               ``docker compose ps [-a]``
+List processes of project container          ``docker compose top``
 Show used resources for containers           ``docker stats``
 List docker images                           ``docker images ls [-a]``
 List docker networks                         ``docker network ls``
@@ -858,7 +855,7 @@ Remove
 .. warning:: The ``docker`` commands apply to **all** docker containers on the host.
 
 ============================================== ================================
-Remove project containers/networks/volumes     ``docker-compose down``
+Remove project containers/networks/volumes     ``docker compose down``
 Remove all stopped docker containers           ``docker container prune``
 Remove all dangling images to free diskspace   ``docker image prune``
 Remove volumes                                 ``docker volume rm VOLUMENAME``
@@ -868,9 +865,9 @@ Remove volumes                                 ``docker volume rm VOLUMENAME``
 
 Remove all containers, networks, volumes **and images**::
 
-    $ docker-compose -f docker-compose.documentation.yml down -v --rmi all
-    $ docker-compose -f docker-compose.testing.yml down -v --rmi all
-    $ docker-compose down -v --rmi all
+    $ docker compose -f docker-compose.documentation.yml down -v --rmi all
+    $ docker compose -f docker-compose.testing.yml down -v --rmi all
+    $ docker compose down -v --rmi all
     $ docker image prune
 
 .. note:: The multiple ``down`` commands are needed, as testing and
@@ -881,15 +878,15 @@ Database
 --------
 
 ======= =========================================================================================
-Create  ``docker-compose [exec|run --rm] erpserver db-create [NAME]``
-Copy    ``docker-compose [exec|run --rm] erpserver db-copy [--force] [SOURCENAME] [TARGETNAME]``
-Backup  ``docker-compose [exec|run --rm] erpserver db-backup [NAME] > /shared/tmp/db.backup``
-Delete  ``docker-compose [exec|run --rm] erpserver db-delete [NAME]``
-Setup   ``docker-compose [exec|run --rm] erpserver db-setup [NAME]``
-Rebuild | ``docker-compose [exec|run --rm] erpserver db-rebuild [NAME]``
+Create  ``docker compose [exec|run --rm] erpserver db-create [NAME]``
+Copy    ``docker compose [exec|run --rm] erpserver db-copy [--force] [SOURCENAME] [TARGETNAME]``
+Backup  ``docker compose [exec|run --rm] erpserver db-backup [NAME] > /shared/tmp/db.backup``
+Delete  ``docker compose [exec|run --rm] erpserver db-delete [NAME]``
+Setup   ``docker compose [exec|run --rm] erpserver db-setup [NAME]``
+Rebuild | ``docker compose [exec|run --rm] erpserver db-rebuild [NAME]``
         | ``./db-rebuild``
-Examine ``docker-compose run --rm erpserver db-connect [NAME]``
-Console ``docker-compose run --rm erpserver db-console [NAME]``
+Examine ``docker compose run --rm erpserver db-connect [NAME]``
+Console ``docker compose run --rm erpserver db-console [NAME]``
 ======= =========================================================================================
 
 .. note:: ``[NAME]`` is optional and defaults to ``collecting_society``.
@@ -900,9 +897,9 @@ Console ``docker-compose run --rm erpserver db-console [NAME]``
 The database files are stored in ``./volumes/postgresql-data``. If the postgres
 setup itself seem to be broken, you can delete and recreate the folder::
 
-    $ docker-compose down
+    $ docker compose down
     $ sudo rm -rf ./volumes/postgresql-data/
-    $ docker-compose up
+    $ docker compose up
 
 .. warning:: All data in this database will be deleted!
 
@@ -1175,19 +1172,19 @@ also available directy via ``/shared/COMMAND``.
 
 On the host::
 
-    $ docker-compose run --rm SERVICE COMMAND
-    $ docker-compose exec SERVICE COMMAND
+    $ docker compose run --rm SERVICE COMMAND
+    $ docker compose exec SERVICE COMMAND
 
 For example::
 
-    $ docker-compose run --rm erpserver db-rebuild
-    $ docker-compose exec erpserver db-rebuild
+    $ docker compose run --rm erpserver db-rebuild
+    $ docker compose exec erpserver db-rebuild
 
 .. note:: Use ``exec`` if the container is already running, e.g. in another terminal
-     window after a ``docker-compose up``. Use ``run --rm`` if no container is running
+     window after a ``docker compose up``. Use ``run --rm`` if no container is running
      and your just want to start it for a single task upon which it is removed again (-rm).
      To start more than a single task, you would want to 'go inside a container' by
-     running a ``bash`` command, e.g. ``docker-compose run --rm erpserver bash``.
+     running a ``bash`` command, e.g. ``docker compose run --rm erpserver bash``.
 
 Inside a service container::
 
@@ -1559,7 +1556,7 @@ Start Tryton::
     $ tryton
 
 .. note:: The Tryton client configuration files are stored in
-    ``~/.config/tryton/6.0/``.
+    ``~/.config/tryton/6.6/``.
 
 Open a connection to Trytond:
 
@@ -1579,7 +1576,7 @@ Username                              Password     Roles
 
 .. seealso:: `Tryton Usage Documentation`__
 
-__ https://docs.tryton.org/projects/client-desktop/en/6.0/usage.html
+__ https://docs.tryton.org/projects/client-desktop/en/6.6/usage.html
 
 The database entries can be found in the navigation tree:
 
@@ -1746,24 +1743,24 @@ Docker
 Compose
 '''''''
 
-The project consists of 3 separate docker-compose setups:
+The project consists of 3 separate docker compose setups:
 
 **Development/Staging/Production**
 
 - Purpose: Main development/production setup of the services
 - Files
 
-  - ``docker-compose.yml``: main file
-  - ``docker-compose.override.yml``: override file, symlink to environment config (ports, volumes)
+  - ``docker compose.yml``: main file
+  - ``docker compose.override.yml``: override file, symlink to environment config (ports, volumes)
 
-    - ``docker-compose.development.yml``: additions for development environment
-    - ``docker-compose.staging.yml``: additions for staging environment
-    - ``docker-compose.production.yml``: additions for productions environment
+    - ``docker compose.development.yml``: additions for development environment
+    - ``docker compose.staging.yml``: additions for staging environment
+    - ``docker compose.production.yml``: additions for productions environment
 
 - Usage: ``docker compose COMMAND``
 - Services: `Table of Services`_
 
-.. note:: The ``docker-compose.override.yml`` is a docker-compose convention.
+.. note:: The ``docker-compose.override.yml`` is a docker compose convention.
 
 **Testing**
 
@@ -1772,7 +1769,7 @@ The project consists of 3 separate docker-compose setups:
 
   - ``docker-compose.testing.yml``
 
-- Usage: ``docker-compose -f docker-compose.testing.yml COMMAND``
+- Usage: ``docker compose -f docker-compose.testing.yml COMMAND``
 - Services
 
   - ``test_database``: same as database
@@ -1789,7 +1786,7 @@ The project consists of 3 separate docker-compose setups:
 
   - ``docker-compose.documentation.yml``
 
-- Usage: ``docker-compose -f docker-compose.documentation.yml COMMAND``
+- Usage: ``docker compose -f docker-compose.documentation.yml COMMAND``
 - Services:
 
   - ``documentation``: sphinx build container
@@ -1801,7 +1798,7 @@ For more information, look into the ``docker-compose*.yml`` files.
 Images
 ''''''
 
-All images for all 3 docker-compose setups are based on the same Dockerfile,
+All images for all 3 docker compose setups are based on the same Dockerfile,
 which is located in ``./services/build/Dockerfile``. The key concepts for this
 image setup are:
 
@@ -1950,25 +1947,25 @@ Services
 
 To start all services with stdin attached to the service logs, use::
 
-    $ docker-compose up
+    $ docker compose up
 
 To start all services detached::
 
-    $ docker-compose up -d
+    $ docker compose up -d
 
 If you want to start only a certain service with its dependencies, use::
 
-    $ docker-compose run --rm --service-ports SERVICE    service-deploy
+    $ docker compose run --rm --service-ports SERVICE    service-deploy
       '---------------------------------------------'    '-------------'
                       host command                      container command
 
-    $ docker-compose run --rm --service-ports webgui     service-deploy
-    $ docker-compose run --rm --service-ports webapi     service-deploy
-    $ docker-compose run --rm --service-ports erpserver  service-deploy
+    $ docker compose run --rm --service-ports webgui     service-deploy
+    $ docker compose run --rm --service-ports webapi     service-deploy
+    $ docker compose run --rm --service-ports erpserver  service-deploy
 
 The host command explained:
 
-    - ``docker-compose run``: Run a one-off command in a new container
+    - ``docker compose run``: Run a one-off command in a new container
     - ``--rm``: The run command won't remove the stopped container by
       default, so that it can be inspected after the run. To prevent the
       aggregation of stopped container states, this switch is recommended.
@@ -1987,13 +1984,13 @@ The container command explained:
 
 To open a shell on a new container::
 
-    $ docker-compose run --rm [--service-ports] SERVICE bash
+    $ docker compose run --rm [--service-ports] SERVICE bash
 
 .. warning:: Manual changes are not persisted when the container is stopped.
 
 To open a shell on a running container::
 
-    $ docker-compose exec SERVICE bash
+    $ docker compose exec SERVICE bash
 
 Trytond
 '''''''
@@ -2008,7 +2005,7 @@ within the erpserver:
 
 1. Start the first terminal, open a bash in the erpserver and start trytond::
 
-    $ docker-compose run --rm --service-ports erpserver bash
+    $ docker compose run --rm --service-ports erpserver bash
     > service-deploy
 
    To restart the trytond server::
@@ -2018,7 +2015,7 @@ within the erpserver:
 
 2. Start the second terminal, open another bash in the running container::
 
-    $ docker-compose exec erpserver bash
+    $ docker compose exec erpserver bash
 
    To update the collecting_society module for the database::
 
@@ -2035,14 +2032,15 @@ To start a trytond console (interactive python console with pool initialized)::
 To connect to Trytond with the Tryton client, see `Tryton Usage`_.
 
 .. note:: Start Tryton with the ``-d/--debug`` flag to disable caching and
-    ``-v`` and ``-l DEBUG`` for more verbose output.
+    ``-v`` and ``-l DEBUG`` for more verbose output, but expect a heavy
+    slow down with the `-d` flag.
 
 You can now start coding:
 
 ======================================== =================================
 ``code/collecting_society/``             trytond main module
 ``services/config/collecting_society.*`` trytond server config files
-``~/.config/tryton/6.0/``                tyton client config files
+``~/.config/tryton/6.6/``                tyton client config files
 ``volumes/shared/src/``                  all trytond module repositories
 ``volumes/trytond-files/``               trytond file storage
 ======================================== =================================
@@ -2055,7 +2053,7 @@ __ https://redmine.c3s.cc/projects/collecting_society/wiki#References
 
 Lint the code::
 
-    docker-compose exec erpserver service-lint
+    docker compose exec erpserver service-lint
 
 Pyramid
 '''''''
@@ -2063,7 +2061,7 @@ Pyramid
 For the development of the pyramid application, it is sufficiant to just start
 all services with stdin attached to the service logs::
 
-    $ docker-compose up
+    $ docker compose up
 
 The application will monitor changes to files and restart itself automatically.
 You can now start coding:
@@ -2085,7 +2083,7 @@ __ https://redmine.c3s.cc/projects/collecting_society/wiki#References
 
 Lint the code::
 
-    docker-compose exec webgui service-lint
+    docker compose exec webgui service-lint
 
 Debugging
 ---------
@@ -2101,7 +2099,7 @@ of the box. Just add the line in the python file::
 If you want to debug a **service**, you need to start the service via the
 ``run`` command to attach stdin/stdout and add the ``--service-port`` flag::
 
-    $ docker-compose run --rm --service-ports SERVICE service-deploy
+    $ docker compose run --rm --service-ports SERVICE service-deploy
 
 If you want to debug `application tests`_, you can add the ``--pdb`` flag to
 the `service-test script`_ or the `service-test CLI`_ command to jump into
@@ -2180,7 +2178,7 @@ Trytond Console
 
 Tryton can start an interactive python console with the pool initialized::
 
-    $ docker-compose run --rm erpserver db-console
+    $ docker compose run --rm erpserver db-console
 
 
 .. _Application Tests:
@@ -2231,8 +2229,8 @@ Stop the container afterwards::
 
 If you prefer, you can also execute the commands above from within the container::
 
-    $ docker-compose -f docker-compose.testing.yml up -d
-    $ docker-compose -f docker-compose.testing.yml exec test_erpserver bash
+    $ docker compose -f docker-compose.testing.yml up -d
+    $ docker compose -f docker-compose.testing.yml exec test_erpserver bash
 
         # setup container
         > pip-install
@@ -2246,7 +2244,7 @@ If you prefer, you can also execute the commands above from within the container
         # exit container
         > exit
 
-    $ docker-compose -f docker-compose.testing.yml down
+    $ docker compose -f docker-compose.testing.yml down
 
 .. _Worker Tests:
 
@@ -2298,8 +2296,8 @@ Recreate the database template, if the database has changed::
 
 If you prefer, you can also execute the commands above from within the container::
 
-    $ docker-compose -f docker-compose.testing.yml up -d
-    $ docker-compose -f docker-compose.testing.yml exec test_worker bash
+    $ docker compose -f docker-compose.testing.yml up -d
+    $ docker compose -f docker-compose.testing.yml exec test_worker bash
 
         # run tests
         > service-test [--path PATH] [PARAMETER...]
@@ -2310,7 +2308,7 @@ If you prefer, you can also execute the commands above from within the container
         # exit container
         > exit
 
-    $ docker-compose -f docker-compose.testing.yml down
+    $ docker compose -f docker-compose.testing.yml down
 
 The rendered HTML output of the coverage can be accessed via::
 
@@ -2376,8 +2374,8 @@ Recreate the database template, if the database has changed::
 
 If you prefer, you can also execute the commands above from within the container::
 
-    $ docker-compose -f docker-compose.testing.yml up -d
-    $ docker-compose -f docker-compose.testing.yml exec test_web bash
+    $ docker compose -f docker-compose.testing.yml up -d
+    $ docker compose -f docker-compose.testing.yml exec test_web bash
 
         # run tests
         > service-test [--path PATH] [PARAMETER...]
@@ -2388,7 +2386,7 @@ If you prefer, you can also execute the commands above from within the container
         # exit container
         > exit
 
-    $ docker-compose -f docker-compose.testing.yml down
+    $ docker compose -f docker-compose.testing.yml down
 
 .. note:: In the ``testing`` environment, the ``webgui`` and ``webapi``
     services run both on the ``web`` service as deployment needs to be
@@ -2411,9 +2409,9 @@ Lint the code for the scripts in this repository::
 
 Lint the code for application repositories via container::
 
-    docker-compose exec SERVICE service-lint
-    docker-compose exec SERVICE service-lint all
-    docker-compose exec SERVICE service-lint --path /some/path/to/lint
+    docker compose exec SERVICE service-lint
+    docker compose exec SERVICE service-lint all
+    docker compose exec SERVICE service-lint --path /some/path/to/lint
 
 
 .. note:: The code is also linted in the `service-test script`_.
@@ -2458,11 +2456,11 @@ database, just use your prefered method:
 
 * via `db-rebuild CLI`_ command on a running container::
 
-    $ docker-compose exec erpserver db-rebuild
+    $ docker compose exec erpserver db-rebuild
 
 * via `db-rebuild CLI`_ command on a new container::
 
-    $ docker-compose run --rm erpserver db-rebuild
+    $ docker compose run --rm erpserver db-rebuild
 
 * via `db-rebuild CLI`_ command inside the *erpserver* container::
 
@@ -2486,7 +2484,7 @@ generating the demo data from scratch, this workflow is highly recommended:
 2. Test your changes by generating the MODEL dataset using the
    `db-rebuild CLI`_ command::
 
-    $ docker-compose run --rm erpserver bash
+    $ docker compose run --rm erpserver bash
     > db-rebuild -d MODEL
 
 3. While there are errors, fix them and retest using the ``--cache`` flag::
@@ -2589,8 +2587,8 @@ to omit the *autoapi* step and speed up the build::
 
 If you prefer, you can also execute the commands above from within the container::
 
-    $ docker-compose -f docker-compose.documentation.yml up -d
-    $ docker-compose -f docker-compose.documentation.yml exec documentation bash
+    $ docker compose -f docker-compose.documentation.yml up -d
+    $ docker compose -f docker-compose.documentation.yml exec documentation bash
 
         # build documentation via script
         > docs-build
@@ -2601,7 +2599,7 @@ If you prefer, you can also execute the commands above from within the container
         # exit container
         > exit
 
-    $ docker-compose -f docker-compose.documentation.yml down
+    $ docker compose -f docker-compose.documentation.yml down
 
 The main source files can be found in the ``./volumes/shared/docs/source/``
 folder.
@@ -2627,6 +2625,10 @@ These instructions perform a full upgrade of the
     - docker upstream images
     - pip packages
     - repositories
+
+.. note:: These instructions suppose, that the last current version is running
+   properly. If not, just rebuild all containers at once after pinnings were
+   removed and fix dependend containers as neccessary.
 
 .. note:: Follow the instructions consecutivly.
 
@@ -2698,7 +2700,7 @@ Webserver
 
         docker compose up webserver -d
         docker compose exec webserver bash
-        > /shared/healthcheck/webserver && echo $?
+        > /shared/healthcheck/webserver; echo $?
 
     - Fix healthcheck script errors
 
@@ -2708,7 +2710,7 @@ Database
 1. Update docker image
     ::
 
-        docker-compose build database
+        docker compose build database
 
 2. Update environment
     ::
@@ -2723,7 +2725,7 @@ Database
 
         docker compose up database -d
         docker compose exec database bash
-        > /shared/healthcheck/database && echo $?
+        > /shared/healthcheck/database; echo $?
 
     - Fix healthcheck script errors
 
@@ -2744,7 +2746,7 @@ Fingerprint
     - Build docker image
         ::
 
-            docker-compose build fingerprint
+            docker compose build fingerprint
 
         - Fix build errors
 
@@ -2769,13 +2771,13 @@ Fingerprint
 
         docker compose up fingerprint -d
         docker compose exec fingerprint bash
-        > /shared/healthcheck/fingerprint && echo $?
+        > /shared/healthcheck/fingerprint; echo $?
 
     - Fix healthcheck script errors
 
 __ https://dbmx.net/tokyocabinet
 __ https://dbmx.net/tokyotyrant
-__ https://github.com/spotify/echoprint-codegen)
+__ https://github.com/spotify/echoprint-codegen
 
 Erpserver
 '''''''''
@@ -2785,14 +2787,14 @@ Erpserver
     - Build docker image
         ::
 
-            docker-compose build erpserver
+            docker compose build erpserver
 
         - Fix build errors
 
     - Start docker container
         ::
 
-            docker compose run --rm erpserver bash
+            docker compose run --rm --service-ports erpserver bash
 
         - Fix startup errors
 
@@ -2809,6 +2811,16 @@ Erpserver
 
             vi ./code/collecting_society/tryton.cfg
 
+    - Change proteus version in ``install_requires`` of collecting_society_worker ``setup.py``
+        ::
+
+            vi ./code/collecting_society_worker/setup.py
+
+    - Change tryton version in ``install_requires`` of portal_web ``setup.py``
+        ::
+
+            vi ./code/portal_web/setup.py
+
     - Ensure clean src repositories und update them
         ::
 
@@ -2820,7 +2832,7 @@ Erpserver
     - Delete ``*.pyc`` files (always on ``bad magic number`` import error)
         ::
 
-            find ./volumes/shared/src -name \*.pyc -delete
+            sudo find ./volumes/shared/src -name \*.pyc -delete
 
     - Run service
         ::
@@ -2835,45 +2847,23 @@ Erpserver
             - Fix cli script
             - Fix pip dependencies
 
-        - Upgrade module files (see `Migration Forum`__)
+        - Upgrade module files (see Release Announcements in `News`__ and `Migration Forum`__)
 
         - Run tests
-
-            - Adjust test file
-                ::
-
-                    vi ./code/collecting_society/tests/test_collecting_society.py
-
-                - Comment out ``scenario_collecting_society.rst`` test
 
             - Run trytond tests
                 ::
 
-                    > service-test
+                    > python -m unittest trytond.modules.collecting_society.test_module
 
                 - Fix trytond tests
-
-            - Adjust test file
-                ::
-
-                    vi ./code/collecting_society/tests/test_collecting_society.py
-
-                - Comment in ``scenario_collecting_society.rst`` test
-                - Comment out ``CollectingSocietyTestCase``
 
             - Run scenario tests
                 ::
 
-                    > service-test
+                    > python -m unittest trytond.modules.collecting_society.test_scenario
 
                 - Fix scenario tests
-
-            - Adjust test file
-                ::
-
-                    vi ./code/collecting_society/tests/test_collecting_society.py
-
-                - Comment in ``CollectingSocietyTestCase``
 
             - Run all tests
                 ::
@@ -2894,7 +2884,7 @@ Erpserver
             - Import from dataset ``upgrade`` until dataset ``production``
                 ::
 
-                    > db-copy --force collecting_society collecting_society_test
+                    > db-copy --force collecting_society collecting_society_template
                     > db-rebuild -e upgrade -d production --reclimit 1 --pdb
 
                 - Fix datasets (see ``<module>/tests/scenario_*.txt`` for examples)
@@ -2902,7 +2892,7 @@ Erpserver
             - Import from dataset ``production`` all remaining datasets
                 ::
 
-                    > db-copy --force collecting_society collecting_society_test
+                    > db-copy --force collecting_society collecting_society_template
                     > db-rebuild -e production --reclimit 1 --pdb
 
                 - Fix datasets (see ``<module>/tests/scenario_*.txt`` for examples)
@@ -2929,9 +2919,9 @@ Erpserver
 4. Run healthcheck
     ::
 
-        docker-compose up erpserver -d
+        docker compose up erpserver -d
         docker compose exec erpserver bash
-        > /shared/healthcheck/fingerprint && echo $?
+        > /shared/healthcheck/erpserver; echo $?
 
     - Fix healthcheck script errors
 
@@ -2940,9 +2930,14 @@ Erpserver
     - Install the new tryton client and connect it to the server
       (see `Tryton Installation`_ and `Tryton Usage`_)
     - Test the client and operations (list, show, write, etc.)
+        - Open each menu item
+        - Open entries
+        - Check tabs of entries
         - Fix methods
 
+__ https://discuss.tryton.org/c/news
 __ https://discuss.tryton.org/c/migration
+
 
 Worker
 ''''''
@@ -2952,7 +2947,7 @@ Worker
     - Build docker image
         ::
 
-            docker-compose build worker
+            docker compose build worker
 
         - Fix build errors
 
@@ -2963,14 +2958,7 @@ Worker
 
         - Fix startup errors
 
-2. Update proteus version
-
-    - Change proteus version in ``setup.py``
-        ::
-
-            vi ./code/collecting_society_worker/setup.py
-
-3. Update ``collecting_society_worker`` files
+2. Update ``collecting_society_worker`` files
     ::
 
         docker compose run --rm worker bash
@@ -3005,12 +2993,12 @@ Worker
 
         - Fix linter errors
 
-4. Run healthcheck
+3. Run healthcheck
     ::
 
-        docker-compose up worker -d
+        docker compose up worker -d
         docker compose exec worker bash
-        > /shared/healthcheck/worker && echo $?
+        > /shared/healthcheck/worker; echo $?
 
     - Fix healthcheck script errors
 
@@ -3022,29 +3010,23 @@ Web
     - Build docker images
         ::
 
-            docker-compose build webgui webapi
+            docker compose build webgui webapi
 
         - Fix build errors
 
     - Run docker container
         ::
 
-            docker compose run --rm webgui bash
+            docker compose run --rm --service-ports webgui bash
 
         - Fix startup errors
 
-2. Update tryton version
-    - Change tryton version in ``setup.py``
-        ::
-
-            vi ./code/portal_web/setup.py
-
-3. Update ``*_web`` files
+2. Update ``*_web`` files
 
     - Run service
         ::
 
-            docker compose run --rm webgui bash
+            docker compose run --rm --service-ports webgui bash
 
         - Install pip packages
             ::
@@ -3073,6 +3055,7 @@ Web
         - Remove docker volumes
             ::
 
+                docker compose -f docker-compose.testing.yml down
                 docker volume rm \
                     collecting_society_test_echoprint_data \
                     collecting_society_test_postgresql_data \
@@ -3081,17 +3064,17 @@ Web
         - Build test images
             ::
 
-                service-test --build
+                ./service-test --build
 
             - Fix build errors
 
         - Run tests (see `Pyramid Tests`_)
             ::
 
-                service-test web --keep --path unit
-                service-test web --keep --path functional
-                service-test web --keep --path integration
-                service-test web --keep
+                ./service-test web --keep --path unit
+                ./service-test web --keep --path functional
+                ./service-test web --keep --path integration
+                ./service-test web --keep
 
             - Fix test wrapper errors: ``./code/portal_web/tests/base.py``
             - Fix startup errors
@@ -3138,9 +3121,7 @@ Wrap-up
         - List upgraded pip versions
             ::
 
-                docker-compose -f docker-compose.documentation.yml \
-                    run --rm documentation pip freeze
-                docker-compose -f docker-compose.documentation.yml \
+                docker compose -f docker-compose.documentation.yml \
                     run --rm documentation pip freeze
 
         - Add version pinnings of pip packages
@@ -3154,9 +3135,9 @@ Wrap-up
         - Build docker images
             ::
 
-                docker-compose build
-                docker-compose -f docker-compose.testing.yml build
-                docker-compose -f docker-compose.documentation.yml build
+                docker compose build --no-cache
+                docker compose -f docker-compose.testing.yml build
+                docker compose -f docker-compose.documentation.yml build
 
         - Run all tests with build flag (on host)
             ::
@@ -3170,6 +3151,7 @@ Wrap-up
 
         - Update reference repository tags of task
           ``checkout repos of pinned pip packages for reference``
+        - Ensure ``CHECKOUT_REFERENCES=1`` in ``.env``
         - Update repositories
             ::
 
@@ -3230,7 +3212,7 @@ Wrap-up
     - Merge feature branch into ``development`` branch
         ::
 
-            ./project merge feature-upgrade development
+            ./project merge
 
         - Wait for the result of the `Jenkins build`__
         - Fix the Jenkins job environment, if neccessary
@@ -3270,11 +3252,11 @@ Docker
 
 **Couldn't connect to Docker daemon**
 
-**Docker-compose cannot start container <id> port has already been allocated**
+**Docker compose cannot start container <id> port has already been allocated**
 
 If docker fails to start and you get messages like this:
 "Couldn't connect to Docker daemon at http+unix://var/run/docker.sock
-[...]" or "docker-compose cannot start container <docker id> port has already
+[...]" or "docker compose cannot start container <docker id> port has already
 been allocated"
 
 1. Check if the docker service is started::
@@ -3301,17 +3283,17 @@ client.
 Ask the server administrator if the certificate has changed.
 
 Close the Tryton client.
-Check the problematic host entry in ``~/.config/tryton/6.0/known_hosts``.
+Check the problematic host entry in ``~/.config/tryton/6.6/known_hosts``.
 Add a new fingerprint provided by the server administrator or
 simply remove the whole file, if the setup is not in production use::
 
-    rm ~/.config/tryton/6.0/known_hosts
+    rm ~/.config/tryton/6.6/known_hosts
 
 **Incompatible Server Version**
 
 If the tryton client shows an "incompatible server version" error on login try::
 
-    rm ~/.config/tryton/6.0/known_hosts
+    rm ~/.config/tryton/6.6/known_hosts
 
 License
 =======
