@@ -3212,7 +3212,7 @@ Wrap-up
     - Merge feature branch into ``development`` branch
         ::
 
-            ./project merge feature-upgrade development
+            ./project merge
 
         - Wait for the result of the `Jenkins build`__
         - Fix the Jenkins job environment, if neccessary
