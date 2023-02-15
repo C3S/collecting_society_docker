@@ -3227,6 +3227,8 @@ Wrap-up
 
         - Fix the Jenkins job environment, if neccessary
         - Adjust all ``.env`` and config files manually, if neccessary
+          (e.g. on tryton version change)
+        - Check output of ``db-update`` for migration errors
 
     - Update the `online documentation`__ for ``development`` and ``staging``
 
