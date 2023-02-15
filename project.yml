@@ -131,6 +131,8 @@ production:
             source: 'volumes/shared/src/country'
           - name: currency
             source: 'volumes/shared/src/currency'
+          - name: collecting_society
+            source: 'volumes/shared/src/collecting_society'
       # create basic folder structure
       - name: create basic folder structure
         actions: ['folder_create']
