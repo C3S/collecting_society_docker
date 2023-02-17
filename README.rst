@@ -2824,6 +2824,12 @@ Erpserver
             ./project status
             ./project update
 
+    - Diff `erpserver.py` and update it accordingly
+        ::
+
+            diff services/deploy/erpserver.py volumes/shared/src/trytond/bin/trytond
+            vi services/deploy/erpserver.py
+
 3. Update ``collecting_society`` tryton module
 
     - Delete ``*.pyc`` files (always on ``bad magic number`` import error)
