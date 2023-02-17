@@ -559,9 +559,9 @@ Context         Ports  Volumes        Demodata Debug Cache
 ``testing``     public docker managed no       off   on
 =============== ====== ============== ======== ===== =====
 
-For each of the environments except ``testing``, there is a corresponding
-branch with the same name in this repository and most of the main
-subrepositories pre-configured for this environment.
+For each of the environments except ``testing`` (all environments can be
+tested), there is a corresponding branch with the same name in this repository
+and most of the main subrepositories pre-configured for this environment.
 
 Envvars
 -------
@@ -816,10 +816,6 @@ Update database           ``docker compose [exec|run --rm] erpserver db-update``
    If you run into problems, you can also rebuild all `docker images`_ without
    cache. Just `remove`_ all project images (also the dangling ones) before the
    execution of the ``build`` command.
-
-   .. warning:: The ``build`` command has a ``--no-cache`` option, but for
-       multistage builds the intermediate stages won't be reused then, which
-       highly increases the build time.
 
 4. If there were changes in the ``collection_society`` repository, update the
    database::
@@ -1224,6 +1220,7 @@ For example::
       pip-install          Installs required packages for a SERVICE with...
       service-deploy       Deploys the services (erpserver, webgui,...
       service-healthcheck  Healthcheck for the services.
+      service-lint         Runs linter for a service (erpserver,...
       service-test         Runs all tests for a service (erpserver, web,...
 
 .. _db-backup CLI:
@@ -1462,6 +1459,24 @@ service-healthcheck
     Options:
       --help  Show this message and exit.
 
+.. _service-lint CLI:
+
+service-lint
+''''''''''''
+::
+
+    $ service-lint --help
+    Usage: cli service-lint [OPTIONS] [SERVICE]
+
+      Runs linter for a service (erpserver, web/webgui/webapi, worker).
+
+      If PATH is provided, only the path is linted, not the service. If SERVICE
+      is 'all', all services are linted.
+
+    Options:
+      --path TEXT  Custom path with files to lint
+      --help       Show this message and exit.
+
 .. _service-test CLI:
 
 service-test
@@ -1504,24 +1519,6 @@ service-test
       --reset / --no-reset  Reset the database (default: yes)
       --path TEXT           Searchpath for tests (see nosetest)
       --help                Show this message and exit.
-
-.. _service-lint CLI:
-
-service-lint
-''''''''''''
-::
-
-    $ service-lint --help
-    Usage: cli service-lint [OPTIONS] [SERVICE]
-
-      Runs linter for a service (erpserver, web/webgui/webapi, worker).
-
-      If PATH is provided, only the path is linted, not the service. If SERVICE
-      is 'all', all services are linted.
-
-    Options:
-      --path TEXT  Custom path with files to lint
-      --help       Show this message and exit.
 
 .. _Tryton Usage:
 
@@ -1662,17 +1659,17 @@ Key             Description
                 | maps to ``@command`` functions in the `project script`_
 ``tasks``       list of tasks to perform consecutively for each command
 ``NAME``        name of the task, required for all tasks
-``ACTION``      | actions to perform consecutivky for each task,
+``ACTION``      | actions to perform consecutively for each task,
                 | maps to ``@action`` functions in the `project script`_
 ``actions``     | *[dictionary]* configuration values available in actions
-                | *[list]* action group with actions to perform consecutivley
+                | *[list]* action group with actions to perform consecutively
 =============== ===============================================================
 
 Commands can be invoked via the `project script`_. For available commands, see
 the ``@command`` decorated functions in the script.
 
 Each command processes its task list and for each task the defined actions
-consecutivley. Each action receives the task dictionary and expects the task
+consecutively. Each action receives the task dictionary and expects the task
 to have the proper key/value pairs (e.g. repos need a source, etc). The
 command/action config dictionary is also available to the actions and might
 configure how the action should be performed. For available actions, see the
@@ -1820,7 +1817,7 @@ image setup are:
 - Each image stage has **4 substages** for the different `environments`_:
 
   - The **production** substage contains only the minimum of packages needed.
-  - The **staging** substage adds packages for stating.
+  - The **staging** substage adds packages for staging.
   - The **testing** substage adds packages for tests/CI/documentation.
   - The **development** substage adds packages to develop comfortably.
 

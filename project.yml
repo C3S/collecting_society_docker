@@ -221,7 +221,7 @@ production:
       stop_action_group: true
     # git clone action
     git_clone:
-      # create the conaining folder of the repo
+      # create the containing folder of the repo
       create_folder: true
 
 #==============================================================================
