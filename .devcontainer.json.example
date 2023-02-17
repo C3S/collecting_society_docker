@@ -5,13 +5,15 @@
 	"service": "test_web",
 	"workspaceFolder": "/shared",
 	"shutdownAction": "none",
-	"extensions": [
-		"ms-python.python",
-		"visualstudioexptteam.vscodeintellicode",
-		"vscode.flake8",
-		"ms-python.vscode-pylance"
-	],
-	"settings": {
-		"editor.rulers": [ 79, 119 ]
+	"customizations": {
+		"extensions": [
+			"ms-python.python",
+			"visualstudioexptteam.vscodeintellicode",
+			"vscode.flake8",
+			"ms-python.vscode-pylance"
+		],
+		"settings": {
+			"editor.rulers": [ 79, 119 ]
+		}
 	}
 }

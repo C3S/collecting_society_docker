@@ -10,8 +10,10 @@
             "name": "Webgui Attach",
             "type": "python",
             "request": "attach",
-            "port": 51000,
-            "host": "localhost"
+            "connect": {
+                "host": "localhost",
+                "port": 51000
+            },
         },
         {
             "name": "WebAPI Attach",
