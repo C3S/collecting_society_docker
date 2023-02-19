@@ -10,8 +10,10 @@
             "name": "Webgui Attach",
             "type": "python",
             "request": "attach",
-            "port": 51000,
-            "host": "localhost"
+            "connect": {
+                "host": "localhost",
+                "port": 51000
+            },
         },
         {
             "name": "WebAPI Attach",
@@ -77,7 +79,7 @@
         // If satisfied with sales, you may want to move on to a new dataset
         // that depends on sales, e.g. sales_statistics, you could enter:
         // db-copy --force collecting_society collecting_society_template
-        // for more info: https://files.c3s.cc/collecting_society/development/generated/collecting_society_docker_README.html#id29
+        // for more info: http://docs.c3s.cc/collecting_society/development/generated/collecting_society_docker_README.html#id29
         {
             "name": "Demodata Attach",
             "type": "python",

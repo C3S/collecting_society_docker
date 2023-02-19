@@ -1755,6 +1755,14 @@ def process(context):
         error({'title': "No tasks"})
     # process tasks
     for task in context['tasks']:
+        # check condition
+        if 'condition' in task:
+            condition = task.get('condition')
+            if not condition or condition in ['0', 'False', 'false']:
+                message({'level': _verbose and "info" or "debug",
+                         'title': task['name'], 'action': "skipped",
+                         'description': "condition is %s" % condition})
+                continue
         # batch tasks
         if task.get('batch'):
             batch_tasks = []

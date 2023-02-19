@@ -209,7 +209,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ### production
 FROM compile AS python_production_compiled
 RUN pip install \
-    click==8.0.1
+    click==8.1.3
 
 ### staging
 FROM python_production_compiled AS python_staging_compiled
@@ -218,14 +218,14 @@ FROM python_production_compiled AS python_staging_compiled
 FROM python_staging_compiled AS python_testing_compiled
 RUN pip install \
     autoapi==2.0.1 \
-    coverage==5.5 \
-    flake8==3.9.2 \
+    coverage==7.1.0 \
+    flake8==6.0.0 \
     nose==1.3.7 \
-    nose2==0.10.0 \
-    pytest==6.2.5 \
-    sphinx==4.2.0 \
-    sphinx_rtd_theme==1.0.0 \
-    tox==3.24.4
+    nose2==0.12.0 \
+    pytest==7.2.1 \
+    sphinx==6.1.3 \
+    sphinx-rtd-theme==1.2.0 \
+    tox==4.4.5
 
 ### development
 FROM python_testing_compiled AS python_development_compiled
@@ -288,40 +288,43 @@ FROM echoprint_${ENVIRONMENT}_compiled AS echoprint_compiled
 FROM python_compiled AS trytond_production_compiled
 # trytond mandatory
 RUN pip install \
-    Genshi==0.7.5 \
-    lxml==4.6.3 \
+    Genshi==0.7.7 \
+    lxml==4.9.2 \
     passlib[bcrypt]==1.7.4 \
     polib==1.1.1 \
     python-dateutil==2.8.2 \
-    python-sql==1.3.0 \
-    relatorio[fodt]==0.10.0 \
-    werkzeug==1.0.1 \
-    wrapt==1.12.1
+    python-sql==1.4.0 \
+    relatorio[fodt]==0.10.1 \
+    Werkzeug==2.2.2 \
+    wrapt==1.14.1
 # trytond optional
 RUN pip install \
-    gevent==21.8.0 \
+    gevent==22.10.2 \
     html2text==2020.1.16 \
-    pillow==8.3.2 \
-    psycopg2==2.9.1 \
+    Pillow==9.4.0 \
+    psycopg2==2.9.5 \
     pydot==1.4.2 \
-    python-Levenshtein==0.12.2 \
-    weasyprint==53.3
+    python-Levenshtein==0.20.9 \
+    weasyprint==57.2
 # additional
 RUN pip install \
     hurry.filesize==0.9 \
     interlude==1.3.1 \
-    mock==4.0.3 \
-    pyOpenSSL==21.0.0 \
-    pytz==2021.3 \
-    requests==2.26.0 \
+    mock==5.0.1 \
+    pyOpenSSL==23.0.0 \
+    pytz==2022.7.1 \
+    requests==2.28.2 \
     vatnumber==1.2
-# trytond currency
-RUN pip install \
-    forex-python==1.6 \
-    pycountry==20.7.3
 # trytond account
 RUN pip install \
-    simpleeval==0.9.10
+    simpleeval==0.9.12
+# trytond currency
+RUN pip install \
+    forex-python==1.8 \
+    pycountry==22.3.5
+# proteus
+RUN pip install \
+    defusedxml==0.7.1
 
 ### staging
 FROM trytond_production_compiled AS trytond_staging_compiled
@@ -341,18 +344,18 @@ FROM trytond_${ENVIRONMENT}_compiled AS trytond_compiled
 ### production
 FROM trytond_compiled AS pyramid_production_compiled
 RUN pip install \
-    colander==1.8.3 \
-    cornice==6.0.0 \
+    colander==2.0 \
+    cornice==6.0.1 \
     cornice-swagger==1.0.1 \
     cryptacular==1.6.2 \
-    Pillow==8.3.2 \
+    Pillow==9.4.0 \
     deform==2.0.15 \
-    pyramid==2.0 \
+    pyramid==2.0.1 \
     pyramid-beaker==0.8 \
     pyramid-chameleon==0.3 \
     pyramid-mailer==0.15.1 \
-    python-magic==0.4.24 \
-    waitress==2.0.0
+    python-magic==0.4.27 \
+    waitress==2.1.2
 
 ### staging
 FROM pyramid_production_compiled AS pyramid_staging_compiled
@@ -361,13 +364,13 @@ FROM pyramid_production_compiled AS pyramid_staging_compiled
 FROM pyramid_staging_compiled AS pyramid_testing_compiled
 RUN pip install \
     raven==6.10.0 \
-    selenium==3.141.0 \
+    selenium==4.8.0 \
     WebTest==3.0.0
 
 ### development
 FROM pyramid_testing_compiled AS pyramid_development_compiled
 RUN pip install \
-    pyramid-debugtoolbar==4.9
+    pyramid-debugtoolbar==4.10
 
 ### result
 FROM pyramid_${ENVIRONMENT}_compiled AS pyramid_compiled
@@ -384,11 +387,12 @@ RUN git clone https://github.com/spotify/echoprint-codegen.git /opt/echoprint-co
     && chmod 755 /opt/echoprint-codegen/echoprint-codegen
 # install pip packages
 RUN pip install  \
+    defusedxml==0.7.1 \
     pyechonest==9.0.0 \
-    pydub==0.25.1  \
-    pytaglib==1.4.6  \
+    pydub==0.25.1 \
+    pytaglib==1.5.0 \
     python-dateutil==2.8.2 \
-    requests==2.26.0
+    requests==2.28.2
 
 ### staging
 FROM proteus_production_compiled AS proteus_staging_compiled
@@ -451,12 +455,12 @@ FROM postgres:13 AS database
 
 #--- WEBSERVER ----------------------------------------------------------------
 
-FROM jwilder/nginx-proxy:0.9.3 AS webserver
+FROM jwilder/nginx-proxy:1.2.1 AS webserver
 
 
 #--- BROWSER ------------------------------------------------------------------
 
-FROM selenium/standalone-firefox:3.141 AS browser
+FROM selenium/standalone-firefox:4.8.0 AS browser
 
 
 #--- base -> python -> echoprint -> FINGERPRINT -------------------------------
