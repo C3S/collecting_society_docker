@@ -649,6 +649,8 @@ def service_test(context, service, dbname, reset, path, nargs):
     Additional NARGS will be passed to nosetests.
     """
     # Sanity check
+    if service in ['webgui', 'wepapi'] and ENVIRONMENT == "testing":
+        service = 'web'
     if service in ['webgui', 'wepapi']:
         print("Tests of webgui/webapi need to be started from host.")
         exit(-1)
