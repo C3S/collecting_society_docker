@@ -2,7 +2,8 @@
 	"name": "collecting_society",
 	"dockerComposeFile": [ "docker-compose.yml", "docker-compose.override.yml" ],
 	"runArgs": ["--projectname", "collecting_society"],
-	"service": "test_web",
+	"service": "webgui",  // e.g. erpserver, webgui, webapi, worker, test_web -- see
+						  // docker-compose.yml and volumes/shared/.vscode/launch.json
 	"workspaceFolder": "/shared",
 	"shutdownAction": "none",
 	"customizations": {
