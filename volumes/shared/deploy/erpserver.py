@@ -85,16 +85,16 @@ with commandline.pidfile(options):
             **ssl_args).serve_forever()
     else:
         from werkzeug.serving import run_simple
-        import ptvsd
+        import debugpy
         import socket
 
         try:
-            ptvsd.enable_attach(address=("0.0.0.0", 51005), redirect_output=True)
+            debugpy.listen(("0.0.0.0", 52005))
         except socket.error as e:
             print(e)
             pass
-        # ptvsd.wait_for_attach(); ptvsd.break_into_debugger()
-        # threaded and use_realoader have to be false for ptvsd debugging
+        # debugpy.wait_for_attach(); debugpy.break_into_debugger()
+        # threaded and use_realoader have to be false for debugpy debugging
         run_simple(hostname, port, app,
             threaded=False,
             extra_files=extra_files,

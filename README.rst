@@ -58,8 +58,8 @@ Services
 |             |                     |                            |                  | | postgresql-data |
 +-------------+---------------------+----------------------------+------------------+-------------------+
 | erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc  | | shared          |
-|             |                     |                            | | 51005: debugpy | | trytond-files   |
-|             |                     |                            | | 51006: debugpy |                   |
+|             |                     |                            | | 52005: debugpy | | trytond-files   |
+|             |                     |                            | | 52006: debugpy |                   |
 +-------------+---------------------+----------------------------+------------------+-------------------+
 | webserver   | Nginx Server        |                            | 80: http         | | shared          |
 |             |                     |                            |                  | | nginx-certs     |
@@ -67,16 +67,16 @@ Services
 |             |                     |                            |                  | | nginx-htpasswd  |
 +-------------+---------------------+----------------------------+------------------+-------------------+
 | webgui      | | Pyramid Gui App   | | portal_web_              | | 6543: pserve   | | shared          |
-|             | | *+Trytond Server* | | collecting_society_web_  | | 51000: debugpy | | trytond-files   |
+|             | | *+Trytond Server* | | collecting_society_web_  | | 52000: debugpy | | trytond-files   |
 +-------------+---------------------+----------------------------+------------------+-------------------+
 | webapi      | | Pyramid Api App   | | portal_web_              | | 6544: pserve   | | shared          |
-|             | | *+Trytond Server* | | collecting_society_web_  | | 51001: debugpy | | trytond-files   |
+|             | | *+Trytond Server* | | collecting_society_web_  | | 52001: debugpy | | trytond-files   |
 +-------------+---------------------+----------------------------+------------------+-------------------+
-| worker      | | File Processing   | collecting_society_worker_ | 51002: debugpy   | shared            |
+| worker      | | File Processing   | collecting_society_worker_ | 52002: debugpy   | shared            |
 |             | | *+Proteus Client* |                            |                  |                   |
 +-------------+---------------------+----------------------------+------------------+-------------------+
 | fingerprint | Echoprint Server    | echoprint-server_          | | 8080: http     | | shared          |
-|             |                     |                            | | 51004: debugpy | | echoprint-data  |
+|             |                     |                            | | 52004: debugpy | | echoprint-data  |
 +-------------+---------------------+----------------------------+------------------+-------------------+
 
 .. _collecting_society_docker: https://github.com/C3S/collecting_society_docker
@@ -2165,7 +2165,7 @@ Make sure to open a port for the remote debugger in
 ``docker-compose.development.yml``::
 
     ports:
-      - "51000:51000"
+      - "52000:52000"
 
 Install winpdb also outside the container and run it::
 

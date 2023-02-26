@@ -212,10 +212,10 @@ def generate(datasets=[], excludes=[], reclimit=0,
     if vs_debug:
         import debugpy  # unconditional import breaks test coverage
         try:
-            debugpy.listen(("0.0.0.0", 51006))
-            print("debugpy started and listening to port 51006.")
+            debugpy.listen(("0.0.0.0", 52006))
+            print("debugpy started and listening to port 52006.")
         except (RuntimeError, socket.error) as err:
-            print("debugpy could not be started (port 51006 already used "
+            print("debugpy could not be started (port 52006 already used "
                   "by debug session?): " + str(err))
         # for use with "Demodata Attach" debugging in VS Code
         # if you need to debug datasets, set DEBUGGER_DEMODATA_WAIT=1:

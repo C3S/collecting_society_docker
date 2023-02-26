@@ -12,45 +12,45 @@
             "request": "attach",
             "connect": {
                 "host": "localhost",
-                "port": 51000
+                "port": 52000
             },
         },
         {
             "name": "WebAPI Attach",
             "type": "python",
             "request": "attach",
-            "port": 51001,
+            "port": 52001,
             "host": "localhost"
         },
         {
             "name": "Processing Attach",
             "type": "python",
             "request": "attach",
-            "port": 51002,
+            "port": 52002,
             "host": "localhost"
         },
         // for debugging tests, put "test_web" as service in .devcontainer
         // and run for example: ./service-test web --keep --path src/collecting_society_web/collecting_society_web/tests/integration/web_user.py:TestWebUser
         // finally add these lines to your test:
         // import debugpy
-        // debugpy.listen(address=("0.0.0.0", 51003))
+        // debugpy.listen(address=("0.0.0.0", 52003))
         // debugpy.wait_for_client()
         // breakpoint()
         {
             "name": "Test Attach",
             "type": "python",
             "request": "attach",
-            "port": 51003,
+            "port": 52003,
             "host": "localhost"
         },
         // the followint entry is for other cases, e.g.tests; insert this line:
-        // import debugpy; debugpy.listen(address=("0.0.0.0", 51004)); debugpy.wait_for_client(); breakpoint()
+        // import debugpy; debugpy.listen(address=("0.0.0.0", 52004)); debugpy.wait_for_client(); breakpoint()
         // don't forget to open the resp. port in the docker-compose.yml!
         {
             "name": "Casual Debugging Attach",
             "type": "python",
             "request": "attach",
-            "port": 51004,
+            "port": 52004,
             "host": "localhost"
         },
         // use this to debug tryton wizards or to explore trytond internals:
@@ -58,7 +58,7 @@
             "name": "ERPServer Attach",
             "type": "python",
             "request": "attach",
-            "port": 51005,
+            "port": 52005,
             "host": "localhost",
             "subProcess": true
         },
@@ -84,7 +84,7 @@
             "name": "Demodata Attach",
             "type": "python",
             "request": "attach",
-            "port": 51006,
+            "port": 52006,
             "host": "localhost"
         },
         {
