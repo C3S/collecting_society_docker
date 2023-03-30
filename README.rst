@@ -1107,7 +1107,7 @@ service-test
       --ci-branch: branch to test
       --ci-environment: environment to test
       --help: display this help
-      PARAMS: are passed to nosetest
+      PARAMS: are passed to pytest
 
 .. _docs-build script:
 
@@ -1488,7 +1488,7 @@ service-test
 
       Runs all tests for a service (erpserver, web, worker).
 
-      Starts nosetests and prints output to stdout.
+      Starts pytests and prints output to stdout.
 
       Creates the test database template DBNAME_template, if not existant. On
       RESET, the database DBNAME will be recreated from this template and the
@@ -1502,7 +1502,7 @@ service-test
       `<portal_web>/tests/config.py` (currenty `./shared/tmp/screenshots).
 
       The PATH to tests may be defined to test certain testfiles, testclasses or
-      test methods (see nosetests for the syntax). If no PATH is given, all tests
+      test methods (see pytest for the syntax). If no PATH is given, all tests
       of portal_web and plugins are included. The test files should be stored
       below the following subpaths by convention:
 
@@ -1512,12 +1512,12 @@ service-test
 
           <portal_web||plugin>/tests/integration (selenium)
 
-      Additional NARGS will be passed to nosetests.
+      Additional NARGS will be passed to pytests.
 
     Options:
       --dbname TEXT         Name of database (default: test)
       --reset / --no-reset  Reset the database (default: yes)
-      --path TEXT           Searchpath for tests (see nosetest)
+      --path TEXT           Searchpath for tests (see pytest)
       --help                Show this message and exit.
 
 .. _Tryton Usage:
@@ -2264,7 +2264,7 @@ Stop the container afterwards::
     will highly speed up the execution time, if you run the tests more than
     once.
 
-You can append the normal nosetest parameters::
+You can append the normal pytest parameters::
 
     $ ./service-test worker --keep [--path PATH] [PARAMETER]
 
@@ -2332,7 +2332,7 @@ Stop the container afterwards::
     will highly speed up the execution time, if you run the tests more than
     once.
 
-You can append the normal nosetest parameters::
+You can append the normal pytest parameters::
 
     $ ./service-test web --keep [--path PATH] [PARAMETER]
 
@@ -2387,7 +2387,7 @@ If you prefer, you can also execute the commands above from within the container
 
 .. note:: In the ``testing`` environment, the ``webgui`` and ``webapi``
     services run both on the ``web`` service as deployment needs to be
-    coordinated and controlled by nosetest.
+    coordinated and controlled by pytest.
 
 The rendered HTML output of the coverage can be accessed via::
 

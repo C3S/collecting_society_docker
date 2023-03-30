@@ -11,7 +11,7 @@ ARG DEBUGGER_PTVSD
 #--- BASE ---------------------------------------------------------------------
 
 ### production
-FROM debian:bullseye-slim AS base_production
+FROM debian:bookworm-slim AS base_production
 # set workdir
 ARG WORKDIR
 ENV WORKDIR $WORKDIR
@@ -70,12 +70,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-pip \
         python3-venv \
     && rm -rf /var/lib/apt/lists/*
-# upgrade pip
-RUN python3 -m pip install --upgrade pip
 # create virtual environment
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV=/opt/venv
+# upgrade essential pip packages
+RUN python3 -m pip install --upgrade pip wheel
 # set default entrypoint and cmd for CLI script
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["cli --help"]
@@ -100,7 +100,7 @@ FROM python AS trytond_production
 # install database packages
 RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && apt-get update && apt-get install -y --no-install-recommends \
-        postgresql-client-13  \
+        postgresql-client-15 \
         sqlite3 \
         libxslt1.1 \
         graphviz \
@@ -162,7 +162,7 @@ FROM proteus_staging AS proteus_testing
 # install database packages
 RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && apt-get update && apt-get install -y --no-install-recommends \
-        postgresql-client-13  \
+        postgresql-client-15 \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/man/*
 
@@ -183,7 +183,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-dev \
         # pip: lxml \
             libxml2-dev \
-            libxslt-dev \
+            libxslt1-dev \
         # pip: psycopg2 \
             libpq-dev \
         # pip: pyOpenSSL \
@@ -218,14 +218,15 @@ FROM python_production_compiled AS python_staging_compiled
 FROM python_staging_compiled AS python_testing_compiled
 RUN pip install \
     autoapi==2.0.1 \
-    coverage==7.1.0 \
+    coverage==7.2.2 \
     flake8==6.0.0 \
-    nose==1.3.7 \
-    nose2==0.12.0 \
-    pytest==7.2.1 \
-    sphinx==6.1.3 \
+    mypy==1.1.1 \
+    pytest==7.2.2 \
+    pytest-cov==4.0.0 \
+    pytest-mock==3.10.0 \
+    Sphinx==6.1.3 \
     sphinx-rtd-theme==1.2.0 \
-    tox==4.4.5
+    tox==4.4.8
 
 ### development
 FROM python_testing_compiled AS python_development_compiled
@@ -291,12 +292,13 @@ RUN pip install \
     Genshi==0.7.7 \
     lxml==4.9.2 \
     passlib[bcrypt]==1.7.4 \
-    polib==1.1.1 \
+    polib==1.2.0 \
     python-dateutil==2.8.2 \
     python-sql==1.4.0 \
+    python-stdnum==1.18 \
     relatorio[fodt]==0.10.1 \
-    Werkzeug==2.2.2 \
-    wrapt==1.14.1
+    Werkzeug==2.2.3 \
+    wrapt==1.15.0
 # trytond optional
 RUN pip install \
     gevent==22.10.2 \
@@ -305,19 +307,18 @@ RUN pip install \
     psycopg2==2.9.5 \
     pydot==1.4.2 \
     python-Levenshtein==0.20.9 \
-    weasyprint==57.2
+    weasyprint==58.1
 # additional
 RUN pip install \
     hurry.filesize==0.9 \
     interlude==1.3.1 \
     mock==5.0.1 \
-    pyOpenSSL==23.0.0 \
-    pytz==2022.7.1 \
-    requests==2.28.2 \
-    vatnumber==1.2
+    pyOpenSSL==23.1.1 \
+    pytz==2023.2 \
+    requests==2.28.2
 # trytond account
 RUN pip install \
-    simpleeval==0.9.12
+    simpleeval==0.9.13
 # trytond currency
 RUN pip install \
     forex-python==1.8 \
@@ -390,7 +391,7 @@ RUN pip install  \
     defusedxml==0.7.1 \
     pyechonest==9.0.0 \
     pydub==0.25.1 \
-    pytaglib==1.5.0 \
+    pytaglib==2.0.0 \
     python-dateutil==2.8.2 \
     requests==2.28.2
 
@@ -410,6 +411,7 @@ FROM proteus_${ENVIRONMENT}_compiled AS proteus_compiled
 #--- [COMPILE] NODEJS ---------------------------------------------------------
 
 ### production
+# TODO: upgrade when node:bookworm-slim is available
 FROM node:bullseye-slim AS sao_production_compiled
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -450,7 +452,7 @@ FROM sao_development_compiled AS sao_compiled
 
 #--- DATABASE -----------------------------------------------------------------
 
-FROM postgres:13 AS database
+FROM postgres:15 AS database
 
 
 #--- WEBSERVER ----------------------------------------------------------------

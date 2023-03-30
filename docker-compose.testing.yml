@@ -1,8 +1,6 @@
 # For copyright and license terms, see COPYRIGHT.rst (top level of repository)
 # Repository: https://github.com/C3S/collecting_society_docker
 
-version: '2.4'
-
 networks:
   test_frontend:
   test_backend:
@@ -85,10 +83,13 @@ services:
     depends_on:
       test_database:
         condition: service_healthy
+      test_browser:
+        condition: service_healthy
     env_file:
       - .env
       - services/webapi.env
       - services/webgui.env
+      - services/erpserver.env
     environment:
       SERVICE: webgui
       ENVIRONMENT: testing
@@ -143,13 +144,15 @@ services:
         WORKDIR: ${WORKDIR}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
         DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+    healthcheck:
+      test: /opt/bin/check-grid.sh --host 0.0.0.0 --port 4444
+      interval: 15s
+      timeout: 30s
+      retries: 5
     volumes:
       - /dev/shm:/dev/shm
     networks:
       - test_frontend
-    depends_on:
-      test_web:
-        condition: service_started
     environment:
       SERVICE: browser
 
