@@ -26,7 +26,7 @@
 #%   --ci-branch: branch to test
 #%   --ci-environment: environment to test
 #%   --help: display this help
-#%   PARAMS: are passed to nosetest
+#%   PARAMS: are passed to pytest
 
 # print usage
 usage() {
