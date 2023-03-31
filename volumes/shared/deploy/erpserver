@@ -9,7 +9,7 @@ if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "staging" ]; then
     DEV="--dev -vv"
 fi
 
-if [ "$DEBUGGER_PTVSD" = "1" ]; then
+if [ "$DEBUGGER_DEBUGPY" = "1" ]; then
     $WORKDIR/deploy/erpserver.py $DEV -c $WORKDIR/config/trytond/$ENVIRONMENT.conf
 else
     trytond $DEV -c $WORKDIR/config/trytond/$ENVIRONMENT.conf

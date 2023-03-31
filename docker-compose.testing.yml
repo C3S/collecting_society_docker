@@ -21,7 +21,7 @@ services:
         WORKDIR: ${WORKDIR}
         TRYTON_VERSION: ${TRYTON_VERSION}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
-        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+        DEBUGGER_DEBUGPY: ${DEBUGGER_DEBUGPY}
     networks:
       - test_backend
     healthcheck:
@@ -76,7 +76,7 @@ services:
       - test_frontend
       - test_backend
     ports:
-      - "127.0.0.1:51003:51003"  # debugger
+      - "127.0.0.1:52003:52003"  # debugger
     volumes:
       - ./volumes/shared:/shared
       - test_trytond_files:/var/lib/trytond
@@ -133,7 +133,7 @@ services:
       PGPASSWORD: s0secret!!
       ECHOPRINT_HOSTNAME: test_${ECHOPRINT_HOSTNAME}
       DEBUGGER_WINPDB: 0
-      DEBUGGER_PTVSD: 0
+      DEBUGGER_DEBUGPY: 0
 
   test_browser:
     build:
@@ -143,7 +143,7 @@ services:
         ENVIRONMENT: ${ENVIRONMENT}
         WORKDIR: ${WORKDIR}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
-        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+        DEBUGGER_DEBUGPY: ${DEBUGGER_DEBUGPY}
     healthcheck:
       test: /opt/bin/check-grid.sh --host 0.0.0.0 --port 4444
       interval: 15s

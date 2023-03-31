@@ -8,6 +8,7 @@ Demo data generation script.
 
 import os
 import sys
+import socket
 import pdb as pdbpp
 import traceback
 import logging
@@ -206,18 +207,20 @@ def generate(datasets=[], excludes=[], reclimit=0,
     except Exception:
         pass
 
-    # setup ptvsd debugging
-    vs_debug = int(os.environ.get('DEBUGGER_PTVSD'))
+    # setup debugpy debugging
+    vs_debug = int(os.environ.get('DEBUGGER_DEBUGPY'))
     if vs_debug:
+        import debugpy  # unconditional import breaks test coverage
         try:
-            import ptvsd  # unconditional import breaks test coverage
-            ptvsd.enable_attach(address=("0.0.0.0", 51006))
-            # uncomment these  line(s), and select "Demodata Attach" in VS Code
-            # if you need to debug datasets:
-            # ptvsd.wait_for_attach()
-            # ptvsd.break_into_debugger()
-        except Exception as ex:
-            log.debug('ptvsd debugging not possible: %s' % ex)
+            debugpy.listen(("0.0.0.0", 52006))
+            print("debugpy started and listening to port 52006.")
+        except (RuntimeError, socket.error) as err:
+            print("debugpy could not be started (port 52006 already used "
+                  "by debug session?): " + str(err))
+        # for use with "Demodata Attach" debugging in VS Code
+        # if you need to debug datasets, set DEBUGGER_DEMODATA_WAIT=1:
+        if int(os.environ.get('DEBUGGER_DEMODATA_WAIT')):
+            debugpy.wait_for_client()
 
     # configure output
     width = 100

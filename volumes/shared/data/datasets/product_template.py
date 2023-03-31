@@ -32,7 +32,7 @@ def generate(reclimit=0):
 
     # create product templates
     administration = ProductTemplate()
-    administration.name = "Administration Amount"
+    administration.name = "Administration Fee"
     administration.type = "service"
     administration.code = "A"
     administration.account_category = administration_category

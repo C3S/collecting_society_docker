@@ -51,33 +51,33 @@ Schema
 Services
 --------
 
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| Service     | Description         | Repositories               | Ports           | Volumes           |
-+=============+=====================+============================+=================+===================+
-| database    | Postgres DB         |                            |                 | | shared          |
-|             |                     |                            |                 | | postgresql-data |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc | | shared          |
-|             |                     |                            | | 51005: ptvsd  | | trytond-files   |
-|             |                     |                            | | 51006: ptvsd  |                   |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| webserver   | Nginx Server        |                            | 80: http        | | shared          |
-|             |                     |                            |                 | | nginx-certs     |
-|             |                     |                            |                 | | nginx-dhparam   |
-|             |                     |                            |                 | | nginx-htpasswd  |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| webgui      | | Pyramid Gui App   | | portal_web_              | | 6543: pserve  | | shared          |
-|             | | *+Trytond Server* | | collecting_society_web_  | | 51000: ptvsd  | | trytond-files   |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| webapi      | | Pyramid Api App   | | portal_web_              | | 6544: pserve  | | shared          |
-|             | | *+Trytond Server* | | collecting_society_web_  | | 51001: ptvsd  | | trytond-files   |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| worker      | | File Processing   | collecting_society_worker_ | 51002: ptvsd    | shared            |
-|             | | *+Proteus Client* |                            |                 |                   |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| fingerprint | Echoprint Server    | echoprint-server_          | | 8080: http    | | shared          |
-|             |                     |                            | | 51004: ptvsd  | | echoprint-data  |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
++-------------+---------------------+----------------------------+------------------+-------------------+
+| Service     | Description         | Repositories               | Ports            | Volumes           |
++=============+=====================+============================+==================+===================+
+| database    | Postgres DB         |                            |                  | | shared          |
+|             |                     |                            |                  | | postgresql-data |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc  | | shared          |
+|             |                     |                            | | 52005: debugpy | | trytond-files   |
+|             |                     |                            | | 52006: debugpy |                   |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| webserver   | Nginx Server        |                            | 80: http         | | shared          |
+|             |                     |                            |                  | | nginx-certs     |
+|             |                     |                            |                  | | nginx-dhparam   |
+|             |                     |                            |                  | | nginx-htpasswd  |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| webgui      | | Pyramid Gui App   | | portal_web_              | | 6543: pserve   | | shared          |
+|             | | *+Trytond Server* | | collecting_society_web_  | | 52000: debugpy | | trytond-files   |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| webapi      | | Pyramid Api App   | | portal_web_              | | 6544: pserve   | | shared          |
+|             | | *+Trytond Server* | | collecting_society_web_  | | 52001: debugpy | | trytond-files   |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| worker      | | File Processing   | collecting_society_worker_ | 52002: debugpy   | shared            |
+|             | | *+Proteus Client* |                            |                  |                   |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| fingerprint | Echoprint Server    | echoprint-server_          | | 8080: http     | | shared          |
+|             |                     |                            | | 52004: debugpy | | echoprint-data  |
++-------------+---------------------+----------------------------+------------------+-------------------+
 
 .. _collecting_society_docker: https://github.com/C3S/collecting_society_docker
 .. _collecting_society: https://github.com/C3S/collecting_society
@@ -315,15 +315,15 @@ Copy the main environment variable example file ``.env.example`` to `.env`_::
 
 Adjust the following variables:
 
-======================= ====== ======= =================================================
+======================= ====== ======= ==================================================
 Variable                Values Default Description
-======================= ====== ======= =================================================
-``DEBUGGER_PTVSD``      0|1    0       Install ptvsd during build process for debugging
+======================= ====== ======= ==================================================
+``DEBUGGER_DEBUGPY``    0|1    0       Install debugpy during build process for debugging
 ``GIT_SSH``             0|1    0       Checkout git repositories via ssh
 ``GIT_USER_NAME``       string ""      Username for git commits *(optional)*
 ``GIT_USER_EMAIL``      string ""      Email for git commits *(optional)*
 ``GIT_USER_SIGNINGKEY`` string ""      16-hex-digit GPG key id for signed commits
-======================= ====== ======= =================================================
+======================= ====== ======= ==================================================
 
 Run the `project script`_ update command, which checkouts the service
 repositories, creates the service folders and copies the configuration example
@@ -596,7 +596,8 @@ Variable                           Values          Description
 ``COMPOSE_PROJECT_NAME``           string          prefix for containers
 ``COMPOSE_IGNORE_ORPHANS``         0|1             suppress orphan container warnings
 ``DEBUGGER_WINPDB``                0|1             install packages for winpdb in images
-``DEBUGGER_PTVSD``                 0|1             install packages for ptvsd in images
+``DEBUGGER_DEBUGPY``               0|1             install packages for debugpy in images
+``DEBUGGER_DEMODATA_WAIT``         0|1             wait for debugger in demodata creation
 ``WORKDIR``                        PATH            workdir for images
 ``GIT_SSH``                        0|1             use git via ssh
 ``GIT_USER_NAME``                  string          set git username in repositories
@@ -2106,8 +2107,8 @@ If you want to debug the `demodata`_ generation, you can add the ``--pdb``
 flag to the `db-rebuild CLI`_ command to jump into pdb on errors
 automatically.
 
-Ptvsd
-'''''
+Debugpy
+'''''''
 
 If you use Visual Studio Code as your editor, you would want to install the
 Remote Containers extension, so you can work directly in the docker containers,
@@ -2115,7 +2116,7 @@ including source level debugging from within VS Code. Just make sure that
 the environment variables in `.env`_ have the right values::
 
     ENVIRONMENT=development
-    DEBUGGER_PTVSD=1
+    DEBUGGER_DEBUGPY=1
 
 Now rebuild the docker images for the packages to be installed, ``cd`` to
 ``collecting_society_docker`` and start VSCode with ``"code ."``. The necessary
@@ -2141,6 +2142,11 @@ the debug config drop-down box and a debug toolbar should appear.
     ``.devcontainer.json`` will determine which container is being selected by
     the *Remote-Containers* plugin.
 
+To debug demodata creation, you would want the debugger to wait until you
+attach. Use this env var:
+
+    DEBUGGER_DEMODATA_WAIT=1
+
 Winpdb
 ''''''
 
@@ -2159,7 +2165,7 @@ Make sure to open a port for the remote debugger in
 ``docker-compose.development.yml``::
 
     ports:
-      - "51000:51000"
+      - "52000:52000"
 
 Install winpdb also outside the container and run it::
 
