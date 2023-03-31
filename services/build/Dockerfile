@@ -88,6 +88,30 @@ FROM python_staging AS python_testing
 
 ### development
 FROM python_testing AS python_development
+ARG DEBUGGER_DEBUGPY
+RUN if [ ${DEBUGGER_DEBUGPY} -ne 0 ]; then \
+        apt-get update && apt-get install -y --no-install-recommends \
+            && apt-get install -y --no-install-recommends \
+                gnome-keyring \
+                build-essential \
+                wget \
+            && rm -rf /var/lib/apt/lists/*; \
+    fi
+COPY download-vs-code-server.sh /tmp
+ENV PATH="$PATH:/root/.vscode-server/bin/default_version/bin"
+RUN if [ ${DEBUGGER_DEBUGPY} -ne 0 ]; then \
+        /tmp/download-vs-code-server.sh; \
+        code-server --start-server --install-extension ms-python.python; \
+        code-server --install-extension njpwerner.autodocstring; \
+        code-server --install-extension mhutchie.git-graph; \
+        code-server --install-extension maattdd.gitless; \
+        code-server --install-extension njqdev.vscode-python-typehint; \
+        code-server --install-extension littlefoxteam.vscode-python-test-adapter; \
+        code-server --install-extension matangover.mypy; \
+        code-server --install-extension kevinrose.vsc-python-indent; \
+        code-server --install-extension alefragnani.bookmarks; \
+        code-server --install-extension ms-python.flake8; \
+    fi
 
 ### result
 FROM python_${ENVIRONMENT} AS python

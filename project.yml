@@ -146,7 +146,7 @@ production:
           - name: .env
             ignore: ['^ENVIRONMENT', '^BRANCH=', '^BUILD=', '^GIT_SSH=',
                      '^GIT_USER_NAME=', '^GIT_USER_EMAIL=', '^GIT_USER_SIGNINGKEY',
-                     '^DEBUGGER_WINPDB=', '^DEBUGGER_PTVSD=']
+                     '^DEBUGGER_WINPDB=', '^DEBUGGER_DEBUGPY=']
           - name: services/database.env
             ignore: ['^POSTGRES_PASSWORD=']
           - name: services/erpserver.env

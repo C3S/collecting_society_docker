@@ -5,5 +5,10 @@
     "python.linting.enabled": true,
     "python.linting.flake8Path": "/opt/venv/bin/flake8",
     "editor.rulers": [ 79, 119 ],
-    "editor.detectIndentation": false
+    "editor.detectIndentation": false,
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
