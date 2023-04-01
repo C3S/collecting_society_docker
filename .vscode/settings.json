@@ -6,6 +6,7 @@
         "--disable=E0401"
     ],
     "python.linting.pycodestyleEnabled": false,
+    "python.linting.mypyEnabled": true,
     "python.linting.flake8Enabled": false,
     "python.linting.flake8Args": [
         "--disable=F401"
