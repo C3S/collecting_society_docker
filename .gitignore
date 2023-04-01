@@ -71,6 +71,7 @@ tags
 # Volumes
 /volumes/*
 !/volumes/shared
+/volumes/shared/.dmypy.json
 
 # Created files and foldes
 /cli
