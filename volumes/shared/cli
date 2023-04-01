@@ -771,7 +771,7 @@ def service_test(context, service, dbname, reset, path, nargs):
         f'--junitxml={testsdir}/junit_{service}.xml',
         f'--cov-report=html:{testsdir}/cover_{service}.html',
         f'--cov-report=xml:{testsdir}/cover_{service}.xml',
-        '--doctest-glob=*.rst"',
+        '--doctest-glob=*.rst',
         '--doctest-report=ndiff',
         '--rootdir=/shared/src',
     ]
