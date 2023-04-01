@@ -657,89 +657,94 @@ def service_test(context, service, dbname, reset, path, nargs):
         print("Service unknown.")
         exit(-1)
 
-    # Tests for erpserver
+    # Database configuration
     if service == 'erpserver':
-        context.invoke(pip_install, service='erpserver')
         os.environ['DB_NAME'] = ":memory:"
-        exitcode = subprocess.call(
-            [
-                'python',
-                '-m',
-                'unittest',
-                'discover',
-                '-s',
-                'trytond.modules.collecting_society',
-            ]
+    if service in ['web', 'worker']:
+        _db_name = dbname
+        _db_tpl = _db_name + "_template"
+        _file_path = os.path.join(WORKDIR, 'tmp', 'files')
+        _trytond_conf = 'testing.conf'
+        os.environ['DB_NAME'] = _db_name
+        os.environ['TRYTOND_CONFIG'] = os.path.join(
+            WORKDIR, 'config', 'trytond', _trytond_conf
         )
-        sys.exit(exitcode)
-
-    # Tests for webgui/webapi/worker
-    _db_name = dbname
-    _db_tpl = _db_name + "_template"
-    _file_path = os.path.join(WORKDIR, 'tmp', 'files')
-    _trytond_conf = 'testing.conf'
-    os.environ['DB_NAME'] = _db_name
-    os.environ['TRYTOND_CONFIG'] = os.path.join(
-        WORKDIR, 'config', 'trytond', _trytond_conf
-    )
 
     # Install packages
+    if service == 'erpserver':
+        context.invoke(pip_install, service='erpserver')
     if service == "web":
         context.invoke(pip_install, service='webgui')
     if service == "worker":
         context.invoke(pip_install, service='worker')
 
-    # Setup containers
+    # Print configuration
     print("\nCONFIGURE TESTS ...\n")
     print("- service: %s" % service)
     print("- testpath: %s" % (path or 'all'))
     print("- parameter: %s" % list(nargs))
-    print("- dbname: %s" % _db_name)
-    print("- reset: %s" % bool(reset))
-    print("- trytondconf: %s" % os.environ['TRYTOND_CONFIG'])
-    print("- filepath: %s" % _file_path)
+    print("- dbname: %s" % os.environ['DB_NAME'])
+    if service in ['web', 'worker']:
+        print("- reset: %s" % bool(reset))
+        print("- trytondconf: %s" % os.environ['TRYTOND_CONFIG'])
+        print("- filepath: %s" % _file_path)
+
+    # Prepare environment
     print("\nPREPARE TESTS ...\n")
-
-    # Initialize database
-    if not _db_exist(_db_tpl):
-        if service == "worker":
-            sys.exit(
-                "The worker service cannot build the test database "
-                "template. Please create it first by another container.\n"
-                "If you started the service-test script, just add the "
-                "'--build' flag:\n\n"
-                "    $ ./scripts/service-test worker --build"
+    if service in ['web', 'worker']:
+        # Initialize database
+        if not _db_exist(_db_tpl):
+            if service == "worker":
+                sys.exit(
+                    "The worker service cannot build the test database "
+                    "template. Please create it first by another container.\n"
+                    "If you started the service-test script, just add the "
+                    "'--build' flag:\n\n"
+                    "    $ ./scripts/service-test worker --build"
+                )
+            context.invoke(
+                db_setup, dbname=_db_tpl,
+                dataset=['production'], template=False
             )
-        context.invoke(
-            db_setup, dbname=_db_tpl, dataset=['production'], template=False
-        )
 
-    # Reset database
-    if reset or not _db_exist(_db_name):
-        context.invoke(
-            db_copy, dbname_src=_db_tpl, dbname_dst=_db_name, force=True
-        )
+        # Reset database
+        if reset or not _db_exist(_db_name):
+            context.invoke(
+                db_copy, dbname_src=_db_tpl, dbname_dst=_db_name, force=True
+            )
 
-    # Delete files
-    if reset:
-        if os.path.exists(_file_path):
-            shutil.rmtree(_file_path)
-        os.makedirs(_file_path)
+        # Delete files
+        if reset:
+            if os.path.exists(_file_path):
+                shutil.rmtree(_file_path)
+            os.makedirs(_file_path)
 
     # Prepare paths
-    if service == "web":
+    if service == 'erpserver':
         basepaths = [
-            '/shared/src/portal_web',
-            '/shared/src/collecting_society_web',
+            os.path.join(WORKDIR, 'src', 'collecting_society'),
         ]
-    elif service == "worker":
-        basepaths = [os.path.join(WORKDIR, 'src', 'collecting_society_worker')]
+    elif service == 'web':
+        basepaths = [
+            os.path.join(WORKDIR, 'src', 'portal_web'),
+            os.path.join(WORKDIR, 'src', 'collecting_society_web'),
+        ]
+    elif service == 'worker':
+        basepaths = [
+            os.path.join(WORKDIR, 'src', 'collecting_society_worker'),
+        ]
+    # Parse modules
     modules = []
     testpaths = []
     for basepath in basepaths:
         module = os.path.basename(os.path.normpath(basepath)).replace('.', '_')
         modules.append(module)
-        testpaths.append(os.path.join(basepath, module, 'tests'))
+        if service == 'erpserver':
+            testpaths.append(os.path.join(basepath, 'tests'))
+        else:
+            testpaths.append(os.path.join(basepath, module, 'tests'))
+    # Process user provided path
+    paths = []
     if path:
         if path in ['unit', 'functional', 'integration']:
             paths = [os.path.join(p, path) for p in testpaths]
@@ -750,21 +755,25 @@ def service_test(context, service, dbname, reset, path, nargs):
                 path = 'src/' + path[18:]
             paths = [os.path.join(WORKDIR, path)]
     else:
-        paths = [os.path.join(p, 'unit') for p in testpaths] +\
-                [os.path.join(p, 'functional') for p in testpaths] +\
-                [os.path.join(p, 'integration') for p in testpaths]
+        paths = testpaths
+        if service in ['web', 'worker']:
+            paths = [os.path.join(p, 'unit') for p in testpaths] +\
+                    [os.path.join(p, 'functional') for p in testpaths] +\
+                    [os.path.join(p, 'integration') for p in testpaths]
 
     # Start tests
     print("\nSTART TESTS ...\n")
+    testsdir = os.path.join(WORKDIR, 'tests')
     command = [
         'pytest',
         '--verbose',
         '--log-level=CRITICAL',
-        f'--junitxml=junit_{service}.xml',
-        f'--cov-report=html:cover_{service}.html',
-        f'--cov-report=xml:cover_{service}.xml',
+        f'--junitxml={testsdir}/junit_{service}.xml',
+        f'--cov-report=html:{testsdir}/cover_{service}.html',
+        f'--cov-report=xml:{testsdir}/cover_{service}.xml',
+        '--doctest-glob=*.rst"',
+        '--doctest-report=ndiff',
         '--rootdir=/shared/src',
-        # '--cov-report=term-missing',
     ]
     for module in modules:
         for path in paths:
@@ -773,7 +782,7 @@ def service_test(context, service, dbname, reset, path, nargs):
                 break
     command += list(nargs) + list(paths)
     print("Command: " + " ".join(command) + "\n")
-    process = subprocess.run(command, cwd=os.path.join(WORKDIR, 'tests'))
+    process = subprocess.run(command, cwd=testsdir)
 
     # Return exitcode
     sys.exit(process.returncode)
