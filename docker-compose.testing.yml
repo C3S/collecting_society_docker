@@ -95,6 +95,7 @@ services:
       ENVIRONMENT: testing
       TRYTON_HOSTNAME: test_${TRYTON_HOSTNAME}
       TRYTON_DATABASE: ${TRYTON_DATABASE}_test
+      DB_NAME: ${TRYTON_DATABASE}_test
       TRYTOND_CONFIG: /shared/config/trytond/testing.conf
       POSTGRES_HOSTNAME: test_${POSTGRES_HOSTNAME}
       WEBAPI_URL: http://test_web:6545
