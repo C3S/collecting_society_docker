@@ -3,7 +3,9 @@
 {
     "python.linting.flake8Enabled": true,
     "python.linting.enabled": true,
+    "python.linting.mypyPath": "/opt/venv/bin/mypy",
     "python.linting.flake8Path": "/opt/venv/bin/flake8",
+    "python.linting.mypyEnabled": true,
     "editor.rulers": [ 79, 119 ],
     "editor.detectIndentation": false,
     "python.testing.pytestArgs": [

@@ -247,7 +247,11 @@ RUN pip install \
     mypy==1.1.1 \
     pytest==7.2.2 \
     pytest-cov==4.0.0 \
+    pytest-flake8==1.1.1 \
     pytest-mock==3.10.0 \
+    pytest-mypy==0.10.3 \
+    types-python-dateutil==2.8.19.11 \
+    types-requests==2.28.11.17 \
     Sphinx==6.1.3 \
     sphinx-rtd-theme==1.2.0 \
     tox==4.4.8
@@ -259,7 +263,7 @@ RUN pip install \
 
 ARG DEBUGGER_DEBUGPY
 RUN if [ ${DEBUGGER_DEBUGPY} -ne 0 ]; then pip install \
-        debugpy==1.5.0; \
+        debugpy==1.6.6; \
     fi
 ARG DEBUGGER_WINPDB
 RUN if [ ${DEBUGGER_WINPDB} -ne 0 ]; then pip install \
