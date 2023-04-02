@@ -247,9 +247,7 @@ RUN pip install \
     mypy==1.1.1 \
     pytest==7.2.2 \
     pytest-cov==4.0.0 \
-    pytest-flake8==1.1.1 \
     pytest-mock==3.10.0 \
-    pytest-mypy==0.10.3 \
     types-python-dateutil==2.8.19.11 \
     types-requests==2.28.11.17 \
     Sphinx==6.1.3 \

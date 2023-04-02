@@ -110,6 +110,9 @@ tags
 # VS Code
 /.devcontainer.json
 /.vscode/*
+/volumes/shared/src/integration
+/volumes/shared/src/functional
+/volumes/shared/src/unit
 
 # Sphinx Documentation
 /volumes/shared/docs/source/generated

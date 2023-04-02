@@ -1,7 +1,7 @@
 {
-	"name": "test_web",
+	"name": "test_worker",
 	"dockerComposeFile": [ "../../docker-compose.testing.yml" ],
-	"service": "test_web",
+	"service": "test_worker",
 	"workspaceFolder": "/shared",
 	"shutdownAction": "none",
 	"customizations": {
@@ -19,7 +19,7 @@
 	"postAttachCommand": [
 		"ln",
 		"-sf",
-		"/shared/.vscode/settings_web.json",
+		"/shared/.vscode/settings_worker.json",
 		"/shared/.vscode/settings.json"
 	]
 }

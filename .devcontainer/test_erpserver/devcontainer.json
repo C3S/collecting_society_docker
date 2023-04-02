@@ -1,7 +1,7 @@
 {
-	"name": "test_web",
+	"name": "test_erpserver",
 	"dockerComposeFile": [ "../../docker-compose.testing.yml" ],
-	"service": "test_web",
+	"service": "test_erpserver",
 	"workspaceFolder": "/shared",
 	"shutdownAction": "none",
 	"customizations": {
@@ -19,7 +19,7 @@
 	"postAttachCommand": [
 		"ln",
 		"-sf",
-		"/shared/.vscode/settings_web.json",
+		"/shared/.vscode/settings_erpserver.json",
 		"/shared/.vscode/settings.json"
 	]
 }
