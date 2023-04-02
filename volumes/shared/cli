@@ -660,6 +660,7 @@ def service_test(context, service, dbname, reset, path, nargs):
     # Database configuration
     if service == 'erpserver':
         os.environ['DB_NAME'] = ":memory:"
+        os.environ['TRYTOND_CONFIG'] = ""
     if service in ['web', 'worker']:
         _db_name = dbname
         _db_tpl = _db_name + "_template"
@@ -684,9 +685,9 @@ def service_test(context, service, dbname, reset, path, nargs):
     print("- testpath: %s" % (path or 'all'))
     print("- parameter: %s" % list(nargs))
     print("- dbname: %s" % os.environ['DB_NAME'])
+    print("- trytondconf: %s" % os.environ['TRYTOND_CONFIG'])
     if service in ['web', 'worker']:
         print("- reset: %s" % bool(reset))
-        print("- trytondconf: %s" % os.environ['TRYTOND_CONFIG'])
         print("- filepath: %s" % _file_path)
 
     # Prepare environment
@@ -700,7 +701,7 @@ def service_test(context, service, dbname, reset, path, nargs):
                     "template. Please create it first by another container.\n"
                     "If you started the service-test script, just add the "
                     "'--build' flag:\n\n"
-                    "    $ ./scripts/service-test worker --build"
+                    "    $ ./service-test worker --build"
                 )
             context.invoke(
                 db_setup, dbname=_db_tpl,
@@ -708,7 +709,9 @@ def service_test(context, service, dbname, reset, path, nargs):
             )
 
         # Reset database
+        os.environ['DB_KEEP'] = '1'
         if reset or not _db_exist(_db_name):
+            os.environ['DB_KEEP'] = '0'
             context.invoke(
                 db_copy, dbname_src=_db_tpl, dbname_dst=_db_name, force=True
             )
@@ -771,10 +774,16 @@ def service_test(context, service, dbname, reset, path, nargs):
         f'--junitxml={testsdir}/junit_{service}.xml',
         f'--cov-report=html:{testsdir}/cover_{service}.html',
         f'--cov-report=xml:{testsdir}/cover_{service}.xml',
-        '--doctest-glob=*.rst',
-        '--doctest-report=ndiff',
-        '--rootdir=/shared/src',
     ]
+    if service == 'erpserver':
+        command += [
+            '--doctest-glob=*.rst',
+            '--doctest-report=ndiff',
+        ]
+    if service == 'web':
+        command += [
+            '--rootdir=/shared/src/portal_web/portal_web/tests'
+        ]
     for module in modules:
         for path in paths:
             if f"src/{module}" in path:
