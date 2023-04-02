@@ -111,6 +111,8 @@ Files
     ├── services/                           # files for docker services
     │   ├── build/                          # build environment for docker images
     │   │   ├── Dockerfile                  # multistage Dockerfile for docker images
+    │   │   ├── pip_pin.sh                  # pins pip versions in Dockerfile
+    │   │   ├── pip_unpin.sh                # unpins pip versions in Dockerfile
     │   │   └── worker.cron                 # (worker) cronjob file for processing
     │   │
     │   ├── config/                         # config files for services
@@ -127,9 +129,17 @@ Files
     │   └── <SERVICE>.env                   # additional envvars file for SERVICE
     │
     ├── tests/                              # testing output
-    │   ├── cover_web/                      # (webgui/webapi) coverage results
+    │   ├── junit_erpserver.xml             # (erperserver) junit results
+    │   ├── cover_erpserver.xml             # (erperserver) coverage results (xml)
+    │   ├── cover_erpserver.html            # (erperserver) coverage results (html)
     │   │   └── index.html                  # main index file of coverage results
-    │   ├── cover_worker/                   # (worker) coverage results
+    │   ├── junit_web.xml                   # (webgui/webapi) junit results
+    │   ├── cover_web.xml                   # (webgui/webapi) coverage results (xml)
+    │   ├── cover_web.html/                 # (webgui/webapi) coverage results (html)
+    │   │   └── index.html                  # main index file of coverage results
+    │   ├── junit_worker.xml                # (worker) junit results
+    │   ├── cover_worker.xml                # (worker) coverage results (xml)
+    │   ├── cover_worker.html/              # (worker) coverage results (html)
     │   │   └── index.html                  # main index file of coverage results
     │   └── screenshots/                    # (webgui) screenshots of integration tests
     │
@@ -146,6 +156,7 @@ Files
     │   │   │   │   └── <MODEL>.py          # dataset for tryton MODEL
     │   │   │   ├── fingerprints/           # fingerprints for echoprint
     │   │   │   ├── uploads/                # audiofile generation and compression script
+    │   │   │   ├── modelinfo.py            # outputs csv with model tryton ids and class names
     │   │   │   └── main.py                 # main demodata generation script
     │   │   │
     │   │   ├── docs/                       # documentation sphinx build environment
@@ -167,6 +178,7 @@ Files
     │   ├── echoprint-data/                 # (fingerprint) echoprint database data
     │   ├── nginx-certs/                    # (webserver) certificates
     │   ├── nginx-dhparam/                  # (webserver) dh parameters
+    │   ├── nginx-htpasswd/                 # (webserver) htpassword injection
     │   ├── postgresql-data/                # (database) postgres database data
     │   └── tryton-files/                   # (erpserver/webgui/webapi) trytond file storage
     │
@@ -2230,6 +2242,18 @@ Stop the container afterwards::
 
     $ ./service-test --down
 
+You can append the normal pytest parameters::
+
+    $ ./service-test erpserver --keep [--path PATH] [PARAMETER]
+
+- Run all tests quietly, drop into pdb on errors, don't suppress output::
+
+    $ ./service-test erpserver --keep --quiet --pdb -s
+
+- Run a tests matching a substring::
+
+    $ ./service-test erpserver --keep -k SUBSTRING
+
 If you prefer, you can also execute the commands above from within the container::
 
     $ docker compose -f docker-compose.testing.yml up -d
@@ -2240,9 +2264,6 @@ If you prefer, you can also execute the commands above from within the container
 
         # run tests
         > service-test
-
-        # run tests directly
-        > python /shared/src/trytond/trytond/tests/run-tests.py -vvvm collecting_society
 
         # exit container
         > exit
@@ -2276,7 +2297,7 @@ You can append the normal pytest parameters::
 
 - Run all tests quietly, drop into pdb on errors, don't suppress output::
 
-    $ ./service-test worker --keep --quiet --pdb --nocapture
+    $ ./service-test worker --keep --quiet --pdb -s
 
 - Run a specific set of tests::
 
@@ -2292,6 +2313,10 @@ You can append the normal pytest parameters::
         --path $TESTPATH/integration/test_processing.py
     $ ./service-test worker --keep \
         -- path $TESTPATH/integration/test_processing.py:TestProcessing.test_200_checksum
+
+- Run tests matching a substring::
+
+    $ ./service-test worker --keep -k SUBSTRING
 
 Recreate the database template, if the database has changed::
 
@@ -2344,7 +2369,7 @@ You can append the normal pytest parameters::
 
 - Run all tests quietly, drop into pdb on errors, don't suppress output::
 
-    $ ./service-test web --keep --quiet --pdb --nocapture
+    $ ./service-test web --keep --quiet --pdb -s
 
 - Run a specific set of tests::
 
@@ -2370,6 +2395,10 @@ You can append the normal pytest parameters::
     $ ./service-test web --keep --path unit
     $ ./service-test web --keep --path functional
     $ ./service-test web --keep --path integration
+
+- Run tests matching a substring::
+
+    $ ./service-test web --keep -k SUBSTRING
 
 Recreate the database template, if the database has changed::
 
