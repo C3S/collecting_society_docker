@@ -8,9 +8,13 @@
     "python.linting.mypyEnabled": true,
     "editor.rulers": [ 79, 119 ],
     "editor.detectIndentation": false,
-    "python.testing.pytestArgs": [
-        "tests"
-    ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestPath": "/opt/venv/bin/pytest",
+    "python.testing.pytestArgs": [
+        ".",
+        "--verbose",
+        "--rootdir",
+        "/shared/src"
+    ]
 }

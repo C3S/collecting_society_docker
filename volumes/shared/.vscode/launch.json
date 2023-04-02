@@ -23,7 +23,7 @@
             "host": "localhost"
         },
         {
-            "name": "Processing Attach",
+            "name": "Worker Attach",
             "type": "python",
             "request": "attach",
             "port": 52002,
