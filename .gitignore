@@ -110,6 +110,7 @@ tags
 # VS Code
 /.devcontainer.json
 /.vscode/*
+/volumes/shared/.vscode/settings.json
 /volumes/shared/src/integration
 /volumes/shared/src/functional
 /volumes/shared/src/unit
