@@ -261,11 +261,6 @@ development:
       self: true
   tasks:
     update:
-      # copy and diff example files
-      - name: copy and diff example files
-        batch:
-          - name: '.devcontainer.json'
-            ignore: ['^\s*"service":', '^\s*"dockerComposeFile":']
       # create development folder structure
       - name: create development folder structure
         actions: ['folder_create']
