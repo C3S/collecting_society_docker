@@ -2189,11 +2189,50 @@ only enable either of the both containers for debugging, not both the same
 time.
 
 Trytond Console
-```````````````
+'''''''''''''''
 
 Tryton can start an interactive python console with the pool initialized::
 
     $ docker compose run --rm erpserver db-console
+
+
+Postgres
+''''''''
+
+Connect to postgres via console::
+
+    docker compose run --rm --service-ports erpserver bash
+    > db-connect
+
+Connect to postgres via client (e.g. dbeaver)
+
+- Host: ``localhost``
+- Port: ``5432``
+- User: ``postgres``
+- Password: ``s0secret!!``
+- Database: ``collecting_society``
+
+Print activity::
+
+    select pid, client_addr, wait_event_type, state, query from pg_catalog.pg_stat_activity;
+
+Log all statements
+
+1. Adjust the postgresql config file ``./volumes/postgresql-data/postgresql.conf``::
+
+    logging_collector = on
+    log_destination = 'csvlog'
+    log_directory = 'pg_log'
+    log_filename = 'postgresql.log'
+    log_statement = 'all'
+
+2. Restart the database service::
+
+    docker compose restart database
+
+3. Watch logfile::
+
+    sudo tail -f ./volumes/postgresql-data/pg_log/postgresql.log
 
 
 .. _Application Tests:
