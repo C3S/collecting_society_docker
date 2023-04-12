@@ -33,7 +33,7 @@
         // and run for example: ./service-test web --keep --path src/collecting_society_web/collecting_society_web/tests/integration/web_user.py:TestWebUser
         // finally add these lines to your test:
         // import debugpy
-        // debugpy.listen(address=("0.0.0.0", 52003))
+        // debugpy.listen(("0.0.0.0", 52003))
         // debugpy.wait_for_client()
         // breakpoint()
         {
@@ -44,7 +44,7 @@
             "host": "localhost"
         },
         // the followint entry is for other cases, e.g.tests; insert this line:
-        // import debugpy; debugpy.listen(address=("0.0.0.0", 52004)); debugpy.wait_for_client(); breakpoint()
+        // import debugpy; debugpy.listen(("0.0.0.0", 52004)); debugpy.wait_for_client(); breakpoint()
         // don't forget to open the resp. port in the docker-compose.yml!
         {
             "name": "Casual Debugging Attach",
