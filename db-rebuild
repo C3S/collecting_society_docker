@@ -39,16 +39,16 @@ echo `date +%Y-%m-%d:%H:%M:%S`
 # stop docker containers
 if $CI; then
     echo -e "\n== stop docker containers"
-    docker-compose stop
+    docker compose stop
 fi
 
 # delete database
 echo -e "\n== rebuild database"
-if docker-compose ps | grep "\-erpserver" | grep -v "\(Exit\|exited\)"; then
-    docker-compose exec erpserver db-rebuild
+if docker compose ps | grep "\-erpserver" | grep -v "\(Exit\|exited\)"; then
+    docker compose exec erpserver db-rebuild
     EXITCODE=$1
 else
-    docker-compose run --rm erpserver db-rebuild
+    docker compose run --rm erpserver db-rebuild
     EXITCODE=$1
 fi
 if $CI; then
@@ -58,7 +58,7 @@ fi
 # start docker containers
 if $CI; then
     echo -e "\n== start docker containers"
-    docker-compose up -d
+    docker compose up -d
 fi
 
 # print footer
