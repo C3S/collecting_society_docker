@@ -1322,6 +1322,11 @@ def git_delete(task, context={}):
                  'description': 'skipped deletion of environment branch',
                  'data': "branch: %s" % delete_branch})
         return
+    if checkedout_branch in project.items():
+        message({'level': verbose and 'info' or 'debug',
+                 'description': 'prevented deletion of environment branch',
+                 'data': "branch: %s" % delete_branch})
+        return
 
     # find out, if local branch exists
     local_exists = False

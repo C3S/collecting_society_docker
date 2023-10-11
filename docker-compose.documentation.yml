@@ -14,7 +14,7 @@ services:
         WORKDIR: ${WORKDIR}
         TRYTON_VERSION: ${TRYTON_VERSION}
         DEBUGGER_WINPDB: ${DEBUGGER_WINPDB}
-        DEBUGGER_PTVSD: ${DEBUGGER_PTVSD}
+        DEBUGGER_DEBUGPY: ${DEBUGGER_DEBUGPY}
     command: tail -f /dev/null
     volumes:
       - ./volumes/shared:/shared

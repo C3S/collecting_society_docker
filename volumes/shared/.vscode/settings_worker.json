@@ -1,0 +1,26 @@
+// For copyright and license terms, see COPYRIGHT.rst (top level of repository)
+// Repository: https://github.com/C3S/collecting_society_docker
+{
+    "python.defaultInterpreterPath": "/opt/venv/bin/python",
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true,
+    "python.linting.mypyPath": "/opt/venv/bin/mypy",
+    "python.linting.flake8Path": "/opt/venv/bin/flake8",
+    "python.linting.mypyEnabled": true,
+    "editor.rulers": [ 79, 119 ],
+    "editor.detectIndentation": false,
+    "python.testing.unittestEnabled": false,
+    "python.testing.cwd": "/shared/src/collecting_society_worker/collecting_society_worker/tests",
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestPath": "/opt/venv/bin/pytest",
+    "python.testing.pytestArgs": [
+        "-s",
+        "--verbose",
+        "--log-level=CRITICAL",
+        "--junitxml=/shared/tests/junit_worker.xml",
+        "--cov-report=html:/shared/tests/cover_worker.html",
+        "--cov-report=xml:/shared/tests/cover_worker.xml",
+        "--cov=collecting_society_worker",
+        "/shared/src/collecting_society_worker/collecting_society_worker/tests"
+    ]
+}

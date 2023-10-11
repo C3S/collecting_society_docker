@@ -1,0 +1,18 @@
+{
+	"name": "webgui",
+	"dockerComposeFile": [ "../../docker-compose.yml", "../../docker-compose.override.yml" ],
+	"service": "webgui",
+	"workspaceFolder": "/shared",
+	"shutdownAction": "none",
+	"customizations": {
+		"extensions": [
+			"ms-python.python",
+			"visualstudioexptteam.vscodeintellicode",
+			"vscode.flake8",
+			"ms-python.vscode-pylance"
+		],
+		"settings": {
+			"editor.rulers": [ 79, 119 ]
+		}
+	}
+}

@@ -23,12 +23,23 @@ def generate(reclimit=0):
     Publisher = Model.get('publisher')
     Party = Model.get('party.party')
     Company = Model.get('company.company')
+    Account = Model.get('account.account')
 
     # entries
     company, = Company.find([(
         'party.name', '=',
         'C3S SCE'
     )])
+    receivable, = Account.find([
+            ('type.receivable', '=', True),
+            ('party_required', '=', True),
+            ('company', '=', company.id),
+            ], limit=1)
+    payable, = Account.find([
+            ('type.payable', '=', True),
+            ('party_required', '=', True),
+            ('company', '=', company.id),
+            ], limit=1)
 
     # create publishers
     for i in range(1, publisher + 1):
@@ -37,6 +48,8 @@ def generate(reclimit=0):
         number = i
         name = "Publisher %s" % str(number).zfill(3)
         party = Party(name=name)
+        party.account_receivable = receivable
+        party.account_payable = payable
         party.save()
         Publisher(
             entity_creator=company.party,

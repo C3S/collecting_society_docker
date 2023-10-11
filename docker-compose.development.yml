@@ -12,6 +12,8 @@ services:
   database:
     networks:
       - backend
+    ports:
+      - "127.0.0.1:5432:5432"  # http
     volumes:
       - ./volumes/postgresql-data:/var/lib/postgresql/data
 
@@ -33,8 +35,8 @@ services:
       - backend
     ports:
       - "127.0.0.1:8000:8000"  # jsonrpc (tryton client)
-      - "127.0.0.1:51005:51005"  # debugger for trytond
-      - "127.0.0.1:51006:51006"  # debugger for import script
+      - "127.0.0.1:52005:52005"  # debugger for trytond
+      - "127.0.0.1:52006:52006"  # debugger for import script
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
@@ -44,7 +46,7 @@ services:
       - backend
     ports:
       - "127.0.0.1:6544:6543"  # pyramid pserve
-      - "127.0.0.1:51001:51001"  # debugger
+      - "127.0.0.1:52001:52001"  # debugger
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
@@ -54,7 +56,7 @@ services:
       - backend
     ports:
       - "127.0.0.1:6543:6543"  # pyramid pserve
-      - "127.0.0.1:51000:51000"  # debugger
+      - "127.0.0.1:52000:52000"  # debugger
     volumes:
       - ./volumes/trytond-files:/var/lib/trytond
 
@@ -62,7 +64,7 @@ services:
     networks:
       - backend
     ports:
-      - "127.0.0.1:51002:51002"  # debugger
+      - "127.0.0.1:52002:52002"  # debugger
     environment:
       PGPASSWORD: s0secret!!
 
@@ -71,6 +73,6 @@ services:
       - backend
     ports:
       - "127.0.0.1:8080:8080"  # http
-      - "127.0.0.1:51004:51004"  # debugger
+      - "127.0.0.1:52004:52004"  # debugger
     volumes:
       - ./volumes/echoprint-data:/opt/echoprint-data

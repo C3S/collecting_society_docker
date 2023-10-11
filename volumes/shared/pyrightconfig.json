@@ -1,0 +1,20 @@
+{
+    "include": [
+        "src/collecting_society/collecting_society.py"
+    ],
+    "exclude": [
+        "src/trytond"
+    ],
+    "ignore": [
+        "src/trytond"
+    ],
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "pythonPlatform": "Linux"
+        }
+    ],
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false,
+    "reportOptionalMemberAccess": false,
+}

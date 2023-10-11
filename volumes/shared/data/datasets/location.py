@@ -27,6 +27,8 @@ def generate(reclimit=0):
     # models
     Country = Model.get('country.country')
     Party = Model.get('party.party')
+    Company = Model.get('company.company')
+    Account = Model.get('account.account')
     WebUser = Model.get('web.user')
     LocationCategory = Model.get('location.category')
     Location = Model.get('location')
@@ -38,6 +40,20 @@ def generate(reclimit=0):
         [('code', 'in', ['B', 'N'])])
     categories_live = LocationCategory.find(
         [('code', 'in', ['B', 'N', 'O', 'M'])])
+    company, = Company.find([(
+        'party.name', '=',
+        'C3S SCE'
+    )])
+    receivable, = Account.find([
+            ('type.receivable', '=', True),
+            ('party_required', '=', True),
+            ('company', '=', company.id),
+            ], limit=1)
+    payable, = Account.find([
+            ('type.payable', '=', True),
+            ('party_required', '=', True),
+            ('company', '=', company.id),
+            ], limit=1)
 
     # create locations for playing / bar
     for i, licensee in enumerate(licensees):
@@ -53,6 +69,8 @@ def generate(reclimit=0):
                 city='Testcity',
                 country=germany
             )
+            party.account_receivable = receivable
+            party.account_payable = payable
             party.save()
 
             # create location

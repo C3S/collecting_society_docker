@@ -146,7 +146,7 @@ production:
           - name: .env
             ignore: ['^ENVIRONMENT', '^BRANCH=', '^BUILD=', '^GIT_SSH=',
                      '^GIT_USER_NAME=', '^GIT_USER_EMAIL=', '^GIT_USER_SIGNINGKEY',
-                     '^DEBUGGER_WINPDB=', '^DEBUGGER_PTVSD=']
+                     '^DEBUGGER_WINPDB=', '^DEBUGGER_DEBUGPY=']
           - name: services/database.env
             ignore: ['^POSTGRES_PASSWORD=']
           - name: services/erpserver.env
@@ -221,7 +221,7 @@ production:
       stop_action_group: true
     # git clone action
     git_clone:
-      # create the conaining folder of the repo
+      # create the containing folder of the repo
       create_folder: true
 
 #==============================================================================
@@ -261,11 +261,6 @@ development:
       self: true
   tasks:
     update:
-      # copy and diff example files
-      - name: copy and diff example files
-        batch:
-          - name: '.devcontainer.json'
-            ignore: ['^\s*"service":', '^\s*"dockerComposeFile":']
       # create development folder structure
       - name: create development folder structure
         actions: ['folder_create']

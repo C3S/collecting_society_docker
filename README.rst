@@ -51,33 +51,33 @@ Schema
 Services
 --------
 
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| Service     | Description         | Repositories               | Ports           | Volumes           |
-+=============+=====================+============================+=================+===================+
-| database    | Postgres DB         |                            |                 | | shared          |
-|             |                     |                            |                 | | postgresql-data |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc | | shared          |
-|             |                     |                            | | 51005: ptvsd  | | trytond-files   |
-|             |                     |                            | | 51006: ptvsd  |                   |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| webserver   | Nginx Server        |                            | 80: http        | | shared          |
-|             |                     |                            |                 | | nginx-certs     |
-|             |                     |                            |                 | | nginx-dhparam   |
-|             |                     |                            |                 | | nginx-htpasswd  |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| webgui      | | Pyramid Gui App   | | portal_web_              | | 6543: pserve  | | shared          |
-|             | | *+Trytond Server* | | collecting_society_web_  | | 51000: ptvsd  | | trytond-files   |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| webapi      | | Pyramid Api App   | | portal_web_              | | 6544: pserve  | | shared          |
-|             | | *+Trytond Server* | | collecting_society_web_  | | 51001: ptvsd  | | trytond-files   |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| worker      | | File Processing   | collecting_society_worker_ | 51002: ptvsd    | shared            |
-|             | | *+Proteus Client* |                            |                 |                   |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
-| fingerprint | Echoprint Server    | echoprint-server_          | | 8080: http    | | shared          |
-|             |                     |                            | | 51004: ptvsd  | | echoprint-data  |
-+-------------+---------------------+----------------------------+-----------------+-------------------+
++-------------+---------------------+----------------------------+------------------+-------------------+
+| Service     | Description         | Repositories               | Ports            | Volumes           |
++=============+=====================+============================+==================+===================+
+| database    | Postgres DB         |                            |                  | | shared          |
+|             |                     |                            |                  | | postgresql-data |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| erpserser   | Trytond Server      | collecting_society_        | | 8000: jsonrpc  | | shared          |
+|             |                     |                            | | 52005: debugpy | | trytond-files   |
+|             |                     |                            | | 52006: debugpy |                   |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| webserver   | Nginx Server        |                            | 80: http         | | shared          |
+|             |                     |                            |                  | | nginx-certs     |
+|             |                     |                            |                  | | nginx-dhparam   |
+|             |                     |                            |                  | | nginx-htpasswd  |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| webgui      | | Pyramid Gui App   | | portal_web_              | | 6543: pserve   | | shared          |
+|             | | *+Trytond Server* | | collecting_society_web_  | | 52000: debugpy | | trytond-files   |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| webapi      | | Pyramid Api App   | | portal_web_              | | 6544: pserve   | | shared          |
+|             | | *+Trytond Server* | | collecting_society_web_  | | 52001: debugpy | | trytond-files   |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| worker      | | File Processing   | collecting_society_worker_ | 52002: debugpy   | shared            |
+|             | | *+Proteus Client* |                            |                  |                   |
++-------------+---------------------+----------------------------+------------------+-------------------+
+| fingerprint | Echoprint Server    | echoprint-server_          | | 8080: http     | | shared          |
+|             |                     |                            | | 52004: debugpy | | echoprint-data  |
++-------------+---------------------+----------------------------+------------------+-------------------+
 
 .. _collecting_society_docker: https://github.com/C3S/collecting_society_docker
 .. _collecting_society: https://github.com/C3S/collecting_society
@@ -111,6 +111,8 @@ Files
     ├── services/                           # files for docker services
     │   ├── build/                          # build environment for docker images
     │   │   ├── Dockerfile                  # multistage Dockerfile for docker images
+    │   │   ├── pip_pin.sh                  # pins pip versions in Dockerfile
+    │   │   ├── pip_unpin.sh                # unpins pip versions in Dockerfile
     │   │   └── worker.cron                 # (worker) cronjob file for processing
     │   │
     │   ├── config/                         # config files for services
@@ -127,9 +129,17 @@ Files
     │   └── <SERVICE>.env                   # additional envvars file for SERVICE
     │
     ├── tests/                              # testing output
-    │   ├── cover_web/                      # (webgui/webapi) coverage results
+    │   ├── junit_erpserver.xml             # (erperserver) junit results
+    │   ├── cover_erpserver.xml             # (erperserver) coverage results (xml)
+    │   ├── cover_erpserver.html            # (erperserver) coverage results (html)
     │   │   └── index.html                  # main index file of coverage results
-    │   ├── cover_worker/                   # (worker) coverage results
+    │   ├── junit_web.xml                   # (webgui/webapi) junit results
+    │   ├── cover_web.xml                   # (webgui/webapi) coverage results (xml)
+    │   ├── cover_web.html/                 # (webgui/webapi) coverage results (html)
+    │   │   └── index.html                  # main index file of coverage results
+    │   ├── junit_worker.xml                # (worker) junit results
+    │   ├── cover_worker.xml                # (worker) coverage results (xml)
+    │   ├── cover_worker.html/              # (worker) coverage results (html)
     │   │   └── index.html                  # main index file of coverage results
     │   └── screenshots/                    # (webgui) screenshots of integration tests
     │
@@ -146,6 +156,7 @@ Files
     │   │   │   │   └── <MODEL>.py          # dataset for tryton MODEL
     │   │   │   ├── fingerprints/           # fingerprints for echoprint
     │   │   │   ├── uploads/                # audiofile generation and compression script
+    │   │   │   ├── modelinfo.py            # outputs csv with model tryton ids and class names
     │   │   │   └── main.py                 # main demodata generation script
     │   │   │
     │   │   ├── docs/                       # documentation sphinx build environment
@@ -167,6 +178,7 @@ Files
     │   ├── echoprint-data/                 # (fingerprint) echoprint database data
     │   ├── nginx-certs/                    # (webserver) certificates
     │   ├── nginx-dhparam/                  # (webserver) dh parameters
+    │   ├── nginx-htpasswd/                 # (webserver) htpassword injection
     │   ├── postgresql-data/                # (database) postgres database data
     │   └── tryton-files/                   # (erpserver/webgui/webapi) trytond file storage
     │
@@ -315,15 +327,15 @@ Copy the main environment variable example file ``.env.example`` to `.env`_::
 
 Adjust the following variables:
 
-======================= ====== ======= =================================================
+======================= ====== ======= ==================================================
 Variable                Values Default Description
-======================= ====== ======= =================================================
-``DEBUGGER_PTVSD``      0|1    0       Install ptvsd during build process for debugging
+======================= ====== ======= ==================================================
+``DEBUGGER_DEBUGPY``    0|1    0       Install debugpy during build process for debugging
 ``GIT_SSH``             0|1    0       Checkout git repositories via ssh
 ``GIT_USER_NAME``       string ""      Username for git commits *(optional)*
 ``GIT_USER_EMAIL``      string ""      Email for git commits *(optional)*
 ``GIT_USER_SIGNINGKEY`` string ""      16-hex-digit GPG key id for signed commits
-======================= ====== ======= =================================================
+======================= ====== ======= ==================================================
 
 Run the `project script`_ update command, which checkouts the service
 repositories, creates the service folders and copies the configuration example
@@ -559,9 +571,9 @@ Context         Ports  Volumes        Demodata Debug Cache
 ``testing``     public docker managed no       off   on
 =============== ====== ============== ======== ===== =====
 
-For each of the environments except ``testing``, there is a corresponding
-branch with the same name in this repository and most of the main
-subrepositories pre-configured for this environment.
+For each of the environments except ``testing`` (all environments can be
+tested), there is a corresponding branch with the same name in this repository
+and most of the main subrepositories pre-configured for this environment.
 
 Envvars
 -------
@@ -596,7 +608,8 @@ Variable                           Values          Description
 ``COMPOSE_PROJECT_NAME``           string          prefix for containers
 ``COMPOSE_IGNORE_ORPHANS``         0|1             suppress orphan container warnings
 ``DEBUGGER_WINPDB``                0|1             install packages for winpdb in images
-``DEBUGGER_PTVSD``                 0|1             install packages for ptvsd in images
+``DEBUGGER_DEBUGPY``               0|1             install packages for debugpy in images
+``DEBUGGER_DEMODATA_WAIT``         0|1             wait for debugger in demodata creation
 ``WORKDIR``                        PATH            workdir for images
 ``GIT_SSH``                        0|1             use git via ssh
 ``GIT_USER_NAME``                  string          set git username in repositories
@@ -816,10 +829,6 @@ Update database           ``docker compose [exec|run --rm] erpserver db-update``
    If you run into problems, you can also rebuild all `docker images`_ without
    cache. Just `remove`_ all project images (also the dangling ones) before the
    execution of the ``build`` command.
-
-   .. warning:: The ``build`` command has a ``--no-cache`` option, but for
-       multistage builds the intermediate stages won't be reused then, which
-       highly increases the build time.
 
 4. If there were changes in the ``collection_society`` repository, update the
    database::
@@ -1111,7 +1120,7 @@ service-test
       --ci-branch: branch to test
       --ci-environment: environment to test
       --help: display this help
-      PARAMS: are passed to nosetest
+      PARAMS: are passed to pytest
 
 .. _docs-build script:
 
@@ -1224,6 +1233,7 @@ For example::
       pip-install          Installs required packages for a SERVICE with...
       service-deploy       Deploys the services (erpserver, webgui,...
       service-healthcheck  Healthcheck for the services.
+      service-lint         Runs linter for a service (erpserver,...
       service-test         Runs all tests for a service (erpserver, web,...
 
 .. _db-backup CLI:
@@ -1462,49 +1472,6 @@ service-healthcheck
     Options:
       --help  Show this message and exit.
 
-.. _service-test CLI:
-
-service-test
-''''''''''''
-::
-
-    $ service-test --help
-    Usage: cli service-test [OPTIONS] [SERVICE] [NARGS]...
-
-      Runs all tests for a service (erpserver, web, worker).
-
-      Starts nosetests and prints output to stdout.
-
-      Creates the test database template DBNAME_template, if not existant. On
-      RESET, the database DBNAME will be recreated from this template and the
-      temporary tryton file folder will be deleted.
-
-      The location of the temporary tryton upload folder is configured in
-      `./shared/config/trytond/testing_DBTYPE.conf` (currently
-      `./shared/tmp/files`).
-
-      The location of the screenshots of integration tests is configured within
-      `<portal_web>/tests/config.py` (currenty `./shared/tmp/screenshots).
-
-      The PATH to tests may be defined to test certain testfiles, testclasses or
-      test methods (see nosetests for the syntax). If no PATH is given, all tests
-      of portal_web and plugins are included. The test files should be stored
-      below the following subpaths by convention:
-
-          <portal_web||plugin>/tests/unit (unittest)
-
-          <portal_web||plugin>/tests/functional (webtest)
-
-          <portal_web||plugin>/tests/integration (selenium)
-
-      Additional NARGS will be passed to nosetests.
-
-    Options:
-      --dbname TEXT         Name of database (default: test)
-      --reset / --no-reset  Reset the database (default: yes)
-      --path TEXT           Searchpath for tests (see nosetest)
-      --help                Show this message and exit.
-
 .. _service-lint CLI:
 
 service-lint
@@ -1522,6 +1489,49 @@ service-lint
     Options:
       --path TEXT  Custom path with files to lint
       --help       Show this message and exit.
+
+.. _service-test CLI:
+
+service-test
+''''''''''''
+::
+
+    $ service-test --help
+    Usage: cli service-test [OPTIONS] [SERVICE] [NARGS]...
+
+      Runs all tests for a service (erpserver, web, worker).
+
+      Starts pytests and prints output to stdout.
+
+      Creates the test database template DBNAME_template, if not existant. On
+      RESET, the database DBNAME will be recreated from this template and the
+      temporary tryton file folder will be deleted.
+
+      The location of the temporary tryton upload folder is configured in
+      `./shared/config/trytond/testing_DBTYPE.conf` (currently
+      `./shared/tmp/files`).
+
+      The location of the screenshots of integration tests is configured within
+      `<portal_web>/tests/config.py` (currenty `./shared/tmp/screenshots).
+
+      The PATH to tests may be defined to test certain testfiles, testclasses or
+      test methods (see pytest for the syntax). If no PATH is given, all tests
+      of portal_web and plugins are included. The test files should be stored
+      below the following subpaths by convention:
+
+          <portal_web||plugin>/tests/unit (unittest)
+
+          <portal_web||plugin>/tests/functional (webtest)
+
+          <portal_web||plugin>/tests/integration (selenium)
+
+      Additional NARGS will be passed to pytests.
+
+    Options:
+      --dbname TEXT         Name of database (default: test)
+      --reset / --no-reset  Reset the database (default: yes)
+      --path TEXT           Searchpath for tests (see pytest)
+      --help                Show this message and exit.
 
 .. _Tryton Usage:
 
@@ -1662,17 +1672,17 @@ Key             Description
                 | maps to ``@command`` functions in the `project script`_
 ``tasks``       list of tasks to perform consecutively for each command
 ``NAME``        name of the task, required for all tasks
-``ACTION``      | actions to perform consecutivky for each task,
+``ACTION``      | actions to perform consecutively for each task,
                 | maps to ``@action`` functions in the `project script`_
 ``actions``     | *[dictionary]* configuration values available in actions
-                | *[list]* action group with actions to perform consecutivley
+                | *[list]* action group with actions to perform consecutively
 =============== ===============================================================
 
 Commands can be invoked via the `project script`_. For available commands, see
 the ``@command`` decorated functions in the script.
 
 Each command processes its task list and for each task the defined actions
-consecutivley. Each action receives the task dictionary and expects the task
+consecutively. Each action receives the task dictionary and expects the task
 to have the proper key/value pairs (e.g. repos need a source, etc). The
 command/action config dictionary is also available to the actions and might
 configure how the action should be performed. For available actions, see the
@@ -1820,7 +1830,7 @@ image setup are:
 - Each image stage has **4 substages** for the different `environments`_:
 
   - The **production** substage contains only the minimum of packages needed.
-  - The **staging** substage adds packages for stating.
+  - The **staging** substage adds packages for staging.
   - The **testing** substage adds packages for tests/CI/documentation.
   - The **development** substage adds packages to develop comfortably.
 
@@ -2109,8 +2119,8 @@ If you want to debug the `demodata`_ generation, you can add the ``--pdb``
 flag to the `db-rebuild CLI`_ command to jump into pdb on errors
 automatically.
 
-Ptvsd
-'''''
+Debugpy
+'''''''
 
 If you use Visual Studio Code as your editor, you would want to install the
 Remote Containers extension, so you can work directly in the docker containers,
@@ -2118,7 +2128,7 @@ including source level debugging from within VS Code. Just make sure that
 the environment variables in `.env`_ have the right values::
 
     ENVIRONMENT=development
-    DEBUGGER_PTVSD=1
+    DEBUGGER_DEBUGPY=1
 
 Now rebuild the docker images for the packages to be installed, ``cd`` to
 ``collecting_society_docker`` and start VSCode with ``"code ."``. The necessary
@@ -2144,6 +2154,11 @@ the debug config drop-down box and a debug toolbar should appear.
     ``.devcontainer.json`` will determine which container is being selected by
     the *Remote-Containers* plugin.
 
+To debug demodata creation, you would want the debugger to wait until you
+attach. Use this env var:
+
+    DEBUGGER_DEMODATA_WAIT=1
+
 Winpdb
 ''''''
 
@@ -2162,7 +2177,7 @@ Make sure to open a port for the remote debugger in
 ``docker-compose.development.yml``::
 
     ports:
-      - "51000:51000"
+      - "52000:52000"
 
 Install winpdb also outside the container and run it::
 
@@ -2174,11 +2189,50 @@ only enable either of the both containers for debugging, not both the same
 time.
 
 Trytond Console
-```````````````
+'''''''''''''''
 
 Tryton can start an interactive python console with the pool initialized::
 
     $ docker compose run --rm erpserver db-console
+
+
+Postgres
+''''''''
+
+Connect to postgres via console::
+
+    docker compose run --rm --service-ports erpserver bash
+    > db-connect
+
+Connect to postgres via client (e.g. dbeaver)
+
+- Host: ``localhost``
+- Port: ``5432``
+- User: ``postgres``
+- Password: ``s0secret!!``
+- Database: ``collecting_society``
+
+Print activity::
+
+    select pid, client_addr, wait_event_type, state, query from pg_catalog.pg_stat_activity;
+
+Log all statements
+
+1. Adjust the postgresql config file ``./volumes/postgresql-data/postgresql.conf``::
+
+    logging_collector = on
+    log_destination = 'csvlog'
+    log_directory = 'pg_log'
+    log_filename = 'postgresql.log'
+    log_statement = 'all'
+
+2. Restart the database service::
+
+    docker compose restart database
+
+3. Watch logfile::
+
+    sudo tail -f ./volumes/postgresql-data/pg_log/postgresql.log
 
 
 .. _Application Tests:
@@ -2227,6 +2281,18 @@ Stop the container afterwards::
 
     $ ./service-test --down
 
+You can append the normal pytest parameters::
+
+    $ ./service-test erpserver --keep [--path PATH] [PARAMETER]
+
+- Run all tests quietly, drop into pdb on errors, don't suppress output::
+
+    $ ./service-test erpserver --keep --quiet --pdb -s
+
+- Run a tests matching a substring::
+
+    $ ./service-test erpserver --keep -k SUBSTRING
+
 If you prefer, you can also execute the commands above from within the container::
 
     $ docker compose -f docker-compose.testing.yml up -d
@@ -2237,9 +2303,6 @@ If you prefer, you can also execute the commands above from within the container
 
         # run tests
         > service-test
-
-        # run tests directly
-        > python /shared/src/trytond/trytond/tests/run-tests.py -vvvm collecting_society
 
         # exit container
         > exit
@@ -2267,13 +2330,13 @@ Stop the container afterwards::
     will highly speed up the execution time, if you run the tests more than
     once.
 
-You can append the normal nosetest parameters::
+You can append the normal pytest parameters::
 
     $ ./service-test worker --keep [--path PATH] [PARAMETER]
 
 - Run all tests quietly, drop into pdb on errors, don't suppress output::
 
-    $ ./service-test worker --keep --quiet --pdb --nocapture
+    $ ./service-test worker --keep --quiet --pdb -s
 
 - Run a specific set of tests::
 
@@ -2289,6 +2352,10 @@ You can append the normal nosetest parameters::
         --path $TESTPATH/integration/test_processing.py
     $ ./service-test worker --keep \
         -- path $TESTPATH/integration/test_processing.py:TestProcessing.test_200_checksum
+
+- Run tests matching a substring::
+
+    $ ./service-test worker --keep -k SUBSTRING
 
 Recreate the database template, if the database has changed::
 
@@ -2335,13 +2402,13 @@ Stop the container afterwards::
     will highly speed up the execution time, if you run the tests more than
     once.
 
-You can append the normal nosetest parameters::
+You can append the normal pytest parameters::
 
     $ ./service-test web --keep [--path PATH] [PARAMETER]
 
 - Run all tests quietly, drop into pdb on errors, don't suppress output::
 
-    $ ./service-test web --keep --quiet --pdb --nocapture
+    $ ./service-test web --keep --quiet --pdb -s
 
 - Run a specific set of tests::
 
@@ -2368,6 +2435,10 @@ You can append the normal nosetest parameters::
     $ ./service-test web --keep --path functional
     $ ./service-test web --keep --path integration
 
+- Run tests matching a substring::
+
+    $ ./service-test web --keep -k SUBSTRING
+
 Recreate the database template, if the database has changed::
 
     $ ./service-test web --keep --build
@@ -2390,7 +2461,7 @@ If you prefer, you can also execute the commands above from within the container
 
 .. note:: In the ``testing`` environment, the ``webgui`` and ``webapi``
     services run both on the ``web`` service as deployment needs to be
-    coordinated and controlled by nosetest.
+    coordinated and controlled by pytest.
 
 The rendered HTML output of the coverage can be accessed via::
 
@@ -2827,6 +2898,12 @@ Erpserver
             ./project status
             ./project update
 
+    - Diff `erpserver.py` and update it accordingly
+        ::
+
+            diff services/deploy/erpserver.py volumes/shared/src/trytond/bin/trytond
+            vi services/deploy/erpserver.py
+
 3. Update ``collecting_society`` tryton module
 
     - Delete ``*.pyc`` files (always on ``bad magic number`` import error)
@@ -3227,6 +3304,8 @@ Wrap-up
 
         - Fix the Jenkins job environment, if neccessary
         - Adjust all ``.env`` and config files manually, if neccessary
+          (e.g. on tryton version change)
+        - Check output of ``db-update`` for migration errors
 
     - Update the `online documentation`__ for ``development`` and ``staging``
 

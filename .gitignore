@@ -71,6 +71,7 @@ tags
 # Volumes
 /volumes/*
 !/volumes/shared
+/volumes/shared/.dmypy.json
 
 # Created files and foldes
 /cli
@@ -109,6 +110,10 @@ tags
 # VS Code
 /.devcontainer.json
 /.vscode/*
+/volumes/shared/.vscode/settings.json
+/volumes/shared/src/integration
+/volumes/shared/src/functional
+/volumes/shared/src/unit
 
 # Sphinx Documentation
 /volumes/shared/docs/source/generated
@@ -116,3 +121,4 @@ tags
 
 # Tryton data development
 /volumes/shared/data/develop.txt
+/volumes/shared/data/modelinfo.csv
