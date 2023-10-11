@@ -277,17 +277,13 @@ FROM python_${ENVIRONMENT}_compiled AS python_compiled
 FROM python_compiled AS echoprint_production_compiled
 
 # install tokyo cabinet (from https://github.com/jon-eckstein/docker-echoprint-server)
-# TODO: SSL verification temporarily disabled, reenable after upgrade. Workaround for:
-# https://letsencrypt.org/docs/dst-root-ca-x3-expiration-september-2021/
-RUN wget --no-check-certificate https://fallabs.com/tokyocabinet/tokyocabinet-1.4.48.tar.gz
+RUN wget https://files.c3s.cc/tokyocabinet-1.4.48.tar.gz
 RUN tar xvf tokyocabinet-1.4.48.tar.gz
 RUN mkdir /opt/tokyocabinet/
 RUN cd tokyocabinet-1.4.48 && ./configure --prefix=/opt/tokyocabinet/ && make && make install
 
 # install tokyo tyrant
-# TODO: SSL verification temporarily disabled, reenable after upgrade. Workaround for:
-# https://letsencrypt.org/docs/dst-root-ca-x3-expiration-september-2021/
-RUN wget --no-check-certificate https://fallabs.com/tokyotyrant/tokyotyrant-1.1.41.tar.gz
+RUN wget https://files.c3s.cc/tokyotyrant-1.1.41.tar.gz
 RUN tar xvf tokyotyrant-1.1.41.tar.gz
 RUN mkdir /opt/tokyotyrant
 RUN cd tokyotyrant-1.1.41 && ./configure --prefix=/opt/tokyotyrant/ --with-tc=/opt/tokyocabinet && make && make install
