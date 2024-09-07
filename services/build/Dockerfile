@@ -1,4 +1,4 @@
-ARG ENVIRONMENT
+ARG ENVIRONMENT=production
 ARG WORKDIR
 ARG DEBUGGER_WINPDB
 ARG DEBUGGER_DEBUGPY
@@ -445,7 +445,7 @@ RUN git clone -b ${TRYTON_VERSION} --single-branch https://github.com/tryton/sao
 USER node
 RUN cd /opt/sao \
     && npm install --legacy-peer-deps \
-    && node_modules/.bin/grunt
+    && node_modules/.bin/grunt dev
 RUN cd /opt/sao && rm -rf \
     .??* \
     *.json \
