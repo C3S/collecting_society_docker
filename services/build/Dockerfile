@@ -233,7 +233,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ### production
 FROM compile AS python_production_compiled
 RUN pip install \
-    click==8.1.3
+    click==8.1.7
 
 ### staging
 FROM python_production_compiled AS python_staging_compiled
@@ -242,17 +242,17 @@ FROM python_production_compiled AS python_staging_compiled
 FROM python_staging_compiled AS python_testing_compiled
 RUN pip install \
     autoapi==2.0.1 \
-    coverage==7.2.2 \
-    flake8==6.0.0 \
-    mypy==1.1.1 \
-    pytest==7.2.2 \
-    pytest-cov==4.0.0 \
-    pytest-mock==3.10.0 \
-    types-python-dateutil==2.8.19.11 \
-    types-requests==2.28.11.17 \
-    Sphinx==6.1.3 \
-    sphinx-rtd-theme==1.2.0 \
-    tox==4.4.8
+    coverage==7.6.1 \
+    flake8==7.1.1 \
+    mypy==1.11.2 \
+    pytest==8.3.3 \
+    pytest-cov==5.0.0 \
+    pytest-mock==3.14.0 \
+    types-python-dateutil==2.9.0.20240906 \
+    types-requests==2.32.0.20240907 \
+    Sphinx==7.4.7 \
+    sphinx-rtd-theme==2.0.0 \
+    tox==4.18.1
 
 ### development
 FROM python_testing_compiled AS python_development_compiled
@@ -311,43 +311,42 @@ FROM echoprint_${ENVIRONMENT}_compiled AS echoprint_compiled
 FROM python_compiled AS trytond_production_compiled
 # trytond mandatory
 RUN pip install \
-    Genshi==0.7.7 \
-    lxml==4.9.2 \
+    defusedxml==0.7.1 \
+    Genshi==0.7.9 \
+    lxml==5.3.0 \
     passlib[bcrypt]==1.7.4 \
     polib==1.2.0 \
-    python-dateutil==2.8.2 \
-    python-sql==1.4.0 \
-    python-stdnum==1.18 \
-    relatorio[fodt]==0.10.1 \
-    Werkzeug==2.2.3 \
-    wrapt==1.15.0
+    python-dateutil==2.9.0.post0 \
+    python-sql==1.5.1 \
+    relatorio[fodt]==0.10.2 \
+    Werkzeug==3.0.4
 # trytond optional
 RUN pip install \
-    gevent==22.10.2 \
-    html2text==2020.1.16 \
-    Pillow==9.4.0 \
-    psycopg2==2.9.5 \
-    pydot==1.4.2 \
-    python-Levenshtein==0.20.9 \
-    weasyprint==58.1
+    gevent==24.2.1 \
+    html2text==2024.2.26 \
+    pillow==10.4.0 \
+    psycopg2==2.9.9 \
+    pydot==3.0.1 \
+    python-Levenshtein==0.25.1 \
+    weasyprint==62.3
+# trytond account
+RUN pip install \
+    simpleeval==0.9.13
+# trytond bank, party, product
+RUN pip install \
+    python-stdnum==1.20
+# trytond currency
+RUN pip install \
+    forex-python==1.8 \
+    pycountry==24.6.1
 # additional
 RUN pip install \
     hurry.filesize==0.9 \
     interlude==1.3.1 \
-    mock==5.0.1 \
-    pyOpenSSL==23.1.1 \
-    pytz==2023.2 \
-    requests==2.28.2
-# trytond account
-RUN pip install \
-    simpleeval==0.9.13
-# trytond currency
-RUN pip install \
-    forex-python==1.8 \
-    pycountry==22.3.5
-# proteus
-RUN pip install \
-    defusedxml==0.7.1
+    mock==5.1.0 \
+    pyOpenSSL==24.2.1 \
+    pytz==2024.2 \
+    requests==2.32.3
 
 ### staging
 FROM trytond_production_compiled AS trytond_staging_compiled
@@ -368,17 +367,17 @@ FROM trytond_${ENVIRONMENT}_compiled AS trytond_compiled
 FROM trytond_compiled AS pyramid_production_compiled
 RUN pip install \
     colander==2.0 \
-    cornice==6.0.1 \
+    cornice==6.1.0 \
     cornice-swagger==1.0.1 \
     cryptacular==1.6.2 \
-    Pillow==9.4.0 \
+    pillow==10.4.0 \
     deform==2.0.15 \
-    pyramid==2.0.1 \
+    pyramid==2.0.2 \
     pyramid-beaker==0.8 \
     pyramid-chameleon==0.3 \
     pyramid-mailer==0.15.1 \
     python-magic==0.4.27 \
-    waitress==2.1.2
+    waitress==3.0.0
 
 ### staging
 FROM pyramid_production_compiled AS pyramid_staging_compiled
@@ -387,8 +386,8 @@ FROM pyramid_production_compiled AS pyramid_staging_compiled
 FROM pyramid_staging_compiled AS pyramid_testing_compiled
 RUN pip install \
     raven==6.10.0 \
-    selenium==4.8.0 \
-    WebTest==3.0.0
+    selenium==4.24.0 \
+    WebTest==3.0.1
 
 ### development
 FROM pyramid_testing_compiled AS pyramid_development_compiled
@@ -413,9 +412,9 @@ RUN pip install  \
     defusedxml==0.7.1 \
     pyechonest==9.0.0 \
     pydub==0.25.1 \
-    pytaglib==2.0.0 \
-    python-dateutil==2.8.2 \
-    requests==2.28.2
+    pytaglib==3.0.0 \
+    python-dateutil==2.9.0.post0 \
+    requests==2.32.3
 
 ### staging
 FROM proteus_production_compiled AS proteus_staging_compiled
@@ -433,14 +432,18 @@ FROM proteus_${ENVIRONMENT}_compiled AS proteus_compiled
 #--- [COMPILE] NODEJS ---------------------------------------------------------
 
 ### production
-# TODO: upgrade when node:bookworm-slim is available
-FROM node:bullseye-slim AS sao_production_compiled
+FROM node:bookworm-slim AS sao_production_compiled
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         git \
+        wget \
     && rm -rf /var/lib/apt/lists/*
 ARG TRYTON_VERSION
-RUN git clone -b ${TRYTON_VERSION} --single-branch https://github.com/tryton/sao.git /opt/sao \
+# RUN git clone -b ${TRYTON_VERSION} --single-branch https://github.com/tryton/sao.git /opt/sao \
+#     && chown -R node:node /opt/sao
+RUN wget https://downloads.tryton.org/${TRYTON_VERSION}/tryton-sao-last.tgz \
+    && tar -zxf tryton-sao-last.tgz \
+    && mv package /opt/sao \
     && chown -R node:node /opt/sao
 USER node
 RUN cd /opt/sao \
@@ -479,12 +482,12 @@ FROM postgres:15 AS database
 
 #--- WEBSERVER ----------------------------------------------------------------
 
-FROM jwilder/nginx-proxy:1.2.1 AS webserver
+FROM jwilder/nginx-proxy:1.6.1 AS webserver
 
 
 #--- BROWSER ------------------------------------------------------------------
 
-FROM selenium/standalone-firefox:4.8.0 AS browser
+FROM selenium/standalone-firefox:4.24.0 AS browser
 
 
 #--- base -> python -> echoprint -> FINGERPRINT -------------------------------

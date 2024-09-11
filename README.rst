@@ -461,13 +461,13 @@ applications or APIs:
 
 __ https://en.wikipedia.org/wiki/Tryton#/media/File:Tryton_sale_form.png
 
-To install the desktop client, clone the repository and switch to the
-``6.6`` branch::
+To install the desktop client, create a venv and install it using pip::
 
     $ cd MY/WORKING/SPACE
-    $ hg clone https://hg.tryton.org/tryton
-    $ cd tryton
-    $ hg up 6.6
+    $ python -m venv tryton
+    $ source tryton/bin/activate
+    $ pip install tryton~=7.0.0
+    $ ./tryton/bin/tryton
 
 .. note:: The Trytond server and the Tryton client are required to have the
     same version branch.
@@ -477,6 +477,7 @@ Depending on the OS, there might be different ways to install the dependencies
 Summary for Debian/Ubuntu::
 
     apt-get install \
+        gir1.2-gtk-3.0 \
         librsvg2-common \
         python3 \
         python3-cairo \
@@ -486,7 +487,7 @@ Summary for Debian/Ubuntu::
         python3-gi-cairo \
         python3-pkg-resources
 
-__ https://packages.ubuntu.com/hirsute/tryton-client
+__ https://packages.ubuntu.com/noble/tryton-client
 
 Test, if Tryton is running::
 
@@ -1566,7 +1567,7 @@ Start Tryton::
     $ tryton
 
 .. note:: The Tryton client configuration files are stored in
-    ``~/.config/tryton/6.6/``.
+    ``~/.config/tryton/7.0/``.
 
 Open a connection to Trytond:
 
@@ -1586,7 +1587,7 @@ Username                              Password     Roles
 
 .. seealso:: `Tryton Usage Documentation`__
 
-__ https://docs.tryton.org/projects/client-desktop/en/6.6/usage.html
+__ https://docs.tryton.org/projects/client-desktop/en/7.0/usage.html
 
 The database entries can be found in the navigation tree:
 
@@ -2050,7 +2051,7 @@ You can now start coding:
 ======================================== =================================
 ``code/collecting_society/``             trytond main module
 ``services/config/collecting_society.*`` trytond server config files
-``~/.config/tryton/6.6/``                tyton client config files
+``~/.config/tryton/7.0/``                tyton client config files
 ``volumes/shared/src/``                  all trytond module repositories
 ``volumes/trytond-files/``               trytond file storage
 ======================================== =================================
@@ -2724,8 +2725,9 @@ Preperations
         - ``sao_compiled``: Latest `node`__ tag
     - Update debian `package names/versions`__
       (search for ``apt-get`` in Dockerfile)
-    - Remove version pinnings of pip packages
-      (search for ``pip install`` in Dockerfile)
+    - Remove version pinnings of pip packages::
+
+          ./services/build/pip_unpin.sh
 
 __ https://www.debian.org/releases/stable
 __ https://packages.debian.org/search?keywords=postgresql
@@ -2901,7 +2903,7 @@ Erpserver
     - Diff `erpserver.py` and update it accordingly
         ::
 
-            diff services/deploy/erpserver.py volumes/shared/src/trytond/bin/trytond
+            diff services/deploy/erpserver.py volumes/shared/src/tryton/trytond/bin/trytond
             vi services/deploy/erpserver.py
 
 3. Update ``collecting_society`` tryton module
@@ -2931,14 +2933,14 @@ Erpserver
             - Run trytond tests
                 ::
 
-                    > python -m unittest trytond.modules.collecting_society.test_module
+                    > python -m unittest trytond.modules.collecting_society.tests.test_module
 
                 - Fix trytond tests
 
             - Run scenario tests
                 ::
 
-                    > python -m unittest trytond.modules.collecting_society.test_scenario
+                    > python -m unittest trytond.modules.collecting_society.tests.test_scenario
 
                 - Fix scenario tests
 
@@ -3204,7 +3206,7 @@ Wrap-up
         - Add version pinnings of pip packages
             ::
 
-                vi ./services/build/Dockerfile
+                ./services/build/pip_pin.sh
 
             - Ensure matching versions of selenium pip package
               and docker image version tag
@@ -3247,14 +3249,16 @@ Wrap-up
         ::
 
             ./docs-build --keep --no-autoapi
+    - Check all changes
+        ::
 
-        - Check all changes
+            xdg-open docs/index.html
 
 4. Push changes to remote feature branch
     ::
 
         ./project status
-        ./project diff
+        ./project diff -v
         ./project commit "updates <SERVICE>: <SOURCEVERSION> -> <TARGETVERSION>"
         ./project push
 
@@ -3289,6 +3293,7 @@ Wrap-up
     - Merge feature branch into ``development`` branch
         ::
 
+            ./project checkout feature-upgrade
             ./project merge
 
         - Wait for the result of the `Jenkins build`__
@@ -3362,17 +3367,17 @@ client.
 Ask the server administrator if the certificate has changed.
 
 Close the Tryton client.
-Check the problematic host entry in ``~/.config/tryton/6.6/known_hosts``.
+Check the problematic host entry in ``~/.config/tryton/7.0/known_hosts``.
 Add a new fingerprint provided by the server administrator or
 simply remove the whole file, if the setup is not in production use::
 
-    rm ~/.config/tryton/6.6/known_hosts
+    rm ~/.config/tryton/7.0/known_hosts
 
 **Incompatible Server Version**
 
 If the tryton client shows an "incompatible server version" error on login try::
 
-    rm ~/.config/tryton/6.6/known_hosts
+    rm ~/.config/tryton/7.0/known_hosts
 
 License
 =======

@@ -1,4 +1,4 @@
 --no-index
 
--e src/proteus
+-e src/tryton/proteus
 -e src/collecting_society_worker
