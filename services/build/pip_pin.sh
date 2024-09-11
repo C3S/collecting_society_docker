@@ -23,9 +23,6 @@ replacements=()
 while read package; do
     name=${package%%=*}
     version=${package##*=}
-    if [ "$name" = "selenium" ]; then
-        continue
-    fi
     replacements+=(
         "-e s/\(^\s*\)$name\(\[.*\]\)\{0,1\}>=[[:alnum:].]*/\1$name\2==$version/i"
     )
@@ -39,4 +36,4 @@ sed -i \
 git diff "$dockerFile"
 
 # Tidy up
-rm "$dockerFile."{requirements,unpinned,original}
+# rm "$dockerFile."{requirements,unpinned,original}
