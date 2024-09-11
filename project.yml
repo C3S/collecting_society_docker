@@ -77,47 +77,8 @@ production:
         actions: ['repo_update']
         targetpath: 'volumes/shared/src'
         batch:
-          - name: trytond
-            source: 'https://github.com/tryton/trytond.git'
-            version: '${TRYTON_VERSION}'
-          - name: country
-            source: 'https://github.com/tryton/country.git'
-            version: '${TRYTON_VERSION}'
-          - name: currency
-            source: 'https://github.com/tryton/currency.git'
-            version: '${TRYTON_VERSION}'
-          - name: party
-            source: 'https://github.com/tryton/party.git'
-            version: '${TRYTON_VERSION}'
-          - name: company
-            source: 'https://github.com/tryton/company.git'
-            version: '${TRYTON_VERSION}'
-          - name: product
-            source: 'https://github.com/tryton/product.git'
-            version: '${TRYTON_VERSION}'
-          - name: account
-            source: 'https://github.com/tryton/account.git'
-            version: '${TRYTON_VERSION}'
-          - name: account_product
-            source: 'https://github.com/tryton/account_product.git'
-            version: '${TRYTON_VERSION}'
-          - name: account_invoice
-            source: 'https://github.com/tryton/account_invoice.git'
-            version: '${TRYTON_VERSION}'
-          - name: account_invoice_line_standalone
-            source: 'https://github.com/tryton/account_invoice_line_standalone.git'
-            version: '${TRYTON_VERSION}'
-          - name: bank
-            source: 'https://github.com/tryton/bank.git'
-            version: '${TRYTON_VERSION}'
-          - name: account_de_skr03
-            source: 'https://github.com/tryton/account_de_skr03.git'
-            version: '${TRYTON_VERSION}'
-          - name: web_user
-            source: 'https://github.com/tryton/web_user.git'
-            version: '${TRYTON_VERSION}'
-          - name: proteus
-            source: 'https://github.com/tryton/proteus.git'
+          - name: tryton
+            source: 'https://github.com/tryton/tryton.git'
             version: '${TRYTON_VERSION}'
           - name: echoprint-codegen
             source: 'https://github.com/C3S/echoprint-codegen.git'
@@ -125,12 +86,34 @@ production:
       # link tryton modules
       - name: link tryton modules
         actions: ['path_link']
-        targetpath: 'volumes/shared/src/trytond/trytond/modules'
+        targetpath: 'volumes/shared/src/tryton/trytond/trytond/modules'
         batch:
+          # upstream
+          - name: account
+            source: 'volumes/shared/src/tryton/modules/account'
+          - name: account_de_skr03
+            source: 'volumes/shared/src/tryton/modules/account_de_skr03'
+          - name: account_invoice
+            source: 'volumes/shared/src/tryton/modules/account_invoice'
+          - name: account_invoice_line_standalone
+            source: 'volumes/shared/src/tryton/modules/account_invoice_line_standalone'
+          - name: account_product
+            source: 'volumes/shared/src/tryton/modules/account_product'
+          - name: bank
+            source: 'volumes/shared/src/tryton/modules/bank'
+          - name: company
+            source: 'volumes/shared/src/tryton/modules/company'
           - name: country
-            source: 'volumes/shared/src/country'
+            source: 'volumes/shared/src/tryton/modules/country'
           - name: currency
-            source: 'volumes/shared/src/currency'
+            source: 'volumes/shared/src/tryton/modules/currency'
+          - name: party
+            source: 'volumes/shared/src/tryton/modules/party'
+          - name: product
+            source: 'volumes/shared/src/tryton/modules/product'
+          - name: web_user
+            source: 'volumes/shared/src/tryton/modules/web_user'
+          # own
           - name: collecting_society
             source: 'volumes/shared/src/collecting_society'
       # create basic folder structure
@@ -352,57 +335,60 @@ development:
             version: 'tags/2.0'
           - name: cornice
             source: 'https://github.com/Cornices/cornice.git'
-            version: 'tags/6.0.1'
+            version: 'tags/6.1.0'
           - name: cornice_swagger
             source: 'https://github.com/Cornices/cornice.ext.swagger.git'
             version: 'tags/1.0.1'
           - name: click
             source: 'https://github.com/pallets/click.git'
-            version: 'tags/8.1.3'
+            version: 'tags/8.1.7'
           - name: cryptacular
             source: 'https://github.com/dholth/cryptacular.git'
             version: 'master'
           - name: deform
             source: 'https://github.com/Pylons/deform.git'
             version: 'tags/2.0.15'
+          - name: defusedxml
+            source: 'https://github.com/tiran/defusedxml.git'
+            version: 'tags/v0.7.1'
           - name: forex-python
             source: 'https://github.com/MicroPyramid/forex-python.git'
             version: 'tags/v1.8'
           - name: genshi
             source: 'https://github.com/edgewall/genshi.git'
-            version: 'tags/0.7.7'
+            version: 'tags/0.7.9'
           - name: gevent
             source: 'https://github.com/gevent/gevent.git'
-            version: 'tags/22.10.2'
+            version: 'tags/24.2.1'
           - name: html2text
             source: 'https://github.com/Alir3z4/html2text.git'
-            version: 'tags/2020.1.16'
+            version: 'tags/2024.2.26'
           # - name: hurry.filesize
           #   source: '?'
           #   version: 'tags/0.9'
           #   => source not found
           - name: lxml
             source: 'https://github.com/lxml/lxml.git'
-            version: 'tags/lxml-4.9.2'
+            version: 'tags/lxml-5.3.0'
           # - name: passlib
           #   source: 'https://foss.heptapod.net/python-libs/passlib'
           #   version: 'tags/1.7.4'
           #   => hg only
           - name: Pillow
             source: 'https://github.com/python-pillow/Pillow.git'
-            version: 'tags/9.4.0'
+            version: 'tags/10.4.0'
           - name: polib
             source: 'https://github.com/izimobil/polib.git'
-            version: 'tags/1.1.1'
+            version: 'tags/1.2.0'
           - name: psycopg2
             source: 'https://github.com/psycopg/psycopg2.git'
-            version: 'tags/2_9_5'
+            version: 'tags/2.9.9'
           - name: pycountry
             source: 'https://github.com/flyingcircusio/pycountry.git'
-            version: 'tags/22.3.5'
+            version: 'tags/24.6.1'
           - name: pydot
             source: 'https://github.com/pydot/pydot.git'
-            version: 'tags/v1.4.2'
+            version: 'tags/v3.0.1'
           - name: pydub
             source: 'https://github.com/jiaaro/pydub.git'
             version: 'tags/v0.25.1'
@@ -411,13 +397,13 @@ development:
             version: 'tags/9.0.0'
           - name: pyopenssl
             source: 'https://github.com/pyca/pyopenssl.git'
-            version: 'tags/23.0.0'
+            version: 'tags/24.2.1'
           - name: pytaglib
             source: 'https://github.com/supermihi/pytaglib.git'
-            version: 'tags/v1.5.0'
+            version: 'tags/v3.0.0'
           - name: pyramid
             source: 'https://github.com/Pylons/pyramid.git'
-            version: 'tags/2.0.1'
+            version: 'tags/2.0.2'
           - name: pyramid_beaker
             source: 'https://github.com/Pylons/pyramid_beaker.git'
             version: 'tags/0.8'
@@ -432,20 +418,23 @@ development:
             version: 'tags/0.15.1'
           - name: python-dateutil
             source: 'https://github.com/dateutil/dateutil.git'
-            version: 'tags/2.8.2'
+            version: 'tags/2.9.0.post0'
           - name: python-Levenshtein
             source: 'https://github.com/ztane/python-Levenshtein.git'
             version: 'master'
           - name: python-magic
             source: 'https://github.com/ahupp/python-magic.git'
             version: 'tags/0.4.27'
+          - name: python-stdnum
+            source: 'https://github.com/arthurdejong/python-stdnum/'
+            version: 'tags/1.20'
           # - name: python-sql
           #   source: 'https://hg.tryton.org/python-sql'
           #   version: 'tags/1.3.0'
           #   => hg only
           - name: pytz
             source: 'https://github.com/stub42/pytz.git'
-            version: 'tags/release_2022.7.1'
+            version: 'tags/release_2024.2'
           - name: raven-python
             source: 'https://github.com/getsentry/raven-python.git'
             version: 'tags/6.10.0'
@@ -455,35 +444,29 @@ development:
           #   => hg only
           - name: requests
             source: 'https://github.com/requests/requests.git'
-            version: 'tags/v2.28.2'
+            version: 'tags/v2.32.3'
           # - name: selenium
           #   source: 'https://github.com/SeleniumHQ/selenium.git'
           #   version: 'tags/selenium-4.0.0'
           #   => > 200 MB
           - name: simpleeval
             source: 'https://github.com/danthedeckie/simpleeval.git'
-            version: 'tags/0.9.12'
-          - name: vatnumber
-            source: 'https://github.com/chadjlucas/vatnumber.git'
-            version: 'tags/1.2'
+            version: 'tags/0.9.13'
           - name: waitress
             source: 'https://github.com/Pylons/waitress.git'
-            version: 'tags/v2.1.2'
+            version: 'tags/v3.0.0'
           - name: weasyprint
             source: 'https://github.com/Kozea/WeasyPrint.git'
-            version: 'tags/v57.2'
+            version: 'tags/v62.3'
           - name: webob
             source: 'https://github.com/Pylons/webob.git'
-            version: 'tags/1.8.7'
+            version: 'tags/1.8.8'
           - name: webpy
             source: 'https://github.com/webpy/webpy.git'
             version: 'tags/0.62'
           - name: webtest
             source: 'https://github.com/Pylons/webtest.git'
-            version: 'tags/3.0.0'
+            version: 'tags/3.0.1'
           - name: werkzeug
             source: 'https://github.com/pallets/werkzeug.git'
-            version: 'tags/2.2.2'
-          - name: wrapt
-            source: 'https://github.com/GrahamDumpleton/wrapt.git'
-            version: 'tags/1.14.1'
+            version: 'tags/3.0.4'
