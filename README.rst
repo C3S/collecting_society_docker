@@ -3293,6 +3293,7 @@ Wrap-up
     - Merge feature branch into ``development`` branch
         ::
 
+            ./project checkout feature-upgrade
             ./project merge
 
         - Wait for the result of the `Jenkins build`__
