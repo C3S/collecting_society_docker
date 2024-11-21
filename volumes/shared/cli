@@ -349,7 +349,9 @@ def db_console(context, trytondconf, dbname):
     '--modules', '-m', default='collecting_society',
     help='Single module or comma separated list of modules to update. '
     'Whitspace not allowed!')
-@click.argument('trytondconf', default=ENVIRONMENT + '.conf')
+@click.option(
+    '--trytondconf', '-c', default=ENVIRONMENT + '.conf',
+    help='Path to trytond config file (default: <environment>.conf')
 @click.argument('dbname', default=TRYTON_DATABASE)
 @click.option('--init/--no-init', default=False,
               help='Run static data imports on initial update (default: no)')
