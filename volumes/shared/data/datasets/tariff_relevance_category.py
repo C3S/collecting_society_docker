@@ -9,6 +9,7 @@ Create the tariff relevance categories
 
 import os
 import csv
+from decimal import Decimal
 
 from proteus import Model
 
@@ -37,8 +38,8 @@ def generate(reclimit=0):
                 tcs += TariffCategory.find(['code', '=', tc])
             TariffRelevanceCategory(
                 name=row['name'],
-                value_min=float(row['value_min']),
-                value_max=float(row['value_max']),
-                value_default=float(row['value_default']),
+                value_min=Decimal(row['value_min']),
+                value_max=Decimal(row['value_max']),
+                value_default=Decimal(row['value_default']),
                 tariff_categories=tcs
             ).save()
