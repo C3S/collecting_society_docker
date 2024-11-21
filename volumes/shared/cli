@@ -314,14 +314,34 @@ def db_console(context, trytondconf, dbname):
     os.environ['TRYTOND_CONFIG'] = os.path.join(
         WORKDIR, 'config', 'trytond', trytondconf
     )
-    command = [
-        'trytond-console',
-        '-d', dbname,
-        '-c', os.environ['TRYTOND_CONFIG']
-    ]
 
-    # Execute command
-    subprocess.call(command)
+    # Taken from trytond/console.py
+    from trytond import __version__
+    from trytond.pool import Pool
+    from trytond.transaction import Transaction
+    from trytond.worker import run_task
+    from trytond.console import Console
+
+    db_name = 'collecting_society'
+    pool = Pool(db_name)
+    with Transaction().start(db_name, 0, readonly=True):
+        pool.init()
+
+    with Transaction().start(db_name, 0, readonly=False) as transaction:
+        local = {
+            'pool': pool,
+            'transaction': transaction,
+        }
+        with open("/shared/data/console.py") as file:
+            exec(file.read(), local)
+        console = Console(local)
+        banner = "Tryton %s, Python %s on %s" % (
+            __version__, sys.version, sys.platform)
+        console.interact(banner=banner, exitmsg='')
+        transaction.rollback()
+    while transaction.tasks:
+        task_id = transaction.tasks.pop()
+        run_task(pool, task_id)
 
 
 @cli.command('db-update')
