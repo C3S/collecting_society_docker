@@ -300,10 +300,15 @@ def db_backup(context, dbname):
 
 
 @cli.command('db-console')
-@click.argument('trytondconf', default=ENVIRONMENT + '.conf')
+@click.option(
+    '--trytondconf', '-c', default=ENVIRONMENT + '.conf',
+    help='Path to trytond config file (default: <environment>.conf')
+@click.option(
+    '--startup', '-s', type=str, multiple=True,
+    help='File in /shared/data/console to load on startup')
 @click.argument('dbname', default=TRYTON_DATABASE)
 @click.pass_context
-def db_console(context, trytondconf, dbname):
+def db_console(context, trytondconf, startup, dbname):
     """
     Opens trytond console.
     """
@@ -332,8 +337,11 @@ def db_console(context, trytondconf, dbname):
             'pool': pool,
             'transaction': transaction,
         }
-        with open("/shared/data/console.py") as file:
+        with open("/shared/data/console/objects.py") as file:
             exec(file.read(), local)
+        for file in startup:
+            with open(f"/shared/data/console/{file}.py") as file:
+                exec(file.read(), local)
         console = Console(local)
         banner = "Tryton %s, Python %s on %s" % (
             __version__, sys.version, sys.platform)

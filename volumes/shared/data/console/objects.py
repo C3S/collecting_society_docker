@@ -1,8 +1,9 @@
 # flake8: noqa: E501
-# imported via db-console
-pool = locals()['pool']  # just for the linter
 
-# --- Objects -----------------------------------------------------------------
+from pprint import pprint
+from collections import defaultdict
+from decimal import Decimal as D
+from datetime import date, datetime
 
 AccessControlEntry = pool.get('ace')
 AccessControlEntryRole = pool.get('ace-ace.role')
@@ -115,15 +116,3 @@ WebsiteResource = pool.get('website.resource')
 WebsiteResourceCategory = pool.get('website.resource.category')
 WebsiteResourceCreation = pool.get('website.resource-creation')
 WebsiteResourceIndicators = pool.get('website.resource.indicators')
-
-# --- Data --------------------------------------------------------------------
-
-utilisation_live1 = Utilisation(5)
-utilisation_live2 = Utilisation(6)
-utilisation_live3 = Utilisation(7)
-
-utilisation_live1.calculate_invoice_amount('estimated', save=True)
-print(utilisation_live1.estimated_invoice_amount)
-utilisation_live1.calculate_administration_fee('estimated', save=True)
-print(utilisation_live1.estimated_administration_fee)
-print(utilisation_live1.estimated_distribution_amount)
