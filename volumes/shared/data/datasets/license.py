@@ -43,5 +43,6 @@ def generate(reclimit=0):
                 country=row['country'],
                 freedom_rank=int(row['freedom_rank']),
                 link=row['link'],
-                name=row['name']
+                name=row['name'],
+                billable=bool(row['billable'])
             ).save()

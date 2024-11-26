@@ -47,6 +47,8 @@ def generate(reclimit=0):
 
     # create performance playlists
     for performance in performances:
+        if 'noplaylist' in performance.event.name:
+            continue
         playlist = ArtistPlaylist(
             artist=performance.artist,
             public=False,

@@ -7,13 +7,11 @@
 Calculate the utilization indicators
 """
 
-# import random
-# import decimal
-
 from proteus import Model, Wizard
 
 DEPENDS = [
     'tariff_relevance',
+    'tariff_adjustment',
 ]
 
 

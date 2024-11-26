@@ -33,6 +33,8 @@ def generate(reclimit=0):
 
     # create performances
     for event in events:
+        if 'noplaylist' in event.name:
+            continue
         for j in range(1, performances_per_event + 1):
             artist = random.choice(artists)
             performance = event.performances.new()
