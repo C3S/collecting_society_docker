@@ -329,10 +329,14 @@ def db_console(context, trytondconf, startup, dbname):
 
     db_name = 'collecting_society'
     pool = Pool(db_name)
+    context = {
+        'company': 1,
+    }
     with Transaction().start(db_name, 0, readonly=True):
         pool.init()
 
-    with Transaction().start(db_name, 0, readonly=False) as transaction:
+    with Transaction().start(
+            db_name, 0, readonly=False, context=context) as transaction:
         local = {
             'pool': pool,
             'transaction': transaction,
