@@ -26,3 +26,4 @@ for allocation in collection.allocations:
     })
 
 allocation = collection.allocations[0]
+licensee = allocation.licensee

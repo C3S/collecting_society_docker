@@ -5,6 +5,9 @@ from collections import defaultdict
 from decimal import Decimal as D
 from datetime import date, datetime
 
+Party = pool.get('party.party')
+Account = pool.get('account.account')
+
 AccessControlEntry = pool.get('ace')
 AccessControlEntryRole = pool.get('ace-ace.role')
 AccessPermission = pool.get('ace.permission')
