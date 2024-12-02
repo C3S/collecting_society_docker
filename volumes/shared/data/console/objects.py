@@ -5,8 +5,11 @@ from collections import defaultdict
 from decimal import Decimal as D
 from datetime import date, datetime
 
-Party = pool.get('party.party')
 Account = pool.get('account.account')
+Invoice = pool.get('account.invoice')
+Journal = pool.get('account.journal')
+Party = pool.get('party.party')
+Product = pool.get('product.product')
 
 AccessControlEntry = pool.get('ace')
 AccessControlEntryRole = pool.get('ace-ace.role')

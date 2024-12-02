@@ -26,23 +26,12 @@ def generate(reclimit=0):
     webuser_all_roles = reclimit or 1
 
     # models
-    Company = Model.get('company.company')
-    Account = Model.get('account.account')
+    Country = Model.get('country.country')
     WebUser = Model.get('web.user')
     WebUserRole = Model.get('web.user.role')
 
     # entries
-    company = Company(1)
-    receivable, = Account.find([
-            ('type.receivable', '=', True),
-            ('party_required', '=', True),
-            ('company', '=', company.id),
-            ], limit=1)
-    payable, = Account.find([
-            ('type.payable', '=', True),
-            ('party_required', '=', True),
-            ('company', '=', company.id),
-            ], limit=1)
+    germany, = Country.find([('code', '=', 'DE')])
 
     # Role: Licenser
     for i in range(1, group_artists * new_solo_artists_per_group + 1):
@@ -70,8 +59,12 @@ def generate(reclimit=0):
         web_user.party.name = nickname
         web_user.party.repertoire_terms_accepted = True
         web_user.party.birthdate = birthdate
-        web_user.party.account_receivable = receivable
-        web_user.party.account_payable = payable
+        web_user.party.addresses.new(
+            street='Teststreet %s' % str(number),
+            postal_code=str(10000+number).zfill(5),
+            city='Testcity',
+            country=germany
+        )
         web_user.party.save()
 
     # Role: Licensee
@@ -100,8 +93,12 @@ def generate(reclimit=0):
         web_user.party.name = nickname
         web_user.party.repertoire_terms_accepted = True
         web_user.party.birthdate = birthdate
-        web_user.party.account_receivable = receivable
-        web_user.party.account_payable = payable
+        web_user.party.addresses.new(
+            street='Teststreet %s' % str(number),
+            postal_code=str(10000+number).zfill(5),
+            city='Testcity',
+            country=germany
+        )
         web_user.party.save()
 
     # Role: All
@@ -130,6 +127,10 @@ def generate(reclimit=0):
         web_user.party.name = nickname
         web_user.party.repertoire_terms_accepted = True
         web_user.party.birthdate = birthdate
-        web_user.party.account_receivable = receivable
-        web_user.party.account_payable = payable
+        web_user.party.addresses.new(
+            street='Teststreet %s' % str(number),
+            postal_code=str(10000+number).zfill(5),
+            city='Testcity',
+            country=germany
+        )
         web_user.party.save()

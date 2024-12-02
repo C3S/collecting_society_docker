@@ -4,7 +4,7 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Calculate the utilization indicators
+Finalize the utilizations
 """
 
 from proteus import Model, Wizard

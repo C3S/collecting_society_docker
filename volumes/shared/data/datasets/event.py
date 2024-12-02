@@ -39,8 +39,8 @@ def generate(reclimit=0):
     number = 0
 
     # create events
-    for state in ['estimated', 'confirmed', 'finalized', 'allocated',
-                  'collected']:
+    for state in ['estimated', 'confirmed', 'finalized', 'invoiced',
+                  'posted', 'paid', 'distributed']:
         for playlist in [False, True]:
             for i, location in enumerate(locations):
                 for j in range(1, events_per_location_space + 1):
