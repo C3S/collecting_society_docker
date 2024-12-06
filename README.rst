@@ -479,13 +479,14 @@ Summary for Debian/Ubuntu::
     apt-get install \
         gir1.2-gtk-3.0 \
         librsvg2-common \
+        libgirepository1.0-dev \
         python3 \
         python3-cairo \
         python3-chardet \
         python3-dateutil \
         python3-gi \
         python3-gi-cairo \
-        python3-pkg-resources
+        python3-pkg-resources \
 
 __ https://packages.ubuntu.com/noble/tryton-client
 

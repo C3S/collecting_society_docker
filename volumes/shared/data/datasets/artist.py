@@ -51,7 +51,7 @@ def generate(reclimit=0):
             entity_creator=web_user.party,
             entity_origin='direct',
             commit_state='commited',
-            claim_state='claimed',
+            claim_state='revised',
             description=test_text
         )
 
@@ -69,7 +69,7 @@ def generate(reclimit=0):
                 entity_creator=web_user.party,
                 entity_origin='direct',
                 commit_state='commited',
-                claim_state='claimed',
+                claim_state='revised',
                 description=test_text
             )
 

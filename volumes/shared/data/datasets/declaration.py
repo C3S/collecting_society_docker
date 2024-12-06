@@ -61,7 +61,7 @@ def generate(reclimit=0):
 
     # create declarations for tariff live
     for event in events:
-        Declaration(
+        declaration = Declaration(
             licensee=event.location.entity_creator,
             state='created',
             creation_time=event.estimated_start - datetime.timedelta(
@@ -71,7 +71,11 @@ def generate(reclimit=0):
             period='onetime',
             tariff=tariff_live,
             context=event
-        ).save()
+        )
+        declaration.save()
+        for utilisation in declaration.utilisations:
+            utilisation.state = 'estimated'
+            utilisation.save()
 
     # create declarations for tariff reproduction
     for release in releases:

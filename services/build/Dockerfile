@@ -252,6 +252,7 @@ RUN pip install \
     types-requests==2.32.0.20240907 \
     Sphinx==7.4.7 \
     sphinx-rtd-theme==2.0.0 \
+    sphinxcontrib-plantuml \
     tox==4.18.1
 
 ### development
@@ -429,7 +430,7 @@ FROM proteus_testing_compiled AS proteus_development_compiled
 FROM proteus_${ENVIRONMENT}_compiled AS proteus_compiled
 
 
-#--- [COMPILE] NODEJS ---------------------------------------------------------
+#--- [COMPILE] SAO ------------------------------------------------------------
 
 ### production
 FROM node:bookworm-slim AS sao_production_compiled
@@ -469,6 +470,20 @@ FROM sao_testing_compiled AS sao_development_compiled
 
 ### result
 FROM sao_development_compiled AS sao_compiled
+
+
+#--- [COMPILE] python -> DOCUMENTATION ----------------------------------------
+
+### production
+FROM python_compiled AS documentation_compiled
+
+# install libs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        default-jdk-headless \
+        graphviz \
+    && rm -rf /var/lib/apt/lists/*
+RUN curl -L 'http://downloads.sourceforge.net/project/plantuml/plantuml.jar' \
+      -o /opt/plantuml.jar
 
 
 #==============================================================================
@@ -529,7 +544,7 @@ FROM webapi AS webgui
 
 #--- base -> python -> DOCUMENTATION ------------------------------------------
 
-FROM compile AS documentation
+FROM documentation_compiled AS documentation
 COPY --from=trytond_compiled /opt/venv /opt/venv
 COPY --from=pyramid_compiled /opt/venv /opt/venv
 COPY --from=proteus_compiled /opt/venv /opt/venv

@@ -4,24 +4,26 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the utilizations
+Posts the invoices
 """
 
 from proteus import Model
 
 DEPENDS = [
-    'declaration',
+    'invoice_validate',
 ]
 
 
 def generate(reclimit=0):
 
     # model
-    Utilisation = Model.get('utilisation')
+    Invoice = Model.get('account.invoice')
 
-    # prepare dataset we depend upon
-    utilisations = Utilisation.find([])
+    # entries
+    invoices = Invoice.find([
+        ('state', '=', 'validated'),
+    ])
 
-    # recalculate utilisation indicators
-    for utilisation in utilisations:
-        pass
+    # run collections
+    for invoice in invoices:
+        invoice.click('post')

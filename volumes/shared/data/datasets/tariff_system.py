@@ -30,6 +30,6 @@ def generate(reclimit=0):
     # create tariff systems
     for i in range(1, tariff_systems + 1):
         TariffSystem(
-            version="%s.0" % i,
+            version="0.%s" % i,
             valid_from=today
         ).save()

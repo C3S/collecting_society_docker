@@ -46,6 +46,7 @@ ln -sf /shared/src/collecting_society/README.rst source/collecting_society/READM
 ln -sf /shared/src/collecting_society/INSTALL.rst source/collecting_society/INSTALL.rst
 ln -sf /shared/src/collecting_society/CHANGELOG.rst source/collecting_society/CHANGELOG.rst
 ln -sf /shared/src/collecting_society/COPYRIGHT.rst source/collecting_society/COPYRIGHT.rst
+ln -snf /shared/src/collecting_society/doc source/collecting_society/doc
 ln -sf /shared/src/portal_web/README.rst source/generated/portal_web_README.rst
 
 # add warnings

@@ -4,13 +4,14 @@
 # Repository: https://github.com/C3S/collecting_society_docker
 
 """
-Create the utilizations
+Calculate the utilization indicators
 """
 
-from proteus import Model
+from proteus import Model, Wizard
 
 DEPENDS = [
-    'declaration',
+    'tariff_relevance',
+    'tariff_adjustment',
 ]
 
 
@@ -24,4 +25,4 @@ def generate(reclimit=0):
 
     # recalculate utilisation indicators
     for utilisation in utilisations:
-        pass
+        Wizard('utilisation.calculate', models=[utilisation])

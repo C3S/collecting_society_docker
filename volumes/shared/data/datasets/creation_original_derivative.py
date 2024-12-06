@@ -19,46 +19,49 @@ DEPENDS = [
 def generate(reclimit=0):
 
     # constants
-    originals_per_creation = reclimit or 2
-    foreign_originals_per_creation = reclimit and 1 or 1
+    originals_per_remix = reclimit or 2
+    foreign_originals_per_remix = reclimit and 1 or 1
 
     # models
     Creation = Model.get('creation')
-    Derivative = Model.get('creation.original.derivative')
 
     # entries
     creations = Creation.find([('claim_state', '!=', 'unclaimed')])
-    foreign_creations = Creation.find([
-        ('claim_state', '=', 'unclaimed')])
+    foreign_creations = Creation.find([('claim_state', '=', 'unclaimed')])
 
     # content
-    allocation_types = Derivative._fields['allocation_type']['selection']
-    allocation_types = [k for k, _ in allocation_types if k]
+    allocation_types = ['cover', 'adaption', 'remix', None]
 
     # create derivative relationships for exisiting creations
     for creation in creations:
         if not creation.release:
             continue
+
+        allocation_type = random.choice(allocation_types)
+        if not allocation_type:
+            continue
+
         others = []
         for other in creations:
             if not other.release or other.id == creation.id:
                 continue
             others.append(other)
-        originals = random.sample(others, min(
-            originals_per_creation, len(others)))
+
+        if allocation_type in ['cover', 'adaption']:
+            originals = [random.choice(others)]
+        elif allocation_type == 'remix':
+            originals = random.sample(
+                others,
+                min(originals_per_remix, len(others)))
+            originals += random.sample(
+                foreign_creations,
+                min(foreign_originals_per_remix, len(foreign_creations)))
+
         for original in originals:
             cor = creation.original_relations.new()
             cor.original_creation = original
             cor.derivative_creation = creation
-            cor.allocation_type = random.choice(allocation_types)
-
-    # create foreign originals
-    for creation in creations:
-        for i in range(foreign_originals_per_creation):
-            cor = creation.original_relations.new()
-            cor.original_creation = random.choice(foreign_creations)
-            cor.derivative_creation = creation
-            cor.allocation_type = random.choice(allocation_types)
+            cor.allocation_type = allocation_type
 
     for creation in creations:
         creation.save()

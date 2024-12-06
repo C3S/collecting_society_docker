@@ -300,10 +300,15 @@ def db_backup(context, dbname):
 
 
 @cli.command('db-console')
-@click.argument('trytondconf', default=ENVIRONMENT + '.conf')
+@click.option(
+    '--trytondconf', '-c', default=ENVIRONMENT + '.conf',
+    help='Path to trytond config file (default: <environment>.conf')
+@click.option(
+    '--startup', '-s', type=str, multiple=True,
+    help='File in /shared/data/console to load on startup')
 @click.argument('dbname', default=TRYTON_DATABASE)
 @click.pass_context
-def db_console(context, trytondconf, dbname):
+def db_console(context, trytondconf, startup, dbname):
     """
     Opens trytond console.
     """
@@ -314,14 +319,41 @@ def db_console(context, trytondconf, dbname):
     os.environ['TRYTOND_CONFIG'] = os.path.join(
         WORKDIR, 'config', 'trytond', trytondconf
     )
-    command = [
-        'trytond-console',
-        '-d', dbname,
-        '-c', os.environ['TRYTOND_CONFIG']
-    ]
 
-    # Execute command
-    subprocess.call(command)
+    # Taken from trytond/console.py
+    from trytond import __version__
+    from trytond.pool import Pool
+    from trytond.transaction import Transaction
+    from trytond.worker import run_task
+    from trytond.console import Console
+
+    db_name = 'collecting_society'
+    pool = Pool(db_name)
+    context = {
+        'company': 1,
+    }
+    with Transaction().start(db_name, 0, readonly=True):
+        pool.init()
+
+    with Transaction().start(
+            db_name, 0, readonly=False, context=context) as transaction:
+        local = {
+            'pool': pool,
+            'transaction': transaction,
+        }
+        with open("/shared/data/console/objects.py") as file:
+            exec(file.read(), local)
+        for file in startup:
+            with open(f"/shared/data/console/{file}.py") as file:
+                exec(file.read(), local)
+        console = Console(local)
+        banner = "Tryton %s, Python %s on %s" % (
+            __version__, sys.version, sys.platform)
+        console.interact(banner=banner, exitmsg='')
+        transaction.rollback()
+    while transaction.tasks:
+        task_id = transaction.tasks.pop()
+        run_task(pool, task_id)
 
 
 @cli.command('db-update')
@@ -329,7 +361,9 @@ def db_console(context, trytondconf, dbname):
     '--modules', '-m', default='collecting_society',
     help='Single module or comma separated list of modules to update. '
     'Whitspace not allowed!')
-@click.argument('trytondconf', default=ENVIRONMENT + '.conf')
+@click.option(
+    '--trytondconf', '-c', default=ENVIRONMENT + '.conf',
+    help='Path to trytond config file (default: <environment>.conf')
 @click.argument('dbname', default=TRYTON_DATABASE)
 @click.option('--init/--no-init', default=False,
               help='Run static data imports on initial update (default: no)')
@@ -748,6 +782,7 @@ def service_test(context, service, dbname, reset, path, nargs):
         else:
             testpaths.append(os.path.join(basepath, module, 'tests'))
     # Process user provided path
+    _path = path
     paths = []
     if path:
         if path in ['unit', 'functional', 'integration']:
@@ -793,6 +828,26 @@ def service_test(context, service, dbname, reset, path, nargs):
     command += list(nargs) + list(paths)
     print("Command: " + " ".join(command) + "\n")
     process = subprocess.run(command, cwd=testsdir)
+
+    # Formulas tests
+    if service == 'erpserver' and not _path:
+        paths_formulas = [
+            os.path.join(
+                WORKDIR, 'src', 'collecting_society', 'formulas', 'tests'),
+        ]
+        command_formulas = [
+            'pytest',
+            '--log-level=CRITICAL',
+            f'--junitxml={testsdir}/junit_formulas.xml',
+            f'--cov-report=html:{testsdir}/cover_formulas.html',
+            f'--cov-report=xml:{testsdir}/cover_formulas.xml',
+            '--cov=../src/collecting_society/formulas/',
+        ]
+        command_formulas += list(nargs) + list(paths_formulas)
+        print("Command: " + " ".join(command_formulas) + "\n")
+        process_formulas = subprocess.run(command_formulas, cwd=testsdir)
+        if process_formulas.returncode != 0:
+            sys.exit(process_formulas.returncode)
 
     # Return exitcode
     sys.exit(process.returncode)

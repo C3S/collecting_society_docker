@@ -68,7 +68,7 @@ echo `date +%Y-%m-%d:%H:%M:%S`
 # immediately stop and remove the container and exit
 if $DOWN; then
     echo -e "\n== immediately stop and remove the container and exit"
-    docker-compose $DOCUMENTATION down
+    docker compose $DOCUMENTATION down
     exit $?
 fi
 
@@ -84,25 +84,25 @@ fi
 # build docker images
 if $CI || $BUILD; then
     echo -e "\n== build images"
-    docker-compose $DOCUMENTATION build
+    docker compose $DOCUMENTATION build
 fi
 
 # create and start docker container
 echo -e "\n== create and start docker container"
-docker-compose $DOCUMENTATION up -d
+docker compose $DOCUMENTATION up -d
 if [ $? -ne 0 ]; then
     echo -e "\n... if the images are missing or need to be updated, use 'scripts/docs --build'"
 fi
 
 # build docs
 echo -e "\n== build docs"
-docker-compose $DOCUMENTATION exec $TERMINAL documentation docs-build $NOAUTOAPI
+docker compose $DOCUMENTATION exec $TERMINAL documentation docs-build $NOAUTOAPI
 EXITCODE=$?
 
 # remove docker container
 if $CI || $RM; then
     echo -e "\n== remove docker container"
-    docker-compose $DOCUMENTATION rm -fs
+    docker compose $DOCUMENTATION rm -fs
 fi
 
 # print footer

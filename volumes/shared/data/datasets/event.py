@@ -21,7 +21,7 @@ DEPENDS = [
 def generate(reclimit=0):
 
     # constants
-    events_per_location_space = reclimit or 3
+    events_per_location_space = reclimit or 2
     performances_per_event = reclimit or 3
 
     # models
@@ -36,32 +36,49 @@ def generate(reclimit=0):
     attendants_choices = [10, 100, 500, 1000, 5000, 10000]
     expenses_choices = [0, 50, 100, 1000]
 
+    number = 0
+
     # create events
-    for i, location in enumerate(locations):
-        for j in range(1, events_per_location_space + 1):
-            number = i * events_per_location_space + j
-            date = now - datetime.timedelta(days=random.randint(-30, 30))
-            attendants = random.choice(attendants_choices)
-            event = Event(
-                name='Event %s' % str(number).zfill(3),
-                description='The %s. event' % str(number).zfill(3),
-                location=location,
-                estimated_start=date,
-                estimated_end=date + datetime.timedelta(
-                    hours=performances_per_event
-                ),
-                estimated_attendants=attendants,
-                estimated_turnover_tickets=decimal.Decimal(
-                    attendants * random.randint(0, 20)
-                ),
-                estimated_turnover_benefit=decimal.Decimal(
-                    attendants * random.randint(1, 5)
-                ),
-                estimated_expenses_musicians=decimal.Decimal(
-                    performances_per_event * random.choice(expenses_choices)
-                ),
-                estimated_expenses_production=decimal.Decimal(
-                    performances_per_event * random.randint(100, 1000)
-                )
-            )
-            event.save()
+    for state in ['estimated', 'confirmed', 'finalized', 'invoiced',
+                  'posted', 'paid', 'distributed']:
+        for playlist in [False, True]:
+            for i, location in enumerate(locations):
+                for j in range(1, events_per_location_space + 1):
+                    number += 1
+                    date = now - datetime.timedelta(
+                        days=random.randint(-30, 30))
+                    attendants = random.choice(attendants_choices)
+                    tags = [f"{state}"]
+                    if not playlist:
+                        tags.append("noplaylist")
+                    name = 'Event %s | %s' % (
+                        str(number).zfill(3), " ".join(tags))
+                    event = Event(
+                        name=name,
+                        description='The %s. event' % str(number).zfill(3),
+                        location=location,
+                        estimated_start=date,
+                        estimated_end=date + datetime.timedelta(
+                            hours=performances_per_event
+                        ),
+                        estimated_attendants=attendants,
+                        estimated_max_attendants=attendants * 2,
+                        estimated_max_admission=decimal.Decimal(
+                            random.randint(0, 20)
+                        ),
+                        estimated_turnover_tickets=decimal.Decimal(
+                            attendants * random.randint(0, 20)
+                        ),
+                        estimated_turnover_benefit=decimal.Decimal(
+                            attendants * random.randint(1, 5)
+                        ),
+                        estimated_expenses_musicians=decimal.Decimal(
+                            performances_per_event
+                            * random.choice(expenses_choices)
+                        ),
+                        estimated_expenses_production=decimal.Decimal(
+                            performances_per_event
+                            * random.randint(100, 1000)
+                        )
+                    )
+                    event.save()

@@ -9,6 +9,7 @@ Create the tariff adjustment categories
 
 import os
 import csv
+from decimal import Decimal
 
 from proteus import Model
 
@@ -37,10 +38,9 @@ def generate(reclimit=0):
                 tcs += TariffCategory.find(['code', '=', tc])
             TariffAdjustmentCategory(
                 name=row['name'],
-                value_min=float(row['value_min']),
-                value_max=float(row['value_max']),
-                value_default=float(row['value_default']),
-                priority=int(row['priority']),
-                operation=row['operation'],
+                code=row['code'],
+                value_min=Decimal(row['value_min']),
+                value_max=Decimal(row['value_max']),
+                value_default=Decimal(row['value_default']),
                 tariff_categories=tcs
             ).save()

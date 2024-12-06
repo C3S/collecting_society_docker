@@ -17,6 +17,7 @@ DEPENDS = [
     'country',
     'postal_code',
     'payment_term',
+    'payment_method',
     'company',
     'company_employee',
     'user',

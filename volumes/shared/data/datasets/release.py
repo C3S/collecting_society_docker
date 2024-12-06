@@ -74,7 +74,7 @@ def generate(reclimit=0):
                 type="artist",
                 entity_creator=creator.party,
                 commit_state='commited',
-                claim_state='claimed',
+                claim_state='revised',
                 title="Release %s" % str(number).zfill(3),
                 genres=random.sample(genres, min(
                     genres_per_release, len(genres))),

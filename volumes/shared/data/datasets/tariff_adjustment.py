@@ -8,7 +8,7 @@ Create the tariff adjustments
 """
 
 import random
-import decimal
+# import decimal
 
 from proteus import Model
 
@@ -25,26 +25,36 @@ def generate(reclimit=0):
 
     # models
     Utilisation = Model.get('utilisation')
-    # TariffAdjustment = Model.get('tariff_system.tariff.adjustment')
     TariffAdjustmentCategory = Model.get(
         'tariff_system.tariff.adjustment.category')
 
     # prepare datasets we depend upon
-    all_utilisations = Utilisation.find([])
-    all_tariff_adjustment_categories = TariffAdjustmentCategory.find([])
+    utilisations = Utilisation.find([])
+    tariff_adjustment_categories = TariffAdjustmentCategory.find([
+        'code', '!=', 'missing_playlist_fee'
+    ])
 
-    for each_util in all_utilisations:
+    for utilisation in utilisations:
         tariff_adjustment_categories_already_used = set()
         while tariff_adjustment_in_utilisation_chance < random.random():
             # add a random tariff adjustment
-            adjucat = random.choice(all_tariff_adjustment_categories)
+            adjucat = random.choice(tariff_adjustment_categories)
             if (adjucat.id not in tariff_adjustment_categories_already_used):
-                each_util.estimated_adjustments.new(
+                status = random.choice(['approved', 'rejected'])
+                # adjust status for estimated/confirmed utilisations
+                if utilisation.tariff.category.code == 'L':
+                    if 'estimated' in utilisation.context.name:
+                        status = 'on_approval'
+                    if 'confirmed' in utilisation.context.name:
+                        status = random.choice(
+                            ['on_approval', 'approved', 'rejected'])
+
+                utilisation.estimated_adjustments.new(
                     category=adjucat,
-                    status=random.choice(['on_approval', 'approved']),
+                    status=status,
                     value=adjucat.value_default,
                     deviation=False,
                     deviation_reason=""
                 )
-                each_util.save()
+                utilisation.save()
                 tariff_adjustment_categories_already_used.add(adjucat.id)

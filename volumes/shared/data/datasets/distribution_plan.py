@@ -31,6 +31,6 @@ def generate(reclimit=0):
     for i in range(1, distribution_plans + 1):
         number = i
         DistributionPlan(
-            version="%s.0" % number,
+            version="0.%s" % number,
             valid_from=today
         ).save()
