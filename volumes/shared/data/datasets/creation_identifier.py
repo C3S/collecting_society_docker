@@ -29,6 +29,8 @@ def generate(reclimit=0):
 
     # create creation identifiers
     for i, creation in enumerate(creations, start=1):
+        if creation.claim_state != 'revised':
+            continue
 
         # hfa
         hfa = creation.cs_identifiers.new()

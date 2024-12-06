@@ -26,6 +26,8 @@ def generate(reclimit=0):
 
     # create artist identifiers
     for i, artist in enumerate(artists, start=1):
+        if artist.claim_state != 'revised':
+            continue
 
         # ipn
         ipn = artist.cs_identifiers.new()

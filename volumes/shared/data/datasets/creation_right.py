@@ -45,7 +45,6 @@ def generate(reclimit=0):
     Creation = Model.get('creation')
     CollectingSociety = Model.get('collecting_society')
     Instrument = Model.get('instrument')
-    CreationRight = Model.get('creation.right')
     Country = Model.get('country.country')
 
     # entries
