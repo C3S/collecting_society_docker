@@ -23,7 +23,7 @@ def generate(reclimit=0):
 
     # constants
     max_composers_per_creation = reclimit or 3
-    min_composers_per_creation = reclimit and 1 or 0
+    min_composers_per_creation = reclimit and 1 or 1
     # max_recorders_per_creation = reclimit or 3
     # min_recorders_per_creation = reclimit and 1 or 0
     max_interprets_per_creation = reclimit or 3
