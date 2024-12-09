@@ -21,8 +21,8 @@ DEPENDS = [
 def generate(reclimit=0):
 
     # constants
-    playing_locations_per_licensee = reclimit or 1
-    live_locations_per_licensee = reclimit or 1
+    playing_locations_per_licensee = reclimit or 2
+    live_locations_per_licensee = reclimit or 2
 
     # models
     Country = Model.get('country.country')
