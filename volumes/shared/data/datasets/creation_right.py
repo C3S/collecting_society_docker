@@ -24,8 +24,6 @@ def generate(reclimit=0):
     # constants
     max_composers_per_creation = reclimit or 3
     min_composers_per_creation = reclimit and 1 or 1
-    # max_recorders_per_creation = reclimit or 3
-    # min_recorders_per_creation = reclimit and 1 or 0
     max_interprets_per_creation = reclimit or 3
     min_interprets_per_creation = reclimit and 1 or 0
     max_instruments_per_interpret = reclimit or 3
@@ -41,7 +39,7 @@ def generate(reclimit=0):
     successor_chance_per_right = reclimit and 1 or 0.1
 
     # models
-    Artist = Model.get('artist')
+    Party = Model.get('party.party')
     Creation = Model.get('creation')
     CollectingSociety = Model.get('collecting_society')
     Instrument = Model.get('instrument')
@@ -49,7 +47,7 @@ def generate(reclimit=0):
 
     # entries
     creations = Creation.find([('claim_state', '!=', 'unclaimed')])
-    all_artists = Artist.find([])
+    all_parties = Party.find([])
     crss = CollectingSociety.find([(
         'represents_copyright', '=', True)])
     nrss = CollectingSociety.find([(
@@ -64,7 +62,7 @@ def generate(reclimit=0):
         if random.random() > successor_chance_per_right:
             return
         suc = creation.rights.new()
-        suc.rightsholder = random.choice(all_artists)
+        suc.rightsholder = random.choice(all_parties)
         suc.rightsobject = pre.rightsobject
         suc.contribution = pre.contribution
         suc.type_of_right = pre.type_of_right
@@ -85,9 +83,9 @@ def generate(reclimit=0):
     # create creation rights
     for creation in creations:
         artist = creation.artist
-        rightsholders = [artist]
+        rightsholders = [artist.party]
         if artist.group:
-            rightsholders = artist.solo_artists
+            rightsholders = [artist.party for artist in artist.solo_artists]
         creation_date = today - datetime.timedelta(
             days=random.randint(0, 36500))
 
