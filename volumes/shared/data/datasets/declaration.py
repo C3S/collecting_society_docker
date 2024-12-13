@@ -51,7 +51,7 @@ def generate(reclimit=0):
     for location in locations:
         Declaration(
             licensee=location.party,
-            state='created',
+            state='submitted',
             creation_time=now,
             template=False,
             period=random.choice(periods),
@@ -63,7 +63,7 @@ def generate(reclimit=0):
     for event in events:
         declaration = Declaration(
             licensee=event.location.entity_creator,
-            state='created',
+            state='submitted',
             creation_time=event.estimated_start - datetime.timedelta(
                 days=random.randint(10, 30)
             ),
@@ -81,7 +81,7 @@ def generate(reclimit=0):
     for release in releases:
         Declaration(
             licensee=release.entity_creator,
-            state='created',
+            state='submitted',
             creation_time=now - datetime.timedelta(
                 days=random.randint(10, 30)
             ),
@@ -95,7 +95,7 @@ def generate(reclimit=0):
     for website in websites:
         Declaration(
             licensee=website.party,
-            state='created',
+            state='submitted',
             creation_time=now,
             template=False,
             period=random.choice(periods),
