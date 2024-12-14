@@ -24,7 +24,6 @@ DEPENDS = [
     'fiscal_year',
     'journal',
     'account_chart',
-    'account_view',
     'product',
 ]
 

@@ -45,7 +45,7 @@ def generate(reclimit=0):
     # content
     now = datetime.datetime.now()
     periods = Declaration._fields['period']['selection']
-    periods = [k for k, _ in periods if k]
+    periods = [k for k, _ in periods if k and k != 'onetime']
 
     # create declarations for tariff playing
     for location in locations:
