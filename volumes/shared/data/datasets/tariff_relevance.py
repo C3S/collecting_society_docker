@@ -11,9 +11,9 @@ import random
 from proteus import Model
 
 DEPENDS = [
+    'declaration',
     'tariff_category',
     'tariff_relevance_category',
-    'utilisation'
 ]
 
 

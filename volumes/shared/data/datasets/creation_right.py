@@ -47,7 +47,7 @@ def generate(reclimit=0):
 
     # entries
     creations = Creation.find([('claim_state', '!=', 'unclaimed')])
-    all_parties = Party.find([])
+    all_parties = Party.find(['id', '!=', 1])  # exclude company party
     crss = CollectingSociety.find([(
         'represents_copyright', '=', True)])
     nrss = CollectingSociety.find([(
