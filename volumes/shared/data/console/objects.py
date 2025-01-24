@@ -7,6 +7,7 @@ from datetime import date, datetime
 
 Account = pool.get('account.account')
 Company = pool.get('company.company')
+Country = pool.get('country.country')
 Invoice = pool.get('account.invoice')
 InvoiceTax = pool.get('account.invoice.tax')
 Journal = pool.get('account.journal')
