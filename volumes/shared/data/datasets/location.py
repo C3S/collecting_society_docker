@@ -50,13 +50,17 @@ def generate(reclimit=0):
             number = i * playing_locations_per_licensee + j
 
             # create party
-            party = Party(name="Location Bar %s" % str(number).zfill(3))
+            party = Party(name="Location Bar %s Owner" % str(number).zfill(3))
             _ = party.addresses.pop()
+            street = 'Teststreet %s' % str(number)
+            postal_code = str(10000+number).zfill(5)
+            city = 'Testcity'
+            country = germany
             party.addresses.new(
-                street='Teststreet %s' % str(number),
-                postal_code=str(10000+number).zfill(5),
-                city='Testcity',
-                country=germany
+                street=street,
+                postal_code=postal_code,
+                city=city,
+                country=country
             )
             party.save()
 
@@ -66,6 +70,10 @@ def generate(reclimit=0):
                 category=random.choice(categories_playing),
                 party=party,
                 public=True,
+                street=street,
+                postal_code=postal_code,
+                city=city,
+                country=country,
                 latitude=random.random()*180-90,
                 longitude=random.random()*360-180,
                 estimated_turnover_gastronomy=decimal.Decimal(
@@ -84,11 +92,15 @@ def generate(reclimit=0):
             party = Party(
                 name="Location Performance %s" % str(number).zfill(3))
             _ = party.addresses.pop()
+            street = 'Teststreet %s' % str(number)
+            postal_code = str(10000+number).zfill(5)
+            city = 'Testcity'
+            country = germany
             party.addresses.new(
-                street='Teststreet %s' % str(number),
-                postal_code=str(10000+number).zfill(5),
-                city='Testcity',
-                country=germany
+                street=street,
+                postal_code=postal_code,
+                city=city,
+                country=country
             )
             party.save()
 
@@ -98,6 +110,10 @@ def generate(reclimit=0):
                 category=random.choice(categories_live),
                 party=party,
                 public=True,
+                street=street,
+                postal_code=postal_code,
+                city=city,
+                country=country,
                 latitude=random.random()*180-90,
                 longitude=random.random()*360-180,
                 entity_creator=licensee.party
