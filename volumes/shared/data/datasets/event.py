@@ -45,10 +45,14 @@ def generate(reclimit=0):
         for playlist in [False, True]:
             for i, location in enumerate(locations):
                 for j in range(1, events_per_location + 1):
+                    tags = [f"{state}"]
+                    if not playlist:
+                        if state == 'estimated':
+                            continue
+                        tags.append("noplaylist")
                     number += 1
                     date_min = -60
                     date_max = -1
-                    tags = [f"{state}"]
                     if state == 'estimated':
                         # half past, half future
                         if number % 2:
@@ -62,8 +66,6 @@ def generate(reclimit=0):
                     date = now + datetime.timedelta(
                         days=random.randint(date_min, date_max))
                     attendants = random.choice(attendants_choices)
-                    if not playlist:
-                        tags.append("noplaylist")
                     name = 'Event %s | %s' % (
                         str(number).zfill(3), " ".join(tags))
                     event = Event(
