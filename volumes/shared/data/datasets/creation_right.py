@@ -43,7 +43,6 @@ def generate(reclimit=0):
     Creation = Model.get('creation')
     CollectingSociety = Model.get('collecting_society')
     Instrument = Model.get('instrument')
-    Country = Model.get('country.country')
 
     # entries
     creations = Creation.find([('claim_state', '!=', 'unclaimed')])
@@ -53,7 +52,6 @@ def generate(reclimit=0):
     nrss = CollectingSociety.find([(
         'represents_ancillary_copyright', '=', True)])
     total_number_of_instruments = len(Instrument.find([]))
-    germany, = Country.find([('code', '=', 'DE')])
 
     # content
     today = datetime.date.today()
@@ -67,7 +65,6 @@ def generate(reclimit=0):
         suc.contribution = pre.contribution
         suc.type_of_right = pre.type_of_right
         suc.valid_from = pre.valid_from
-        suc.country = germany
         if random.random() < collecting_society_per_creationright:
             suc.collecting_society = crss[random.randint(0, len(crss)-1)]
         if pre.instruments:
@@ -98,7 +95,6 @@ def generate(reclimit=0):
             cr.contribution = 'composition'
             cr.type_of_right = 'copyright'
             cr.valid_from = creation_date
-            cr.country = germany
             if random.random() < collecting_society_per_creationright:
                 cr.collecting_society = random.choice(crss)
             make_successor(creation, cr)
@@ -112,7 +108,6 @@ def generate(reclimit=0):
             cr.contribution = 'lyrics'
             cr.type_of_right = 'copyright'
             cr.valid_from = creation_date
-            cr.country = germany
             if random.random() < collecting_society_per_creationright:
                 cr.collecting_society = crss[random.randint(0, len(crss)-1)]
             make_successor(creation, cr)
@@ -128,7 +123,6 @@ def generate(reclimit=0):
             cr.contribution = 'instrument'
             cr.type_of_right = 'ancillary'
             cr.valid_from = creation_date
-            cr.country = germany
             if random.random() < collecting_society_per_creationright:
                 cr.collecting_society = crss[random.randint(0, len(nrss)-1)]
             instruments = Instrument.find([])
@@ -144,7 +138,6 @@ def generate(reclimit=0):
             cr.contribution = 'production'
             cr.type_of_right = 'ancillary'
             cr.valid_from = creation_date
-            cr.country = germany
             if random.random() < collecting_society_per_creationright:
                 cr.collecting_society = crss[random.randint(0, len(crss)-1)]
             make_successor(creation, cr)
@@ -158,7 +151,6 @@ def generate(reclimit=0):
             cr.contribution = 'mastering'
             cr.type_of_right = 'ancillary'
             cr.valid_from = creation_date
-            cr.country = germany
             if random.random() < collecting_society_per_creationright:
                 cr.collecting_society = crss[random.randint(0, len(crss)-1)]
             make_successor(creation, cr)
@@ -172,7 +164,6 @@ def generate(reclimit=0):
             cr.contribution = 'mixing'
             cr.type_of_right = 'ancillary'
             cr.valid_from = creation_date
-            cr.country = germany
             if random.random() < collecting_society_per_creationright:
                 cr.collecting_society = crss[random.randint(0, len(crss)-1)]
             make_successor(creation, cr)

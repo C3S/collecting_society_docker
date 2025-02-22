@@ -30,16 +30,17 @@ def generate(reclimit=0):
     foreign_creations = Creation.find([('claim_state', '=', 'unclaimed')])
 
     # content
-    allocation_types = ['cover', 'adaption', 'remix', None]
+    distribution_types = ['original', 'cover', 'adaption', 'remix']
 
     # create derivative relationships for exisiting creations
     for creation in creations:
         if not creation.release:
             continue
 
-        allocation_type = random.choice(allocation_types)
-        if not allocation_type:
+        distribution_type = random.choice(distribution_types)
+        if not distribution_type:
             continue
+        creation.distribution_type = distribution_type
 
         others = []
         for other in creations:
@@ -47,9 +48,9 @@ def generate(reclimit=0):
                 continue
             others.append(other)
 
-        if allocation_type in ['cover', 'adaption']:
+        if distribution_type in ['cover', 'adaption']:
             originals = [random.choice(others)]
-        elif allocation_type == 'remix':
+        elif distribution_type == 'remix':
             originals = random.sample(
                 others,
                 min(originals_per_remix, len(others)))
@@ -61,7 +62,7 @@ def generate(reclimit=0):
             cor = creation.original_relations.new()
             cor.original_creation = original
             cor.derivative_creation = creation
-            cor.allocation_type = allocation_type
+            # cor.allocation_type = distribution_type
 
     for creation in creations:
         creation.save()
