@@ -27,7 +27,6 @@ def generate(reclimit=0):
 
     # entries
     creations = Creation.find([('claim_state', '!=', 'unclaimed')])
-    foreign_creations = Creation.find([('claim_state', '=', 'unclaimed')])
 
     # content
     distribution_types = ['original', 'cover', 'adaption', 'remix']
@@ -36,24 +35,26 @@ def generate(reclimit=0):
     for creation in creations:
         if not creation.release:
             continue
+        foreign_creations = Creation.find([
+            ('claim_state', '=', 'unclaimed'),
+            ('entity_creator', '=', creation.entity_creator),
+        ])
 
         distribution_type = random.choice(distribution_types)
-        if not distribution_type:
-            continue
         creation.distribution_type = distribution_type
 
-        others = []
-        for other in creations:
-            if not other.release or other.id == creation.id:
-                continue
-            others.append(other)
+        other_creations = [
+            _creation for _creation in creations
+            if _creation.release and _creation.id != creation.id
+        ]
 
+        originals = []
         if distribution_type in ['cover', 'adaption']:
-            originals = [random.choice(others)]
+            originals = [random.choice(other_creations)]
         elif distribution_type == 'remix':
             originals = random.sample(
-                others,
-                min(originals_per_remix, len(others)))
+                other_creations,
+                min(originals_per_remix, len(other_creations)))
             originals += random.sample(
                 foreign_creations,
                 min(foreign_originals_per_remix, len(foreign_creations)))
