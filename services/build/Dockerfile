@@ -75,7 +75,7 @@ RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV=/opt/venv
 # upgrade essential pip packages
-RUN python3 -m pip install --upgrade pip wheel
+RUN python3 -m pip install --upgrade pip wheel setuptools
 # set default entrypoint and cmd for CLI script
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["cli --help"]
@@ -258,7 +258,7 @@ RUN pip install \
 ### development
 FROM python_testing_compiled AS python_development_compiled
 RUN pip install \
-    pdbpp==0.10.3
+    pdbpp==0.11.7
 
 ARG DEBUGGER_DEBUGPY
 RUN if [ ${DEBUGGER_DEBUGPY} -ne 0 ]; then pip install \
