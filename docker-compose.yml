@@ -125,7 +125,7 @@ services:
       context: ./services/build
       target: worker
       args: *buildargs
-    # cpu_percent: 50
+    cpu_count: 1
     mem_limit: 500m
     command: service-deploy
     healthcheck:

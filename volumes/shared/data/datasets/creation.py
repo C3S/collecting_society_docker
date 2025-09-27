@@ -39,15 +39,17 @@ def generate(reclimit=0):
         for j in range(1, creations_per_release + 1):
             number = i * creations_per_release + j
             artist = release.artists[0]
-            creator = artist
-            if creator.group:
-                creator = creator.solo_artists[0]
+            creator = artist.party
+            if artist.group:
+                creator = artist.solo_artists[0].party
+            if creator.entity_origin == 'indirect':
+                creator = creator.entity_creator
 
             creation = Creation(
                 title="Title of Song %s" % str(number).zfill(3),
                 commit_state='commited',
                 claim_state='revised',
-                entity_creator=creator.party,
+                entity_creator=creator,
                 lyrics=test_text,
                 artist=artist
             )

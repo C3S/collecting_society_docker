@@ -43,16 +43,14 @@ def generate(reclimit=0):
     websites = Website.find([])
 
     # content
-    now = datetime.datetime.now()
     periods = Declaration._fields['period']['selection']
-    periods = [k for k, _ in periods if k]
+    periods = [k for k, _ in periods if k and k != 'onetime']
 
     # create declarations for tariff playing
     for location in locations:
         Declaration(
             licensee=location.party,
-            state='created',
-            creation_time=now,
+            state='submitted',
             template=False,
             period=random.choice(periods),
             tariff=tariff_playing,
@@ -63,10 +61,7 @@ def generate(reclimit=0):
     for event in events:
         declaration = Declaration(
             licensee=event.location.entity_creator,
-            state='created',
-            creation_time=event.estimated_start - datetime.timedelta(
-                days=random.randint(10, 30)
-            ),
+            state='submitted',
             template=False,
             period='onetime',
             tariff=tariff_live,
@@ -81,10 +76,7 @@ def generate(reclimit=0):
     for release in releases:
         Declaration(
             licensee=release.entity_creator,
-            state='created',
-            creation_time=now - datetime.timedelta(
-                days=random.randint(10, 30)
-            ),
+            state='submitted',
             template=False,
             period='onetime',
             tariff=tariff_reproduction,
@@ -95,8 +87,7 @@ def generate(reclimit=0):
     for website in websites:
         Declaration(
             licensee=website.party,
-            state='created',
-            creation_time=now,
+            state='submitted',
             template=False,
             period=random.choice(periods),
             tariff=tariff_online,

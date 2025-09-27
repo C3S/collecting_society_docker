@@ -6,6 +6,8 @@ from decimal import Decimal as D
 from datetime import date, datetime
 
 Account = pool.get('account.account')
+Company = pool.get('company.company')
+Country = pool.get('country.country')
 Invoice = pool.get('account.invoice')
 InvoiceTax = pool.get('account.invoice.tax')
 Journal = pool.get('account.journal')
@@ -14,6 +16,7 @@ Party = pool.get('party.party')
 Period = pool.get('account.period')
 Product = pool.get('product.product')
 Tax = pool.get('account.tax')
+WebUser = pool.get('web.user')
 
 AccessControlEntry = pool.get('ace')
 AccessControlEntryRole = pool.get('ace-ace.role')

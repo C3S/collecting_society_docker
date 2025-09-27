@@ -33,7 +33,9 @@ def generate(reclimit=0):
     Party = Model.get('party.party')
 
     # entries
-    web_users = WebUser.find([('roles.code', '=', 'licensee')])
+    web_users = WebUser.find([
+        ('roles.code', '=', 'licensee'),
+    ])
 
     # create artists
     for i in range(1, group_artists + 1):

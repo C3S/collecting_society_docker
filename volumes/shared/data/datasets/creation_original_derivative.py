@@ -27,32 +27,34 @@ def generate(reclimit=0):
 
     # entries
     creations = Creation.find([('claim_state', '!=', 'unclaimed')])
-    foreign_creations = Creation.find([('claim_state', '=', 'unclaimed')])
 
     # content
-    allocation_types = ['cover', 'adaption', 'remix', None]
+    distribution_types = ['original', 'cover', 'adaption', 'remix']
 
     # create derivative relationships for exisiting creations
     for creation in creations:
         if not creation.release:
             continue
+        foreign_creations = Creation.find([
+            ('claim_state', '=', 'unclaimed'),
+            ('entity_creator', '=', creation.entity_creator),
+        ])
 
-        allocation_type = random.choice(allocation_types)
-        if not allocation_type:
-            continue
+        distribution_type = random.choice(distribution_types)
+        creation.distribution_type = distribution_type
 
-        others = []
-        for other in creations:
-            if not other.release or other.id == creation.id:
-                continue
-            others.append(other)
+        other_creations = [
+            _creation for _creation in creations
+            if _creation.release and _creation.id != creation.id
+        ]
 
-        if allocation_type in ['cover', 'adaption']:
-            originals = [random.choice(others)]
-        elif allocation_type == 'remix':
+        originals = []
+        if distribution_type in ['cover', 'adaption']:
+            originals = [random.choice(other_creations)]
+        elif distribution_type == 'remix':
             originals = random.sample(
-                others,
-                min(originals_per_remix, len(others)))
+                other_creations,
+                min(originals_per_remix, len(other_creations)))
             originals += random.sample(
                 foreign_creations,
                 min(foreign_originals_per_remix, len(foreign_creations)))
@@ -61,7 +63,7 @@ def generate(reclimit=0):
             cor = creation.original_relations.new()
             cor.original_creation = original
             cor.derivative_creation = creation
-            cor.allocation_type = allocation_type
+            # cor.allocation_type = distribution_type
 
     for creation in creations:
         creation.save()

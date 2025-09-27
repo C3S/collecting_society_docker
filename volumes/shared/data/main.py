@@ -34,11 +34,13 @@ class ProteusStats():
         Model._original_duplicate = Model.duplicate
         ModelList._original_new = ModelList.new
         Wizard._original_execute = Wizard.execute
+        Model._original_click = Model.click
         Model.save = cls.save
         Model.delete = cls.delete
         Model.duplicate = cls.duplicate
         ModelList.new = cls.new
         Wizard.execute = cls.execute
+        Model.click = cls.click
 
     @classmethod
     def stop(cls):
@@ -61,6 +63,7 @@ class ProteusStats():
             'deleted': {},
             'duplicated': {},
             'executed': {},
+            'clicked': {},
         }
 
     @classmethod
@@ -111,6 +114,15 @@ class ProteusStats():
         """Track wizards executed by Wizard.execute()."""
         ProteusStats.track('executed', '%s -> %s' % (self.name, state))
         Wizard._original_execute(self, state)
+
+    @staticmethod
+    def click(records, button, change=None):
+        """Track buttons clicked by Model.click()."""
+        if not isinstance(records, list):
+            records = [records]
+        for record in records:
+            ProteusStats.track('clicked', record.__class__.__name__)
+        return Model._original_click(records, button, change)
 
 
 def color(text, status):

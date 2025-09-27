@@ -45,13 +45,27 @@ def generate(reclimit=0):
         for playlist in [False, True]:
             for i, location in enumerate(locations):
                 for j in range(1, events_per_location + 1):
-                    number += 1
-                    date = now - datetime.timedelta(
-                        days=random.randint(-30, 30))
-                    attendants = random.choice(attendants_choices)
                     tags = [f"{state}"]
                     if not playlist:
+                        if state == 'estimated':
+                            continue
                         tags.append("noplaylist")
+                    number += 1
+                    date_min = -60
+                    date_max = -1
+                    if state == 'estimated':
+                        # half past, half future
+                        if number % 2:
+                            tags.append("past")
+                            date_min = -30
+                            date_max = -1
+                        else:
+                            tags.append("future")
+                            date_min = 1
+                            date_max = 30
+                    date = now + datetime.timedelta(
+                        days=random.randint(date_min, date_max))
+                    attendants = random.choice(attendants_choices)
                     name = 'Event %s | %s' % (
                         str(number).zfill(3), " ".join(tags))
                     event = Event(
@@ -90,8 +104,8 @@ def generate(reclimit=0):
             for i, location in enumerate(locations):
                 for j in range(1, events_per_location + 1):
                     number += 1
-                    date = now - datetime.timedelta(
-                        days=random.randint(-30, 30))
+                    date = now + datetime.timedelta(
+                        days=random.randint(-60, -1))
                     attendants = random.choice(attendants_choices)
                     tags = ["received"]
                     if not playlist:
