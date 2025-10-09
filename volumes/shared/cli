@@ -238,6 +238,11 @@ def db_copy(context, dbname_src, dbname_dst, force):
     """
     print('Copy database "%s" to "%s" ... ' % (dbname_src, dbname_dst), end='')
 
+    # Check database
+    if not _db_exist(dbname_src):
+        print(' source database does not exist')
+        return
+
     # Disconnect users
     _db_disconnect(dbname_src)
 
