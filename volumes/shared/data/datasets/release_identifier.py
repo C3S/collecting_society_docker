@@ -27,7 +27,8 @@ def generate(reclimit=0):
 
     # create release identifiers
     for i, release in enumerate(releases, start=1):
-        if release.claim_state != 'revised':
+        # if foreign object, don't add extra identifiers
+        if release.entity_origin == 'indirect':
             continue
 
         # grid

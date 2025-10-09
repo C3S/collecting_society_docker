@@ -34,6 +34,9 @@ def generate(reclimit=0):
 
     # create party identifiers
     for i, party in enumerate(parties, start=1):
+        # if foreign object, don't add extra identifiers
+        if party.entity_origin == 'indirect':
+            continue
 
         # ipi
         ipi = party.cs_identifiers.new()

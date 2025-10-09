@@ -26,7 +26,8 @@ def generate(reclimit=0):
 
     # create artist identifiers
     for i, artist in enumerate(artists, start=1):
-        if artist.claim_state != 'revised':
+        # if foreign object, don't add extra identifiers
+        if artist.entity_origin == 'indirect':
             continue
 
         # ipn
