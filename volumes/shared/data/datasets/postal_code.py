@@ -7,6 +7,7 @@
 Import postal codes (DE), using import_postal_codes script
 """
 
+import os
 from trytond.modules.country.scripts import import_postal_codes
 
 DEPENDS = [
@@ -15,8 +16,12 @@ DEPENDS = [
 
 
 def generate(reclimit=0):
-    try:
-        import_postal_codes.do_import(['de'])
-    except Exception as e:
-        print(e)
-        print("Import of postal codes skipped.")
+    environment = os.environ.get('ENVIRONMENT')
+    if environment in ["development", "staging"]:
+        print("skipped")
+    else:
+        try:
+            import_postal_codes.do_import(['de'])
+        except Exception as e:
+            print(e)
+            print("Import of postal codes skipped.")
