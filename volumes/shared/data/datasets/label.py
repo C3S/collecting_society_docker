@@ -23,7 +23,7 @@ def generate(reclimit=0):
 
     # constants
     environment = os.environ.get('ENVIRONMENT')
-    if environment == "development":
+    if environment in ["development", "staging"]:
         reclimit = reclimit and min(reclimit, csv_devlimit) or csv_devlimit
 
     # models
