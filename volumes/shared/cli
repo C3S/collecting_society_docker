@@ -141,8 +141,9 @@ def pip_install(context, service):
             open(flagfile, 'w').close()
 
         # Restart process with new modules installed
-        subprocess.check_call(sys.argv)
-        sys.exit()
+        # subprocess.check_call(sys.argv)
+        # sys.exit()
+        os.execvp(sys.argv[0], sys.argv)
 
     from importlib import reload
     import site
@@ -612,8 +613,9 @@ def service_deploy(context, service):
             time.sleep(60)
 
     # Deploy service
-    exitcode = subprocess.call([script])
-    sys.exit(exitcode)
+    # exitcode = subprocess.call([script])
+    # sys.exit(exitcode)
+    os.execvp(script, [script])
 
 
 @cli.command('service-healthcheck')

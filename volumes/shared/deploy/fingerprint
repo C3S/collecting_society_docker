@@ -28,6 +28,7 @@ echo "Tokyotyrant startup ..."
 [ -f "$TOKYOTYRANT_PIDFILE" ] && rm $TOKYOTYRANT_PIDFILE
 ttserver -port $TOKYOTYRANT_PORT -dmn -pid $TOKYOTYRANT_PIDFILE \
          -log $TOKYOTYRANT_LOGFILE -le $TOKYOTYRANT_DATAFILE#bnum=100000
+pid_tokyotyrant="$(pidof ttserver)"
 timeout $WAIT bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 $TOKYOTYRANT_PORT
 if [ $? -ne 0 ]; then
     echo "Tokyotyrant startup error. Exiting."
@@ -42,6 +43,7 @@ echo "Solr startup ..."
 cd $REPOPATH/solr/solr/
 java -Dsolr.data.dir=$SOLR_DATAPATH -Dsolr.solr.home=$REPOPATH/solr/solr/solr/ -Djava.awt.headless=true \
      -jar $REPOPATH/solr/solr/start.jar 2>&1 > $SOLR_LOGFILE &
+pid_solr=$!
 cd $WORKDIR
 timeout $WAIT bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 $SOLR_PORT
 if [ $? -ne 0 ]; then
@@ -53,6 +55,7 @@ echo "Solr started ..."
 # echoprint
 echo "Echoprint startup ..."
 python $REPOPATH/API/api.py $ECHOPRINT_PORT 2>&1 > $ECHOPRINT_LOGFILE &
+pid_echoprint=$!
 timeout $WAIT bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 $ECHOPRINT_PORT
 if [ $? -ne 0 ]; then
     echo "Echoprint startup error. Exiting."
@@ -71,4 +74,14 @@ if [ -f $INGESTFILE ] && [ ! -f $FLAGFILE ] && [ -f $TOKYOTYRANT_DATAFILE ]; the
 fi
 
 # logs
-tail -f $TOKYOTYRANT_LOGFILE $SOLR_LOGFILE $ECHOPRINT_LOGFILE
+tail -f $TOKYOTYRANT_LOGFILE $SOLR_LOGFILE $ECHOPRINT_LOGFILE &
+pid_logs=$!
+
+# signals
+trap "echo 'recieved SIGTERM, killing all processes ...';
+      kill "$pid_echoprint"; wait "$pid_echoprint";
+      kill "$pid_solr"; wait "$pid_solr";
+      kill "$pid_tokyotyrant"; while [ -d "/proc/$pid_tokyotyrant" ]; do sleep 1; done
+      kill "$pid_logs"; wait "$pid_logs";
+      exit 0" SIGTERM
+wait

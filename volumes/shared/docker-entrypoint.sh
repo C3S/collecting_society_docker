@@ -26,7 +26,7 @@ if [ "$SCRIPTNAME" = "docker-entrypoint.sh" ]; then
         exec "$@"
     # call of a run subcommand
     elif isCommand "$1"; then
-        cli "$@"
+        exec cli "$@"
     # other commands
     else
         exec "$@"
@@ -34,7 +34,7 @@ if [ "$SCRIPTNAME" = "docker-entrypoint.sh" ]; then
 
 # docker-compose exec commands
 elif isCommand "$SCRIPTNAME"; then
-    cli $SCRIPTNAME "$@"
+    exec cli $SCRIPTNAME "$@"
 
 # other commands
 else
