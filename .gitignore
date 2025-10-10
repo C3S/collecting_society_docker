@@ -122,3 +122,7 @@ tags
 # Tryton data development
 /volumes/shared/data/develop.txt
 /volumes/shared/data/modelinfo.csv
+
+# Testdata
+/volumes/shared/data/uploads/*
+!/volumes/shared/data/uploads/generate.sh
