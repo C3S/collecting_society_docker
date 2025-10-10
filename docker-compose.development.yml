@@ -16,6 +16,7 @@ services:
       - ./volumes/postgresql-data:/var/lib/postgresql/data
 
   webserver:
+    attach: false
     networks:
       - frontend
     ports:
