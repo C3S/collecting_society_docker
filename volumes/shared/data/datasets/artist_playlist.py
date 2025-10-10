@@ -46,10 +46,14 @@ def generate(reclimit=0):
             playlist.save()
 
     # create performance playlists
+    number = 0
     for performance in performances:
+        number += 1
         if 'estimated' in performance.event.name:
             continue
         if 'noplaylist' in performance.event.name:
+            continue
+        if 'partplaylist' in performance.event.name and not number % 2:
             continue
         playlist = ArtistPlaylist(
             artist=performance.artist,

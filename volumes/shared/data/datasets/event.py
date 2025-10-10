@@ -109,7 +109,10 @@ def generate(reclimit=0):
                     attendants = random.choice(attendants_choices)
                     tags = ["received"]
                     if not playlist:
-                        tags.append("noplaylist")
+                        if number % 2:
+                            tags.append("noplaylist")
+                        else:
+                            tags.append("partplaylist")
                     name = 'Event %s | %s' % (
                         str(number).zfill(3), " ".join(tags))
                     event = Event(

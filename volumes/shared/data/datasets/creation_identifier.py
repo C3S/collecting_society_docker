@@ -29,7 +29,8 @@ def generate(reclimit=0):
 
     # create creation identifiers
     for i, creation in enumerate(creations, start=1):
-        if creation.claim_state != 'revised':
+        # if foreign object, don't add extra identifiers
+        if creation.entity_origin == 'indirect':
             continue
 
         # hfa
