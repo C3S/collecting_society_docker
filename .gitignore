@@ -126,3 +126,6 @@ tags
 # Testdata
 /volumes/shared/data/uploads/*
 !/volumes/shared/data/uploads/generate.sh
+
+# Upgrade
+/services/build/Dockerfile.*
