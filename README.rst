@@ -2730,12 +2730,18 @@ Preperations
 
           ./services/build/pip_unpin.sh
 
+    - Custom adjustments to pip package versions
+        - Set ``selenium`` version to latest `selenium/standalone-firefox`__ tag
+        - Set ``debugpy`` to `latest version`__
+
 __ https://www.debian.org/releases/stable
 __ https://packages.debian.org/search?keywords=postgresql
 __ https://hub.docker.com/r/selenium/standalone-firefox/tags
 __ https://hub.docker.com/r/jwilder/nginx-proxy/tags
 __ https://hub.docker.com/_/node?tab=tags
 __ https://packages.debian.org
+__ https://hub.docker.com/r/selenium/standalone-firefox/tags
+__ https://pypi.org/project/debugpy
 
 Browser
 '''''''
@@ -2786,7 +2792,12 @@ Database
 
         docker compose build database
 
-2. Update environment
+2. Delete old database folder
+    ::
+
+        sudo rm -rf volumes/postgresql-data
+
+3. Update environment
     ::
 
         docker compose up database
@@ -2794,7 +2805,7 @@ Database
     - Fix startup errors
     - Update ``.env(.example)`` files and document changes in ``README.rst``
 
-3. Run healthcheck
+4. Run healthcheck
     ::
 
         docker compose up database -d

@@ -9,6 +9,11 @@ port_closed () {
          | cut -d":" -f"3" \
          | cut -d" " -f"1" \
          | xargs -I {} printf "%d\n" 0x{} \
+         | grep "^$1$" > /dev/null &&
+    ! tail -n +2 /proc/net/tcp6 \
+         | cut -d":" -f"3" \
+         | cut -d" " -f"1" \
+         | xargs -I {} printf "%d\n" 0x{} \
          | grep "^$1$" > /dev/null
 }
 
