@@ -11,7 +11,7 @@ ARG DEBUGGER_DEBUGPY
 #--- BASE ---------------------------------------------------------------------
 
 ### production
-FROM debian:bookworm-slim AS base_production
+FROM debian:trixie-slim AS base_production
 # set workdir
 ARG WORKDIR
 ENV WORKDIR $WORKDIR
@@ -43,7 +43,6 @@ FROM base_staging AS base_testing
 FROM base_testing AS base_development
 # install development packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    && apt-get install -y --no-install-recommends \
         git \
         htop \
         iputils-ping \
@@ -63,10 +62,8 @@ FROM base AS python_production
 # install python
 ENV PYTHONUNBUFFERED 1
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    && apt-get install -y --no-install-recommends \
         curl \
         python3 \
-        python3-distutils \
         python3-pip \
         python3-venv \
     && rm -rf /var/lib/apt/lists/*
@@ -91,11 +88,10 @@ FROM python_testing AS python_development
 ARG DEBUGGER_DEBUGPY
 RUN if [ ${DEBUGGER_DEBUGPY} -ne 0 ]; then \
         apt-get update && apt-get install -y --no-install-recommends \
-            && apt-get install -y --no-install-recommends \
-                gnome-keyring \
-                build-essential \
-                wget \
-            && rm -rf /var/lib/apt/lists/*; \
+            gnome-keyring \
+            build-essential \
+            wget \
+        && rm -rf /var/lib/apt/lists/*; \
     fi
 COPY download-vs-code-server.sh /tmp
 ENV PATH="$PATH:/root/.vscode-server/bin/default_version/bin"
@@ -124,7 +120,7 @@ FROM python AS trytond_production
 # install database packages
 RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && apt-get update && apt-get install -y --no-install-recommends \
-        postgresql-client-15 \
+        postgresql-client-17 \
         sqlite3 \
         libxslt1.1 \
         graphviz \
@@ -175,7 +171,7 @@ FROM python AS proteus_production
 RUN apt-get update && apt-get install -y --no-install-recommends \
         cron \
         ffmpeg \
-        libtag1v5-vanilla \
+        libtag2 \
     && rm -rf /var/lib/apt/lists/*
 
 ### staging
@@ -186,7 +182,7 @@ FROM proteus_staging AS proteus_testing
 # install database packages
 RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && apt-get update && apt-get install -y --no-install-recommends \
-        postgresql-client-15 \
+        postgresql-client-17 \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/man/*
 
@@ -214,7 +210,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
             libssl-dev \
             libffi-dev \
         # pip: pytaglib \
-            libtag1-dev \
+            libtag-dev \
         # echoprint-codegen \
             libboost-dev \
             zlib1g-dev \
@@ -233,7 +229,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ### production
 FROM compile AS python_production_compiled
 RUN pip install \
-    click==8.1.7
+    click==8.3.0
 
 ### staging
 FROM python_production_compiled AS python_staging_compiled
@@ -242,18 +238,18 @@ FROM python_production_compiled AS python_staging_compiled
 FROM python_staging_compiled AS python_testing_compiled
 RUN pip install \
     autoapi==2.0.1 \
-    coverage==7.6.1 \
-    flake8==7.1.1 \
-    mypy==1.11.2 \
-    pytest==8.3.3 \
-    pytest-cov==5.0.0 \
-    pytest-mock==3.14.0 \
-    types-python-dateutil==2.9.0.20240906 \
-    types-requests==2.32.0.20240907 \
-    Sphinx==7.4.7 \
-    sphinx-rtd-theme==2.0.0 \
+    coverage==7.10.7 \
+    flake8==7.3.0 \
+    mypy==1.18.2 \
+    pytest==8.4.2 \
+    pytest-cov==7.0.0 \
+    pytest-mock==3.15.1 \
+    types-python-dateutil==2.9.0.20251008 \
+    types-requests==2.32.4.20250913 \
+    Sphinx==8.2.3 \
+    sphinx-rtd-theme==3.0.2 \
     sphinxcontrib-plantuml \
-    tox==4.18.1
+    tox==4.31.0
 
 ### development
 FROM python_testing_compiled AS python_development_compiled
@@ -262,7 +258,7 @@ RUN pip install \
 
 ARG DEBUGGER_DEBUGPY
 RUN if [ ${DEBUGGER_DEBUGPY} -ne 0 ]; then pip install \
-        debugpy==1.6.6; \
+        debugpy==1.8.17; \
     fi
 ARG DEBUGGER_WINPDB
 RUN if [ ${DEBUGGER_WINPDB} -ne 0 ]; then pip install \
@@ -290,7 +286,9 @@ RUN mkdir /opt/tokyotyrant
 RUN cd tokyotyrant-1.1.41 && ./configure --prefix=/opt/tokyotyrant/ --with-tc=/opt/tokyocabinet && make && make install
 
 # install python packages
-RUN pip install \
+# https://github.com/webpy/webpy/issues/813 \
+RUN pip install legacy-cgi==2.6.3
+RUN pip install --no-build-isolation \
     web.py==0.62 \
     pyechonest==9.0.0
 
@@ -314,40 +312,40 @@ FROM python_compiled AS trytond_production_compiled
 RUN pip install \
     defusedxml==0.7.1 \
     Genshi==0.7.9 \
-    lxml==5.3.0 \
+    lxml==6.0.2 \
     passlib[bcrypt]==1.7.4 \
     polib==1.2.0 \
     python-dateutil==2.9.0.post0 \
-    python-sql==1.5.1 \
-    relatorio[fodt]==0.10.2 \
-    Werkzeug==3.0.4
+    python-sql==1.6.0 \
+    relatorio[fodt]==0.11.1 \
+    Werkzeug==3.1.3
 # trytond optional
 RUN pip install \
-    gevent==24.2.1 \
-    html2text==2024.2.26 \
-    pillow==10.4.0 \
-    psycopg2==2.9.9 \
-    pydot==3.0.1 \
-    python-Levenshtein==0.25.1 \
-    weasyprint==62.3
+    gevent==25.9.1 \
+    html2text==2025.4.15 \
+    pillow==11.3.0 \
+    psycopg2==2.9.11 \
+    pydot==4.0.1 \
+    python-Levenshtein==0.27.1 \
+    weasyprint==66.0
 # trytond account
 RUN pip install \
-    simpleeval==0.9.13
+    simpleeval==1.0.3
 # trytond bank, party, product
 RUN pip install \
-    python-stdnum==1.20
+    python-stdnum==2.1
 # trytond currency
 RUN pip install \
-    forex-python==1.8 \
+    forex-python==1.9.2 \
     pycountry==24.6.1
 # additional
 RUN pip install \
     hurry.filesize==0.9 \
     interlude==1.3.1 \
-    mock==5.1.0 \
-    pyOpenSSL==24.2.1 \
-    pytz==2024.2 \
-    requests==2.32.3
+    mock==5.2.0 \
+    pyOpenSSL==25.3.0 \
+    pytz==2025.2 \
+    requests==2.32.5
 
 ### staging
 FROM trytond_production_compiled AS trytond_staging_compiled
@@ -371,14 +369,14 @@ RUN pip install \
     cornice==6.1.0 \
     cornice-swagger==1.0.1 \
     cryptacular==1.6.2 \
-    pillow==10.4.0 \
+    pillow==11.3.0 \
     deform==2.0.15 \
     pyramid==2.0.2 \
     pyramid-beaker==0.8 \
     pyramid-chameleon==0.3 \
     pyramid-mailer==0.15.1 \
     python-magic==0.4.27 \
-    waitress==3.0.0
+    waitress==3.0.2
 
 ### staging
 FROM pyramid_production_compiled AS pyramid_staging_compiled
@@ -387,8 +385,8 @@ FROM pyramid_production_compiled AS pyramid_staging_compiled
 FROM pyramid_staging_compiled AS pyramid_testing_compiled
 RUN pip install \
     raven==6.10.0 \
-    selenium==4.24.0 \
-    WebTest==3.0.1
+    selenium==4.36.0 \
+    WebTest==3.0.7
 
 ### development
 FROM pyramid_testing_compiled AS pyramid_development_compiled
@@ -413,9 +411,11 @@ RUN pip install  \
     defusedxml==0.7.1 \
     pyechonest==9.0.0 \
     pydub==0.25.1 \
-    pytaglib==3.0.0 \
+    # https://github.com/jiaaro/pydub/issues/815 \
+        audioop-lts==0.2.2 \
+    pytaglib==3.0.1 \
     python-dateutil==2.9.0.post0 \
-    requests==2.32.3
+    requests==2.32.5
 
 ### staging
 FROM proteus_production_compiled AS proteus_staging_compiled
@@ -433,7 +433,7 @@ FROM proteus_${ENVIRONMENT}_compiled AS proteus_compiled
 #--- [COMPILE] SAO ------------------------------------------------------------
 
 ### production
-FROM node:bookworm-slim AS sao_production_compiled
+FROM node:trixie-slim AS sao_production_compiled
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         git \
@@ -492,17 +492,17 @@ RUN curl -L 'http://downloads.sourceforge.net/project/plantuml/plantuml.jar' \
 
 #--- DATABASE -----------------------------------------------------------------
 
-FROM postgres:15 AS database
+FROM postgres:17 AS database
 
 
 #--- WEBSERVER ----------------------------------------------------------------
 
-FROM jwilder/nginx-proxy:1.6.1 AS webserver
+FROM jwilder/nginx-proxy:1.8.0 AS webserver
 
 
 #--- BROWSER ------------------------------------------------------------------
 
-FROM selenium/standalone-firefox:4.24.0 AS browser
+FROM selenium/standalone-firefox:4.36.0 AS browser
 
 
 #--- base -> python -> echoprint -> FINGERPRINT -------------------------------
