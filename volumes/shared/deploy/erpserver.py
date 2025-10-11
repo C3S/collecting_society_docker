@@ -86,18 +86,16 @@ with commandline.pidfile(options):
     else:
         from werkzeug.serving import run_simple
         import debugpy
-        import socket
 
         try:
             debugpy.listen(("0.0.0.0", 52005))
-        except socket.error as e:
+        except RuntimeError as e:
             print(e)
             pass
         # debugpy.wait_for_attach(); debugpy.break_into_debugger()
         # threaded and use_realoader have to be false for debugpy debugging
         run_simple(hostname, port, app,
-            threaded=False,
+            threaded=True,
             extra_files=extra_files,
-            use_reloader=False,
-            processes=1,
+            use_reloader=options.dev,
             **ssl_args)

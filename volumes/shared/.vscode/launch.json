@@ -60,7 +60,8 @@
             "request": "attach",
             "port": 52005,
             "host": "localhost",
-            "subProcess": true
+            "subProcess": true,
+            "django": true
         },
         // the followint entry is for debugging demo data generation in
         // volumes/shared/data. To create all dependencies for a so called
