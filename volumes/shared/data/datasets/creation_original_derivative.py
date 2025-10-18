@@ -12,7 +12,7 @@ import random
 from proteus import Model
 
 DEPENDS = [
-    'creation',
+    'release_track',
 ]
 
 
@@ -59,11 +59,7 @@ def generate(reclimit=0):
                 foreign_creations,
                 min(foreign_originals_per_remix, len(foreign_creations)))
 
-        for original in originals:
-            cor = creation.original_relations.new()
-            cor.original_creation = original
-            cor.derivative_creation = creation
-            # cor.allocation_type = distribution_type
-
-    for creation in creations:
+        original_ids = [o.id for o in originals]
+        originals = Creation.find([('id', 'in', original_ids)])
+        creation.original_relations.extend(originals)
         creation.save()
