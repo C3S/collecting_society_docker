@@ -88,6 +88,7 @@ tags
 /volumes/shared/ref
 /volumes/shared/tmp
 /volumes/shared/running_db_creation.delete_me
+/volumes/shared/running_db_creation.testing.delete_me
 /volumes/shared/pyramid_debugtoolbar_templates_exception_summary_dbtmako
 
 # pyramid_mailer.debug

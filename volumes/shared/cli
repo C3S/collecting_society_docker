@@ -43,6 +43,8 @@ POSTGRES_HOSTNAME = str(os.environ.get('POSTGRES_HOSTNAME'))
 POSTGRES_PORT = str(os.environ.get('POSTGRES_PORT'))
 TRYTON_DATABASE = str(os.environ.get('TRYTON_DATABASE'))
 TMP_FILE = 'running_db_creation.delete_me'
+if ENVIRONMENT == 'testing':
+    TMP_FILE = 'running_db_creation.testing.delete_me'
 LOCKFILES = []
 
 
