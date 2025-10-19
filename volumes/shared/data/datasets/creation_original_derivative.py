@@ -61,5 +61,5 @@ def generate(reclimit=0):
 
         original_ids = [o.id for o in originals]
         originals = Creation.find([('id', 'in', original_ids)])
-        creation.original_relations.extend(originals)
+        creation.originals.extend(originals)
         creation.save()
