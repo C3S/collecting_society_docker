@@ -165,3 +165,16 @@ services:
       - .env
     environment:
       SERVICE: fingerprint
+
+  audioneex:
+    build:
+      context: ./services/build
+      target: fingerprint-audioneex
+      args: *buildargs
+    entrypoint: ''
+    volumes:
+      - ./volumes/audioneex:/data
+    env_file:
+      - .env
+    environment:
+      SERVICE: fingerprint

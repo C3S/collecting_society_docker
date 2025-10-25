@@ -515,6 +515,69 @@ COPY --from=echoprint_compiled /opt/tokyotyrant/lib/libtokyotyrant.* /lib/
 COPY --from=echoprint_compiled /opt/tokyotyrant/lib/ttskel* /lib/
 COPY --from=echoprint_compiled /opt/venv /opt/venv
 
+#--- base -> python -> audioneex -> FINGERPRINT-AUDIONEEX ---------------------
+
+FROM python_compiled AS fingerprint-audioneex
+
+### runtime
+RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libtag2 \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/share/man/*
+
+### compile
+RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        cmake \
+        file \
+        libboost-dev \
+        libboost-filesystem-dev \
+        libboost-system-dev \
+        libboost-thread-dev \
+        libboost-regex-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/share/man/*
+# fftss
+RUN version="3.0-20071031" \
+    && wget https://www.ssisc.org/fftss/dl/fftss-${version}.tar.gz \
+    && tar xvf fftss-*.tar.gz \
+    && cd fftss-* \
+    # error: implicit declaration of function \
+        && > libfftss/fftss_fortran.c \
+    && ./configure CFLAGS=-fPIC \
+                   --prefix=/opt/fftss \
+                   --includedir=/opt/fftss/include/fftss \
+    && make \
+    && make install
+# tokyocabinet
+RUN version="1.4.48" \
+    && wget https://files.c3s.cc/tokyocabinet-${version}.tar.gz \
+    && tar xvf tokyocabinet-*.tar.gz \
+    && cd tokyocabinet-* \
+    && ./configure --disable-zlib \
+                   --disable-bzip \
+                   --prefix=/opt/tokyocabinet \
+                   --includedir=/opt/tokyocabinet/include/tcabinet \
+    && make \
+    && make install
+# audioneex
+RUN version="v1.3.2" \
+    && wget https://github.com/a-gram/audioneex/archive/refs/tags/${version}.tar.gz \
+    && tar xvf ${version}.tar.gz \
+    && cd audioneex-* \
+    && sed -i "s|set(MY_INCLUDE_DIRS|set(MY_INCLUDE_DIRS\n\
+                 /opt/fftss/include\n\
+                 /opt/fftss/include/fftss\n\
+                 /opt/tokyocabinet/include\n\
+                 /opt/tokyocabinet/include/tcabinet\n|"\
+           CMakeLists.txt \
+    && sed -i "s|set(MY_LIBRARY_x64_RELEASE_DIRS|set(MY_LIBRARY_x64_RELEASE_DIRS\n\
+                 /opt/fftss/lib\n\
+                 /opt/tokyocabinet/lib\n|" \
+           CMakeLists.txt \
+    && ./build WITH_EXAMPLES=ON WITH_ID3=ON  # WITH_TESTS=ON
 
 #--- base -> python -> proteus -> WORKER --------------------------------------
 
