@@ -578,8 +578,13 @@ RUN version="v1.3.2" \
                  /opt/fftss/lib\n\
                  /opt/tokyocabinet/lib\n|" \
            CMakeLists.txt \
-    && ./build WITH_EXAMPLES=ON WITH_ID3=ON  # WITH_TESTS=ON
+    && sed -i "s|set(MY_LIBRARY_x64_DEBUG_DIRS|set(MY_LIBRARY_x64_DEBUG_DIRS\n\
+                 /opt/fftss/lib\n\
+                 /opt/tokyocabinet/lib\n|" \
+           CMakeLists.txt \
+    && ./build BUILD_MODE=debug WITH_EXAMPLES=ON WITH_ID3=ON  # WITH_TESTS=ON
 ENV PATH $PATH:/shared/audioneex-1.3.2/_build/linux-x64-gnu1420/release/
+ENV PATH $PATH:/shared/audioneex-1.3.2/_build/linux-x64-gnu1420/debug/
 
 
 #--- base -> python -> proteus -> WORKER --------------------------------------
