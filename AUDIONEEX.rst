@@ -27,14 +27,13 @@ Note: For other examples and all parameters see top comments in `example#.c` fil
     wget 'https://archive.org/compress/C3SIX__The_C3S_Ignition_Mix-14588/formats=OGG%20VORBIS&file=/C3SIX__The_C3S_Ignition_Mix-14588.zip'
     unzip C3SIX__The_C3S_Ignition_Mix-14588.zip -d C3SIgnitionMix
 
-4. Start container and change into example folder::
+4. Start container::
 
     docker compose run --rm audioneex bash
-    > cd /shared/audioneex-1.3.2/_build/linux-x64-gnu1420/release
 
 5. Fingerprint and index files::
 
-    > ./example1 -u /data/database /data/C3SIgnitionMix
+    > example1 -u /data/database /data/C3SIgnitionMix
     [FID:1] - LXDU_-_21_-_Into_The_Void.ogg ... OK. (00:06:55) (ID3)
     [FID:2] - Dr_Freebs_-_13_-_Blocks.ogg ... OK. (00:06:22) (ID3)
     [FID:3] - Strobotone_-_12_-_San_Fran_Interlude_Edit.ogg ... OK. (00:06:40) (ID3)
@@ -61,7 +60,7 @@ Note: For other examples and all parameters see top comments in `example#.c` fil
 
 6. Match fingerprints from audio files::
 
-    > ./example3 -u /data/database /data/C3SIgnitionMix
+    > example3 -u /data/database /data/C3SIgnitionMix
     Identifying LXDU_-_21_-_Into_The_Void.ogg ...
     =========================================================
     IDENTIFIED  FID: 1
@@ -219,7 +218,7 @@ Note: For other examples and all parameters see top comments in `example#.c` fil
     Subdevices: 1/1
     Subdevice #0: subdevice #0
 
-    > ./example4 -u /data/database 0
+    > example4 -u /data/database 0
 
     Press any key + ENTER to quit
 

@@ -579,6 +579,7 @@ RUN version="v1.3.2" \
                  /opt/tokyocabinet/lib\n|" \
            CMakeLists.txt \
     && ./build WITH_EXAMPLES=ON WITH_ID3=ON  # WITH_TESTS=ON
+ENV PATH $PATH:/shared/audioneex-1.3.2/_build/linux-x64-gnu1420/release/
 
 
 #--- base -> python -> proteus -> WORKER --------------------------------------
