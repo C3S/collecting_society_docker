@@ -59,7 +59,7 @@ Note: For other examples and all parameters see top comments in `example#.c` fil
     Flushing...
     Done
 
-6. Match fingerprints from audio::
+6. Match fingerprints from audio files::
 
     > ./example3 -u /data/database /data/C3SIgnitionMix
     Identifying LXDU_-_21_-_Into_The_Void.ogg ...
@@ -211,3 +211,43 @@ Note: For other examples and all parameters see top comments in `example#.c` fil
     ID Time: 3.6 s
     Done
 
+7. Match fingerprints from microphone audio stream::
+
+    > arecord -l
+    **** List of CAPTURE Hardware Devices ****
+    card 0: PCH [HDA Intel PCH], device 0: ALC269VB Analog [ALC269VB Analog]
+    Subdevices: 1/1
+    Subdevice #0: subdevice #0
+
+    > ./example4 -u /data/database 0
+
+    Press any key + ENTER to quit
+
+    Listening ...
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    SOUNDS LIKE FID: 17
+    Conf.: 0.657555
+    Cue Point: 00:04:46
+    fr eine hand voll zucker (a.-g. lang mix #4) by /'angstalt/
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Listening ...
+    =========================================================
+    IDENTIFIED  FID: 17
+    Score: 198.825, Conf.: 0.810031
+    Cue Point: 00:00:43
+    fr eine hand voll zucker (a.-g. lang mix #4) by /'angstalt/
+    =========================================================
+    Listening ...
+    =========================================================
+    IDENTIFIED  FID: 18
+    Score: 189.244, Conf.: 0.789366
+    Cue Point: 00:00:17
+    The Ooze (feat. Bruder, Johanna, Ferdinand Tschecker and PlizBis) by Raziel Jamaerah
+    =========================================================
+    Listening ...
+    =========================================================
+    IDENTIFIED  FID: 18
+    Score: 264.92, Conf.: 0.847849
+    Cue Point: 00:05:36
+    The Ooze (feat. Bruder, Johanna, Ferdinand Tschecker and PlizBis) by Raziel Jamaerah
+    =========================================================

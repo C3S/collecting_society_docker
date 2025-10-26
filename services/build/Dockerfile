@@ -524,6 +524,7 @@ RUN for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done \
     && apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
         libtag2 \
+        alsa-utils \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/man/*
 
@@ -578,6 +579,7 @@ RUN version="v1.3.2" \
                  /opt/tokyocabinet/lib\n|" \
            CMakeLists.txt \
     && ./build WITH_EXAMPLES=ON WITH_ID3=ON  # WITH_TESTS=ON
+
 
 #--- base -> python -> proteus -> WORKER --------------------------------------
 
