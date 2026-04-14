@@ -16,12 +16,8 @@ for allocation in collection.allocations:
         'allocation': allocation,
         'state': allocation.state,
         'invoice_amount': allocation.invoice_amount,
-        'administration_fee': allocation.administration_fee,
-        'distribution_amount': allocation.distribution_amount,
         'utilisations': [{
             'invoice_amount': utilisation.confirmed_invoice_amount,
-            'administration_fee': utilisation.confirmed_administration_fee,
-            'distribution_amount': utilisation.confirmed_distribution_amount,
         } for utilisation in allocation.utilisations]
     })
 
