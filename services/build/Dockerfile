@@ -72,7 +72,9 @@ RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV=/opt/venv
 # upgrade essential pip packages
-RUN python3 -m pip install --upgrade pip wheel setuptools
+# setuptools>=82 dropped the bundled pkg_resources module, which pyramid's
+# pserve still imports unconditionally at startup (breaks webgui/webapi/erpserver)
+RUN python3 -m pip install --upgrade pip wheel "setuptools<82"
 # set default entrypoint and cmd for CLI script
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["cli --help"]
@@ -364,6 +366,13 @@ FROM trytond_${ENVIRONMENT}_compiled AS trytond_compiled
 
 ### production
 FROM trytond_compiled AS pyramid_production_compiled
+# cryptacular's enscons-based build probes the compiler via a hardcoded
+# /tmp/enscons/xxmodule.c fixture (copied from distutils' own test suite)
+# that it never creates itself; modern setuptools' _distutils raises a hard
+# CompileError instead of tolerating the missing file, so pre-create stubs
+RUN mkdir -p /tmp/enscons \
+    && printf '#include <Python.h>\nstatic struct PyModuleDef xxmodule = {PyModuleDef_HEAD_INIT, "xx", NULL, -1, NULL};\nPyMODINIT_FUNC PyInit_xx(void) { return PyModule_Create(&xxmodule); }\n' > /tmp/enscons/xxmodule.c \
+    && touch /tmp/enscons/xymodule.cc
 RUN pip install \
     colander==2.0 \
     cornice==6.1.0 \
